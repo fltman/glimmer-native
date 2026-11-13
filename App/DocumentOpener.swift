@@ -150,6 +150,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         didFinishLaunching = true
+        // Undo snapshots a previous run left on disk (documents remove their own while the app runs).
+        let temp = FileManager.default.temporaryDirectory
+        for name in (try? FileManager.default.contentsOfDirectory(atPath: temp.path)) ?? [] where name.hasPrefix("undo-") {
+            try? FileManager.default.removeItem(at: temp.appending(path: name))
+        }
         // UI tests start from a fresh 800 × 600 document.
         if CommandLine.arguments.contains("-uiTestingNewDocument") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

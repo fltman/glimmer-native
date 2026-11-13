@@ -294,7 +294,7 @@ private struct PerformanceSettingsView: View {
             } header: {
                 Text("Undo History")
             } footer: {
-                Text("Undo steps share unchanged pixels, so each step only costs the tiles it changed. When the history needs more memory than this, the oldest steps are dropped.")
+                Text("Undo steps share unchanged pixels, so each step only costs the tiles it changed. When the history needs more memory than this, the oldest steps move to disk and load back when you undo that far.")
             }
             Section("Graphics") {
                 LabeledContent("GPU", value: GPU.device.name)

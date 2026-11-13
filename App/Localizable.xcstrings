@@ -3261,6 +3261,26 @@
         }
       }
     },
+    "Keeps the last %lld steps. Change it in Settings › Performance.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behåller de senaste %lld stegen. Ändra det i Inställningar › Prestanda."
+          }
+        }
+      }
+    },
+    "Keeps the last %lld steps; %lld older ones are on disk. Change it in Settings › Performance.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behåller de senaste %lld stegen; %lld äldre ligger på disk. Ändra det i Inställningar › Prestanda."
+          }
+        }
+      }
+    },
     "Lanczos": {
       "localizations": {
         "sv": {
@@ -6360,6 +6380,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ångrasteg delar oförändrade pixlar, så varje steg kostar bara de rutor det ändrade. När historiken behöver mer minne än så släpps de äldsta stegen."
+          }
+        }
+      }
+    },
+    "Undo steps share unchanged pixels, so each step only costs the tiles it changed. When the history needs more memory than this, the oldest steps move to disk and load back when you undo that far.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ångrasteg delar oförändrade pixlar, så varje steg kostar bara de rutor det ändrade. När historiken behöver mer minne än så flyttas de äldsta stegen till disk och läses in igen när du ångrar så långt."
           }
         }
       }

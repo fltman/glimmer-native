@@ -18,7 +18,9 @@ struct HistoryPanel: View {
             .listStyle(.sidebar)
             .onChange(of: document.history.count) { proxy.scrollTo(document.history.count, anchor: .bottom) }
         }
-        Text("Keeps the last \(GlimmerDocument.historyLimit) steps. Change it in Settings › General.")
+        Text(document.stepsOnDisk > 0
+             ? "Keeps the last \(GlimmerDocument.historyLimit) steps; \(document.stepsOnDisk) older ones are on disk. Change it in Settings › Performance."
+             : "Keeps the last \(GlimmerDocument.historyLimit) steps. Change it in Settings › Performance.")
             .font(.caption)
             .foregroundStyle(.secondary)
             .padding(8)

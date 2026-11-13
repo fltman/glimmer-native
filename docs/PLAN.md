@@ -365,7 +365,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **Histogram i Levels** med dragbara svart-, gamma- och vitreglage, beräknat på det lagret får in (dokumentet med lagret och allt ovanför dolt).
   - **Export:** WebP (förlustfri VP8L-kodare skriven i Swift, eftersom ImageIO inte kan skriva WebP och ett externt bibliotek inte tilläts) och 32-bitars flyttals-TIFF (linjär, HDR bevaras).
   - **Ritplatta:** lutning och rotation styr penselns vinkel och rundhet; tryckkurva i Inställningar › Ritplatta.
-  - **Ångra-historik med minnesbudget** (Inställningar › Prestanda, standard 2 GB): varje steg belastas för de tiles bara det håller vid liv, och de äldsta släpps när budgeten överskrids. *Avvikelse:* äldre steg sparas inte till disk; de släpps.
+  - **Ångra-historik med minnesbudget** (Inställningar › Prestanda, standard 2 GB): varje steg belastas för de tiles bara det håller vid liv, och de äldsta släpps när budgeten överskrids. Äldre steg flyttas numera till disk (se förnyelsen nedan).
   - **Real-ESRGAN på datorn** (realesr-general-x4v3, BSD-3) konverterad med `scripts/convert-models/realesrgan.py`, 2,4 MB i appen. 4K → 2× tar ~24 s i debug-bygget. Licenser i `Credits.html`.
   - **Golden images:** 51 referenser (alla blend modes, justeringar, filter och effekter), jämförda i CIELAB (medel-ΔE < 0,5, 99 % < 2).
   - **UI-tester** (`scripts/uitest.sh`): nytt dokument, måla, ångra, spara, exportera. Kräver att macOS får slå på automationsläget (lösenord eller Touch ID en gång).
@@ -377,7 +377,8 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **Vänd och rotera bild** (Image-menyn), byggt på samma kanvas-transform som rak beskärning.
   - **Real-ESRGAN:** vektoriserade kopior, 4K → 2× går från 26 s till 6 s. **WebP:** kvalitet under 100 % avrundar färgerna (20–40 % mindre fil). Appstart profilerad: inget att hämta.
   - **Kod och arbetssätt:** Phase6/Phase7-filerna uppdelade per funktion, CI (`.github/workflows/ci.yml`), `release.sh <version> --publish` höjer byggnumret (Sparkle jämför byggnummer), testar, taggar och publicerar.
-  - *Inte gjort:* ångra-historik till disk (kräver ändringar i ångra-kärnan som behöver egen testning) och förlustkomprimerad WebP (VP8).
+  - **Ångra-historik till disk:** varje steg är en `UndoSnapshot`; när historiken överskrider minnesbudgeten skrivs de äldsta som paket i temp-katalogen (i bakgrunden) och läses in igen vid ångra. Markeringen ligger kvar i minnet. Filerna tas bort när steget släpps och vid nästa start.
+  - *Inte gjort:* förlustkomprimerad WebP (VP8).
 
 ## 4. Teststrategi
 

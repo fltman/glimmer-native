@@ -1,3 +1,4 @@
+import AppKit
 import GlimmerCore
 import GlimmerRender
 import ImageIO
@@ -32,6 +33,9 @@ final class GlimmerDocument: Document {
     /// Memory the undo history may hold on to (MB), on top of the step limit.
     static let historyBudgetKey = "history.memoryBudgetMB"
     static var historyBudgetBytes: Int {
+        #if DEBUG
+        if let mb = ProcessInfo.processInfo.environment["GLIMMER_HISTORY_BUDGET_MB"].flatMap(Int.init) { return mb * 1_048_576 }
+        #endif
         let v = UserDefaults.standard.integer(forKey: historyBudgetKey)
         return (v > 0 ? v : 2048) * 1_048_576
     }
@@ -39,6 +43,20 @@ final class GlimmerDocument: Document {
     /// Bytes each applied step keeps alive: the tiles it replaced (index-aligned with `history`).
     private(set) var stepCosts: [Int] = []
     var historyBytes: Int { stepCosts.prefix(historyIndex).reduce(0, +) }
+
+    /// The snapshot each step restores when undone (index-aligned with `history`).
+    /// Older ones move to disk when the history outgrows its memory budget.
+    @ObservationIgnored private var snapshots: [UndoSnapshot] = []
+    @ObservationIgnored private var spilling: Set<ObjectIdentifier> = []
+    @ObservationIgnored private let spillCache = EncodedLayerCache()
+    @ObservationIgnored private let spillDirectory =
+        FileManager.default.temporaryDirectory.appending(path: "undo-\(UUID().uuidString)")
+    /// How many undo steps currently live on disk (shown in the History panel).
+    private(set) var stepsOnDisk = 0
+
+    deinit {
+        try? FileManager.default.removeItem(at: spillDirectory)
+    }
 
     /// A state handed over by `DocumentOpener`. If SwiftUI turns out to be
     /// restoring or opening a file with this instance (`apply` gets called),
@@ -139,39 +157,70 @@ final class GlimmerDocument: Document {
             transaction?.changed = true
             return
         }
-        // Snapshots share tiles, so a step costs only the tiles it changed; the
-        // limit keeps long sessions from holding on to every intermediate tile.
+        // Snapshots share tiles, so a step costs only the tiles it changed.
+        let box = UndoSnapshot(snapshot)
         if undoManager.isUndoing {
+            // `box` is the redo snapshot; the undo stack below it is unchanged.
             historyIndex = max(historyIndex - 1, 0)
         } else if undoManager.isRedoing {
+            if historyIndex < snapshots.count {
+                snapshots[historyIndex] = box
+                stepCosts[historyIndex] = Self.cost(of: snapshot, comparedTo: state)
+            }
             historyIndex = min(historyIndex + 1, history.count)
         } else {
             history.removeSubrange(historyIndex...)
             stepCosts.removeSubrange(min(historyIndex, stepCosts.count)...)
+            snapshots.removeSubrange(min(historyIndex, snapshots.count)...)
             history.append(actionName)
             stepCosts.append(Self.cost(of: snapshot, comparedTo: state))
-            // Keep as many recent steps as fit in both the step limit and the memory budget.
-            var keep = 0, bytes = 0
-            for cost in stepCosts.reversed() {
-                if keep > 0 && bytes + cost > Self.historyBudgetBytes { break }
-                bytes += cost
-                keep += 1
-            }
-            keep = min(keep, Self.historyLimit)
+            snapshots.append(box)
+            let keep = Self.historyLimit
             if undoManager.levelsOfUndo != keep { undoManager.levelsOfUndo = keep }
             if history.count > keep {
-                history.removeFirst(history.count - keep)
-                stepCosts.removeFirst(stepCosts.count - keep)
+                let extra = history.count - keep
+                history.removeFirst(extra)
+                stepCosts.removeFirst(extra)
+                snapshots.removeFirst(extra)
             }
             historyIndex = history.count
         }
+        spillIfNeeded()
         undoManager.registerUndo(withTarget: self) { document in
             let current = document.state
-            document.state = snapshot
+            // A snapshot that can't be read back leaves the document as it is.
+            if let restored = try? box.state() { document.state = restored } else { NSSound.beep() }
             document.registerUndo(actionName, undoManager: undoManager, restoring: current)
         }
         // Action names are catalog keys: the Edit menu shows "Undo <localized name>".
         undoManager.setActionName(String(localized: String.LocalizationValue(actionName)))
+    }
+
+    /// Moves the oldest in-memory snapshots to disk until the rest fit the memory budget.
+    @MainActor
+    private func spillIfNeeded() {
+        var inMemory = 0
+        for (i, box) in snapshots.enumerated() where !box.isOnDisk && !spilling.contains(ObjectIdentifier(box)) {
+            inMemory += stepCosts[i]
+        }
+        var index = 0
+        // The newest step always stays in memory, whatever it costs.
+        while inMemory > Self.historyBudgetBytes, index < snapshots.count - 1 {
+            let box = snapshots[index]
+            if !box.isOnDisk, !spilling.contains(ObjectIdentifier(box)) {
+                inMemory -= stepCosts[index]
+                spilling.insert(ObjectIdentifier(box))
+                let directory = spillDirectory, cache = spillCache
+                Task { @MainActor [weak self] in
+                    await Task.detached(priority: .utility) { try? box.moveToDisk(in: directory, cache: cache) }.value
+                    guard let self else { return }
+                    self.spilling.remove(ObjectIdentifier(box))
+                    self.stepsOnDisk = self.snapshots.count { $0.isOnDisk }
+                }
+            }
+            index += 1
+        }
+        stepsOnDisk = snapshots.count { $0.isOnDisk }
     }
 
     /// Memory an undo snapshot holds beyond the current state: the texture tiles only it references.

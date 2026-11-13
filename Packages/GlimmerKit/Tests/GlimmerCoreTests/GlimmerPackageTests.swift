@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import Metal
 import Testing
 @testable import GlimmerCore
 
@@ -244,3 +245,38 @@ func assertSamePixels(_ a: TileGrid, _ b: TileGrid) {
 }
 
 import ImageIO
+
+@Suite struct UndoSnapshotTests {
+    @Test func movesToDiskAndBack() throws {
+        let texture = TileTexture.makeTexture()
+        var px = [Float16](repeating: 0.25, count: TileGeometry.size * TileGeometry.size * 4)
+        px[0] = 0.75
+        px.withUnsafeBytes {
+            texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size), mipmapLevel: 0,
+                            withBytes: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)
+        }
+        let layer = Layer(name: "Paint", content: .raster(TileGrid([TileCoord(1, 0): .texture(TileTexture(texture))])))
+        var state = DocumentState(width: 600, height: 300, layers: [layer], activeLayerID: layer.id)
+        state.selection = Selection.from(mask: [Float](repeating: 1, count: 600 * 300), rect: state.bounds)
+        let dir = FileManager.default.temporaryDirectory.appending(path: "undo-test-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        var snapshot: UndoSnapshot? = UndoSnapshot(state)
+        #expect(snapshot?.isOnDisk == false)
+        try snapshot?.moveToDisk(in: dir)
+        #expect(snapshot?.isOnDisk == true)
+        let files = try FileManager.default.contentsOfDirectory(atPath: dir.path)
+        #expect(files.count == 1)
+
+        let back = try #require(try snapshot?.state())
+        #expect(back.width == 600 && back.layers.count == 1 && back.layers[0].id == layer.id)
+        #expect(back.activeLayerID == layer.id && back.selection != nil)
+        let tile = try #require(back.layers[0].tiles[TileCoord(1, 0)])
+        let pixels = tile.pixels()
+        #expect(pixels[0] == 0.75 && pixels[4] == 0.25)
+
+        // Releasing the snapshot removes its file.
+        snapshot = nil
+        #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path).isEmpty)
+    }
+}
