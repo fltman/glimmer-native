@@ -131,6 +131,7 @@ extension CommandID {
     public static func filter(_ kind: FilterKind) -> CommandID { CommandID(rawValue: "filter.\(kind.rawValue)") }
     public static let liquify: CommandID = "filter.liquify"
     public static let commandPalette: CommandID = "view.palette"
+    public static let toggleNavigator: CommandID = "view.navigator"
     public static let repeatFilter: CommandID = "filter.repeat"
 
     /// The filter for a `filter(_:)` id.
@@ -192,6 +193,8 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.clearGuides, "Clear Guides", category: .view, keywords: ["guides", "remove"]),
         CommandDescriptor(.commandPalette, "Command Palette…", category: .view, shortcut: KeyShortcut("k"),
                           keywords: ["search", "omnibar", "find command", "ask"]),
+        CommandDescriptor(.toggleNavigator, "Navigator", category: .view, shortcut: KeyShortcut("n", [.command, .option]),
+                          keywords: ["minimap", "overview", "zoom"]),
         CommandDescriptor(.toggleLayersPanel, "Show/Hide Layers", category: .view,
                           shortcut: KeyShortcut("l", [.command, .option]), keywords: ["panel", "inspector"]),
 

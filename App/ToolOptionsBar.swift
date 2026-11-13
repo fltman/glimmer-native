@@ -14,7 +14,7 @@ struct ToolOptionsBar: View {
             bar { liquifyOptions }
         } else if hasOptions(tool) {
             bar {
-                Text(tool.title).font(.callout.weight(.semibold))
+                Text(LocalizedStringKey(tool.title)).font(.callout.weight(.semibold))
                 switch tool {
                 case .brush, .eraser: brushOptions
                 case .magicWand: wandOptions(showSampleAll: true)
@@ -23,7 +23,7 @@ struct ToolOptionsBar: View {
                     slider("Opacity", $session.brush.opacity, 0...1, percent: true)
                 case .gradient:
                     Picker("Style", selection: $session.gradientStyle) {
-                        ForEach(GradientStyle.allCases, id: \.self) { Text($0.title).tag($0) }
+                        ForEach(GradientStyle.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .frame(width: 140)
@@ -46,7 +46,7 @@ struct ToolOptionsBar: View {
                         .foregroundStyle(.secondary)
                 case .shape:
                     Picker("Shape", selection: $session.shapeKind) {
-                        ForEach(EditorSession.ShapeKind.allCases, id: \.self) { Text($0.title).tag($0) }
+                        ForEach(EditorSession.ShapeKind.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
@@ -100,7 +100,7 @@ struct ToolOptionsBar: View {
     @ViewBuilder private var liquifyOptions: some View {
         Text("Liquify").font(.callout.weight(.semibold))
         Picker("Mode", selection: $session.liquifyMode) {
-            ForEach(LiquifyEngine.Mode.allCases, id: \.self) { Text($0.title).tag($0) }
+            ForEach(LiquifyEngine.Mode.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
         }
         .frame(width: 190)
         .labelsHidden()
@@ -149,7 +149,7 @@ struct ToolOptionsBar: View {
 
     private func numberField(_ label: String, _ value: Double, suffix: String, set: @escaping (Double) -> Void) -> some View {
         HStack(spacing: 3) {
-            Text(label).foregroundStyle(.secondary)
+            Text(LocalizedStringKey(label)).foregroundStyle(.secondary)
             TextField(label, value: Binding(get: { (value * 10).rounded() / 10 }, set: set), format: .number.precision(.fractionLength(0...1)))
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 56)
@@ -206,7 +206,7 @@ struct ToolOptionsBar: View {
     private func slider(_ label: String, _ value: Binding<Double>, _ range: ClosedRange<Double>,
                         percent: Bool = false, display: String? = nil) -> some View {
         HStack(spacing: 6) {
-            Text(label).foregroundStyle(.secondary)
+            Text(LocalizedStringKey(label)).foregroundStyle(.secondary)
             Slider(value: value, in: range).frame(width: 80)
             Text(display ?? (percent ? "\(Int((value.wrappedValue * 100).rounded())) %" : String(format: "%.0f", value.wrappedValue)))
                 .monospacedDigit()
@@ -322,17 +322,17 @@ struct FilterSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text(settings.kind.title).font(.headline)
+                Text(LocalizedStringKey(settings.kind.title)).font(.headline)
                 Spacer()
                 if session.isPreviewingFilter && preview { ProgressView().controlSize(.small) }
             }
             Form {
                 ForEach(settings.kind.fields, id: \.key) { field in
                     if field.isToggle {
-                        Toggle(field.label, isOn: Binding(get: { settings.flag(field.key) },
+                        Toggle(LocalizedStringKey(field.label), isOn: Binding(get: { settings.flag(field.key) },
                                                           set: { settings.values[field.key] = $0 ? 1 : 0 }))
                     } else {
-                        LabeledContent(field.label) {
+                        LabeledContent(LocalizedStringKey(field.label)) {
                             HStack {
                                 Slider(value: Binding(get: { settings.value(field.key) }, set: { settings.values[field.key] = $0 }),
                                        in: field.range)

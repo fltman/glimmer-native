@@ -75,6 +75,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         self.renderer = metal.flatMap { try? CanvasRenderer(context: $0) }
         self.compositor = metal.flatMap { try? DocumentCompositor(context: $0) }
         super.init(frame: .zero)
+        NotificationCenter.default.addObserver(forName: .glimmerPreferencesChanged, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.setNeedsRender() }
+        }
         wantsLayer = true
         layerContentsRedrawPolicy = .never
         registerForDraggedTypes([.fileURL, .png, .tiff])
@@ -127,6 +130,21 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
 
     override var isFlipped: Bool { true }
+
+    // MARK: Accessibility
+
+    override func isAccessibilityElement() -> Bool { true }
+    override func accessibilityRole() -> NSAccessibility.Role? { .image }
+    override func accessibilityLabel() -> String? { String(localized: "Canvas") }
+    override func accessibilityValue() -> Any? {
+        let state = session.state
+        let zoom = Int((controller.zoom * 100).rounded())
+        var text = String(localized: "\(state.width) by \(state.height) pixels, \(state.allLayers.count) layers, zoom \(zoom) percent")
+        if let layer = state.activeLayer { text += ", " + String(localized: "active layer \(layer.name)") }
+        if state.selection != nil { text += ", " + String(localized: "has a selection") }
+        text += ", " + String(localized: "tool \(session.tool.title)")
+        return text
+    }
     override var acceptsFirstResponder: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 
@@ -345,7 +363,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             viewSize: SIMD2(bounds.width, bounds.height),
             backingScale: Double(metalLayer.contentsScale),
             documentSize: state.size,
-            pasteboardColor: pasteboardColor()
+            pasteboardColor: pasteboardColor(),
+            checkerSize: Preferences.checkerSize
         )
         renderer.encode(frame, tiles: tiles, tile: compositor.texture(at:), selection: state.selection,
                         time: CACurrentMediaTime(), channel: session.viewChannel, into: commandBuffer, target: drawable.texture)
@@ -355,6 +374,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     private func pasteboardColor() -> SIMD4<Float> {
+        if let grey = Preferences.canvasBackground.grey {
+            return LinearColor.fromSRGB(grey, grey, grey)
+        }
         var color = SIMD4<Float>(0.05, 0.05, 0.05, 1)
         effectiveAppearance.performAsCurrentDrawingAppearance {
             if let c = NSColor.underPageBackgroundColor.usingColorSpace(.sRGB) {

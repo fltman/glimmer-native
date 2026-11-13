@@ -86,7 +86,7 @@ struct AIPanel: View {
         )) {
             body.padding(.top, 6)
         } label: {
-            Label(title, systemImage: symbol).font(.headline)
+            Label(LocalizedStringKey(title), systemImage: symbol).font(.headline)
         }
         .id(id)
     }
@@ -375,7 +375,7 @@ private struct ExpandView: View {
     }
 
     private func side(_ label: String, _ value: Binding<Int>) -> some View {
-        LabeledContent(label) {
+        LabeledContent(LocalizedStringKey(label)) {
             TextField(label, value: value, format: .number.grouping(.never))
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 64)
@@ -488,7 +488,7 @@ private struct RelightView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Picker("Light from", selection: $direction) {
-                ForEach(AIPipelines.LightDirection.allCases, id: \.self) { Text($0.title).tag($0) }
+                ForEach(AIPipelines.LightDirection.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
             }
             ColorWell(label: "Light color", color: color) { color = $0 }
             ParameterSlider(label: "Intensity", value: intensity * 100, range: 0...100, step: 1,

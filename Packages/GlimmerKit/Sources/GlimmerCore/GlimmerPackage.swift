@@ -35,11 +35,16 @@ public enum GlimmerPackageError: Error, Equatable, LocalizedError {
 public enum GlimmerPackage {
     public static let manifestFilename = "manifest.json"
     public static let layersDirectory = "layers"
+    /// Finder/QuickLook previews (PNG), read by the QuickLook extensions.
+    public static let quickLookDirectory = "QuickLook"
+    public static let thumbnailFilename = "Thumbnail.png"
+    public static let previewFilename = "Preview.png"
 
     // MARK: Write
 
     /// - Parameter cache: reuses encoded tile files whose tiles haven't changed.
-    public static func fileWrapper(for state: DocumentState, cache: EncodedLayerCache? = nil) throws -> FileWrapper {
+    public static func fileWrapper(for state: DocumentState, cache: EncodedLayerCache? = nil,
+                                   quickLook: (thumbnail: Data, preview: Data)? = nil) throws -> FileWrapper {
         var tileFiles: [String: FileWrapper] = [:]
         func addTiles(_ grid: TileGrid, name: String) throws {
             let data = try cache?.data(for: grid) ?? TileCodec.encode(grid)
@@ -99,10 +104,17 @@ public enum GlimmerPackage {
 
         let layersDir = FileWrapper(directoryWithFileWrappers: tileFiles)
         layersDir.preferredFilename = layersDirectory
-        return FileWrapper(directoryWithFileWrappers: [
-            manifestFilename: manifestFile,
-            layersDirectory: layersDir,
-        ])
+        var root: [String: FileWrapper] = [manifestFilename: manifestFile, layersDirectory: layersDir]
+        if let quickLook {
+            let thumb = FileWrapper(regularFileWithContents: quickLook.thumbnail)
+            thumb.preferredFilename = thumbnailFilename
+            let preview = FileWrapper(regularFileWithContents: quickLook.preview)
+            preview.preferredFilename = previewFilename
+            let dir = FileWrapper(directoryWithFileWrappers: [thumbnailFilename: thumb, previewFilename: preview])
+            dir.preferredFilename = quickLookDirectory
+            root[quickLookDirectory] = dir
+        }
+        return FileWrapper(directoryWithFileWrappers: root)
     }
 
     // MARK: Read

@@ -11,7 +11,7 @@ struct ExportSheet: View {
         VStack(alignment: .leading, spacing: 0) {
             Form {
                 Picker("Format", selection: $session.exportOptions.format) {
-                    ForEach(ExportOptions.Format.allCases) { Text($0.title).tag($0) }
+                    ForEach(ExportOptions.Format.allCases) { Text(LocalizedStringKey($0.title)).tag($0) }
                 }
                 Toggle("16 bits per channel", isOn: $session.exportOptions.sixteenBit)
                     .disabled(!format.supports16Bit)

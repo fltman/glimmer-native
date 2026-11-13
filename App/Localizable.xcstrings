@@ -1,0 +1,5546 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@": {},
+    "%@ curve": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@-kurva"
+          }
+        }
+      }
+    },
+    "%lld %%": {},
+    "%lld by %lld pixels, %lld layers, zoom %lld percent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld by %2$lld pixels, %3$lld layers, zoom %4$lld percent"
+          }
+        }
+      }
+    },
+    "%lld pts": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld punkter"
+          }
+        }
+      }
+    },
+    "%lld × %lld px": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld × %2$lld px"
+          }
+        }
+      }
+    },
+    "125 %": {},
+    "150 %": {},
+    "16 bits per channel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "16 bitar per kanal"
+          }
+        }
+      }
+    },
+    "16:9": {},
+    "1:1": {},
+    "200 %": {},
+    "2×": {},
+    "3:2": {},
+    "4:3": {},
+    "4:5": {},
+    "4×": {},
+    "9:16": {},
+    "A lighthouse at dusk, film photo": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En fyr i skymningen, analogt foto"
+          }
+        }
+      }
+    },
+    "AI": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI"
+          }
+        }
+      }
+    },
+    "API key": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-nyckel"
+          }
+        }
+      }
+    },
+    "Activity": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktivitet"
+          }
+        }
+      }
+    },
+    "Actual Pixels (100%)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faktiska pixlar (100 %)"
+          }
+        }
+      }
+    },
+    "Add AI detail": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till AI-detaljer"
+          }
+        }
+      }
+    },
+    "Add Layer Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till lagermask"
+          }
+        }
+      }
+    },
+    "Add Layer Mask (Hide All)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till lagermask (dölj allt)"
+          }
+        }
+      }
+    },
+    "Add Layer Mask (Reveal All)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till lagermask (visa allt)"
+          }
+        }
+      }
+    },
+    "Add Noise": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till brus"
+          }
+        }
+      }
+    },
+    "Add Noise…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till brus…"
+          }
+        }
+      }
+    },
+    "Add Stop": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till stopp"
+          }
+        }
+      }
+    },
+    "Add Text": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till text"
+          }
+        }
+      }
+    },
+    "Add a layer or drop an image on the canvas.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till ett lager eller släpp en bild på arbetsytan."
+          }
+        }
+      }
+    },
+    "Add your OpenRouter key": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till din OpenRouter-nyckel"
+          }
+        }
+      }
+    },
+    "Adjustments": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Justeringar"
+          }
+        }
+      }
+    },
+    "Align": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Justering"
+          }
+        }
+      }
+    },
+    "Aligned": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Justerad"
+          }
+        }
+      }
+    },
+    "All": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allt"
+          }
+        }
+      }
+    },
+    "Amount": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mängd"
+          }
+        }
+      }
+    },
+    "Angle": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vinkel"
+          }
+        }
+      }
+    },
+    "Applies one of Glimmer's photo looks to an image.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ger en bild en av Glimmers fotolooks."
+          }
+        }
+      }
+    },
+    "Applies to the selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Påverkar markeringen"
+          }
+        }
+      }
+    },
+    "Apply": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verkställ"
+          }
+        }
+      }
+    },
+    "Apply ${filter} to ${image}": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd ${filter} på ${image}"
+          }
+        }
+      }
+    },
+    "Apply ${preset} to ${image}": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd ${preset} på ${image}"
+          }
+        }
+      }
+    },
+    "Apply Filter": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd filter"
+          }
+        }
+      }
+    },
+    "Apply Glimmer Filter": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd Glimmer-filter"
+          }
+        }
+      }
+    },
+    "Apply Glimmer Preset": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd Glimmer-preset"
+          }
+        }
+      }
+    },
+    "Apply Lens Blur": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd linsoskärpa"
+          }
+        }
+      }
+    },
+    "Apply Preset": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd preset"
+          }
+        }
+      }
+    },
+    "Arrange": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordna"
+          }
+        }
+      }
+    },
+    "Ask for an edit: “moody black & white with a vignette”": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Be om en ändring: ”stämningsfull svartvit med vinjett”"
+          }
+        }
+      }
+    },
+    "Ask the assistant: “%@”": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fråga assistenten: ”%@”"
+          }
+        }
+      }
+    },
+    "Aspect": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Proportioner"
+          }
+        }
+      }
+    },
+    "Assistant": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistent"
+          }
+        }
+      }
+    },
+    "Avoid (optional)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undvik (valfritt)"
+          }
+        }
+      }
+    },
+    "Background": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bakgrund"
+          }
+        }
+      }
+    },
+    "Behind": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bakifrån"
+          }
+        }
+      }
+    },
+    "Black": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svart"
+          }
+        }
+      }
+    },
+    "Black & White": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svartvitt"
+          }
+        }
+      }
+    },
+    "Blend Colors in Gamma Space": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blanda färger i gammarymd"
+          }
+        }
+      }
+    },
+    "Blend Mode": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blandningsläge"
+          }
+        }
+      }
+    },
+    "Bloat": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blås upp"
+          }
+        }
+      }
+    },
+    "Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blå"
+          }
+        }
+      }
+    },
+    "Blues": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blå"
+          }
+        }
+      }
+    },
+    "Blur": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oskärpa"
+          }
+        }
+      }
+    },
+    "Blur Tool": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oskärpeverktyg"
+          }
+        }
+      }
+    },
+    "Bokeh": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bokeh"
+          }
+        }
+      }
+    },
+    "Bottom": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Underifrån"
+          }
+        }
+      }
+    },
+    "Brightness": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljusstyrka"
+          }
+        }
+      }
+    },
+    "Brightness/Contrast": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljusstyrka/kontrast"
+          }
+        }
+      }
+    },
+    "Bring Forward": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta framåt"
+          }
+        }
+      }
+    },
+    "Bring to Front": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta längst fram"
+          }
+        }
+      }
+    },
+    "Brush": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pensel"
+          }
+        }
+      }
+    },
+    "Brush Stroke": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Penseldrag"
+          }
+        }
+      }
+    },
+    "Burn": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Efterbelys"
+          }
+        }
+      }
+    },
+    "By": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Med"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avbryt"
+          }
+        }
+      }
+    },
+    "Canvas": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arbetsyta"
+          }
+        }
+      }
+    },
+    "Cell Size": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cellstorlek"
+          }
+        }
+      }
+    },
+    "Change Blend Mode": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändra blandningsläge"
+          }
+        }
+      }
+    },
+    "Change Opacity": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändra opacitet"
+          }
+        }
+      }
+    },
+    "Change Reference…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt referens…"
+          }
+        }
+      }
+    },
+    "Channel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanal"
+          }
+        }
+      }
+    },
+    "Channel Mixer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanalmixer"
+          }
+        }
+      }
+    },
+    "Channels": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanaler"
+          }
+        }
+      }
+    },
+    "Checkerboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schackmönster"
+          }
+        }
+      }
+    },
+    "Choose Reference…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj referens…"
+          }
+        }
+      }
+    },
+    "Chromatic Aberration": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kromatisk aberration"
+          }
+        }
+      }
+    },
+    "Chromatic Aberration…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kromatisk aberration…"
+          }
+        }
+      }
+    },
+    "Clarity": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klarhet"
+          }
+        }
+      }
+    },
+    "Clarity…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klarhet…"
+          }
+        }
+      }
+    },
+    "Clean Up": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Städa"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rensa"
+          }
+        }
+      }
+    },
+    "Clear Guides": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rensa stödlinjer"
+          }
+        }
+      }
+    },
+    "Click a channel to view it in grey. Channel views don't change the image.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka på en kanal för att visa den i grått. Kanalvyer ändrar inte bilden."
+          }
+        }
+      }
+    },
+    "Click an object to select it; ⌥-click to exclude. Return keeps, Esc cancels.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka på ett objekt för att markera det; ⌥-klicka för att utesluta. Retur behåller, Esc avbryter."
+          }
+        }
+      }
+    },
+    "Click an object · ⌥-click to exclude · Return keeps · Esc cancels": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka på ett objekt · ⌥-klicka för att utesluta · Retur behåller · Esc avbryter"
+          }
+        }
+      }
+    },
+    "Click for corners · drag for curves · ⌥ breaks handles · click the first point to close · Return ends": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka för hörn · dra för kurvor · ⌥ bryter handtag · klicka på första punkten för att stänga · Retur avslutar"
+          }
+        }
+      }
+    },
+    "Click to add points · double-click or Return to close · Esc cancels": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka för att lägga till punkter · dubbelklicka eller Retur för att stänga · Esc avbryter"
+          }
+        }
+      }
+    },
+    "Click to pick the foreground · ⌥-click for the background": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka för förgrundsfärg · ⌥-klicka för bakgrundsfärg"
+          }
+        }
+      }
+    },
+    "Clipped to the layer below": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klippt mot lagret under"
+          }
+        }
+      }
+    },
+    "Clone Stamp": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klonstämpel"
+          }
+        }
+      }
+    },
+    "Collapse %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fäll ihop %@"
+          }
+        }
+      }
+    },
+    "Color": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färg"
+          }
+        }
+      }
+    },
+    "Color Balance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgbalans"
+          }
+        }
+      }
+    },
+    "Color Burn": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgefterbelys"
+          }
+        }
+      }
+    },
+    "Color Dodge": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgskugga"
+          }
+        }
+      }
+    },
+    "Color Fill": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgfyllning"
+          }
+        }
+      }
+    },
+    "Color Overlay": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgöverlägg"
+          }
+        }
+      }
+    },
+    "Color profile": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgprofil"
+          }
+        }
+      }
+    },
+    "Command Palette…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommandopalett…"
+          }
+        }
+      }
+    },
+    "Constant": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konstant"
+          }
+        }
+      }
+    },
+    "Contiguous": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sammanhängande"
+          }
+        }
+      }
+    },
+    "Contract…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minska…"
+          }
+        }
+      }
+    },
+    "Contrast": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrast"
+          }
+        }
+      }
+    },
+    "Convert to Smart Object": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gör om till smart objekt"
+          }
+        }
+      }
+    },
+    "Copy": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiera"
+          }
+        }
+      }
+    },
+    "Create": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa"
+          }
+        }
+      }
+    },
+    "Create Clipping Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa urklippsmask"
+          }
+        }
+      }
+    },
+    "Create/Release Clipping Mask": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa/släpp urklippsmask"
+          }
+        }
+      }
+    },
+    "Creativity": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kreativitet"
+          }
+        }
+      }
+    },
+    "Crop": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beskär"
+          }
+        }
+      }
+    },
+    "Curves": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kurvor"
+          }
+        }
+      }
+    },
+    "Custom": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anpassad"
+          }
+        }
+      }
+    },
+    "Cut": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klipp ut"
+          }
+        }
+      }
+    },
+    "Cuts the main subject out of an image on this Mac and returns a PNG with a transparent background.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klipper ut huvudmotivet ur en bild på den här Macen och ger en PNG med genomskinlig bakgrund."
+          }
+        }
+      }
+    },
+    "Cyan – Red": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cyan – röd"
+          }
+        }
+      }
+    },
+    "Cyans": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cyan"
+          }
+        }
+      }
+    },
+    "Dark Grey": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mörkgrå"
+          }
+        }
+      }
+    },
+    "Darken": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mörkare"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera"
+          }
+        }
+      }
+    },
+    "Delete Empty Text": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera tom text"
+          }
+        }
+      }
+    },
+    "Delete Guide": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera stödlinje"
+          }
+        }
+      }
+    },
+    "Delete Layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera lager"
+          }
+        }
+      }
+    },
+    "Delete Layer Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera lagermask"
+          }
+        }
+      }
+    },
+    "Delete Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera mask"
+          }
+        }
+      }
+    },
+    "Delete Path": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera bana"
+          }
+        }
+      }
+    },
+    "Delete the path": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera banan"
+          }
+        }
+      }
+    },
+    "Density": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Täthet"
+          }
+        }
+      }
+    },
+    "Depth (Depth Anything V2 Small)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Djup (Depth Anything V2 Small)"
+          }
+        }
+      }
+    },
+    "Deselect": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avmarkera"
+          }
+        }
+      }
+    },
+    "Difference": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skillnad"
+          }
+        }
+      }
+    },
+    "Disable Layer Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stäng av lagermask"
+          }
+        }
+      }
+    },
+    "Dismiss": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stäng"
+          }
+        }
+      }
+    },
+    "Display P3": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Display P3"
+          }
+        }
+      }
+    },
+    "Distance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avstånd"
+          }
+        }
+      }
+    },
+    "Document": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokument"
+          }
+        }
+      }
+    },
+    "Document status": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentstatus"
+          }
+        }
+      }
+    },
+    "Dodge": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skugga"
+          }
+        }
+      }
+    },
+    "Dots": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prickar"
+          }
+        }
+      }
+    },
+    "Downloaded": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedladdad"
+          }
+        }
+      }
+    },
+    "Downloads on first use (%@)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laddas ner första gången (%@)"
+          }
+        }
+      }
+    },
+    "Draw with the Pen tool (P) to create a path.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rita med pennverktyget (P) för att skapa en bana."
+          }
+        }
+      }
+    },
+    "Drop Shadow": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skugga"
+          }
+        }
+      }
+    },
+    "Duplicate Layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicera lager"
+          }
+        }
+      }
+    },
+    "Dynamics": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dynamik"
+          }
+        }
+      }
+    },
+    "Edit Fill": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera fyllning"
+          }
+        }
+      }
+    },
+    "Edit Image with Prompt…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera bild med prompt…"
+          }
+        }
+      }
+    },
+    "Edit Path": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera bana"
+          }
+        }
+      }
+    },
+    "Edit Text": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera text"
+          }
+        }
+      }
+    },
+    "Editing mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigerar mask"
+          }
+        }
+      }
+    },
+    "Ellipse": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ellips"
+          }
+        }
+      }
+    },
+    "Elliptical Marquee": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elliptisk markeringsram"
+          }
+        }
+      }
+    },
+    "Emboss": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relief"
+          }
+        }
+      }
+    },
+    "Emboss…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relief…"
+          }
+        }
+      }
+    },
+    "Enable Layer Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slå på lagermask"
+          }
+        }
+      }
+    },
+    "Enable or disable the mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slå på eller av masken"
+          }
+        }
+      }
+    },
+    "Enable/Disable Layer Mask": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slå på/av lagermask"
+          }
+        }
+      }
+    },
+    "Enabled": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På"
+          }
+        }
+      }
+    },
+    "Environment (optional), e.g. a neon-lit street": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miljö (valfritt), t.ex. en neonupplyst gata"
+          }
+        }
+      }
+    },
+    "Eraser": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suddgummi"
+          }
+        }
+      }
+    },
+    "Estimates depth on this Mac and blurs what's out of focus. The first run downloads a 48 MB model.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uppskattar djup på den här Macen och gör det som ligger utanför fokus oskarpt. Första gången laddas en modell på 48 MB ner."
+          }
+        }
+      }
+    },
+    "Evenly": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jämnt"
+          }
+        }
+      }
+    },
+    "Exclusion": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uteslutning"
+          }
+        }
+      }
+    },
+    "Expand": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utöka"
+          }
+        }
+      }
+    },
+    "Expand %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fäll ut %@"
+          }
+        }
+      }
+    },
+    "Expand Canvas": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utöka arbetsytan"
+          }
+        }
+      }
+    },
+    "Expand…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utöka…"
+          }
+        }
+      }
+    },
+    "Export": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera"
+          }
+        }
+      }
+    },
+    "Export ${document} as ${format}": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera ${document} som ${format}"
+          }
+        }
+      }
+    },
+    "Export Glimmer Document": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera Glimmer-dokument"
+          }
+        }
+      }
+    },
+    "Export Image": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera bild"
+          }
+        }
+      }
+    },
+    "Exporting…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporterar…"
+          }
+        }
+      }
+    },
+    "Export…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera…"
+          }
+        }
+      }
+    },
+    "Exposure": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exponering"
+          }
+        }
+      }
+    },
+    "Eyedropper": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pipett"
+          }
+        }
+      }
+    },
+    "Feather": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjädra"
+          }
+        }
+      }
+    },
+    "Feather radius": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjäderradie"
+          }
+        }
+      }
+    },
+    "Feather…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjädra…"
+          }
+        }
+      }
+    },
+    "Fill": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyllning"
+          }
+        }
+      }
+    },
+    "Fill Path": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll bana"
+          }
+        }
+      }
+    },
+    "Fill Selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll markering"
+          }
+        }
+      }
+    },
+    "Fill the path with the foreground colour on the active layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll banan med förgrundsfärgen på det aktiva lagret"
+          }
+        }
+      }
+    },
+    "Filter": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter"
+          }
+        }
+      }
+    },
+    "Filter Color": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filterfärg"
+          }
+        }
+      }
+    },
+    "Find Distractions": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hitta störande element"
+          }
+        }
+      }
+    },
+    "Find Distractions…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hitta störande element…"
+          }
+        }
+      }
+    },
+    "Find Edges": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hitta kanter"
+          }
+        }
+      }
+    },
+    "Finds photobombers, litter, signs, cables and dust spots to remove.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hittar photobombare, skräp, skyltar, kablar och dammfläckar att ta bort."
+          }
+        }
+      }
+    },
+    "Fit on Screen": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anpassa till skärmen"
+          }
+        }
+      }
+    },
+    "Flattens a Glimmer document (or converts an image) to PNG, JPEG, HEIC or TIFF.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plattar till ett Glimmer-dokument (eller konverterar en bild) till PNG, JPEG, HEIC eller TIFF."
+          }
+        }
+      }
+    },
+    "Flow": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flöde"
+          }
+        }
+      }
+    },
+    "Focus distance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fokusavstånd"
+          }
+        }
+      }
+    },
+    "Focus range": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fokusomfång"
+          }
+        }
+      }
+    },
+    "Font": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typsnitt"
+          }
+        }
+      }
+    },
+    "Foreground": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förgrund"
+          }
+        }
+      }
+    },
+    "Foreground and background colours (X swaps, D resets)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förgrunds- och bakgrundsfärg (X byter, D återställer)"
+          }
+        }
+      }
+    },
+    "Format": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format"
+          }
+        }
+      }
+    },
+    "Forward Warp": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framåtförvrängning"
+          }
+        }
+      }
+    },
+    "Free": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fri"
+          }
+        }
+      }
+    },
+    "Free Transform": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fri omformning"
+          }
+        }
+      }
+    },
+    "Front": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framifrån"
+          }
+        }
+      }
+    },
+    "Gamma Correction": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gammakorrigering"
+          }
+        }
+      }
+    },
+    "Gaussian Blur": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gaussisk oskärpa"
+          }
+        }
+      }
+    },
+    "Gaussian Blur…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gaussisk oskärpa…"
+          }
+        }
+      }
+    },
+    "General": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allmänt"
+          }
+        }
+      }
+    },
+    "Generate": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generera"
+          }
+        }
+      }
+    },
+    "Generate Image…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generera bild…"
+          }
+        }
+      }
+    },
+    "Generate Layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generera lager"
+          }
+        }
+      }
+    },
+    "Generative Fill": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generativ fyllning"
+          }
+        }
+      }
+    },
+    "Generative Fill…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generativ fyllning…"
+          }
+        }
+      }
+    },
+    "Generative tools call OpenRouter with your own key. On-device tools work without one.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generativa verktyg anropar OpenRouter med din egen nyckel. Verktyg som körs på enheten fungerar utan."
+          }
+        }
+      }
+    },
+    "Gives the active layer the colour grade of a reference image. Runs on this Mac.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ger det aktiva lagret en referensbilds färgsättning. Körs på den här Macen."
+          }
+        }
+      }
+    },
+    "Glimmer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer"
+          }
+        }
+      }
+    },
+    "Glimmer calls OpenRouter directly with your own key. It is stored in your keychain and only sent to openrouter.ai. [Get a key](https://openrouter.ai/keys)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer anropar OpenRouter direkt med din egen nyckel. Den sparas i din nyckelring och skickas bara till openrouter.ai. [Skaffa en nyckel](https://openrouter.ai/keys)"
+          }
+        }
+      }
+    },
+    "Gradient": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Övertoning"
+          }
+        }
+      }
+    },
+    "Gradient Fill": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Övertoningsfyllning"
+          }
+        }
+      }
+    },
+    "Gradient Map": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Övertoningskarta"
+          }
+        }
+      }
+    },
+    "Gradient…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Övertoning…"
+          }
+        }
+      }
+    },
+    "Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grön"
+          }
+        }
+      }
+    },
+    "Greens": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gröna"
+          }
+        }
+      }
+    },
+    "Grid": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rutnät"
+          }
+        }
+      }
+    },
+    "Group Layer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppera lager"
+          }
+        }
+      }
+    },
+    "Grow": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utöka"
+          }
+        }
+      }
+    },
+    "H": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "H"
+          }
+        }
+      }
+    },
+    "HEIC": {},
+    "Halftone": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halvton"
+          }
+        }
+      }
+    },
+    "Halftone…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halvton…"
+          }
+        }
+      }
+    },
+    "Hand": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hand"
+          }
+        }
+      }
+    },
+    "Hard Light": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hårt ljus"
+          }
+        }
+      }
+    },
+    "Hardness": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hårdhet"
+          }
+        }
+      }
+    },
+    "Harmonize": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harmonisera"
+          }
+        }
+      }
+    },
+    "Harmonize Layer…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harmonisera lager…"
+          }
+        }
+      }
+    },
+    "Healing Brush": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läkningspensel"
+          }
+        }
+      }
+    },
+    "Height": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höjd"
+          }
+        }
+      }
+    },
+    "Hide": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göm"
+          }
+        }
+      }
+    },
+    "Hide %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göm %@"
+          }
+        }
+      }
+    },
+    "Hide layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göm lager"
+          }
+        }
+      }
+    },
+    "Highlight Bloom": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Högdagersglöd"
+          }
+        }
+      }
+    },
+    "Highlights": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Högdagrar"
+          }
+        }
+      }
+    },
+    "History": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historik"
+          }
+        }
+      }
+    },
+    "History states": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historiksteg"
+          }
+        }
+      }
+    },
+    "Hue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nyans"
+          }
+        }
+      }
+    },
+    "Hue/Saturation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nyans/mättnad"
+          }
+        }
+      }
+    },
+    "Image": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bild"
+          }
+        }
+      }
+    },
+    "Image Format": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildformat"
+          }
+        }
+      }
+    },
+    "Image model": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildmodell"
+          }
+        }
+      }
+    },
+    "Inner Shadow": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inre skugga"
+          }
+        }
+      }
+    },
+    "Intensity": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intensitet"
+          }
+        }
+      }
+    },
+    "Inverse": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omvänd"
+          }
+        }
+      }
+    },
+    "Invert": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invertera"
+          }
+        }
+      }
+    },
+    "Invert Default": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invertera standard"
+          }
+        }
+      }
+    },
+    "Invert Mask": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invertera mask"
+          }
+        }
+      }
+    },
+    "JPEG": {},
+    "Keeps the last %lld steps. Change it in Settings › General.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sparar de senaste %lld stegen. Ändra under Inställningar › Allmänt."
+          }
+        }
+      }
+    },
+    "Landscape": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liggande"
+          }
+        }
+      }
+    },
+    "Large": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stor"
+          }
+        }
+      }
+    },
+    "Lasso": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lasso"
+          }
+        }
+      }
+    },
+    "Layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lager"
+          }
+        }
+      }
+    },
+    "Layer Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagermask"
+          }
+        }
+      }
+    },
+    "Layer Style": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagerstil"
+          }
+        }
+      }
+    },
+    "Layer Style…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagerstil…"
+          }
+        }
+      }
+    },
+    "Layer mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagermask"
+          }
+        }
+      }
+    },
+    "Layer mask (disabled)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagermask (avstängd)"
+          }
+        }
+      }
+    },
+    "Layers": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lager"
+          }
+        }
+      }
+    },
+    "Left": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vänster"
+          }
+        }
+      }
+    },
+    "Lens": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lins"
+          }
+        }
+      }
+    },
+    "Lens Blur": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linsoskärpa"
+          }
+        }
+      }
+    },
+    "Lens Blur…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linsoskärpa…"
+          }
+        }
+      }
+    },
+    "Levels": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nivåer"
+          }
+        }
+      }
+    },
+    "Light Grey": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljusgrå"
+          }
+        }
+      }
+    },
+    "Light from": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljus från"
+          }
+        }
+      }
+    },
+    "Lighten": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljusare"
+          }
+        }
+      }
+    },
+    "Lightness": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljushet"
+          }
+        }
+      }
+    },
+    "Line": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linje"
+          }
+        }
+      }
+    },
+    "Linear": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linjär"
+          }
+        }
+      }
+    },
+    "Linear Burn": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linjär efterbelysning"
+          }
+        }
+      }
+    },
+    "Linear Dodge (Add)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linjär skugga (addera)"
+          }
+        }
+      }
+    },
+    "Liquify": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fluida"
+          }
+        }
+      }
+    },
+    "Liquify…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fluida…"
+          }
+        }
+      }
+    },
+    "Load %@ as selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs in %@ som markering"
+          }
+        }
+      }
+    },
+    "Load Channel": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs in kanal"
+          }
+        }
+      }
+    },
+    "Load the path as a selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs in banan som markering"
+          }
+        }
+      }
+    },
+    "Luminosity": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Luminans"
+          }
+        }
+      }
+    },
+    "Magenta – Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta – grön"
+          }
+        }
+      }
+    },
+    "Magentas": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magenta"
+          }
+        }
+      }
+    },
+    "Magic Select": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magisk markering"
+          }
+        }
+      }
+    },
+    "Magic Select (SAM 2.1 Tiny)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magisk markering (SAM 2.1 Tiny)"
+          }
+        }
+      }
+    },
+    "Magic Select Tool (A)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magisk markering (A)"
+          }
+        }
+      }
+    },
+    "Magic Wand": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trollstav"
+          }
+        }
+      }
+    },
+    "Make Selection": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa markering"
+          }
+        }
+      }
+    },
+    "Mask Density": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masktäthet"
+          }
+        }
+      }
+    },
+    "Mask Feather": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maskfjädring"
+          }
+        }
+      }
+    },
+    "Masks the active layer to its subject. Runs on this Mac, free.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maskar det aktiva lagret till motivet. Körs på den här Macen, gratis."
+          }
+        }
+      }
+    },
+    "Match Color": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matcha färg"
+          }
+        }
+      }
+    },
+    "Match Color…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matcha färg…"
+          }
+        }
+      }
+    },
+    "Match System": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Som systemet"
+          }
+        }
+      }
+    },
+    "Medium": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellan"
+          }
+        }
+      }
+    },
+    "Merge Group": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slå ihop grupp"
+          }
+        }
+      }
+    },
+    "Mid Grey": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellangrå"
+          }
+        }
+      }
+    },
+    "Midpoint": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mittpunkt"
+          }
+        }
+      }
+    },
+    "Midtones": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellantoner"
+          }
+        }
+      }
+    },
+    "Mode": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läge"
+          }
+        }
+      }
+    },
+    "Models": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modeller"
+          }
+        }
+      }
+    },
+    "Monochromatic": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monokromatiskt"
+          }
+        }
+      }
+    },
+    "Monochrome": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monokrom"
+          }
+        }
+      }
+    },
+    "Motion Blur": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rörelseoskärpa"
+          }
+        }
+      }
+    },
+    "Motion Blur…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rörelseoskärpa…"
+          }
+        }
+      }
+    },
+    "Move": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta"
+          }
+        }
+      }
+    },
+    "Move Guide": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta stödlinje"
+          }
+        }
+      }
+    },
+    "Move Into Group": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta in i grupp"
+          }
+        }
+      }
+    },
+    "Multiply": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multiplicera"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Namn"
+          }
+        }
+      }
+    },
+    "Navigator": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Navigator"
+          }
+        }
+      }
+    },
+    "New": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nytt"
+          }
+        }
+      }
+    },
+    "New Adjustment Layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nytt justeringslager"
+          }
+        }
+      }
+    },
+    "New Adjustment or Fill Layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nytt justerings- eller fyllnadslager"
+          }
+        }
+      }
+    },
+    "New Fill Layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nytt fyllnadslager"
+          }
+        }
+      }
+    },
+    "New Group": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny grupp"
+          }
+        }
+      }
+    },
+    "New Guide": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny stödlinje"
+          }
+        }
+      }
+    },
+    "New Layer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nytt lager"
+          }
+        }
+      }
+    },
+    "New Layer via Copy": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nytt lager via kopia"
+          }
+        }
+      }
+    },
+    "New Path": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny bana"
+          }
+        }
+      }
+    },
+    "New Text Layer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nytt textlager"
+          }
+        }
+      }
+    },
+    "New size: %lld × %lld px": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "New size: %1$lld × %2$lld px"
+          }
+        }
+      }
+    },
+    "New…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nytt…"
+          }
+        }
+      }
+    },
+    "No Layers": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inga lager"
+          }
+        }
+      }
+    },
+    "No Paths": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inga banor"
+          }
+        }
+      }
+    },
+    "Noise": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brus"
+          }
+        }
+      }
+    },
+    "Normal": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        }
+      }
+    },
+    "Nudge": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Knuffa"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Offset": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förskjutning"
+          }
+        }
+      }
+    },
+    "Oil Paint": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oljemålning"
+          }
+        }
+      }
+    },
+    "Oil Paint…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oljemålning…"
+          }
+        }
+      }
+    },
+    "On This Mac": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På den här Macen"
+          }
+        }
+      }
+    },
+    "Opacity": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opacitet"
+          }
+        }
+      }
+    },
+    "Open": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna"
+          }
+        }
+      }
+    },
+    "Open Settings…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna inställningar…"
+          }
+        }
+      }
+    },
+    "OpenRouter": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenRouter"
+          }
+        }
+      }
+    },
+    "OpenRouter cost of this window's jobs": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenRouter-kostnad för det här fönstrets jobb"
+          }
+        }
+      }
+    },
+    "Original": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original"
+          }
+        }
+      }
+    },
+    "Outer Glow": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yttre glöd"
+          }
+        }
+      }
+    },
+    "Overlay": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Täcka över"
+          }
+        }
+      }
+    },
+    "PNG": {},
+    "Paint Bucket": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgburk"
+          }
+        }
+      }
+    },
+    "Paint Mask": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Måla mask"
+          }
+        }
+      }
+    },
+    "Paint mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Måla mask"
+          }
+        }
+      }
+    },
+    "Panel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panel"
+          }
+        }
+      }
+    },
+    "Pass Through": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genomsläpp"
+          }
+        }
+      }
+    },
+    "Paste": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klistra in"
+          }
+        }
+      }
+    },
+    "Paths": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banor"
+          }
+        }
+      }
+    },
+    "Pattern": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mönster"
+          }
+        }
+      }
+    },
+    "Pattern Fill": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mönsterfyllning"
+          }
+        }
+      }
+    },
+    "Pattern…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mönster…"
+          }
+        }
+      }
+    },
+    "Pen": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Penna"
+          }
+        }
+      }
+    },
+    "Per Side": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per sida"
+          }
+        }
+      }
+    },
+    "Photo Filter": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fotofilter"
+          }
+        }
+      }
+    },
+    "Pixelate": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pixla"
+          }
+        }
+      }
+    },
+    "Pixelate…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pixla…"
+          }
+        }
+      }
+    },
+    "Place Image": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placera bild"
+          }
+        }
+      }
+    },
+    "Place Image…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placera bild…"
+          }
+        }
+      }
+    },
+    "Planning…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planerar…"
+          }
+        }
+      }
+    },
+    "Plans that only use the editor's own tools always run straight away.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planer som bara använder redigerarens egna verktyg körs alltid direkt."
+          }
+        }
+      }
+    },
+    "Plans that only use the editor's own tools always run straight away. Plans with AI jobs (which cost credits) wait for Run unless this is on.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planer som bara använder redigerarens egna verktyg körs alltid direkt. Planer med AI-jobb (som kostar krediter) väntar på Kör om inte det här är på."
+          }
+        }
+      }
+    },
+    "Polygonal Lasso": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Polygonlasso"
+          }
+        }
+      }
+    },
+    "Portrait": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stående"
+          }
+        }
+      }
+    },
+    "Position": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Position"
+          }
+        }
+      }
+    },
+    "Posterize": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posterisera"
+          }
+        }
+      }
+    },
+    "Preserve Luminosity": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bevara luminans"
+          }
+        }
+      }
+    },
+    "Preset": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset"
+          }
+        }
+      }
+    },
+    "Preset Filters": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presetfilter"
+          }
+        }
+      }
+    },
+    "Presets": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets"
+          }
+        }
+      }
+    },
+    "Presets…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets…"
+          }
+        }
+      }
+    },
+    "Pressure": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tryck"
+          }
+        }
+      }
+    },
+    "Pressure → Flow": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tryck → flöde"
+          }
+        }
+      }
+    },
+    "Pressure → Size": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tryck → storlek"
+          }
+        }
+      }
+    },
+    "Preview": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förhandsvisning"
+          }
+        }
+      }
+    },
+    "Pucker": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dra ihop"
+          }
+        }
+      }
+    },
+    "Quality": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kvalitet"
+          }
+        }
+      }
+    },
+    "RGB": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RGB"
+          }
+        }
+      }
+    },
+    "Radial": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radiell"
+          }
+        }
+      }
+    },
+    "Radius": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radie"
+          }
+        }
+      }
+    },
+    "Range": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omfång"
+          }
+        }
+      }
+    },
+    "Rasterize Layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rastrera lager"
+          }
+        }
+      }
+    },
+    "Reconstruct": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återskapa"
+          }
+        }
+      }
+    },
+    "Rectangle": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rektangel"
+          }
+        }
+      }
+    },
+    "Rectangular Marquee": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rektangulär markeringsram"
+          }
+        }
+      }
+    },
+    "Red": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Röd"
+          }
+        }
+      }
+    },
+    "Redo": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gör om"
+          }
+        }
+      }
+    },
+    "Redo to this step": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gör om till det här steget"
+          }
+        }
+      }
+    },
+    "Reds": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Röda"
+          }
+        }
+      }
+    },
+    "Reference Image…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Referensbild…"
+          }
+        }
+      }
+    },
+    "Release Clipping Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Släpp urklippsmask"
+          }
+        }
+      }
+    },
+    "Relight": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny belysning"
+          }
+        }
+      }
+    },
+    "Relight…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny belysning…"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort"
+          }
+        }
+      }
+    },
+    "Remove All": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort alla"
+          }
+        }
+      }
+    },
+    "Remove Background": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort bakgrund"
+          }
+        }
+      }
+    },
+    "Remove Object": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort objekt"
+          }
+        }
+      }
+    },
+    "Remove Reflections": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort reflexer"
+          }
+        }
+      }
+    },
+    "Remove Reflections…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort reflexer…"
+          }
+        }
+      }
+    },
+    "Remove stop": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort stopp"
+          }
+        }
+      }
+    },
+    "Remove the background from ${image}": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort bakgrunden från ${image}"
+          }
+        }
+      }
+    },
+    "Rename": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt namn"
+          }
+        }
+      }
+    },
+    "Rename Layer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt namn på lager"
+          }
+        }
+      }
+    },
+    "Rename Path": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt namn på bana"
+          }
+        }
+      }
+    },
+    "Rename…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt namn…"
+          }
+        }
+      }
+    },
+    "Reorder Layers": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordna om lager"
+          }
+        }
+      }
+    },
+    "Repeat Last Filter": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Upprepa senaste filter"
+          }
+        }
+      }
+    },
+    "Reset": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ"
+          }
+        }
+      }
+    },
+    "Reset View Rotation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ vyrotation"
+          }
+        }
+      }
+    },
+    "Restore Defaults": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ standard"
+          }
+        }
+      }
+    },
+    "Result: %lld × %lld px, opened as a new document.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Result: %1$lld × %2$lld px, opened as a new document."
+          }
+        }
+      }
+    },
+    "Retouch": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retusch"
+          }
+        }
+      }
+    },
+    "Reverse": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Omvänd"
+          }
+        }
+      }
+    },
+    "Right": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höger"
+          }
+        }
+      }
+    },
+    "Rotate View Left 15°": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotera vyn 15° åt vänster"
+          }
+        }
+      }
+    },
+    "Rotate View Right 15°": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotera vyn 15° åt höger"
+          }
+        }
+      }
+    },
+    "Roundness": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rundhet"
+          }
+        }
+      }
+    },
+    "Rulers": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linjaler"
+          }
+        }
+      }
+    },
+    "Run": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör"
+          }
+        }
+      }
+    },
+    "Run AI steps without asking": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör AI-steg utan att fråga"
+          }
+        }
+      }
+    },
+    "Runs a Glimmer filter with its default settings on an image.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör ett Glimmer-filter med standardinställningar på en bild."
+          }
+        }
+      }
+    },
+    "Runs the image model on %lld tile%@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Runs the image model on %1$lld tile%2$@."
+          }
+        }
+      }
+    },
+    "Sample all layers": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sampla alla lager"
+          }
+        }
+      }
+    },
+    "Saturation": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mättnad"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara"
+          }
+        }
+      }
+    },
+    "Scale": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skala"
+          }
+        }
+      }
+    },
+    "Scatter": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spridning"
+          }
+        }
+      }
+    },
+    "Screen": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raster"
+          }
+        }
+      }
+    },
+    "Search commands or ask the assistant (⌘K)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sök kommandon eller fråga assistenten (⌘K)"
+          }
+        }
+      }
+    },
+    "Search commands, or ask for an edit…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sök kommandon eller be om en ändring…"
+          }
+        }
+      }
+    },
+    "Search or ask…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sök eller fråga…"
+          }
+        }
+      }
+    },
+    "Select": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera"
+          }
+        }
+      }
+    },
+    "Select All": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera allt"
+          }
+        }
+      }
+    },
+    "Select Distractions": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera störande element"
+          }
+        }
+      }
+    },
+    "Select Inverse": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera omvänt"
+          }
+        }
+      }
+    },
+    "Select Subject": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera motiv"
+          }
+        }
+      }
+    },
+    "Select a layer to transform": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj ett lager att transformera"
+          }
+        }
+      }
+    },
+    "Select an area first with the marquee (M), or Select › Subject.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera först ett område med markeringsramen (M), eller Markera › Motiv."
+          }
+        }
+      }
+    },
+    "Selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markering"
+          }
+        }
+      }
+    },
+    "Selects the main subject. Runs on this Mac, free.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markerar huvudmotivet. Körs på den här Macen, gratis."
+          }
+        }
+      }
+    },
+    "Send": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skicka"
+          }
+        }
+      }
+    },
+    "Send Backward": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta bakåt"
+          }
+        }
+      }
+    },
+    "Send to Back": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta längst bak"
+          }
+        }
+      }
+    },
+    "Shadows": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skuggor"
+          }
+        }
+      }
+    },
+    "Shape": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Form"
+          }
+        }
+      }
+    },
+    "Sharpen": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skärpa"
+          }
+        }
+      }
+    },
+    "Sharpen Tool": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skärpeverktyg"
+          }
+        }
+      }
+    },
+    "Sharpen…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skärpa…"
+          }
+        }
+      }
+    },
+    "Show": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa"
+          }
+        }
+      }
+    },
+    "Show %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa %@"
+          }
+        }
+      }
+    },
+    "Show layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa lager"
+          }
+        }
+      }
+    },
+    "Show or hide the Layers panel (⌥⌘L)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa eller göm lagerpanelen (⌥⌘L)"
+          }
+        }
+      }
+    },
+    "Show the search bar on the canvas": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa sökfältet på arbetsytan"
+          }
+        }
+      }
+    },
+    "Show/Hide Layers": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa/göm lager"
+          }
+        }
+      }
+    },
+    "Size": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storlek"
+          }
+        }
+      }
+    },
+    "Small": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liten"
+          }
+        }
+      }
+    },
+    "Smart Objects": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smarta objekt"
+          }
+        }
+      }
+    },
+    "Smart object": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart objekt"
+          }
+        }
+      }
+    },
+    "Smudge": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smeta"
+          }
+        }
+      }
+    },
+    "Snap": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fäst"
+          }
+        }
+      }
+    },
+    "Soft Light": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mjukt ljus"
+          }
+        }
+      }
+    },
+    "Solid Color Fill": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enfärgsfyllning"
+          }
+        }
+      }
+    },
+    "Solid Color…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enfärgad…"
+          }
+        }
+      }
+    },
+    "Spacing": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avstånd"
+          }
+        }
+      }
+    },
+    "Spread": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spridning"
+          }
+        }
+      }
+    },
+    "Square": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kvadrat"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppa"
+          }
+        }
+      }
+    },
+    "Strength": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Styrka"
+          }
+        }
+      }
+    },
+    "Stripes": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ränder"
+          }
+        }
+      }
+    },
+    "Stroke": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontur"
+          }
+        }
+      }
+    },
+    "Stroke Path": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rita banans kontur"
+          }
+        }
+      }
+    },
+    "Stroke the path with the current brush": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rita banans kontur med aktuell pensel"
+          }
+        }
+      }
+    },
+    "Stronger at Edges": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starkare vid kanterna"
+          }
+        }
+      }
+    },
+    "Style": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stil"
+          }
+        }
+      }
+    },
+    "Stylize": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stilisera"
+          }
+        }
+      }
+    },
+    "Subject": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motiv"
+          }
+        }
+      }
+    },
+    "Swap Reveal All and Hide All for unpainted areas": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt mellan Visa allt och Dölj allt för omålade ytor"
+          }
+        }
+      }
+    },
+    "TIFF": {},
+    "Test Key": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testa nyckel"
+          }
+        }
+      }
+    },
+    "Text Style": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Textstil"
+          }
+        }
+      }
+    },
+    "Text model": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Textmodell"
+          }
+        }
+      }
+    },
+    "Textured": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texturerad"
+          }
+        }
+      }
+    },
+    "These models run on this Mac. They come from Apple's Core ML conversions on Hugging Face.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modellerna körs på den här Macen. De kommer från Apples Core ML-konverteringar på Hugging Face."
+          }
+        }
+      }
+    },
+    "Threshold": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tröskel"
+          }
+        }
+      }
+    },
+    "Threshold Level": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tröskelnivå"
+          }
+        }
+      }
+    },
+    "To transparent": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Till genomskinligt"
+          }
+        }
+      }
+    },
+    "Tolerance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tolerans"
+          }
+        }
+      }
+    },
+    "Top": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ovanifrån"
+          }
+        }
+      }
+    },
+    "Transparency grid": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genomskinlighetsrutnät"
+          }
+        }
+      }
+    },
+    "Transparent": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genomskinlig"
+          }
+        }
+      }
+    },
+    "Transparent areas are flattened onto white.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genomskinliga ytor plattas ut mot vitt."
+          }
+        }
+      }
+    },
+    "Try “blur”, “curves”, “brush”, or describe an edit: “make it look like film”.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prova ”blur”, ”curves”, ”brush” eller beskriv en ändring: ”få det att se ut som film”."
+          }
+        }
+      }
+    },
+    "Twirl Clockwise": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Virvla medurs"
+          }
+        }
+      }
+    },
+    "Twirl Counter-clockwise": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Virvla moturs"
+          }
+        }
+      }
+    },
+    "Type": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text"
+          }
+        }
+      }
+    },
+    "Undo": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ångra"
+          }
+        }
+      }
+    },
+    "Undo steps share unchanged pixels, so each step only costs the tiles it changed. Fewer states use less memory in long sessions.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ångra-steg delar oförändrade pixlar, så varje steg kostar bara de rutor det ändrade. Färre steg använder mindre minne under långa sessioner."
+          }
+        }
+      }
+    },
+    "Undo to this step": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ångra till det här steget"
+          }
+        }
+      }
+    },
+    "Ungroup": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dela upp grupp"
+          }
+        }
+      }
+    },
+    "Unsharp Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oskarp mask"
+          }
+        }
+      }
+    },
+    "Unsharp Mask…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oskarp mask…"
+          }
+        }
+      }
+    },
+    "Upscale": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skala upp"
+          }
+        }
+      }
+    },
+    "Upscale…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skala upp…"
+          }
+        }
+      }
+    },
+    "Uses AI credits": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använder AI-krediter"
+          }
+        }
+      }
+    },
+    "Vibrance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lyster"
+          }
+        }
+      }
+    },
+    "Vignette": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vinjett"
+          }
+        }
+      }
+    },
+    "Vignette…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vinjett…"
+          }
+        }
+      }
+    },
+    "W": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "B"
+          }
+        }
+      }
+    },
+    "What should appear? (empty = blend in)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vad ska synas? (tomt = smält in)"
+          }
+        }
+      }
+    },
+    "What's beyond the edges? (optional)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vad finns utanför kanterna? (valfritt)"
+          }
+        }
+      }
+    },
+    "White": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vit"
+          }
+        }
+      }
+    },
+    "Width": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bredd"
+          }
+        }
+      }
+    },
+    "Width and height must be between 1 and %lld pixels.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bredd och höjd måste vara mellan 1 och %lld pixlar."
+          }
+        }
+      }
+    },
+    "Yellow – Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gul – blå"
+          }
+        }
+      }
+    },
+    "Yellows": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gula"
+          }
+        }
+      }
+    },
+    "Zoom In": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zooma in"
+          }
+        }
+      }
+    },
+    "Zoom Out": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zooma ut"
+          }
+        }
+      }
+    },
+    "active layer %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "aktivt lager %@"
+          }
+        }
+      }
+    },
+    "clipped": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "klippt"
+          }
+        }
+      }
+    },
+    "fx": {},
+    "has a selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "har en markering"
+          }
+        }
+      }
+    },
+    "has layer style": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "har lagerstil"
+          }
+        }
+      }
+    },
+    "has mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "har mask"
+          }
+        }
+      }
+    },
+    "hidden": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dold"
+          }
+        }
+      }
+    },
+    "pixels": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pixlar"
+          }
+        }
+      }
+    },
+    "pt": {},
+    "sRGB": {},
+    "sk-or-v1-…": {},
+    "tool %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "verktyg %@"
+          }
+        }
+      }
+    },
+    "⇧ add · ⌥ subtract · ⇧⌥ intersect": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧ lägg till · ⌥ dra ifrån · ⇧⌥ snitt"
+          }
+        }
+      }
+    },
+    "⇧ constrains": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧ låser proportioner"
+          }
+        }
+      }
+    },
+    "⇧ keeps proportions · drag outside to rotate": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧ behåller proportioner · dra utanför för att rotera"
+          }
+        }
+      }
+    },
+    "∠": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "∠"
+          }
+        }
+      }
+    },
+    "⌘K": {},
+    "⌥-click sets a new source": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌥-klick sätter en ny källa"
+          }
+        }
+      }
+    },
+    "⌥-click to set the source": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌥-klicka för att sätta källan"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

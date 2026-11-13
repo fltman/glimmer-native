@@ -38,6 +38,7 @@ final class EditorSession {
         case layers = "Layers"
         case paths = "Paths"
         case channels = "Channels"
+        case history = "History"
         case ai = "AI"
     }
 
@@ -113,6 +114,11 @@ final class EditorSession {
     var liquifyPressure = 0.5
     var viewChannel = 0
     var isPaletteOpen = false
+    var showNavigator = false {
+        didSet { if showNavigator { scheduleNavigatorRefresh(delay: 0) } }
+    }
+    var navigatorImage: CGImage?
+    @ObservationIgnored var navigatorTask: Task<Void, Never>?
 
     @ObservationIgnored var stroke: (engine: StrokeEngine, sampler: StrokeSampler, layer: UUID, mask: Bool)?
     @ObservationIgnored var lastStrokePoint: SIMD2<Double>?
@@ -168,6 +174,38 @@ final class EditorSession {
             guard !Task.isCancelled else { return }
             refreshThumbnails()
         }
+        if showNavigator { scheduleNavigatorRefresh(delay: 400) }
+    }
+
+    /// The navigator shows a small flattened preview; it's rebuilt off the main
+    /// thread once edits pause (longer pauses for very large documents).
+    func scheduleNavigatorRefresh(delay: Int) {
+        navigatorTask?.cancel()
+        guard let metal else { return }
+        let snapshot = state
+        let pixels = snapshot.width * snapshot.height
+        navigatorTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(delay + (pixels > 36_000_000 ? 1200 : 0)))
+            guard !Task.isCancelled else { return }
+            let image = await Task.detached(priority: .utility) { () -> CGImage? in
+                guard let full = try? ImageExporter.flattenedSRGB(snapshot, context: metal) else { return nil }
+                return Self.downscaled(full, maxSide: 480)
+            }.value
+            guard !Task.isCancelled, let self, let image else { return }
+            self.navigatorImage = image
+        }
+    }
+
+    nonisolated static func downscaled(_ image: CGImage, maxSide: Int) -> CGImage? {
+        let scale = Double(maxSide) / Double(max(image.width, image.height))
+        guard scale < 1 else { return image }
+        let w = max(1, Int(Double(image.width) * scale)), h = max(1, Int(Double(image.height) * scale))
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        ctx.interpolationQuality = .high
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        return ctx.makeImage()
     }
 
     private func refreshThumbnails() {
@@ -328,6 +366,7 @@ final class EditorSession {
         case .toggleRulers: state.aids.rulersVisible
         case .toggleGrid: state.aids.grid.isVisible
         case .toggleSnap: state.aids.snap
+        case .toggleNavigator: showNavigator
         case .toggleMask: activeLayer?.mask?.isEnabled == false
         default: false
         }
@@ -346,6 +385,8 @@ final class EditorSession {
         switch id {
         case .commandPalette:
             isPaletteOpen.toggle()
+        case .toggleNavigator:
+            showNavigator.toggle()
         case .repeatFilter:
             if let f = lastFilter { applyFilter(f) }
         case .liquify:

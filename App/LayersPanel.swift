@@ -114,7 +114,7 @@ struct LayersPanel: View {
             footerButton("folder.badge.plus", "New Group", .newGroup)
             Menu {
                 ForEach(AdjustmentKind.allCases, id: \.self) { kind in
-                    Button(kind.title, systemImage: kind.symbolName) { session.perform(.newAdjustment(kind)) }
+                    Button(LocalizedStringKey(kind.title), systemImage: kind.symbolName) { session.perform(.newAdjustment(kind)) }
                 }
                 Divider()
                 Button("Solid Color Fill") { session.perform(.newSolidFill) }
@@ -145,8 +145,8 @@ struct LayersPanel: View {
         }
         .buttonStyle(.borderless)
         .disabled(!session.canPerform(id))
-        .help(title)
-        .accessibilityLabel(title)
+        .help(Text(LocalizedStringKey(title)))
+        .accessibilityLabel(Text(LocalizedStringKey(title)))
     }
 }
 
@@ -162,12 +162,12 @@ private struct LayerPropertiesBar: View {
                 set: { session.setBlendMode($0) }
             )) {
                 if layer?.isGroup == true {
-                    Text(GlimmerCore.BlendMode.passThrough.title).tag(GlimmerCore.BlendMode.passThrough)
+                    Text(LocalizedStringKey(GlimmerCore.BlendMode.passThrough.title)).tag(GlimmerCore.BlendMode.passThrough)
                     Divider()
                 }
                 ForEach(Array(GlimmerCore.BlendMode.menuGroups.enumerated()), id: \.offset) { index, group in
                     if index > 0 { Divider() }
-                    ForEach(group, id: \.self) { mode in Text(mode.title).tag(mode) }
+                    ForEach(group, id: \.self) { mode in Text(LocalizedStringKey(mode.title)).tag(mode) }
                 }
             }
             .labelsHidden()
@@ -295,6 +295,22 @@ private struct LayerRow: View {
         .contextMenu {
             Button("Rename…", action: startRename)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityAddTraits(session.state.activeLayerID == layer.id ? .isSelected : [])
+        .accessibilityAction(named: layer.isVisible ? "Hide" : "Show") { session.setVisibility(layer.id, !layer.isVisible) }
+        .accessibilityAction(named: "Rename", startRename)
+        .accessibilityAction(named: "Select") { session.setActiveLayer(layer.id) }
+    }
+
+    private var accessibilityDescription: String {
+        var parts = [layer.name]
+        if !detail.isEmpty { parts.append(detail) }
+        if !layer.isVisible { parts.append(String(localized: "hidden")) }
+        if layer.mask != nil { parts.append(String(localized: "has mask")) }
+        if layer.isClipped { parts.append(String(localized: "clipped")) }
+        if layer.effects.hasEnabled { parts.append(String(localized: "has layer style")) }
+        return parts.joined(separator: ", ")
     }
 
     private var detail: String {

@@ -1,4 +1,6 @@
 import GlimmerCore
+import GlimmerRender
+import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -15,6 +17,17 @@ final class GlimmerDocument: Document {
     var state: DocumentState
 
     @ObservationIgnored let encodedLayers = EncodedLayerCache()
+
+    /// Names of the undoable steps since the document was opened (History panel),
+    /// and how many of them are applied (the rest can be redone).
+    private(set) var history: [String] = []
+    private(set) var historyIndex = 0
+
+    static let historyLimitKey = "history.limit"
+    static var historyLimit: Int {
+        let v = UserDefaults.standard.integer(forKey: historyLimitKey)
+        return v > 0 ? v : 100
+    }
 
     /// A state handed over by `DocumentOpener`. If SwiftUI turns out to be
     /// restoring or opening a file with this instance (`apply` gets called),
@@ -45,13 +58,28 @@ final class GlimmerDocument: Document {
     func writer(configuration: sending WriteConfiguration) -> sending FileWrapperDocumentWriter<DocumentState> {
         let cache = encodedLayers
         return FileWrapperDocumentWriter(configuration) { snapshot, _ in
-            try GlimmerPackage.fileWrapper(for: snapshot, cache: cache)
+            try GlimmerPackage.fileWrapper(for: snapshot, cache: cache, quickLook: Self.quickLookImages(snapshot))
         }
     }
 
     @MainActor
     func snapshot(contentType: UTType) async throws -> sending DocumentState {
         state
+    }
+
+    /// PNG thumbnail (512 px) and preview (1600 px) for Finder and QuickLook.
+    nonisolated static func quickLookImages(_ state: DocumentState) -> (thumbnail: Data, preview: Data)? {
+        guard let metal = MetalContext.shared, let full = try? ImageExporter.flattenedSRGB(state, context: metal),
+              let preview = EditorSession.downscaled(full, maxSide: 1600),
+              let thumb = EditorSession.downscaled(preview, maxSide: 512) else { return nil }
+        func png(_ image: CGImage) -> Data? {
+            let data = NSMutableData()
+            guard let dest = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else { return nil }
+            CGImageDestinationAddImage(dest, image, nil)
+            return CGImageDestinationFinalize(dest) ? data as Data : nil
+        }
+        guard let t = png(thumb), let p = png(preview) else { return nil }
+        return (t, p)
     }
 
     // MARK: Editing
@@ -77,11 +105,33 @@ final class GlimmerDocument: Document {
     @MainActor
     private func registerUndo(_ actionName: String, undoManager: UndoManager?, restoring snapshot: DocumentState) {
         guard let undoManager else { return }
+        // Snapshots share tiles, so a step costs only the tiles it changed; the
+        // limit keeps long sessions from holding on to every intermediate tile.
+        if undoManager.levelsOfUndo != Self.historyLimit { undoManager.levelsOfUndo = Self.historyLimit }
+        if undoManager.isUndoing {
+            historyIndex = max(historyIndex - 1, 0)
+        } else if undoManager.isRedoing {
+            historyIndex = min(historyIndex + 1, history.count)
+        } else {
+            history.removeSubrange(historyIndex...)
+            history.append(actionName)
+            if history.count > undoManager.levelsOfUndo { history.removeFirst(history.count - undoManager.levelsOfUndo) }
+            historyIndex = history.count
+        }
         undoManager.registerUndo(withTarget: self) { document in
             let current = document.state
             document.state = snapshot
             document.registerUndo(actionName, undoManager: undoManager, restoring: current)
         }
-        undoManager.setActionName(actionName)
+        // Action names are catalog keys: the Edit menu shows "Undo <localized name>".
+        undoManager.setActionName(String(localized: String.LocalizationValue(actionName)))
+    }
+
+    /// Steps back or forward to `index` applied steps (History panel clicks).
+    @MainActor
+    func jumpToHistory(_ index: Int, undoManager: UndoManager?) {
+        guard let undoManager else { return }
+        while historyIndex > index, undoManager.canUndo { undoManager.undo() }
+        while historyIndex < index, undoManager.canRedo { undoManager.redo() }
     }
 }

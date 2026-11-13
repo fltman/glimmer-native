@@ -53,7 +53,7 @@ struct ParameterSlider: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack {
-                Text(label).font(.callout)
+                Text(LocalizedStringKey(label)).font(.callout)
                 Spacer()
                 Text(format(value)).font(.callout.monospacedDigit()).foregroundStyle(.secondary)
             }
@@ -157,7 +157,7 @@ struct AdjustmentEditor: View {
 
     private var channelPicker: some View {
         Picker("Channel", selection: $channel) {
-            ForEach(CurveChannel.allCases, id: \.self) { Text($0.title).tag($0) }
+            ForEach(CurveChannel.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
         }
         .pickerStyle(.segmented)
         .labelsHidden()
@@ -346,7 +346,7 @@ struct FillEditor: View {
                     update(.gradient(n))
                     commit()
                 })) {
-                    ForEach(GradientStyle.allCases, id: \.self) { Text($0.title).tag($0) }
+                    ForEach(GradientStyle.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 GradientStopsEditor(stops: g.stops) { stops in
@@ -371,7 +371,7 @@ struct FillEditor: View {
                     update(.pattern(n))
                     commit()
                 })) {
-                    ForEach(PatternKind.allCases, id: \.self) { Text($0.title).tag($0) }
+                    ForEach(PatternKind.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
                 }
                 ParameterSlider(label: "Scale", value: p.scale, range: 2...512, step: 1, format: { "\(Int($0)) px" }) { v in
                     var n = p

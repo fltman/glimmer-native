@@ -50,7 +50,7 @@ struct LayerStyleSheet: View {
     private func enabledToggle<T>(_ title: String, _ path: WritableKeyPath<LayerEffects, T?>,
                                   make: @escaping () -> T, isEnabled: KeyPath<T, Bool>,
                                   setEnabled: @escaping (inout T, Bool) -> Void) -> some View {
-        Toggle(title, isOn: Binding(
+        Toggle(LocalizedStringKey(title), isOn: Binding(
             get: { effects[keyPath: path].map { $0[keyPath: isEnabled] } ?? false },
             set: { on in
                 change { e in
@@ -71,7 +71,7 @@ struct LayerStyleSheet: View {
 
     private func modePicker(_ mode: GlimmerCore.BlendMode, _ set: @escaping (GlimmerCore.BlendMode) -> Void) -> some View {
         Picker("Blend Mode", selection: Binding(get: { mode }, set: set)) {
-            ForEach(GlimmerCore.BlendMode.pixelModes, id: \.self) { Text($0.title).tag($0) }
+            ForEach(GlimmerCore.BlendMode.pixelModes, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
         }
     }
 

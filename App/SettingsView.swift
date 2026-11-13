@@ -4,6 +4,9 @@ import SwiftUI
 struct SettingsView: View {
     var body: some View {
         TabView {
+            Tab("General", systemImage: "gearshape") {
+                GeneralSettingsView()
+            }
             Tab("AI", systemImage: "sparkles") {
                 AISettingsView()
             }
@@ -172,4 +175,89 @@ private struct ModelSettingsView: View {
         for model in OnDeviceModel.allCases where await ModelStore.shared.isInstalled(model) { set.insert(model) }
         installed = set
     }
+}
+
+/// App-wide preferences (UserDefaults keys live in `Preferences`).
+enum Preferences {
+    enum CanvasBackground: String, CaseIterable {
+        case system, light, mid, dark, black
+        var title: LocalizedStringResource {
+            switch self {
+            case .system: "Match System"
+            case .light: "Light Grey"
+            case .mid: "Mid Grey"
+            case .dark: "Dark Grey"
+            case .black: "Black"
+            }
+        }
+        var grey: Double? {
+            switch self {
+            case .system: nil
+            case .light: 0.85
+            case .mid: 0.5
+            case .dark: 0.2
+            case .black: 0
+            }
+        }
+    }
+
+    static let canvasBackgroundKey = "canvas.background"
+    static let checkerSizeKey = "canvas.checkerSize"
+    static let showOmnibarKey = "ui.showOmnibar"
+
+    static var canvasBackground: CanvasBackground {
+        CanvasBackground(rawValue: UserDefaults.standard.string(forKey: canvasBackgroundKey) ?? "") ?? .system
+    }
+
+    static var checkerSize: Double {
+        let v = UserDefaults.standard.double(forKey: checkerSizeKey)
+        return v > 0 ? v : 8
+    }
+}
+
+private struct GeneralSettingsView: View {
+    @AppStorage(Preferences.canvasBackgroundKey) private var background = Preferences.CanvasBackground.system.rawValue
+    @AppStorage(Preferences.checkerSizeKey) private var checker = 8.0
+    @AppStorage(Preferences.showOmnibarKey) private var showOmnibar = true
+    @AppStorage(GlimmerDocument.historyLimitKey) private var historyLimit = 100
+    @AppStorage(AIController.autoRunKey) private var autoRun = false
+
+    var body: some View {
+        Form {
+            Section("Canvas") {
+                Picker("Background", selection: $background) {
+                    ForEach(Preferences.CanvasBackground.allCases, id: \.rawValue) { Text($0.title).tag($0.rawValue) }
+                }
+                Picker("Transparency grid", selection: $checker) {
+                    Text("Small").tag(4.0)
+                    Text("Medium").tag(8.0)
+                    Text("Large").tag(16.0)
+                }
+                Toggle("Show the search bar on the canvas", isOn: $showOmnibar)
+            }
+            Section {
+                Stepper(value: $historyLimit, in: 10...500, step: 10) {
+                    LabeledContent("History states", value: "\(historyLimit)")
+                }
+            } header: {
+                Text("History")
+            } footer: {
+                Text("Undo steps share unchanged pixels, so each step only costs the tiles it changed. Fewer states use less memory in long sessions.")
+            }
+            Section("Assistant") {
+                Toggle("Run AI steps without asking", isOn: $autoRun)
+                Text("Plans that only use the editor's own tools always run straight away.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding(.vertical, 8)
+        .onChange(of: background) { NotificationCenter.default.post(name: .glimmerPreferencesChanged, object: nil) }
+        .onChange(of: checker) { NotificationCenter.default.post(name: .glimmerPreferencesChanged, object: nil) }
+    }
+}
+
+extension Notification.Name {
+    static let glimmerPreferencesChanged = Notification.Name("GlimmerPreferencesChanged")
 }

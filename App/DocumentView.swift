@@ -6,6 +6,7 @@ import SwiftUI
 struct DocumentView: View {
     @State private var session: EditorSession
     @Environment(\.undoManager) private var undoManager
+    @AppStorage(Preferences.showOmnibarKey) private var showOmnibar = true
 
     init(document: GlimmerDocument) {
         _session = State(initialValue: EditorSession(document: document))
@@ -25,8 +26,13 @@ struct DocumentView: View {
                 ToolOptionsBar(session: session)
                     .padding(.top, 10)
             }
+            .overlay(alignment: .bottomTrailing) {
+                if session.showNavigator {
+                    NavigatorView(session: session, canvas: session.canvas).padding(12)
+                }
+            }
             .overlay(alignment: .bottom) {
-                if session.liquify == nil, session.transformSession == nil, session.cropSession == nil {
+                if showOmnibar, session.liquify == nil, session.transformSession == nil, session.cropSession == nil {
                     Omnibar(session: session).padding(.bottom, 12)
                 }
             }
@@ -45,6 +51,7 @@ struct DocumentView: View {
                     FilterSheet(session: session, settings: item.settings)
                         .id(item.id)
                         .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                        .padding(.top, 50)
                         .padding(14)
                 }
             }
@@ -55,7 +62,7 @@ struct DocumentView: View {
             .inspector(isPresented: $session.showLayersPanel) {
                 VStack(spacing: 0) {
                     Picker("Panel", selection: $session.inspectorTab) {
-                        ForEach(EditorSession.InspectorTab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                        ForEach(EditorSession.InspectorTab.allCases, id: \.self) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
@@ -64,6 +71,7 @@ struct DocumentView: View {
                     case .layers: LayersPanel(session: session)
                     case .paths: PathsPanel(session: session)
                     case .channels: ChannelsPanel(session: session)
+                    case .history: HistoryPanel(session: session)
                     case .ai: AIPanel(session: session, ai: session.ai)
                     }
                 }
@@ -104,6 +112,12 @@ private struct StatusPill: View {
     let session: EditorSession
 
     var body: some View {
+        content
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Document status")
+    }
+
+    private var content: some View {
         HStack(spacing: 8) {
             Text("\(session.state.width) × \(session.state.height) px")
             Text(session.canvas.zoom, format: .percent.precision(.fractionLength(0)))
@@ -152,7 +166,8 @@ private struct ToolPalette: View {
                     }
                     .buttonStyle(.plain)
                     .help(tool.helpText)
-                    .accessibilityLabel(tool.title)
+                    .accessibilityLabel(Text(LocalizedStringKey(tool.title)))
+                    .accessibilityAddTraits(session.tool == tool ? .isSelected : [])
                 }
             }
             ColorSwatches(session: session)

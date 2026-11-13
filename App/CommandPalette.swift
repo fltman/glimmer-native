@@ -99,7 +99,7 @@ struct CommandPalette: View {
             switch row {
             case .item(let item):
                 Image(systemName: symbol(item)).frame(width: 18).foregroundStyle(.secondary)
-                Text(item.title)
+                Text(LocalizedStringKey(item.title))
                 Spacer()
                 Text(item.subtitle).font(.caption).foregroundStyle(.secondary)
                 if case .command(let id) = item.action, let s = CommandRegistry.standard.descriptor(for: id)?.shortcut {

@@ -15,8 +15,9 @@ struct GlimmerCommands: Commands {
             items(registry.descriptors(in: .file))
         }
         CommandGroup(before: .toolbar) {
-            items(registry.descriptors(in: .view).filter { ![.toggleRulers, .toggleGrid, .toggleSnap].contains($0.id) })
+            items(registry.descriptors(in: .view).filter { ![.toggleRulers, .toggleGrid, .toggleSnap, .toggleNavigator].contains($0.id) })
             Divider()
+            toggle(.toggleNavigator)
             toggle(.toggleRulers)
             toggle(.toggleGrid)
             toggle(.toggleSnap)
@@ -36,7 +37,7 @@ struct GlimmerCommands: Commands {
             items([.liquify])
             Divider()
             ForEach(["Blur", "Sharpen", "Noise", "Pixelate", "Stylize", "Lens"], id: \.self) { group in
-                Menu(group) { items(FilterKind.allCases.filter { $0.group == group }.map { .filter($0) }) }
+                Menu(LocalizedStringKey(group)) { items(FilterKind.allCases.filter { $0.group == group }.map { .filter($0) }) }
             }
         }
         CommandMenu("Select") {
@@ -77,7 +78,7 @@ struct GlimmerCommands: Commands {
     @ViewBuilder
     private func items(_ commands: [CommandDescriptor]) -> some View {
         ForEach(commands.filter { !$0.isSystemProvided }) { command in
-            Button(command.title) {
+            Button(LocalizedStringKey(command.title)) {
                 session?.perform(command.id)
             }
             // ⌘A stays with Edit › Select All so text fields keep it; the canvas answers selectAll:.
@@ -89,7 +90,7 @@ struct GlimmerCommands: Commands {
     /// A menu item with a checkmark.
     private func toggle(_ id: CommandID) -> some View {
         let command = registry.descriptor(for: id)!
-        return Toggle(command.title, isOn: Binding(
+        return Toggle(LocalizedStringKey(command.title), isOn: Binding(
             get: { session?.isChecked(id) ?? false },
             set: { _ in session?.perform(id) }
         ))

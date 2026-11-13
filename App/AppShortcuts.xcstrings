@@ -1,0 +1,46 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "Apply a ${applicationName} filter": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd ett ${applicationName}-filter"
+          }
+        }
+      }
+    },
+    "Apply a ${applicationName} preset": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd en ${applicationName}-preset"
+          }
+        }
+      }
+    },
+    "Export with ${applicationName}": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera med ${applicationName}"
+          }
+        }
+      }
+    },
+    "Remove the background with ${applicationName}": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort bakgrunden med ${applicationName}"
+          }
+        }
+      }
+    }
+  }
+}

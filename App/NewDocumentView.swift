@@ -52,7 +52,7 @@ struct NewDocumentView: View {
                 TextField("Width", value: $width, format: .number.grouping(.never))
                 TextField("Height", value: $height, format: .number.grouping(.never))
                 Picker("Background", selection: $background) {
-                    ForEach(BackgroundChoice.allCases) { Text($0.title).tag($0) }
+                    ForEach(BackgroundChoice.allCases) { Text(LocalizedStringKey($0.title)).tag($0) }
                 }
                 if background == .custom {
                     ColorPicker("Color", selection: $customColor, supportsOpacity: false)
