@@ -1,4 +1,5 @@
 import GlimmerAI
+import GlimmerCore
 import SwiftUI
 
 struct SettingsView: View {
@@ -12,6 +13,12 @@ struct SettingsView: View {
             }
             Tab("Models", systemImage: "cpu") {
                 ModelSettingsView()
+            }
+            Tab("Performance", systemImage: "gauge.with.dots.needle.67percent") {
+                PerformanceSettingsView()
+            }
+            Tab("Tablet", systemImage: "applepencil.tip") {
+                TabletSettingsView()
             }
         }
         .frame(width: 540)
@@ -219,7 +226,6 @@ private struct GeneralSettingsView: View {
     @AppStorage(Preferences.canvasBackgroundKey) private var background = Preferences.CanvasBackground.system.rawValue
     @AppStorage(Preferences.checkerSizeKey) private var checker = 8.0
     @AppStorage(Preferences.showOmnibarKey) private var showOmnibar = true
-    @AppStorage(GlimmerDocument.historyLimitKey) private var historyLimit = 100
     @AppStorage(AIController.autoRunKey) private var autoRun = false
 
     var body: some View {
@@ -234,15 +240,6 @@ private struct GeneralSettingsView: View {
                     Text("Large").tag(16.0)
                 }
                 Toggle("Show the search bar on the canvas", isOn: $showOmnibar)
-            }
-            Section {
-                Stepper(value: $historyLimit, in: 10...500, step: 10) {
-                    LabeledContent("History states", value: "\(historyLimit)")
-                }
-            } header: {
-                Text("History")
-            } footer: {
-                Text("Undo steps share unchanged pixels, so each step only costs the tiles it changed. Fewer states use less memory in long sessions.")
             }
             Section("Assistant") {
                 Toggle("Run AI steps without asking", isOn: $autoRun)
@@ -260,4 +257,88 @@ private struct GeneralSettingsView: View {
 
 extension Notification.Name {
     static let glimmerPreferencesChanged = Notification.Name("GlimmerPreferencesChanged")
+}
+
+private struct PerformanceSettingsView: View {
+    @AppStorage(GlimmerDocument.historyLimitKey) private var historyLimit = 100
+    @AppStorage(GlimmerDocument.historyBudgetKey) private var budgetMB = 2048
+
+    var body: some View {
+        Form {
+            Section {
+                Stepper(value: $historyLimit, in: 10...500, step: 10) {
+                    LabeledContent("History states", value: "\(historyLimit)")
+                }
+                Picker("History memory", selection: $budgetMB) {
+                    ForEach([512, 1024, 2048, 4096, 8192], id: \.self) { mb in
+                        Text(ByteCountFormatter.string(fromByteCount: Int64(mb) * 1_048_576, countStyle: .memory)).tag(mb)
+                    }
+                }
+            } header: {
+                Text("Undo History")
+            } footer: {
+                Text("Undo steps share unchanged pixels, so each step only costs the tiles it changed. When the history needs more memory than this, the oldest steps are dropped.")
+            }
+            Section("Graphics") {
+                LabeledContent("GPU", value: GPU.device.name)
+                LabeledContent("Memory", value: ByteCountFormatter.string(
+                    fromByteCount: Int64(ProcessInfo.processInfo.physicalMemory), countStyle: .memory))
+                LabeledContent("Recommended working set", value: ByteCountFormatter.string(
+                    fromByteCount: Int64(GPU.device.recommendedMaxWorkingSetSize), countStyle: .memory))
+            }
+        }
+        .formStyle(.grouped)
+        .padding(.vertical, 8)
+    }
+}
+
+private struct TabletSettingsView: View {
+    @AppStorage(TabletSettings.pressureCurveKey) private var exponent = 1.0
+    @AppStorage(TabletSettings.useTiltKey) private var useTilt = true
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Pressure") {
+                    HStack {
+                        Text("Soft").font(.caption).foregroundStyle(.secondary)
+                        // Log scale so 1 sits in the middle.
+                        Slider(value: Binding(get: { log2(exponent) }, set: { exponent = pow(2, $0) }), in: -1.3...1.3)
+                        Text("Firm").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                HStack {
+                    Spacer()
+                    Canvas { ctx, size in
+                        var axes = Path()
+                        axes.addRect(CGRect(origin: .zero, size: size))
+                        ctx.stroke(axes, with: .color(.secondary.opacity(0.4)), lineWidth: 1)
+                        var curve = Path()
+                        for i in 0...40 {
+                            let x = Double(i) / 40
+                            let p = CGPoint(x: x * size.width, y: size.height - TabletSettings.curve(x, exponent: exponent) * size.height)
+                            if i == 0 { curve.move(to: p) } else { curve.addLine(to: p) }
+                        }
+                        ctx.stroke(curve, with: .color(.accentColor), lineWidth: 2)
+                    }
+                    .frame(width: 120, height: 120)
+                    .accessibilityLabel("Pressure curve")
+                    Spacer()
+                }
+                Button("Reset") { exponent = 1 }
+                    .disabled(exponent == 1)
+            } header: {
+                Text("Pen Pressure")
+            } footer: {
+                Text("Soft reaches full size and flow with a lighter touch; firm needs more force.")
+            }
+            Section {
+                Toggle("Use pen tilt", isOn: $useTilt)
+            } footer: {
+                Text("Turn on Tilt → Angle, Tilt → Roundness or Rotation → Angle under Dynamics in the brush options to shape dabs with the pen.")
+            }
+        }
+        .formStyle(.grouped)
+        .padding(.vertical, 8)
+    }
 }

@@ -30,7 +30,8 @@ extension EditorSession {
     /// True when the brush would paint the active layer's mask.
     var paintsMask: Bool { editingMask && activeLayer?.mask != nil }
 
-    func beginStroke(at point: SIMD2<Double>, pressure: Double, erase: Bool, straightLine: Bool) {
+    func beginStroke(at point: SIMD2<Double>, pressure: Double, tilt: SIMD2<Double> = .zero, rotation: Double = 0,
+                     erase: Bool, straightLine: Bool) {
         commitLiveEdit()
         if Self.retouchTools.contains(tool) {
             beginRetouch(at: point, pressure: pressure)
@@ -52,11 +53,11 @@ extension EditorSession {
                                           color: SIMD4(foreground.linear, 1), opacity: Float(brush.opacity),
                                           maskTarget: value, selection: state.selection)
             var sampler = StrokeSampler(settings: brush)
-            var dabs = sampler.begin(.init(point, pressure: pressure))
+            var dabs = sampler.begin(.init(point, pressure: pressure, tilt: tilt, rotation: rotation))
             if straightLine, let from = lastStrokePoint {
                 // Shift-click continues with a straight line from the last stroke.
                 _ = sampler.begin(.init(from, pressure: pressure))
-                dabs = sampler.move(to: .init(point, pressure: pressure))
+                dabs = sampler.move(to: .init(point, pressure: pressure, tilt: tilt, rotation: rotation))
             }
             engine.add(dabs)
             stroke = (engine, sampler, layer.id, maskTarget)
@@ -66,13 +67,13 @@ extension EditorSession {
         }
     }
 
-    func continueStroke(to point: SIMD2<Double>, pressure: Double) {
+    func continueStroke(to point: SIMD2<Double>, pressure: Double, tilt: SIMD2<Double> = .zero, rotation: Double = 0) {
         if smudge != nil {
             continueSmudge(to: point, pressure: pressure)
             return
         }
         guard var s = stroke else { return }
-        let dabs = s.sampler.move(to: .init(point, pressure: pressure))
+        let dabs = s.sampler.move(to: .init(point, pressure: pressure, tilt: tilt, rotation: rotation))
         stroke = s
         if !dabs.isEmpty {
             s.engine.add(dabs)

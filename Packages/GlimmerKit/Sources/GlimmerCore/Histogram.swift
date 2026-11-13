@@ -78,3 +78,24 @@ extension DocumentState {
         return copy
     }
 }
+
+extension DocumentState {
+    /// Ids of every texture tile the document references (layers, masks, smart
+    /// object sources and the selection). Solid tiles cost no memory and are left out.
+    public var textureTileIDs: Set<UInt64> {
+        var ids = Set<UInt64>()
+        func add(_ grid: TileGrid) {
+            for tile in grid.tiles.values { if case .texture(let t) = tile { ids.insert(t.id) } }
+        }
+        for layer in allLayers {
+            switch layer.content {
+            case .raster(let grid): add(grid)
+            case .smart(let smart): add(smart.source)
+            default: break
+            }
+            if let mask = layer.mask { add(mask.tiles) }
+        }
+        if let selection { add(selection.tiles) }
+        return ids
+    }
+}

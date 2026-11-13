@@ -663,8 +663,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case let t where (t == .cloneStamp || t == .healingBrush) && event.modifierFlags.contains(.option):
             session.setCloneSource(controller.documentPoint(p))
         case .brush, .eraser, .cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge, .patternStamp:
-            session.beginStroke(at: controller.documentPoint(p), pressure: pressure(event),
-                                erase: session.effectiveTool == .eraser, straightLine: event.modifierFlags.contains(.shift))
+            session.beginStroke(at: controller.documentPoint(p), pressure: pressure(event), tilt: tilt(event),
+                                rotation: penRotation(event), erase: session.effectiveTool == .eraser, straightLine: event.modifierFlags.contains(.shift))
             drag = .stroke
         case .lasso:
             session.beginLasso(at: controller.documentPoint(p), modifiers: event.modifierFlags)
@@ -743,7 +743,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             let d = controller.documentPoint(p)
             session.guideDrag = (g.id, g.axis, g.axis == .vertical ? d.x : d.y)
         case .stroke:
-            session.continueStroke(to: controller.documentPoint(p), pressure: pressure(event))
+            session.continueStroke(to: controller.documentPoint(p), pressure: pressure(event), tilt: tilt(event),
+                                   rotation: penRotation(event))
             session.hoverPoint = p
         case .lasso:
             session.extendLasso(to: controller.documentPoint(p))
@@ -824,8 +825,24 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         }
     }
 
+    /// Pen pressure through the pressure curve in Settings › Tablet (1 for a mouse).
     private func pressure(_ event: NSEvent) -> Double {
-        event.subtype == .tabletPoint ? Double(max(event.pressure, 0.01)) : 1
+        guard event.subtype == .tabletPoint else { return 1 }
+        return TabletSettings.curve(Double(max(event.pressure, 0.01)))
+    }
+
+    /// Pen tilt in document orientation (AppKit's tilt has y up); zero for a mouse.
+    private func tilt(_ event: NSEvent) -> SIMD2<Double> {
+        guard event.subtype == .tabletPoint, TabletSettings.useTilt else { return .zero }
+        let t = event.tilt
+        let viewAngle = controller.transform.rotation
+        // Undo the view rotation so the dab leans the way the pen does on screen.
+        let x = Double(t.x), y = -Double(t.y)
+        return SIMD2(x * cos(-viewAngle) - y * sin(-viewAngle), x * sin(-viewAngle) + y * cos(-viewAngle))
+    }
+
+    private func penRotation(_ event: NSEvent) -> Double {
+        event.subtype == .tabletPoint ? Double(event.rotation) : 0
     }
 
     override func updateTrackingAreas() {

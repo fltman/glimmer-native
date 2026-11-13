@@ -29,6 +29,17 @@ final class GlimmerDocument: Document {
         return v > 0 ? v : 100
     }
 
+    /// Memory the undo history may hold on to (MB), on top of the step limit.
+    static let historyBudgetKey = "history.memoryBudgetMB"
+    static var historyBudgetBytes: Int {
+        let v = UserDefaults.standard.integer(forKey: historyBudgetKey)
+        return (v > 0 ? v : 2048) * 1_048_576
+    }
+
+    /// Bytes each applied step keeps alive: the tiles it replaced (index-aligned with `history`).
+    private(set) var stepCosts: [Int] = []
+    var historyBytes: Int { stepCosts.prefix(historyIndex).reduce(0, +) }
+
     /// A state handed over by `DocumentOpener`. If SwiftUI turns out to be
     /// restoring or opening a file with this instance (`apply` gets called),
     /// the state is passed on to a fresh document instead of being lost.
@@ -130,15 +141,28 @@ final class GlimmerDocument: Document {
         }
         // Snapshots share tiles, so a step costs only the tiles it changed; the
         // limit keeps long sessions from holding on to every intermediate tile.
-        if undoManager.levelsOfUndo != Self.historyLimit { undoManager.levelsOfUndo = Self.historyLimit }
         if undoManager.isUndoing {
             historyIndex = max(historyIndex - 1, 0)
         } else if undoManager.isRedoing {
             historyIndex = min(historyIndex + 1, history.count)
         } else {
             history.removeSubrange(historyIndex...)
+            stepCosts.removeSubrange(min(historyIndex, stepCosts.count)...)
             history.append(actionName)
-            if history.count > undoManager.levelsOfUndo { history.removeFirst(history.count - undoManager.levelsOfUndo) }
+            stepCosts.append(Self.cost(of: snapshot, comparedTo: state))
+            // Keep as many recent steps as fit in both the step limit and the memory budget.
+            var keep = 0, bytes = 0
+            for cost in stepCosts.reversed() {
+                if keep > 0 && bytes + cost > Self.historyBudgetBytes { break }
+                bytes += cost
+                keep += 1
+            }
+            keep = min(keep, Self.historyLimit)
+            if undoManager.levelsOfUndo != keep { undoManager.levelsOfUndo = keep }
+            if history.count > keep {
+                history.removeFirst(history.count - keep)
+                stepCosts.removeFirst(stepCosts.count - keep)
+            }
             historyIndex = history.count
         }
         undoManager.registerUndo(withTarget: self) { document in
@@ -148,6 +172,11 @@ final class GlimmerDocument: Document {
         }
         // Action names are catalog keys: the Edit menu shows "Undo <localized name>".
         undoManager.setActionName(String(localized: String.LocalizationValue(actionName)))
+    }
+
+    /// Memory an undo snapshot holds beyond the current state: the texture tiles only it references.
+    nonisolated static func cost(of snapshot: DocumentState, comparedTo current: DocumentState) -> Int {
+        snapshot.textureTileIDs.subtracting(current.textureTileIDs).count * TileGeometry.byteCount
     }
 
     /// Steps back or forward to `index` applied steps (History panel clicks).

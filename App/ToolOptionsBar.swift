@@ -208,6 +208,9 @@ struct ToolOptionsBar: View {
         Menu("Dynamics") {
             Toggle("Pressure → Size", isOn: $session.brush.pressureSize)
             Toggle("Pressure → Flow", isOn: $session.brush.pressureOpacity)
+            Toggle("Tilt → Angle", isOn: $session.brush.tiltAngle)
+            Toggle("Tilt → Roundness", isOn: $session.brush.tiltRoundness)
+            Toggle("Rotation → Angle", isOn: $session.brush.rotationAngle)
             Toggle("Textured", isOn: $session.brush.textured)
             Divider()
             Picker("Spacing", selection: $session.brush.spacing) {

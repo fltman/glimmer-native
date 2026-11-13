@@ -399,3 +399,15 @@ private func raster(_ name: String) -> Layer {
         #expect(below.layer(id: c.id)?.isVisible == false && below.layer(id: d.id)?.isVisible == false)
     }
 }
+
+@Suite struct TileAccountingTests {
+    @Test func countsTextureTilesOnly() {
+        let texture = Tile.texture(TileTexture(TileTexture.makeTexture()))
+        var grid = TileGrid.solid(SIMD4(1, 0, 0, 1), covering: PixelRect(x: 0, y: 0, width: 512, height: 256))
+        grid[TileCoord(0, 0)] = texture
+        var masked = Layer(name: "m", content: .raster(TileGrid()))
+        masked.mask = LayerMask(tiles: TileGrid([TileCoord(3, 3): .texture(TileTexture(TileTexture.makeTexture()))]))
+        let state = DocumentState(width: 512, height: 256, layers: [Layer(name: "a", content: .raster(grid)), masked])
+        #expect(state.textureTileIDs.count == 2)
+    }
+}
