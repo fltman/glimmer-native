@@ -111,21 +111,32 @@ private struct KeyBanner: View {
 private struct AssistantView: View {
     let ai: AIController
     @State private var text = ""
+    @State private var autoRun = UserDefaults.standard.bool(forKey: AIController.autoRunKey)
     @FocusState private var focused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ForEach(ai.messages.suffix(8)) { message in
-                Text(message.text)
-                    .font(.callout)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(message.fromUser ? Color.accentColor.opacity(0.15) : Color.secondary.opacity(0.1),
-                                in: .rect(cornerRadius: 8))
-                    .frame(maxWidth: .infinity, alignment: message.fromUser ? .trailing : .leading)
+            ForEach(ai.messages.suffix(10)) { message in
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(message.text)
+                        .font(.callout)
+                        .textSelection(.enabled)
+                    if let plan = message.plan { PlanView(ai: ai, messageID: message.id, plan: plan) }
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(message.fromUser ? Color.accentColor.opacity(0.15) : Color.secondary.opacity(0.1),
+                            in: .rect(cornerRadius: 8))
+                .frame(maxWidth: .infinity, alignment: message.fromUser ? .trailing : .leading)
+            }
+            if ai.isPlanning {
+                HStack(spacing: 6) {
+                    ProgressView().controlSize(.small)
+                    Text("Planning…").font(.callout).foregroundStyle(.secondary)
+                }
             }
             HStack(alignment: .bottom) {
-                TextField("Describe a change, or something to add…", text: $text, axis: .vertical)
+                TextField("Ask for an edit: “moody black & white with a vignette”", text: $text, axis: .vertical)
                     .lineLimit(1...4)
                     .textFieldStyle(.roundedBorder)
                     .focused($focused)
@@ -134,19 +145,98 @@ private struct AssistantView: View {
                     Image(systemName: "arrow.up.circle.fill").font(.title2)
                 }
                 .buttonStyle(.borderless)
-                .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty || ai.isPlanning)
                 .keyboardShortcut(.return, modifiers: .command)
                 .accessibilityLabel("Send")
             }
-            Text("“Add a red kite in the sky” makes a new layer. Anything else edits the image, or the selection if there is one.")
+            Toggle("Run AI steps without asking", isOn: $autoRun)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .onChange(of: autoRun) { _, on in ai.autoRunAIPlans = on }
+                .help("Plans that only use the editor's own tools always run straight away. Plans with AI jobs (which cost credits) wait for Run unless this is on.")
         }
     }
 
     private func send() {
         ai.ask(text)
         text = ""
+    }
+}
+
+/// The assistant's plan as a checklist, with Run / Stop.
+private struct PlanView: View {
+    let ai: AIController
+    let messageID: UUID
+    let plan: AgentPlan
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(plan.steps) { step in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    statusIcon(ai.stepStatus[step.id] ?? .pending)
+                        .frame(width: 14)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(Self.describe(step)).font(.callout)
+                        if case .failed(let message)? = ai.stepStatus[step.id] {
+                            Text(message).font(.caption).foregroundStyle(.red)
+                        } else if let r = step.rationale {
+                            Text(r).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            }
+            switch ai.planStatus[messageID] {
+            case .proposed?:
+                HStack {
+                    if plan.usesAI {
+                        Label("Uses AI credits", systemImage: "sparkles").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Dismiss") { ai.cancelPlan(messageID) }
+                    Button("Run") { ai.runPlan(messageID) }.buttonStyle(.borderedProminent)
+                }
+                .controlSize(.small)
+            case .running?:
+                HStack {
+                    Spacer()
+                    Button("Stop") { ai.cancelPlan(messageID) }.controlSize(.small)
+                }
+            default: EmptyView()
+            }
+        }
+    }
+
+    @ViewBuilder private func statusIcon(_ status: AIController.StepStatus) -> some View {
+        switch status {
+        case .pending: Image(systemName: "circle").foregroundStyle(.tertiary)
+        case .running: ProgressView().controlSize(.mini)
+        case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+        case .failed: Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.red)
+        case .skipped: Image(systemName: "minus.circle").foregroundStyle(.tertiary)
+        }
+    }
+
+    static func describe(_ step: AgentStep) -> String {
+        func title(_ s: String?) -> String { (s ?? "").replacingOccurrences(of: "_", with: " ").capitalized }
+        return switch step.op {
+        case "add_adjustment": AdjustmentKind(rawValue: step.string("type") ?? "")?.title ?? "Adjustment"
+        case "apply_filter": FilterKind(rawValue: step.string("type") ?? "")?.title ?? "Filter"
+        case "add_layer_effect":
+            "Layer style: " + (["dropShadow": "Drop Shadow", "innerShadow": "Inner Shadow", "outerGlow": "Outer Glow",
+                                "stroke": "Stroke", "colorOverlay": "Color Overlay"][step.string("type") ?? ""] ?? "Effect")
+        case "apply_preset": "Preset: \(step.string("name") ?? "")"
+        case "add_text": "Text “\(step.string("text") ?? "")”"
+        case "image_edit_composite": "AI edit: \(step.string("instruction") ?? "")"
+        case "generate_layer": "Generate: \(step.string("prompt") ?? "")"
+        case "remove_background": "Remove background"
+        case "select_subject": "Select subject"
+        case "inpaint_selection": step.string("mode") == "remove" ? "Remove selected object" : "Fill selection: \(step.string("prompt") ?? "")"
+        case "upscale": "Upscale \(Int(step.number("scale") ?? 2))×"
+        case "fill": "Fill with \(step.string("color") ?? "")"
+        case "set_foreground": "Foreground \(step.string("color") ?? "")"
+        case "run_command":
+            CommandRegistry.standard.descriptor(for: CommandID(rawValue: step.string("id") ?? ""))?.title ?? title(step.string("id"))
+        default: title(step.op)
+        }
     }
 }
 

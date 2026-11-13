@@ -1,0 +1,344 @@
+import Foundation
+import GlimmerCore
+
+/// A JSON value as the planner emits it (params are passed through loosely).
+public enum JSONValue: Codable, Hashable, Sendable {
+    case string(String)
+    case number(Double)
+    case bool(Bool)
+    case object([String: JSONValue])
+    case array([JSONValue])
+    case null
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if c.decodeNil() { self = .null }
+        else if let b = try? c.decode(Bool.self) { self = .bool(b) }
+        else if let n = try? c.decode(Double.self) { self = .number(n) }
+        else if let s = try? c.decode(String.self) { self = .string(s) }
+        else if let a = try? c.decode([JSONValue].self) { self = .array(a) }
+        else if let o = try? c.decode([String: JSONValue].self) { self = .object(o) }
+        else { self = .null }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.singleValueContainer()
+        switch self {
+        case .string(let s): try c.encode(s)
+        case .number(let n): try c.encode(n)
+        case .bool(let b): try c.encode(b)
+        case .object(let o): try c.encode(o)
+        case .array(let a): try c.encode(a)
+        case .null: try c.encodeNil()
+        }
+    }
+
+    public var string: String? { if case .string(let s) = self { s } else { nil } }
+    public var number: Double? {
+        switch self {
+        case .number(let n): n
+        case .string(let s): Double(s)
+        case .bool(let b): b ? 1 : 0
+        default: nil
+        }
+    }
+    public var object: [String: JSONValue]? { if case .object(let o) = self { o } else { nil } }
+
+    /// Foundation form (for JSONSerialization round trips).
+    public var any: Any {
+        switch self {
+        case .string(let s): s
+        case .number(let n): n
+        case .bool(let b): b
+        case .object(let o): o.mapValues(\.any)
+        case .array(let a): a.map(\.any)
+        case .null: NSNull()
+        }
+    }
+}
+
+public struct AgentParam: Sendable {
+    public let name: String
+    public let type: String
+    public let description: String
+    public let options: [String]?
+
+    public init(_ name: String, _ type: String, _ description: String, options: [String]? = nil) {
+        self.name = name
+        self.type = type
+        self.description = description
+        self.options = options
+    }
+}
+
+/// One operation the planner may use. The system prompt is generated from this
+/// list, so the model and the executor can't drift apart.
+public struct AgentOp: Sendable {
+    public let name: String
+    public let description: String
+    public let params: [AgentParam]
+    /// Runs an AI job (costs money, takes a while).
+    public let isAIJob: Bool
+
+    public init(_ name: String, _ description: String, _ params: [AgentParam] = [], aiJob: Bool = false) {
+        self.name = name
+        self.description = description
+        self.params = params
+        self.isAIJob = aiJob
+    }
+}
+
+public struct AgentStep: Codable, Hashable, Sendable, Identifiable {
+    public var id = UUID()
+    public var op: String
+    public var params: [String: JSONValue]
+    public var rationale: String?
+
+    enum CodingKeys: String, CodingKey { case op, params, rationale }
+
+    public init(op: String, params: [String: JSONValue] = [:], rationale: String? = nil) {
+        self.op = op
+        self.params = params
+        self.rationale = rationale
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        op = (try? c.decode(String.self, forKey: .op)) ?? ""
+        params = (try? c.decode([String: JSONValue].self, forKey: .params)) ?? [:]
+        rationale = try? c.decode(String.self, forKey: .rationale)
+    }
+
+    public func string(_ key: String) -> String? { params[key]?.string }
+    public func number(_ key: String) -> Double? { params[key]?.number }
+    public func object(_ key: String) -> [String: JSONValue] { params[key]?.object ?? [:] }
+}
+
+public struct AgentPlan: Sendable, Equatable {
+    public var steps: [AgentStep]
+    public var message: String?
+    /// Ops the model invented (dropped).
+    public var droppedOps: [String] = []
+
+    public init(steps: [AgentStep], message: String? = nil, droppedOps: [String] = []) {
+        self.steps = steps
+        self.message = message
+        self.droppedOps = droppedOps
+    }
+
+    public var usesAI: Bool { steps.contains { AgentPlanner.op(named: $0.op)?.isAIJob == true } }
+}
+
+/// What the planner knows about the open document.
+public struct AgentContext: Sendable {
+    public var width: Int
+    public var height: Int
+    public var layerCount: Int
+    public var hasSelection: Bool
+    public var activeLayerKind: String
+    public var activeLayerName: String
+
+    public init(width: Int, height: Int, layerCount: Int, hasSelection: Bool, activeLayerKind: String, activeLayerName: String) {
+        self.width = width
+        self.height = height
+        self.layerCount = layerCount
+        self.hasSelection = hasSelection
+        self.activeLayerKind = activeLayerKind
+        self.activeLayerName = activeLayerName
+    }
+}
+
+public enum AgentPlanner {
+    /// Command ids the agent may run directly (no file dialogs or destructive app-level actions).
+    public static let runnableCommands: [CommandDescriptor] = CommandRegistry.standard.descriptors.filter { d in
+        [.layer, .select, .image, .view].contains(d.category) && d.id.adjustmentKind == nil && !d.isSystemProvided
+            && ![CommandID.layerStyle, .newSolidFill, .newGradientFill, .newPatternFill,
+                 .featherSelection, .growSelection, .shrinkSelection, .crop, .freeTransform].contains(d.id)
+    }
+
+    public static let ops: [AgentOp] = [
+        AgentOp("add_adjustment", "Add a non-destructive adjustment layer above the active layer (contrast, hue, black & white, curves …).", [
+            AgentParam("type", "string", "Which adjustment.", options: AdjustmentKind.allCases.map(\.rawValue)),
+            AgentParam("params", "object", "Adjustment settings, e.g. {\"brightness\": 0.2, \"contrast\": 0.15} for brightness_contrast, {\"saturation\": -0.3} for hue_saturation, {\"exposure\": 0.5} for exposure. Send {} for sensible defaults."),
+        ]),
+        AgentOp("apply_filter", "Apply a destructive pixel filter to the active pixel layer (inside the selection if there is one).", [
+            AgentParam("type", "string", "Which filter.", options: FilterKind.allCases.map(\.rawValue)),
+            AgentParam("params", "object", "Filter settings, e.g. {\"radius\": 8} for gaussian_blur, {\"amount\": 0.5} for vignette, or {} for defaults."),
+        ]),
+        AgentOp("add_layer_effect", "Add or update a layer style on the active layer.", [
+            AgentParam("type", "string", "Which effect.", options: ["dropShadow", "innerShadow", "outerGlow", "stroke", "colorOverlay"]),
+            AgentParam("params", "object", "Patch, e.g. {\"distance\": 8, \"opacity\": 0.5, \"size\": 12} for dropShadow, {\"width\": 4, \"color\": \"#ffffff\"} for stroke, or {}."),
+        ]),
+        AgentOp("apply_preset", "Apply a finished photo look (adjustment group plus grain/vignette).", [
+            AgentParam("name", "string", "Preset name.", options: Preset.all.map(\.name)),
+        ]),
+        AgentOp("add_text", "Add a text layer.", [
+            AgentParam("text", "string", "The text."),
+            AgentParam("color", "string", "#RRGGBB colour (optional, default the foreground colour)."),
+            AgentParam("size", "number", "Font size in pixels (optional; default ~8% of the image height)."),
+            AgentParam("position", "string", "Where to place it.", options: ["top", "center", "bottom"]),
+        ]),
+        AgentOp("image_edit_composite", "Edit the WHOLE visible image with a natural-language instruction (content-aware: \"make it snowy\", \"change the car to red\"). The result lands as a new layer.", [
+            AgentParam("instruction", "string", "The change to make."),
+        ], aiJob: true),
+        AgentOp("generate_layer", "Generate a new image from a text prompt as a new layer.", [
+            AgentParam("prompt", "string", "What to generate."),
+        ], aiJob: true),
+        AgentOp("remove_background", "Cut the main subject out of the active layer onto transparency (adds a mask).", aiJob: true),
+        AgentOp("select_subject", "Select the main subject (on-device).", aiJob: true),
+        AgentOp("inpaint_selection", "Regenerate or erase the SELECTED region. Requires a selection.", [
+            AgentParam("prompt", "string", "What to fill the selection with (may be empty for remove)."),
+            AgentParam("mode", "string", "fill replaces with the prompt; remove erases an object.", options: ["fill", "remove"]),
+        ], aiJob: true),
+        AgentOp("upscale", "Upscale the whole image.", [
+            AgentParam("scale", "number", "2 or 4."),
+        ], aiJob: true),
+        AgentOp("fill", "Fill the selection (or the whole active layer) with a colour.", [
+            AgentParam("color", "string", "#RRGGBB or #RRGGBBAA."),
+        ]),
+        AgentOp("set_foreground", "Set the foreground (paint) colour.", [
+            AgentParam("color", "string", "#RRGGBB."),
+        ]),
+        AgentOp("select_all", "Select the whole canvas."),
+        AgentOp("deselect", "Clear the selection."),
+        AgentOp("invert_selection", "Invert the selection."),
+        AgentOp("feather_selection", "Soften the selection edge.", [AgentParam("radius", "number", "Pixels.")]),
+        AgentOp("new_layer", "Add an empty pixel layer.", [AgentParam("name", "string", "Optional layer name.")]),
+        AgentOp("run_command", "Run an editor menu command.", [
+            AgentParam("id", "string", "Command id.", options: runnableCommands.map(\.id.rawValue)),
+        ]),
+    ]
+
+    public static func op(named name: String) -> AgentOp? { ops.first { $0.name == name } }
+
+    static let preamble = """
+    You are the planning brain of Glimmer, a native macOS photo editor (a modern Photoshop). The user states a goal in natural language; you turn it into an ordered PLAN of editor operations that a deterministic executor runs.
+
+    Only use the operations listed under AVAILABLE OPS. Each step names one op exactly and supplies concrete params. Never invent ops, params or values that are not described.
+
+    Guidelines:
+    - Order steps the way an expert retoucher would (select before inpainting; remove the background before adding a drop shadow).
+    - Prefer the editor's native, non-destructive ops (add_adjustment, apply_preset, add_layer_effect, apply_filter, selection ops). Use image_edit_composite and generate_layer only for content changes the native ops cannot express: they cost money and take time.
+    - inpaint_selection needs a selection. If there is none and the goal needs one, add a step that makes one (select_subject, select_all + invert_selection …) or ask a clarifying question.
+    - Colours are #RRGGBB hex strings.
+    - When unsure about a param, send {} (or omit it) to get sensible defaults rather than guessing exotic numbers.
+    - If the goal is ambiguous, contradictory or impossible with these ops, return an empty "steps" array and put a short clarifying question in "message".
+    - If the user is only chatting or asking a question about the editor, answer briefly in "message" with no steps.
+    - Keep each step's "rationale" to one short sentence.
+
+    OUTPUT FORMAT — return ONLY one JSON object, no markdown:
+    {"steps": [{"op": "<op name>", "params": {…}, "rationale": "<short>"}], "message": "<short summary of the plan, or a question>"}
+    """
+
+    public static func renderOps() -> String {
+        ops.map { op in
+            let params = op.params.isEmpty ? "    (no params)" : op.params.map { p in
+                let opts = p.options.map { " — one of: \($0.joined(separator: ", "))" } ?? ""
+                return "    - \(p.name) (\(p.type)): \(p.description)\(opts)"
+            }.joined(separator: "\n")
+            return "- \(op.name)\(op.isAIJob ? " [AI job]" : ""): \(op.description)\n\(params)"
+        }.joined(separator: "\n\n")
+    }
+
+    public static func systemPrompt() -> String {
+        preamble + "\n\nAVAILABLE OPS:\n" + renderOps()
+    }
+
+    public static func userPrompt(goal: String, context: AgentContext, history: [(user: String, reply: String)]) -> String {
+        var text = """
+        CURRENT EDITOR CONTEXT:
+        - canvas: \(context.width)×\(context.height) px
+        - layers: \(context.layerCount)
+        - active layer: \(context.activeLayerName) (\(context.activeLayerKind))
+        - hasSelection: \(context.hasSelection)
+
+        """
+        if !history.isEmpty {
+            text += "EARLIER IN THIS CONVERSATION:\n"
+            for turn in history.suffix(6) {
+                text += "- user: \(turn.user)\n  you: \(turn.reply)\n"
+            }
+            text += "\n"
+        }
+        text += "USER GOAL:\n\(goal)\n\nReturn the JSON plan now."
+        return text
+    }
+
+    /// Parses the model's reply: tolerates code fences and prose around the JSON,
+    /// drops unknown ops and malformed steps instead of failing the plan.
+    public static func parsePlan(_ text: String) throws -> AgentPlan {
+        guard let json = extractJSONObject(text) else {
+            // Plain prose: treat as a chat answer.
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { throw AgentError.emptyResponse }
+            return AgentPlan(steps: [], message: trimmed)
+        }
+        struct Raw: Decodable {
+            var steps: [JSONValue]?
+            var message: String?
+        }
+        let raw = try JSONDecoder().decode(Raw.self, from: Data(json.utf8))
+        var steps: [AgentStep] = []
+        var dropped: [String] = []
+        for value in raw.steps ?? [] {
+            guard let data = try? JSONEncoder().encode(value),
+                  let step = try? JSONDecoder().decode(AgentStep.self, from: data) else { continue }
+            if op(named: step.op) == nil {
+                dropped.append(step.op)
+            } else {
+                steps.append(step)
+            }
+        }
+        return AgentPlan(steps: steps, message: raw.message, droppedOps: dropped)
+    }
+
+    static func extractJSONObject(_ text: String) -> String? {
+        guard let start = text.firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var inString = false
+        var escaped = false
+        var i = start
+        while i < text.endIndex {
+            let ch = text[i]
+            if inString {
+                if escaped { escaped = false } else if ch == "\\" { escaped = true } else if ch == "\"" { inString = false }
+            } else if ch == "\"" {
+                inString = true
+            } else if ch == "{" {
+                depth += 1
+            } else if ch == "}" {
+                depth -= 1
+                if depth == 0 { return String(text[start...i]) }
+            }
+            i = text.index(after: i)
+        }
+        return nil
+    }
+
+    /// Asks the text model for a plan.
+    public static func plan(goal: String, context: AgentContext, history: [(user: String, reply: String)],
+                            client: OpenRouterClient, model: String) async throws -> (AgentPlan, Double?) {
+        let response = try await client.textCompletion(model: model, system: systemPrompt(),
+                                                       user: userPrompt(goal: goal, context: context, history: history),
+                                                       jsonMode: true, temperature: 0.2)
+        return (try parsePlan(response.text), response.cost)
+    }
+}
+
+public enum AgentError: Error, LocalizedError {
+    case emptyResponse
+
+    public var errorDescription: String? {
+        switch self {
+        case .emptyResponse: "The assistant returned an empty answer."
+        }
+    }
+}
+
+/// `#RRGGBB` / `#RRGGBBAA` → sRGB colour (alpha ignored).
+public func parseHexColor(_ text: String?) -> SRGBColor? {
+    guard var s = text?.trimmingCharacters(in: .whitespaces) else { return nil }
+    if s.hasPrefix("#") { s.removeFirst() }
+    guard s.count == 6 || s.count == 8, let v = UInt64(s.prefix(6), radix: 16) else { return nil }
+    return SRGBColor(Double((v >> 16) & 0xff) / 255, Double((v >> 8) & 0xff) / 255, Double(v & 0xff) / 255)
+}

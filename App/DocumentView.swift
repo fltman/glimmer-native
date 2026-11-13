@@ -25,6 +25,20 @@ struct DocumentView: View {
                 ToolOptionsBar(session: session)
                     .padding(.top, 10)
             }
+            .overlay(alignment: .bottom) {
+                if session.liquify == nil, session.transformSession == nil, session.cropSession == nil {
+                    Omnibar(session: session).padding(.bottom, 12)
+                }
+            }
+            .overlay(alignment: .top) {
+                if session.isPaletteOpen {
+                    ZStack(alignment: .top) {
+                        Color.black.opacity(0.001)
+                            .onTapGesture { session.isPaletteOpen = false }
+                        CommandPalette(session: session).padding(.top, 70)
+                    }
+                }
+            }
             .overlay(alignment: .topTrailing) {
                 // Floating, non-modal: the canvas stays visible for the live preview.
                 if let item = session.filterDialog.map(FilterDialogItem.init) {

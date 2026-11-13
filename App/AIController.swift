@@ -28,10 +28,25 @@ final class AIController {
         let id = UUID()
         let fromUser: Bool
         let text: String
+        /// The assistant's plan, shown as a checklist under the message.
+        var plan: AgentPlan?
     }
 
+    enum StepStatus: Equatable {
+        case pending, running, done
+        case failed(String)
+        case skipped
+    }
+
+    enum PlanStatus: Equatable { case proposed, running, finished, failed, cancelled }
+
     private(set) var jobs: [Job] = []
-    private(set) var messages: [Message] = []
+    var messages: [Message] = []
+    var stepStatus: [UUID: StepStatus] = [:]
+    var planStatus: [UUID: PlanStatus] = [:]
+    var isPlanning = false
+    @ObservationIgnored var agentHistory: [(user: String, reply: String)] = []
+    @ObservationIgnored var planTask: Task<Void, Never>?
     var totalCost: Double { jobs.compactMap(\.cost).reduce(0, +) }
     var isBusy: Bool { jobs.contains { $0.status == .running } }
 
@@ -518,30 +533,5 @@ final class AIController {
         magicPoints = []
     }
 
-    // MARK: Assistant
-
-    private static let generateVerbs = ["add", "insert", "generate", "create", "draw", "place", "put", "make a", "make an"]
-
-    /// Routes plain language: "add a red bird" generates a layer, anything else
-    /// edits the whole image. (The planning agent arrives in phase 8.)
-    func ask(_ text: String) {
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        messages.append(Message(fromUser: true, text: text))
-        let lower = text.lowercased()
-        let isEmptyCanvas = session.state.allLayers.allSatisfy { layer in
-            if case .raster(let g) = layer.content { return g.isEmpty || g.tiles.values.allSatisfy { if case .solid = $0 { true } else { false } } }
-            return true
-        }
-        if isEmptyCanvas || Self.generateVerbs.contains(where: { lower.hasPrefix($0) }) {
-            messages.append(Message(fromUser: false, text: "Generating a new layer…"))
-            generate(prompt: text, negative: "", width: session.state.width, height: session.state.height)
-        } else if session.state.selection != nil {
-            messages.append(Message(fromUser: false, text: "Filling the selection…"))
-            fill(mode: .fill, prompt: text, reference: nil)
-        } else {
-            messages.append(Message(fromUser: false, text: "Editing the image…"))
-            editImage(instruction: text)
-        }
-    }
+    // MARK: Assistant (see AIController+Agent.swift)
 }

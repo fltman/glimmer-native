@@ -112,6 +112,7 @@ final class EditorSession {
     var liquifySize = 150.0
     var liquifyPressure = 0.5
     var viewChannel = 0
+    var isPaletteOpen = false
 
     @ObservationIgnored var stroke: (engine: StrokeEngine, sampler: StrokeSampler, layer: UUID, mask: Bool)?
     @ObservationIgnored var lastStrokePoint: SIMD2<Double>?
@@ -343,6 +344,8 @@ final class EditorSession {
             return
         }
         switch id {
+        case .commandPalette:
+            isPaletteOpen.toggle()
         case .repeatFilter:
             if let f = lastFilter { applyFilter(f) }
         case .liquify:
@@ -510,7 +513,7 @@ final class EditorSession {
         }
     }
 
-    private func addLayer(_ layer: Layer, actionName: String) {
+    func addLayer(_ layer: Layer, actionName: String) {
         edit(actionName) { $0.insertLayerAboveActive(layer) }
     }
 
