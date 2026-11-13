@@ -1,8 +1,9 @@
 name: CI
+# Manual for now: the app targets macOS 27, and GitHub's hosted runners stop at macOS 26
+# (a job asking for macos-27 just waits in the queue). When a macOS 27 runner exists, or a
+# self-hosted Mac is registered with that label, switch this back to push and pull_request.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
