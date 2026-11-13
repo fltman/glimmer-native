@@ -621,3 +621,107 @@ kernel void lens_blur(texture2d<float, access::sample> color [[texture(0)]],
     }
     out.write(sum / max(wsum, 1e-5), gid);
 }
+
+// ── Brush dabs and pixel operations ─────────────────────────────────────────
+
+// Must match `DabInstance` in StrokeEngine.swift.
+struct DabInstance {
+    float2 center;     // document pixels
+    float radius;
+    float hardness;
+    float roundness;
+    float angle;       // radians
+    float flow;        // 0...1 (already pressure-scaled)
+    float textured;    // 0 or 1
+};
+
+struct DabOut {
+    float4 position [[position]];
+    float2 local;      // pixels relative to the dab centre
+    float2 doc;
+    float radius;
+    float hardness;
+    float roundness;
+    float angle;
+    float flow;
+    float textured;
+};
+
+vertex DabOut dab_vertex(uint vid [[vertex_id]], uint iid [[instance_id]],
+                         constant DabInstance *dabs [[buffer(0)]],
+                         constant float2 &tileOrigin [[buffer(1)]]) {
+    DabInstance d = dabs[iid];
+    float2 corner = float2(vid & 1, vid >> 1) * 2.0 - 1.0;
+    float r = d.radius + 1.5;
+    float2 doc = d.center + corner * r;
+    float2 p = doc - tileOrigin;
+    DabOut out;
+    out.position = float4(p.x / 256.0 * 2.0 - 1.0, 1.0 - p.y / 256.0 * 2.0, 0.0, 1.0);
+    out.local = corner * r;
+    out.doc = doc;
+    out.radius = d.radius;
+    out.hardness = d.hardness;
+    out.roundness = d.roundness;
+    out.angle = d.angle;
+    out.flow = d.flow;
+    out.textured = d.textured;
+    return out;
+}
+
+/// Dab coverage, accumulated "over" the stroke's wet buffer (flow builds up).
+fragment float4 dab_fragment(DabOut in [[stage_in]]) {
+    float c = cos(-in.angle), s = sin(-in.angle);
+    float2 p = float2(c * in.local.x - s * in.local.y, s * in.local.x + c * in.local.y);
+    p.y /= max(in.roundness, 0.05);
+    float dist = length(p);
+    float shape;
+    if (in.hardness >= 0.99) {
+        shape = saturate(in.radius - dist + 0.5);  // 1 px anti-aliased edge
+    } else {
+        float t = dist / max(in.radius, 0.5);
+        shape = 1.0 - smoothstep(in.hardness, 1.0, t);
+    }
+    if (in.textured > 0.5) {
+        float2 cell = floor(in.doc / 2.0);
+        float n = fract(sin(dot(cell, float2(12.9898, 78.233))) * 43758.5453);
+        shape *= smoothstep(0.25, 0.75, n);
+    }
+    float a = saturate(shape * in.flow);
+    return float4(a, a, a, a);
+}
+
+// Must match `ApplyUniforms` in PixelOps.swift.
+struct ApplyUniforms {
+    float4 color;      // linear, premultiplied (paint)
+    int mode;          // 0 paint, 1 erase, 2 mask value, 3 keep selected
+    float opacity;
+    float maskTarget;  // value painted into masks
+    float pad;
+};
+
+/// Combines a tile with a coverage ("wet") tile, limited by the selection.
+fragment float4 pixel_apply_fragment(QuadOut in [[stage_in]],
+                                     texture2d<float> original [[texture(0)]],
+                                     texture2d<float> wet [[texture(1)]],
+                                     texture2d<float> selection [[texture(2)]],
+                                     constant ApplyUniforms &u [[buffer(0)]]) {
+    float4 o = original.sample(nearestSampler, in.uv);
+    float s = selection.sample(nearestSampler, in.uv).a;
+    if (u.mode == 3) return o * s;
+    float k = saturate(wet.sample(nearestSampler, in.uv).r) * u.opacity * s;
+    if (u.mode == 1) return o * (1.0 - k);
+    if (u.mode == 2) { float v = mix(o.a, u.maskTarget, k); return float4(v); }
+    return u.color * k + o * (1.0 - k);
+}
+
+/// Grow: pixels within `radius` of the selection. Shrink: pixels farther than
+/// `radius` from the unselected area. (`distance` comes from MPS EDT.)
+kernel void selection_distance_remap(texture2d<float, access::read> distance [[texture(0)]],
+                                     texture2d<float, access::write> out [[texture(1)]],
+                                     constant float2 &params [[buffer(0)]],  // radius, grow
+                                     uint2 gid [[thread_position_in_grid]]) {
+    if (gid.x >= out.get_width() || gid.y >= out.get_height()) return;
+    float d = distance.read(gid).r;
+    float v = params.y > 0.5 ? saturate(params.x - d + 0.5) : saturate(d - params.x + 0.5);
+    out.write(float4(v), gid);
+}

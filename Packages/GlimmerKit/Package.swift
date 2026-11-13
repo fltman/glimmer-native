@@ -27,6 +27,7 @@ let package = Package(
         .testTarget(name: "GlimmerCoreTests", dependencies: ["GlimmerCore"]),
         .testTarget(name: "GlimmerRenderTests", dependencies: ["GlimmerRender"]),
         .testTarget(name: "GlimmerAITests", dependencies: ["GlimmerAI"]),
+        .testTarget(name: "GlimmerToolsTests", dependencies: ["GlimmerTools"]),
     ],
     swiftLanguageModes: [.v6]
 )

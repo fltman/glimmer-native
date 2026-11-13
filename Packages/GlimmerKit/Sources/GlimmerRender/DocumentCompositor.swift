@@ -7,12 +7,24 @@ import Metal
 public struct LayerOverrides: Equatable, Sendable {
     /// Integer pixel offsets per layer id (groups move their descendants).
     public var offsets: [UUID: SIMD2<Int>]
+    /// Replacement pixels for raster layers (e.g. a brush stroke in progress).
+    public var pixels: [UUID: TileGrid]
+    /// Replacement mask tiles (painting a mask).
+    public var masks: [UUID: TileGrid]
 
-    public init(offsets: [UUID: SIMD2<Int>] = [:]) {
+    public init(offsets: [UUID: SIMD2<Int>] = [:], pixels: [UUID: TileGrid] = [:], masks: [UUID: TileGrid] = [:]) {
         self.offsets = offsets
+        self.pixels = pixels
+        self.masks = masks
     }
 
     public static let none = LayerOverrides()
+
+    public static func == (a: LayerOverrides, b: LayerOverrides) -> Bool {
+        a.offsets == b.offsets
+            && a.pixels.mapValues(\.contentSignature) == b.pixels.mapValues(\.contentSignature)
+            && a.masks.mapValues(\.contentSignature) == b.masks.mapValues(\.contentSignature)
+    }
 }
 
 /// A mask ready for compositing (enabled, feather already applied).
@@ -102,7 +114,8 @@ public final class DocumentCompositor {
         var seen = Set<UUID>()
 
         func mask(for layer: Layer) -> ResolvedMask? {
-            guard let m = layer.mask, m.isEnabled, m.density > 0 else { return nil }
+            guard var m = layer.mask, m.isEnabled, m.density > 0 else { return nil }
+            if let painted = overrides.masks[layer.id] { m.tiles = painted }
             var tiles = m.tiles
             if m.feather > 0.25 {
                 var h = Hasher()
@@ -131,7 +144,8 @@ public final class DocumentCompositor {
                 let overlay = layer.effects.colorOverlay.flatMap { $0.isEnabled ? $0 : nil }
                 switch layer.content {
                 case .raster(let grid):
-                    nodes.append(pixelsNode(layer, grid: grid, common: common, offset: o, overlay: overlay, limit: limit))
+                    nodes.append(pixelsNode(layer, grid: overrides.pixels[layer.id] ?? grid, common: common, offset: o,
+                                            overlay: overlay, limit: limit))
                 case .smart(let smart):
                     var h = Hasher()
                     h.combine(smart.source.contentSignature); h.combine(smart.transform); h.combine(limit)

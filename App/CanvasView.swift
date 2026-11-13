@@ -4,6 +4,7 @@ import GlimmerRender
 import GlimmerTools
 import QuartzCore
 import SwiftUI
+import simd
 
 struct CanvasView: NSViewRepresentable {
     let session: EditorSession
@@ -29,7 +30,14 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case pan(last: SIMD2<Double>)
         case move
         case marquee
+        case stroke
+        case lasso
+        case gradient
+        case eyedropper
     }
+
+    /// Brush size ring under the pointer.
+    private let brushRing = CAShapeLayer()
 
     /// Dashed outline of the marquee being dragged (white under black dashes).
     private let marqueeBase = CAShapeLayer()
@@ -69,7 +77,14 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             layer.strokeColor = NSColor.white.cgColor
             layer.lineWidth = 2
         }
-        for layer in [hintLayer, pointsPositive, pointsNegative] { layer.actions = ["path": NSNull()] }
+        brushRing.fillColor = nil
+        brushRing.strokeColor = NSColor.white.cgColor
+        brushRing.lineWidth = 1
+        brushRing.shadowColor = NSColor.black.cgColor
+        brushRing.shadowOpacity = 0.9
+        brushRing.shadowRadius = 0.5
+        brushRing.shadowOffset = .zero
+        for layer in [hintLayer, pointsPositive, pointsNegative, brushRing] { layer.actions = ["path": NSNull()] }
         observeSession()
     }
 
@@ -94,6 +109,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         layer.addSublayer(marqueeDashes)
         layer.addSublayer(pointsPositive)
         layer.addSublayer(pointsNegative)
+        layer.addSublayer(brushRing)
         return layer
     }
 
@@ -106,6 +122,10 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             _ = session.marquee
             _ = session.ai.distractions
             _ = session.ai.magicPoints
+            _ = session.lasso
+            _ = session.gradientDrag
+            _ = session.hoverPoint
+            _ = session.brush.size
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
@@ -182,6 +202,29 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
 
     private func updateMarqueeOverlay() {
         updateHints()
+        updateBrushRing()
+        if let points = session.lasso, !points.isEmpty {
+            let path = CGMutablePath()
+            var all = points
+            if session.effectiveTool == .polygonLasso, let hover = session.hoverPoint {
+                all.append(controller.documentPoint(hover))
+            }
+            path.addLines(between: all.map { flipped(controller.transform.viewPoint(fromDocument: $0)) })
+            marqueeBase.path = path
+            marqueeDashes.path = path
+            return
+        }
+        if let g = session.gradientDrag {
+            let path = CGMutablePath()
+            path.addLines(between: [g.start, g.end].map { flipped(controller.transform.viewPoint(fromDocument: $0)) })
+            for p in [g.start, g.end] {
+                let c = flipped(controller.transform.viewPoint(fromDocument: p))
+                path.addEllipse(in: CGRect(x: c.x - 4, y: c.y - 4, width: 8, height: 8))
+            }
+            marqueeBase.path = path
+            marqueeDashes.path = path
+            return
+        }
         guard let m = session.marquee else {
             marqueeBase.path = nil
             marqueeDashes.path = nil
@@ -243,6 +286,27 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             }
         }
         return color
+    }
+
+    private func flipped(_ v: SIMD2<Double>) -> CGPoint {
+        CGPoint(x: v.x, y: bounds.height - v.y)
+    }
+
+    private func updateBrushRing() {
+        let tool = session.effectiveTool
+        guard tool == .brush || tool == .eraser, let hover = session.hoverPoint else {
+            brushRing.path = nil
+            return
+        }
+        let r = max(session.brush.size * controller.transform.scale / 2, 1)
+        let c = flipped(hover)
+        let path = CGMutablePath()
+        path.addEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r))
+        if r < 4 {
+            path.move(to: CGPoint(x: c.x - 6, y: c.y)); path.addLine(to: CGPoint(x: c.x + 6, y: c.y))
+            path.move(to: CGPoint(x: c.x, y: c.y - 6)); path.addLine(to: CGPoint(x: c.x, y: c.y + 6))
+        }
+        brushRing.path = path
     }
 
     private func updateHints() {
@@ -313,6 +377,27 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case .magicSelect:
             // Click adds a point on the object; ⌥-click marks what to leave out.
             session.ai.magicSelect(at: controller.documentPoint(p), positive: !event.modifierFlags.contains(.option))
+        case .brush, .eraser:
+            session.beginStroke(at: controller.documentPoint(p), pressure: pressure(event),
+                                erase: session.effectiveTool == .eraser, straightLine: event.modifierFlags.contains(.shift))
+            drag = .stroke
+        case .lasso:
+            session.beginLasso(at: controller.documentPoint(p), modifiers: event.modifierFlags)
+            drag = .lasso
+        case .polygonLasso:
+            session.polygonClick(at: controller.documentPoint(p), modifiers: event.modifierFlags,
+                                 doubleClick: event.clickCount == 2)
+        case .magicWand:
+            session.magicWand(at: controller.documentPoint(p), modifiers: event.modifierFlags)
+        case .paintBucket:
+            session.paintBucket(at: controller.documentPoint(p))
+        case .gradient:
+            let d = controller.documentPoint(p)
+            session.gradientDrag = (d, d)
+            drag = .gradient
+        case .eyedropper:
+            session.sampleColor(at: controller.documentPoint(p), intoBackground: event.modifierFlags.contains(.option))
+            drag = .eyedropper
         default:
             beginPan(at: p)
         }
@@ -326,6 +411,24 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             drag = .pan(last: p)
         case .move:
             session.updateMove(to: controller.documentPoint(p))
+        case .stroke:
+            session.continueStroke(to: controller.documentPoint(p), pressure: pressure(event))
+            session.hoverPoint = p
+        case .lasso:
+            session.extendLasso(to: controller.documentPoint(p))
+        case .gradient:
+            guard let g = session.gradientDrag else { break }
+            var d = controller.documentPoint(p)
+            if event.modifierFlags.contains(.shift) {
+                // Constrain to 45° steps.
+                let v = d - g.start
+                let a = (atan2(v.y, v.x) / (.pi / 4)).rounded() * (.pi / 4)
+                let len = simd_length(v)
+                d = g.start + SIMD2(cos(a), sin(a)) * len
+            }
+            session.gradientDrag = (g.start, d)
+        case .eyedropper:
+            session.sampleColor(at: controller.documentPoint(p), intoBackground: event.modifierFlags.contains(.option))
         case .marquee:
             var d = controller.documentPoint(p)
             if event.modifierFlags.contains(.shift), let m = session.marquee, m.operation == .replace {
@@ -341,8 +444,14 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     override func mouseUp(with event: NSEvent) {
-        if case .move = drag { session.endMove() }
-        if case .marquee = drag { session.endMarquee() }
+        switch drag {
+        case .move: session.endMove()
+        case .marquee: session.endMarquee()
+        case .stroke: session.endStroke(at: controller.documentPoint(location(of: event)))
+        case .lasso: session.finishLasso()
+        case .gradient: session.finishGradient()
+        default: break
+        }
         endDrag()
     }
 
@@ -360,10 +469,34 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         drag = nil
     }
 
+    private func pressure(_ event: NSEvent) -> Double {
+        event.subtype == .tabletPoint ? Double(max(event.pressure, 0.01)) : 1
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas { removeTrackingArea(area) }
+        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                                       owner: self))
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        session.hoverPoint = location(of: event)
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        session.hoverPoint = nil
+    }
+
+    override func tabletPoint(with event: NSEvent) {
+        mouseDragged(with: event)
+    }
+
     override func resetCursorRects() {
         let cursor: NSCursor = switch session.effectiveTool {
         case .hand: .openHand
-        case .rectangleMarquee, .ellipseMarquee, .magicSelect: .crosshair
+        case .rectangleMarquee, .ellipseMarquee, .magicSelect, .lasso, .polygonLasso, .magicWand,
+             .brush, .eraser, .gradient, .eyedropper, .paintBucket: .crosshair
         default: .arrow
         }
         addCursorRect(bounds, cursor: cursor)
@@ -388,6 +521,17 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
                 session.tool = session.tool == .rectangleMarquee ? .ellipseMarquee : .rectangleMarquee
                 return
             }
+            if key == "l" {
+                session.tool = session.tool == .lasso ? .polygonLasso : .lasso
+                return
+            }
+            switch key {
+            case "x": session.swapColors(); return
+            case "d": session.resetColors(); return
+            case "[": session.adjustBrushSize(by: 0.9); return
+            case "]": session.adjustBrushSize(by: 1.1); return
+            default: break
+            }
             if let tool = ToolID.allCases.first(where: { $0.shortcutKey == key && Self.availableTools.contains($0) }) {
                 session.tool = tool
                 return
@@ -397,6 +541,14 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             // Return keeps the Magic Select result, Esc discards it.
             if event.keyCode == 53 { session.perform(.deselect) }
             session.ai.resetMagicSelect()
+            return
+        }
+        if session.lasso != nil, event.keyCode == 36 || event.keyCode == 76 || event.keyCode == 53 {
+            event.keyCode == 53 ? session.cancelLasso() : session.finishLasso()
+            return
+        }
+        if event.keyCode == 51 || event.keyCode == 117, session.canPerform(.clearPixels) {  // ⌫ / ⌦
+            session.perform(.clearPixels)
             return
         }
         if event.keyCode == 53, session.state.selection != nil {  // Esc deselects
@@ -415,7 +567,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     /// Tools implemented so far (see docs/PLAN.md for the rest).
-    static let availableTools: [ToolID] = [.move, .rectangleMarquee, .ellipseMarquee, .magicSelect, .hand]
+    static let availableTools: [ToolID] = [.move, .rectangleMarquee, .ellipseMarquee, .lasso, .polygonLasso, .magicWand,
+                                           .magicSelect, .brush, .eraser, .paintBucket, .gradient, .eyedropper, .hand]
 
     private func arrowOffset(_ event: NSEvent) -> SIMD2<Int>? {
         switch event.keyCode {
@@ -434,11 +587,19 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     @objc func paste(_ sender: Any?) {
-        if !session.place(from: .general) { NSSound.beep() }
+        if !session.paste() { NSSound.beep() }
     }
 
+    @objc func copy(_ sender: Any?) { session.perform(.copy) }
+    @objc func cut(_ sender: Any?) { session.perform(.cut) }
+    @objc func delete(_ sender: Any?) { session.perform(.clearPixels) }
+
     func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
+        if item.action == #selector(copy(_:)) { return session.canPerform(.copy) }
+        if item.action == #selector(cut(_:)) { return session.canPerform(.cut) }
+        if item.action == #selector(delete(_:)) { return session.canPerform(.clearPixels) }
         if item.action == #selector(paste(_:)) {
+            if session.clipboard?.changeCount == NSPasteboard.general.changeCount { return true }
             let pb = NSPasteboard.general
             return pb.canReadObject(forClasses: [NSURL.self], options: [
                 .urlReadingContentsConformToTypes: [UTType.image.identifier],

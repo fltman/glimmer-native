@@ -98,6 +98,13 @@ extension CommandID {
     public static let deselect: CommandID = "select.none"
     public static let invertSelection: CommandID = "select.invert"
     public static let selectSubject: CommandID = "select.subject"
+    public static let featherSelection: CommandID = "select.feather"
+    public static let growSelection: CommandID = "select.grow"
+    public static let shrinkSelection: CommandID = "select.shrink"
+    public static let copy: CommandID = "edit.copy"
+    public static let cut: CommandID = "edit.cut"
+    public static let layerViaCopy: CommandID = "layer.viaCopy"
+    public static let clearPixels: CommandID = "edit.clear"
 
     public static let aiGenerate: CommandID = "ai.generate"
     public static let aiEditImage: CommandID = "ai.edit"
@@ -173,8 +180,7 @@ public struct CommandRegistry: Sendable {
 
         CommandDescriptor(.newLayer, "New Layer", category: .layer,
                           shortcut: KeyShortcut("n", [.command, .shift]), keywords: ["add"]),
-        CommandDescriptor(.duplicateLayer, "Duplicate Layer", category: .layer,
-                          shortcut: KeyShortcut("j"), keywords: ["copy"]),
+        CommandDescriptor(.duplicateLayer, "Duplicate Layer", category: .layer, keywords: ["copy"]),
         CommandDescriptor(.deleteLayer, "Delete Layer", category: .layer, keywords: ["remove"]),
         CommandDescriptor(.bringLayerForward, "Bring Forward", category: .layer,
                           shortcut: KeyShortcut("]"), keywords: ["arrange", "up"]),
@@ -208,6 +214,15 @@ public struct CommandRegistry: Sendable {
                           shortcut: KeyShortcut("i", [.command, .shift]), keywords: ["invert selection"]),
         CommandDescriptor(.selectSubject, "Subject", category: .select,
                           keywords: ["select subject", "person", "object", "ai"]),
+        CommandDescriptor(.featherSelection, "Feather…", category: .select, keywords: ["soften", "blur selection"]),
+        CommandDescriptor(.growSelection, "Expand…", category: .select, keywords: ["grow", "dilate"]),
+        CommandDescriptor(.shrinkSelection, "Contract…", category: .select, keywords: ["shrink", "erode"]),
+        CommandDescriptor(.copy, "Copy", category: .edit, shortcut: KeyShortcut("c"), isSystemProvided: true),
+        CommandDescriptor(.cut, "Cut", category: .edit, shortcut: KeyShortcut("x"), isSystemProvided: true),
+        CommandDescriptor(.clearPixels, "Clear", category: .edit, keywords: ["delete pixels", "erase selection"],
+                          isSystemProvided: true),
+        CommandDescriptor(.layerViaCopy, "New Layer via Copy", category: .layer,
+                          shortcut: KeyShortcut("j"), keywords: ["copy selection to layer"]),
 
         CommandDescriptor(.showAssistant, "Assistant", category: .ai,
                           shortcut: KeyShortcut("k", [.command, .shift]), keywords: ["chat", "ai", "prompt"]),

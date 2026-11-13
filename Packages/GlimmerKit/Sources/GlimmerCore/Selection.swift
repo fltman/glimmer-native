@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 
 /// A soft pixel selection in document space: 1 = selected, 0 = not.
@@ -38,6 +39,34 @@ public struct Selection: Sendable {
             let d = (f - 1) * min(rx, ry)
             return Float(min(max(0.5 - d, 0), 1))
         }
+    }
+
+    /// A closed polygon (lasso), anti-aliased, even-odd filled.
+    public static func polygon(_ points: [SIMD2<Double>]) -> Selection {
+        guard points.count >= 3 else { return Selection() }
+        let xs = points.map(\.x), ys = points.map(\.y)
+        let x0 = Int(xs.min()!.rounded(.down)) - 1, y0 = Int(ys.min()!.rounded(.down)) - 1
+        let x1 = Int(xs.max()!.rounded(.up)) + 1, y1 = Int(ys.max()!.rounded(.up)) + 1
+        let w = x1 - x0, h = y1 - y0
+        guard w > 0, h > 0, w * h < 400_000_000,
+              let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w,
+                                  space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGImageAlphaInfo.none.rawValue) else {
+            return Selection()
+        }
+        ctx.setShouldAntialias(true)
+        ctx.setFillColor(gray: 1, alpha: 1)
+        // Flip so rows run top-down like document space.
+        ctx.translateBy(x: 0, y: CGFloat(h))
+        ctx.scaleBy(x: 1, y: -1)
+        ctx.beginPath()
+        ctx.move(to: CGPoint(x: points[0].x - Double(x0), y: points[0].y - Double(y0)))
+        for p in points.dropFirst() { ctx.addLine(to: CGPoint(x: p.x - Double(x0), y: p.y - Double(y0))) }
+        ctx.closePath()
+        ctx.fillPath(using: .evenOdd)
+        guard let data = ctx.data else { return Selection() }
+        let bytes = data.assumingMemoryBound(to: UInt8.self)
+        let rect = PixelRect(x: x0, y: y0, width: w, height: h)
+        return rasterize(bounds: rect) { x, y in Float(bytes[(y - y0) * w + (x - x0)]) / 255 }
     }
 
     /// Builds a selection from per-pixel values over `bounds` (everything else 0).

@@ -3,6 +3,7 @@ import GlimmerCore
 import GlimmerRender
 import GlimmerTools
 import SwiftUI
+import simd
 import UniformTypeIdentifiers
 
 /// Per-window editing state: the active tool, transient previews, panels and
@@ -48,6 +49,31 @@ final class EditorSession {
         var rect: CGRectLike { CGRectLike(x0: start.x, y0: start.y, x1: current.x, y1: current.y) }
     }
     var marquee: Marquee?
+
+    // MARK: Painting and selection-tool state
+
+    var brush = BrushSettings()
+    var foreground = SRGBColor(0, 0, 0)
+    var background = SRGBColor(1, 1, 1)
+    /// Paint into the active layer's mask instead of its pixels.
+    var editingMask = false
+    var wandTolerance = 32.0
+    var wandContiguous = true
+    var sampleAllLayers = true
+    var gradientStyle = GradientStyle.linear
+    var gradientToTransparent = false
+    /// Lasso being drawn (document points) and whether it's polygonal.
+    var lasso: [SIMD2<Double>]?
+    var lassoOperation = Selection.Operation.replace
+    /// Gradient drag in progress (document points).
+    var gradientDrag: (start: SIMD2<Double>, end: SIMD2<Double>)?
+    /// Pointer position over the canvas, for the brush cursor (view points).
+    var hoverPoint: SIMD2<Double>?
+    var selectionDialog: CommandID?
+
+    @ObservationIgnored var stroke: (engine: StrokeEngine, sampler: StrokeSampler, layer: UUID, mask: Bool)?
+    @ObservationIgnored var lastStrokePoint: SIMD2<Double>?
+    @ObservationIgnored var clipboard: (grid: TileGrid, changeCount: Int)?
 
     var showLayersPanel = true
     var isExportSheetPresented = false
@@ -149,7 +175,7 @@ final class EditorSession {
 
     // MARK: Editing helpers
 
-    private func edit(_ name: String, _ change: (inout DocumentState) throws -> Void) {
+    func edit(_ name: String, _ change: (inout DocumentState) throws -> Void) {
         commitLiveEdit()
         do {
             try document.edit(name, undoManager: undoManager, change)
@@ -234,8 +260,12 @@ final class EditorSession {
             return !layer.isRaster && !layer.isAdjustment
         case .export:
             return !isExporting
-        case .deselect, .invertSelection, .aiRemoveObject:
+        case .deselect, .invertSelection, .aiRemoveObject, .featherSelection, .growSelection, .shrinkSelection:
             return state.selection != nil
+        case .copy, .cut, .clearPixels:
+            return state.selection != nil && (activeLayer?.isRaster ?? false)
+        case .layerViaCopy:
+            return activeLayer?.isRaster ?? false
         case .zoomIn, .zoomOut, .fitToWindow, .actualSize, .rotateViewLeft, .rotateViewRight, .resetViewRotation:
             return canvas.canPerform(id)
         default:
@@ -326,6 +356,16 @@ final class EditorSession {
             edit("Select Inverse") { $0.selection = $0.selection?.inverted() }
         case .selectSubject:
             ai.selectSubject()
+        case .featherSelection, .growSelection, .shrinkSelection:
+            selectionDialog = id
+        case .copy:
+            copySelection(cut: false)
+        case .cut:
+            copySelection(cut: true)
+        case .clearPixels:
+            clearSelectedPixels()
+        case .layerViaCopy:
+            layerViaCopy()
         case .aiRemoveBackground:
             ai.removeBackground()
         case .aiRemoveObject:

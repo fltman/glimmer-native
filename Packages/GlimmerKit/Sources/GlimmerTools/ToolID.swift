@@ -3,7 +3,7 @@
 /// phase by phase (see docs/PLAN.md §3).
 public enum ToolID: String, CaseIterable, Sendable {
     case move, hand
-    case rectangleMarquee, ellipseMarquee, lasso, magicWand, magicSelect
+    case rectangleMarquee, ellipseMarquee, lasso, polygonLasso, magicWand, magicSelect
     case crop, freeTransform
     case brush, eraser, paintBucket, gradient, patternStamp
     case cloneStamp, healingBrush, dodge, burn, blur, sharpen, smudge
@@ -31,7 +31,7 @@ public enum ToolID: String, CaseIterable, Sendable {
         case .type: "y"
         case .shape: "u"
         case .eyedropper: "i"
-        case .patternStamp, .blur, .sharpen, .smudge: nil
+        case .patternStamp, .blur, .sharpen, .smudge, .polygonLasso: nil
         }
     }
 }

@@ -239,10 +239,23 @@ private struct LayerRow: View {
                     .help("Clipped to the layer below")
             }
 
+            let isActive = session.state.activeLayerID == layer.id
             LayerIcon(layer: layer, thumbnail: session.thumbnails[layer.id])
+                .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color.accentColor, lineWidth: 2)
+                    .opacity(isActive && layer.mask != nil && !session.editingMask ? 1 : 0))
+                .onTapGesture {
+                    session.setActiveLayer(layer.id)
+                    session.editingMask = false
+                }
             if let mask = layer.mask {
                 Thumbnail(image: session.maskThumbnails[layer.id], checker: false)
                     .opacity(mask.isEnabled ? 1 : 0.35)
+                    .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color.accentColor, lineWidth: 2)
+                        .opacity(isActive && session.editingMask ? 1 : 0))
+                    .onTapGesture {
+                        session.setActiveLayer(layer.id)
+                        session.editingMask = true
+                    }
                     .overlay {
                         if !mask.isEnabled {
                             Image(systemName: "xmark").foregroundStyle(.red).font(.caption.bold())

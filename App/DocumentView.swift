@@ -21,6 +21,14 @@ struct DocumentView: View {
                 StatusPill(session: session)
                     .padding(12)
             }
+            .overlay(alignment: .top) {
+                ToolOptionsBar(session: session)
+                    .padding(.top, 10)
+            }
+            .sheet(item: Binding(get: { session.selectionDialog.map(SelectionDialogItem.init) },
+                                 set: { session.selectionDialog = $0?.id })) { item in
+                SelectionModifySheet(session: session, command: item.id)
+            }
             .inspector(isPresented: $session.showLayersPanel) {
                 VStack(spacing: 0) {
                     Picker("Panel", selection: $session.inspectorTab) {
@@ -75,6 +83,9 @@ private struct StatusPill: View {
             Text(session.canvas.zoom, format: .percent.precision(.fractionLength(0)))
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
+            if session.paintsMask {
+                Label("Editing mask", systemImage: "rectangle.dashed").foregroundStyle(.secondary)
+            }
             if session.isExporting {
                 ProgressView().controlSize(.small)
                 Text("Exporting…").foregroundStyle(.secondary)
@@ -96,29 +107,57 @@ private struct ToolPalette: View {
     @Bindable var session: EditorSession
 
     var body: some View {
-        VStack(spacing: 4) {
-            ForEach(CanvasNSView.availableTools, id: \.self) { tool in
-                Button {
-                    session.tool = tool
-                } label: {
-                    Image(systemName: tool.symbolName)
-                        .font(.system(size: 15, weight: .medium))
-                        .frame(width: 32, height: 32)
-                        .foregroundStyle(session.tool == tool ? Color.accentColor : .primary)
-                        .background {
-                            if session.tool == tool {
-                                RoundedRectangle(cornerRadius: 8).fill(Color.accentColor.opacity(0.15))
+        VStack(spacing: 6) {
+            LazyVGrid(columns: [GridItem(.fixed(32), spacing: 2), GridItem(.fixed(32), spacing: 2)], spacing: 2) {
+                ForEach(CanvasNSView.availableTools, id: \.self) { tool in
+                    Button {
+                        session.tool = tool
+                    } label: {
+                        Image(systemName: tool.symbolName)
+                            .font(.system(size: 14, weight: .medium))
+                            .frame(width: 32, height: 30)
+                            .foregroundStyle(session.tool == tool ? Color.accentColor : .primary)
+                            .background {
+                                if session.tool == tool {
+                                    RoundedRectangle(cornerRadius: 7).fill(Color.accentColor.opacity(0.15))
+                                }
                             }
-                        }
-                        .contentShape(.rect)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .help(tool.helpText)
+                    .accessibilityLabel(tool.title)
                 }
-                .buttonStyle(.plain)
-                .help(tool.helpText)
-                .accessibilityLabel(tool.title)
             }
+            ColorSwatches(session: session)
         }
         .padding(6)
+        .fixedSize()
         .glassEffect(.regular, in: .rect(cornerRadius: 14))
+    }
+}
+
+/// Foreground/background colours (X swaps, D resets).
+private struct ColorSwatches: View {
+    @Bindable var session: EditorSession
+    @Environment(\.self) private var environment
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            ColorPicker("Background", selection: Binding(
+                get: { session.background.swiftUI },
+                set: { session.background = SRGBColor($0, in: environment) }), supportsOpacity: false)
+                .labelsHidden()
+                .frame(width: 40, height: 24)
+                .offset(x: 22, y: 18)
+            ColorPicker("Foreground", selection: Binding(
+                get: { session.foreground.swiftUI },
+                set: { session.foreground = SRGBColor($0, in: environment) }), supportsOpacity: false)
+                .labelsHidden()
+                .frame(width: 40, height: 24)
+        }
+        .frame(width: 66, height: 44, alignment: .topLeading)
+        .help("Foreground and background colours (X swaps, D resets)")
     }
 }
 
@@ -129,7 +168,15 @@ extension ToolID {
         case .hand: "Hand"
         case .rectangleMarquee: "Rectangular Marquee"
         case .ellipseMarquee: "Elliptical Marquee"
+        case .lasso: "Lasso"
+        case .polygonLasso: "Polygonal Lasso"
+        case .magicWand: "Magic Wand"
         case .magicSelect: "Magic Select"
+        case .brush: "Brush"
+        case .eraser: "Eraser"
+        case .paintBucket: "Paint Bucket"
+        case .gradient: "Gradient"
+        case .eyedropper: "Eyedropper"
         default: rawValue.capitalized
         }
     }
@@ -140,7 +187,15 @@ extension ToolID {
         case .hand: "hand.raised"
         case .rectangleMarquee: "rectangle.dashed"
         case .ellipseMarquee: "circle.dashed"
+        case .lasso: "lasso"
+        case .polygonLasso: "skew"
+        case .magicWand: "wand.and.stars"
         case .magicSelect: "wand.and.sparkles"
+        case .brush: "paintbrush.pointed"
+        case .eraser: "eraser"
+        case .paintBucket: "drop.halffull"
+        case .gradient: "square.bottomhalf.filled"
+        case .eyedropper: "eyedropper"
         default: "questionmark"
         }
     }

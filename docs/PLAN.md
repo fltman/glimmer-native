@@ -291,7 +291,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - AI Lens Blur med Depth Anything V2.
 - Presets. De kräver justeringar (fas 2) och filter; filtren som används byggs här och resten i fas 7.
 
-### Fas 5 — Selektion och målning · XL
+### Fas 5 — Selektion och målning · XL ✅ (2026-11-13)
 - Lasso, polygonlasso och trollstav med **riktig flood fill** (contiguous och global, sampla alla lager).
 - Feather, grow och shrink utan 32 px-tak.
 - Brushmotor: dabs med spacing, hardness, flow, roundness, angle, scatter, jitter och textur. Tryck och tilt från ritplatta. Brush-presets (webbens sex plus egna).
@@ -342,6 +342,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - **Whole-image edit färgmatchas inte.** Det skulle motverka avsiktliga färgändringar ("gör himlen till solnedgång").
 - **Marching ants:** kanten hittas genom grannsampling med uv-derivator. `fwidth` på det samplade värdet missar kanter mellan 2×2-pixelblock.
 - **Fas 4:** on-device-modellerna är Apples egna Core ML-konverteringar på Hugging Face (`apple/coreml-sam2.1-tiny` och `apple/coreml-depth-anything-v2-small`). De laddas ner vid första användningen till Application Support, kompileras och kan tas bort under Inställningar › Models. Egen konvertering med coremltools behövdes inte. Upscale öppnar ett nytt dokument (Lanczos i 16-bit via MPS, med valfri AI-detaljpass i tiles med mjuka skarvar). Presets blir en grupp av justeringslager; deras filtersteg väntar på fas 7.
+- **Fas 5:** penseln stämplar dabs instansierat i "våta" täckningstexturer per tile, där flow bygger upp inom ett drag. Efter varje händelse räknas bara berörda tiles om från originalet, med opacitet som tak, markering och maskmål. Samma apply-pass driver sudd, maskmålning, färgburk, Clear, Copy och New Layer via Copy. Gradientverktyget skapar ett gradient-fill-lager (icke-destruktivt), maskat av markeringen. Pattern stamp och färgrutepanelen är inte gjorda; de kommer i fas 9.
 - **Kvar till fas 9:** minnesbudget för undo-historiken (idag obegränsad) och composite-cache för stora dokument vid utzoomning (idag full upplösning per tile).
 
 ## 4. Teststrategi
