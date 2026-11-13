@@ -1,7 +1,12 @@
 #!/bin/zsh
 # Builds a notarized, stapled Glimmer.dmg signed with Developer ID, plus a Sparkle appcast.
 #
-#   scripts/release.sh [--publish]
+#   scripts/release.sh [<version>] [--publish]
+#
+# With a version (e.g. 0.2.0) it sets that version in project.yml and raises the build
+# number (Sparkle compares build numbers, so every release needs a higher one). It runs
+# the tests first (SKIP_TESTS=1 skips them). --publish also commits the version, tags
+# v<version>, pushes, and creates the GitHub release with the DMG and appcast.
 #
 # Notarization goes through Xcode, using the account in Xcode › Settings › Accounts.
 # The first run creates the Sparkle EdDSA key in your login keychain (Sparkle's generate_keys).
@@ -9,11 +14,34 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+PUBLISH=0
+NEW_VERSION=""
+for arg in "$@"; do
+  case "$arg" in
+    --publish) PUBLISH=1 ;;
+    [0-9]*.[0-9]*) NEW_VERSION="$arg" ;;
+    *) echo "Unknown argument: $arg"; exit 1 ;;
+  esac
+done
+
+if [[ $PUBLISH == 1 && -n "$(git status --porcelain)" ]]; then
+  echo "Commit or stash your changes before publishing."; exit 1
+fi
+if [[ -n "$NEW_VERSION" ]]; then
+  BUILD=$(awk '/CURRENT_PROJECT_VERSION/ {gsub(/"/,"",$2); print $2; exit}' project.yml)
+  sed -i '' -E "s/(MARKETING_VERSION: )\"[^\"]*\"/\\1\"$NEW_VERSION\"/; s/(CURRENT_PROJECT_VERSION: )\"[^\"]*\"/\\1\"$((BUILD + 1))\"/" project.yml
+fi
+
 OUT=build/release
 VERSION=$(awk '/MARKETING_VERSION/ {gsub(/"/,"",$2); print $2; exit}' project.yml)
+BUILD=$(awk '/CURRENT_PROJECT_VERSION/ {gsub(/"/,"",$2); print $2; exit}' project.yml)
+if [[ $PUBLISH == 1 ]] && git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+  echo "v$VERSION is already released; pass a new version."; exit 1
+fi
+if [[ "${SKIP_TESTS:-0}" != 1 ]]; then scripts/test.sh; fi
 rm -rf "$OUT" && mkdir -p "$OUT"
 
-echo "▸ Glimmer $VERSION"
+echo "▸ Glimmer $VERSION (build $BUILD)"
 xcodegen generate >/dev/null
 xcodebuild -resolvePackageDependencies -project Glimmer.xcodeproj -scheme Glimmer -derivedDataPath build/DerivedData >/dev/null
 
@@ -76,7 +104,12 @@ mkdir -p "$OUT/updates"
 cp "$DMG" "$OUT/updates/"
 "$SPARKLE_BIN/generate_appcast" --download-url-prefix "https://github.com/fltman/glimmer-native/releases/download/v$VERSION/" "$OUT/updates"
 
-if [[ "${1:-}" == "--publish" ]]; then
+if [[ $PUBLISH == 1 ]]; then
+  if [[ -n "$(git status --porcelain project.yml)" ]]; then
+    git commit -qm "Release $VERSION" project.yml
+  fi
+  git tag "v$VERSION"
+  git push -q origin HEAD "v$VERSION"
   gh release create "v$VERSION" "$DMG" "$OUT/updates/appcast.xml" --title "Glimmer $VERSION" --generate-notes
 fi
 

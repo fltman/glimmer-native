@@ -4,8 +4,13 @@ set -euo pipefail
 cd "${0:A:h}/.."
 
 echo "▸ Package tests"
-swift test --package-path Packages/GlimmerKit 2>&1 | grep -E '✘|error:|Test run with' || true
-swift test --package-path Packages/GlimmerKit --quiet >/dev/null 2>&1 || { echo "✘ package tests failed"; exit 1; }
+mkdir -p build
+if swift test --package-path Packages/GlimmerKit > build/test.log 2>&1; then
+  grep -E 'Test run with' build/test.log || true
+else
+  grep -E '✘|error:|Test run with' build/test.log || tail -20 build/test.log
+  echo "✘ package tests failed (build/test.log)"; exit 1
+fi
 
 echo "▸ Generating Xcode project"
 xcodegen generate --quiet
