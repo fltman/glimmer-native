@@ -18,6 +18,9 @@ final class GlimmerUITests: XCTestCase {
         app.launchArguments = ["-skipWelcome", "-uiTestingNewDocument"]
         app.launch()
         XCTAssertTrue(canvas.waitForExistence(timeout: 15), "no document window")
+        // Clicks go to whatever is on top: make sure that's Glimmer.
+        app.activate()
+        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10), "Glimmer didn't come to the front")
     }
 
     override func tearDownWithError() throws {

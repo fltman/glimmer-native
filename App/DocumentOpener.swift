@@ -160,6 +160,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 MainActor.assumeIsolated {
                     DocumentOpener.shared.createDocument(.new(width: 800, height: 600, background: .white))
+                    // Started from a background service, the app isn't brought forward by the system.
+                    NSApp.activate(ignoringOtherApps: true)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        NSApp.windows.first { $0.isVisible }?.orderFrontRegardless()
+                        NSApp.activate(ignoringOtherApps: true)
+                    }
                 }
             }
         }
