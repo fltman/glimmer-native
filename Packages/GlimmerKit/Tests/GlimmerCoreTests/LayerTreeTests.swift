@@ -293,3 +293,74 @@ private func raster(_ name: String) -> Layer {
         #expect(read.layers[0].vectorMask == path)
     }
 }
+
+@Suite struct TextWarpTests {
+    /// Column-wise ink centre (document y) for an image rendered at `bounds`.
+    private func inkCentres(_ t: TextLayer) throws -> [Int: Double] {
+        let b = t.bounds
+        let image = try #require(t.render())
+        let w = image.width, h = image.height
+        var px = [UInt8](repeating: 0, count: w * h * 4)
+        let ctx = CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        var result: [Int: Double] = [:]
+        for x in 0..<w {
+            var sum = 0.0, n = 0.0
+            for y in 0..<h where px[(y * w + x) * 4 + 3] > 128 { sum += Double(y); n += 1 }
+            if n > 0 { result[b.x + x] = Double(b.y) + sum / n }
+        }
+        return result
+    }
+
+    @Test func formulasMatchTheWebApp() {
+        let arch = TextWarp(style: .arch, bend: 1)
+        #expect(arch.displacement(u: 0.5, v: 0.3) == SIMD2(0, 0.5))
+        #expect(arch.displacement(u: 0, v: 0.3).y == 0)
+        let arc = TextWarp(style: .arc, bend: 1)
+        #expect(arc.displacement(u: 0.5, v: 1).y == 0)
+        #expect(abs(TextWarp(style: .rise, bend: 0.4).displacement(u: 1, v: 0).y - 0.2) < 1e-12)
+        let skew = TextWarp(style: .wave, bend: 0, horizontal: 1)
+        #expect(skew.displacement(u: 0.3, v: 0).x == -0.3)
+        #expect(!TextWarp(style: .arc, bend: 0).isActive && !TextWarp(style: .none, bend: 1).isActive)
+    }
+
+    @Test func archBendsTheBaseline() throws {
+        var t = TextLayer(string: "WARPED TEXT", size: 60, origin: SIMD2(100, 100))
+        let flat = try inkCentres(t)
+        let flatBounds = t.bounds
+        t.warp = TextWarp(style: .arch, bend: 0.6)
+        let b = t.bounds
+        #expect(b.height > flatBounds.height + 30 && b.y < flatBounds.y)
+        let bent = try inkCentres(t)
+        // Average vertical shift of the ink against the flat text, near the ends and in the middle.
+        let xs = flat.keys.filter { bent[$0] != nil }.sorted()
+        func shift(_ f: Double) -> Double {
+            let lo = Int(Double(xs.count) * (f - 0.05)), hi = Int(Double(xs.count) * (f + 0.05))
+            let window = xs[max(lo, 0)..<min(hi, xs.count)]
+            return window.map { bent[$0]! - flat[$0]! }.reduce(0, +) / Double(window.count)
+        }
+        let left = shift(0.1), mid = shift(0.5), right = shift(0.9)
+        // A positive arch pushes the middle down (web semantics) much more than the ends.
+        #expect(mid > 12 && mid > left + 8 && mid > right + 8, "left \(left) mid \(mid) right \(right)")
+    }
+
+    @Test func warpRoundTripsAndOldFilesStillDecode() throws {
+        var t = TextLayer(string: "A", origin: .zero)
+        t.warp = TextWarp(style: .flag, bend: -0.25, vertical: 0.5)
+        let data = try JSONEncoder().encode(t)
+        #expect(try JSONDecoder().decode(TextLayer.self, from: data) == t)
+        var legacy = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        legacy.removeValue(forKey: "warp")
+        let old = try JSONDecoder().decode(TextLayer.self, from: JSONSerialization.data(withJSONObject: legacy))
+        #expect(old.warp == nil)
+    }
+
+    @Test func aipsTextWarpImports() {
+        let t = AipsImporter.textLayer(["text": "Hi", "fontSize": 40,
+                                        "warp": ["style": "wave", "bend": 0.4, "horizontal": 0, "vertical": 0.1]],
+                                       origin: SIMD2(0, 0))
+        #expect(t.warp == TextWarp(style: .wave, bend: 0.4, vertical: 0.1))
+        #expect(AipsImporter.textLayer(["text": "Hi", "warp": ["style": "none", "bend": 0]], origin: .zero).warp == nil)
+    }
+}

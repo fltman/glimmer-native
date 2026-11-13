@@ -58,12 +58,20 @@ final class AIController {
 
     // MARK: Setup
 
-    var hasAPIKey: Bool {
-        ((try? KeychainSecretStore.openRouterAPIKey.read()) ?? nil)?.isEmpty == false
+    var hasAPIKey: Bool { (try? Self.apiKey()) != nil }
+
+    /// The OpenRouter key from the Keychain. Debug builds also accept the
+    /// `OPENROUTER_API_KEY` environment variable, so test runs never store a key.
+    static func apiKey() throws -> String? {
+        if let key = try KeychainSecretStore.openRouterAPIKey.read(), !key.isEmpty { return key }
+        #if DEBUG
+        if let key = ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"], !key.isEmpty { return key }
+        #endif
+        return nil
     }
 
     private func imageModel() throws -> ImageModel {
-        guard let key = try KeychainSecretStore.openRouterAPIKey.read(), !key.isEmpty else {
+        guard let key = try Self.apiKey() else {
             throw OpenRouterError.missingAPIKey
         }
         let model = UserDefaults.standard.string(forKey: AIDefaults.imageModelKey) ?? AIDefaults.imageModel
@@ -405,7 +413,7 @@ final class AIController {
 
     func findDistractions() {
         do {
-            guard let key = try KeychainSecretStore.openRouterAPIKey.read(), !key.isEmpty else { throw OpenRouterError.missingAPIKey }
+            guard let key = try Self.apiKey() else { throw OpenRouterError.missingAPIKey }
             let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
             let source = try composite(session.state)
             distractions = []

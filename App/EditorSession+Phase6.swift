@@ -704,6 +704,14 @@ extension EditorSession {
         textDefaults = (d.fontName, d.size, d.alignment)
     }
 
+    /// Live-updates the active text layer's warp (nil removes it).
+    func updateTextWarp(_ warp: TextWarp?) {
+        guard let layer = activeLayer, case .text = layer.content else { return }
+        liveLayer("Warp Text") { layer in
+            if case .text(var t) = layer.content { t.warp = warp; layer.content = .text(t) }
+        }
+    }
+
     // MARK: Pen tool and paths
 
     var activePath: VectorPath? {

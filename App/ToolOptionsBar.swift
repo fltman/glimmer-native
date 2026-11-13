@@ -335,11 +335,63 @@ private struct TextOptions: View {
             }), supportsOpacity: false)
             .labelsHidden()
             .fixedSize()
+        if let layer = session.activeLayer, case .text(let text) = layer.content, text.onPath == nil {
+            Button("Warp", systemImage: "textformat.size.larger") { showWarp.toggle() }
+                .help("Warp Text")
+                .popover(isPresented: $showWarp, arrowEdge: .bottom) { WarpTextPanel(session: session, warp: text.warp) }
+        }
     }
+
+    @State private var showWarp = false
 
     private func apply(_ change: @escaping (inout TextLayer) -> Void) {
         session.updateText(change)
         session.commitLiveEdit()
+    }
+}
+
+/// Style, bend and distortion for the active text layer's warp envelope.
+private struct WarpTextPanel: View {
+    let session: EditorSession
+    @State var warp: TextWarp
+
+    init(session: EditorSession, warp: TextWarp?) {
+        self.session = session
+        _warp = State(initialValue: warp ?? TextWarp(style: .none, bend: 0.5))
+    }
+
+    var body: some View {
+        Form {
+            Picker("Style", selection: $warp.style) {
+                ForEach(TextWarp.Style.allCases) { Text(LocalizedStringKey($0.title)).tag($0) }
+            }
+            slider("Bend", \.bend)
+            slider("Horizontal Distortion", \.horizontal)
+            slider("Vertical Distortion", \.vertical)
+        }
+        .formStyle(.grouped)
+        .frame(width: 340)
+        .fixedSize(horizontal: false, vertical: true)
+        .onChange(of: warp.style) { push(commit: true) }
+    }
+
+    private func slider(_ label: String, _ key: WritableKeyPath<TextWarp, Double>) -> some View {
+        LabeledContent(LocalizedStringKey(label)) {
+            HStack {
+                Slider(value: Binding(get: { warp[keyPath: key] }, set: { warp[keyPath: key] = $0; push(commit: false) }),
+                       in: -1...1) { editing in if !editing { session.commitLiveEdit() } }
+                Text("\(Int((warp[keyPath: key] * 100).rounded()))")
+                    .monospacedDigit()
+                    .frame(width: 36, alignment: .trailing)
+            }
+        }
+        .disabled(warp.style == .none)
+    }
+
+    private func push(commit: Bool) {
+        let value = warp
+        session.updateTextWarp(value.style == .none ? nil : value)
+        if commit { session.commitLiveEdit() }
     }
 }
 

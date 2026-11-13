@@ -41,7 +41,7 @@ extension AIController {
             return
         }
         #endif
-        guard let key = try? KeychainSecretStore.openRouterAPIKey.read(), !key.isEmpty else {
+        guard let key = (try? Self.apiKey()) ?? nil else {
             messages.append(Message(fromUser: false, text: "Add your OpenRouter API key in Settings › AI to use the assistant."))
             return
         }

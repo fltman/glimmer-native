@@ -266,10 +266,15 @@ public enum AipsImporter {
         if !traits.isEmpty, let styled = CTFontCreateCopyWithSymbolicTraits(font, size, nil, traits, traits) { font = styled }
         let c = t["color"] as? [String: Any] ?? [:]
         let align = TextAlignment(rawValue: t["align"] as? String ?? "left") ?? .left
-        return TextLayer(string: t["text"] as? String ?? "", fontName: CTFontCopyPostScriptName(font) as String, size: size,
-                         color: SRGBColor(double(c["r"], 0), double(c["g"], 0), double(c["b"], 0)), alignment: align,
-                         lineHeight: max(0.1, double(t["lineHeight"], 1.2)),
-                         origin: SIMD2(Double(origin.x) + size * 0.25, Double(origin.y) + size * 0.1))
+        var layer = TextLayer(string: t["text"] as? String ?? "", fontName: CTFontCopyPostScriptName(font) as String, size: size,
+                              color: SRGBColor(double(c["r"], 0), double(c["g"], 0), double(c["b"], 0)), alignment: align,
+                              lineHeight: max(0.1, double(t["lineHeight"], 1.2)),
+                              origin: SIMD2(Double(origin.x) + size * 0.25, Double(origin.y) + size * 0.1))
+        if let w = t["warp"] as? [String: Any], let style = TextWarp.Style(rawValue: w["style"] as? String ?? ""), style != .none {
+            layer.warp = TextWarp(style: style, bend: double(w["bend"], 0), horizontal: double(w["horizontal"], 0),
+                                  vertical: double(w["vertical"], 0))
+        }
+        return layer
     }
 
     // MARK: Text (legacy raster path)
