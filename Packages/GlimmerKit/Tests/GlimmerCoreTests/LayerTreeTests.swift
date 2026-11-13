@@ -1,3 +1,4 @@
+import CoreGraphics
 import Foundation
 import Testing
 import simd
@@ -230,5 +231,29 @@ private func raster(_ name: String) -> Layer {
         let p = GlimmerCore.AffineTransform.quad(sourceSize: size, to: quad)
         let back = try JSONDecoder().decode(GlimmerCore.AffineTransform.self, from: JSONEncoder().encode(p))
         #expect(back == p)
+    }
+}
+
+@Suite struct TextOnPathTests {
+    @Test func textFollowsTheLine() throws {
+        // A diagonal path: the rendered ink must lie near the diagonal, not in a horizontal band.
+        var t = TextLayer(string: "GLIMMER ALONG A PATH", size: 30, origin: SIMD2(0, 0))
+        t.onPath = [SIMD2(50, 50), SIMD2(450, 450)]
+        let b = t.bounds
+        #expect(b.x < 50 && b.maxX > 450)
+        let image = try #require(t.render())
+        let w = image.width, h = image.height
+        var px = [UInt8](repeating: 0, count: w * h * 4)
+        let ctx = CGContext(data: &px, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        var near = 0, far = 0
+        for y in 0..<h { for x in 0..<w where px[(y * w + x) * 4 + 3] > 128 {
+            // Context memory is top-down; document y = b.y + y.
+            let dx = Double(b.x + x), dy = Double(b.y + y)
+            abs(dx - dy) / 2.0.squareRoot() < 40 ? (near += 1) : (far += 1)
+        } }
+        #expect(near > 500)
+        #expect(far < near / 20, "near \(near) far \(far)")
     }
 }

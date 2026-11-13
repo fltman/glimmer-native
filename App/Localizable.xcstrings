@@ -271,6 +271,17 @@
         }
       }
     },
+    "Add text that follows the path": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till text som följer banan"
+          }
+        }
+      }
+    },
     "Add your OpenRouter key": {
       "localizations": {
         "sv": {
@@ -5519,6 +5530,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Text"
+          }
+        }
+      }
+    },
+    "Type on Path": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text längs bana"
           }
         }
       }

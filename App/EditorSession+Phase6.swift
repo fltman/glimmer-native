@@ -603,11 +603,38 @@ extension EditorSession {
             editingText = hit.id
             return
         }
+        // Clicking on the active path starts text along it.
+        if let path = activePath, let line = path.polygons().first, line.count > 1 {
+            let tol = 8 / max(canvas.transform.scale, 0.001)
+            let near = zip(line, line.dropFirst()).contains { a, b in Self.distance(doc, toSegment: a, b) < tol }
+            if near {
+                addTextOnPath(path.id)
+                return
+            }
+        }
         let text = TextLayer(string: "", fontName: textDefaults.fontName, size: textDefaults.size, color: foreground,
                              alignment: textDefaults.alignment, origin: doc - SIMD2(0, textDefaults.size * 0.9))
         let layer = Layer(name: "Text", content: .text(text))
         edit("New Text Layer") { $0.insertLayerAboveActive(layer) }
         editingText = layer.id
+    }
+
+    /// A new text layer whose baseline follows the path (its first subpath).
+    func addTextOnPath(_ pathID: UUID) {
+        guard let path = state.paths.first(where: { $0.id == pathID }), let line = path.polygons().first, line.count > 1 else { return }
+        var text = TextLayer(string: "", fontName: textDefaults.fontName, size: textDefaults.size, color: foreground,
+                             alignment: textDefaults.alignment, origin: line[0] - SIMD2(0, textDefaults.size * 0.9))
+        text.onPath = line
+        let layer = Layer(name: "Text", content: .text(text))
+        edit("New Text Layer") { $0.insertLayerAboveActive(layer) }
+        tool = .type
+        editingText = layer.id
+    }
+
+    static func distance(_ p: SIMD2<Double>, toSegment a: SIMD2<Double>, _ b: SIMD2<Double>) -> Double {
+        let ab = b - a
+        let t = simd_length_squared(ab) > 0 ? max(0, min(1, simd_dot(p - a, ab) / simd_length_squared(ab))) : 0
+        return simd_distance(p, a + ab * t)
     }
 
     func commitText(_ string: String, id: UUID) {

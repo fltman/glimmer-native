@@ -1,6 +1,7 @@
 import CoreGraphics
 import CoreText
 import Foundation
+import simd
 
 // MARK: Text layers
 
@@ -26,6 +27,9 @@ public struct TextLayer: Codable, Hashable, Sendable {
     public var origin: SIMD2<Double>
     /// Paragraph text wraps at this width; nil = point text.
     public var boxWidth: Double?
+    /// Text on a path: the baseline follows this polyline (document pixels).
+    /// Alignment places the text at the start, middle or end of the path.
+    public var onPath: [SIMD2<Double>]?
 
     public init(string: String, fontName: String = "HelveticaNeue", size: Double = 72, color: SRGBColor = .black,
                 alignment: TextAlignment = .left, tracking: Double = 0, lineHeight: Double = 1.2,
@@ -76,6 +80,12 @@ public struct TextLayer: Codable, Hashable, Sendable {
     }
 
     public var bounds: PixelRect {
+        if let line = onPath, line.count > 1 {
+            let lo = line.reduce(line[0]) { simd_min($0, $1) }, hi = line.reduce(line[0]) { simd_max($0, $1) }
+            let pad = size * 1.3
+            let x0 = Int((lo.x - pad).rounded(.down)), y0 = Int((lo.y - pad).rounded(.down))
+            return PixelRect(x: x0, y: y0, width: Int((hi.x + pad).rounded(.up)) - x0, height: Int((hi.y + pad).rounded(.up)) - y0)
+        }
         let s = layoutSize
         return PixelRect(x: Int(origin.x.rounded(.down)), y: Int(origin.y.rounded(.down)),
                          width: Int(s.width.rounded(.up)) + 1, height: Int(s.height.rounded(.up)) + 1)
@@ -90,6 +100,10 @@ public struct TextLayer: Codable, Hashable, Sendable {
                                   bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
         ctx.setShouldAntialias(true)
         ctx.setShouldSmoothFonts(false)
+        if let line = onPath, line.count > 1 {
+            drawOnPath(line, in: ctx, bounds: b)
+            return ctx.makeImage()
+        }
         // Sub-pixel placement of the origin.
         let fx = origin.x - Double(b.x), fy = origin.y - Double(b.y)
         let size = layoutSize
@@ -99,6 +113,56 @@ public struct TextLayer: Codable, Hashable, Sendable {
         let frame = CTFramesetterCreateFrame(framesetter, CFRange(), path, nil)
         CTFrameDraw(frame, ctx)
         return ctx.makeImage()
+    }
+
+    /// Draws each glyph centred on its arc-length position along `line`, rotated to the tangent.
+    private func drawOnPath(_ line: [SIMD2<Double>], in ctx: CGContext, bounds b: PixelRect) {
+        var lengths = [0.0]
+        for i in 1..<line.count { lengths.append(lengths[i - 1] + simd_distance(line[i - 1], line[i])) }
+        let total = lengths.last!
+        guard total > 0 else { return }
+        let ctLine = CTLineCreateWithAttributedString(attributedString())
+        let width = CTLineGetTypographicBounds(ctLine, nil, nil, nil)
+        let start: Double = switch alignment {
+        case .left: 0
+        case .center: (total - width) / 2
+        case .right: total - width
+        }
+        func point(at s: Double) -> (SIMD2<Double>, Double)? {
+            guard s >= 0, s <= total else { return nil }
+            var i = 1
+            while i < lengths.count - 1, lengths[i] < s { i += 1 }
+            let seg = lengths[i] - lengths[i - 1]
+            let t = seg > 0 ? (s - lengths[i - 1]) / seg : 0
+            let a = line[i - 1], c = line[i]
+            return (a + (c - a) * t, atan2(c.y - a.y, c.x - a.x))
+        }
+        ctx.setFillColor(CGColor(srgbRed: color.r, green: color.g, blue: color.b, alpha: 1))
+        let runs = CTLineGetGlyphRuns(ctLine) as! [CTRun]
+        for run in runs {
+            let count = CTRunGetGlyphCount(run)
+            guard count > 0 else { continue }
+            var glyphs = [CGGlyph](repeating: 0, count: count)
+            var positions = [CGPoint](repeating: .zero, count: count)
+            var advances = [CGSize](repeating: .zero, count: count)
+            CTRunGetGlyphs(run, CFRange(), &glyphs)
+            CTRunGetPositions(run, CFRange(), &positions)
+            CTRunGetAdvances(run, CFRange(), &advances)
+            let attrs = CTRunGetAttributes(run) as NSDictionary
+            let runFont = attrs[kCTFontAttributeName as String].map { $0 as! CTFont } ?? font
+            for k in 0..<count {
+                let mid = start + Double(positions[k].x) + Double(advances[k].width) / 2
+                guard let (p, angle) = point(at: mid) else { continue }
+                ctx.saveGState()
+                // Document (y down) → context (y up).
+                ctx.translateBy(x: p.x - Double(b.x), y: Double(b.height) - (p.y - Double(b.y)))
+                ctx.rotate(by: -angle)
+                var glyph = glyphs[k]
+                var origin = CGPoint(x: -advances[k].width / 2, y: 0)
+                CTFontDrawGlyphs(runFont, &glyph, &origin, 1, ctx)
+                ctx.restoreGState()
+            }
+        }
     }
 }
 

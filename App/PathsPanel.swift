@@ -29,6 +29,8 @@ struct PathsPanel: View {
                     .help("Stroke the path with the current brush")
                 Button("Selection", systemImage: "lasso") { id.map(session.makeSelection(fromPath:)) }
                     .help("Load the path as a selection")
+                Button("Type on Path", systemImage: "character.cursor.ibeam") { id.map(session.addTextOnPath) }
+                    .help("Add text that follows the path")
                 Spacer()
                 Button("Delete", systemImage: "trash") { id.map(session.deletePath) }
                     .help("Delete the path")
