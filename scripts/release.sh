@@ -25,13 +25,15 @@ PUBKEY=""
 if [[ "${SKIP_SPARKLE:-0}" == 1 ]]; then
   echo "▸ SKIP_SPARKLE=1: building without an update key"
 else
-  PUBKEY=$("$SPARKLE_BIN/generate_keys" -p 2>/dev/null || true)
+  # generate_keys -p prints its error to stdout, so only trust the output on success.
+  PUBKEY=$("$SPARKLE_BIN/generate_keys" -p 2>/dev/null) || PUBKEY=""
 fi
 if [[ -z "$PUBKEY" && "${SKIP_SPARKLE:-0}" != 1 ]]; then
   echo "▸ Creating the Sparkle signing key (stored in your login keychain)"
   "$SPARKLE_BIN/generate_keys" >/dev/null
   PUBKEY=$("$SPARKLE_BIN/generate_keys" -p)
 fi
+[[ "${SKIP_SPARKLE:-0}" == 1 || "$PUBKEY" =~ ^[A-Za-z0-9+/=]{40,}$ ]] || { echo "Bad Sparkle public key: $PUBKEY"; exit 1; }
 
 echo "▸ Archiving"
 xcodebuild archive -project Glimmer.xcodeproj -scheme Glimmer -configuration Release \
