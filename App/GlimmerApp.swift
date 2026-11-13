@@ -17,6 +17,7 @@ struct GlimmerApp: App {
             }
             return GlimmerDocument()
         }
+        .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New…") { DocumentOpener.shared.showNewDocumentWindow() }

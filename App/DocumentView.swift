@@ -16,25 +16,23 @@ struct DocumentView: View {
     var body: some View {
         CanvasView(session: session)
             .overlay(alignment: .leading) {
-                ToolPalette(session: session)
-                    .padding(.leading, 12)
+                if session.showTools {
+                    ToolPalette(session: session)
+                        .padding(.leading, 12)
+                }
             }
-            .overlay(alignment: .bottomLeading) {
-                StatusPill(session: session)
-                    .padding(12)
+            .overlay(alignment: .topLeading) {
+                TitleChip(session: session)
+                    .padding(.leading, 84)  // clear of the window buttons
+                    .padding(.top, 10)
             }
             .overlay(alignment: .top) {
                 ToolOptionsBar(session: session)
-                    .padding(.top, 10)
+                    .padding(.top, 48)
             }
             .overlay(alignment: .bottomTrailing) {
                 if session.showNavigator {
                     NavigatorView(session: session, canvas: session.canvas).padding(12)
-                }
-            }
-            .overlay(alignment: .bottom) {
-                if showOmnibar, session.liquify == nil, session.transformSession == nil, session.cropSession == nil {
-                    Omnibar(session: session).padding(.bottom, 12)
                 }
             }
             .overlay {
@@ -42,57 +40,47 @@ struct DocumentView: View {
                     GeometryReader { geo in SelectionBar(session: session, viewSize: geo.size) }
                 }
             }
-            .overlay(alignment: .top) {
-                if session.isPaletteOpen {
-                    ZStack(alignment: .top) {
-                        Color.black.opacity(0.001)
-                            .onTapGesture { session.isPaletteOpen = false }
-                        CommandPalette(session: session).padding(.top, 70)
-                    }
+            .overlay(alignment: .bottom) {
+                if showOmnibar, session.liquify == nil, session.transformSession == nil, session.cropSession == nil,
+                   !session.isPaletteOpen {
+                    Omnibar(session: session).padding(.bottom, 16)
                 }
             }
             .overlay(alignment: .topTrailing) {
+                VStack(alignment: .trailing, spacing: 10) {
+                    ChromeBar(session: session)
+                    if session.showLayersPanel {
+                        SidePanel(session: session)
+                    }
+                }
+                .padding(.top, 10)
+                .padding(.trailing, 12)
+                .padding(.bottom, 12)
+            }
+            .overlay(alignment: .top) {
+                if session.isPaletteOpen {
+                    ZStack(alignment: .top) {
+                        Color.black.opacity(0.35)
+                            .onTapGesture { session.isPaletteOpen = false }
+                        CommandPalette(session: session).padding(.top, 110)
+                    }
+                    .ignoresSafeArea()
+                }
+            }
+            .overlay(alignment: .topLeading) {
                 // Floating, non-modal: the canvas stays visible for the live preview.
                 if let item = session.filterDialog.map(FilterDialogItem.init) {
                     FilterSheet(session: session, settings: item.settings)
                         .id(item.id)
-                        .glassEffect(.regular, in: .rect(cornerRadius: 18))
-                        .padding(.top, 50)
-                        .padding(14)
+                        .panelSurface(cornerRadius: 14)
+                        .padding(.top, 96)
+                        .padding(.leading, session.showTools ? 104 : 14)
                 }
             }
+            .ignoresSafeArea(.container, edges: .top)
             .sheet(item: Binding(get: { session.selectionDialog.map(SelectionDialogItem.init) },
                                  set: { session.selectionDialog = $0?.id })) { item in
                 SelectionModifySheet(session: session, command: item.id)
-            }
-            .inspector(isPresented: $session.showLayersPanel) {
-                VStack(spacing: 0) {
-                    Picker("Panel", selection: $session.inspectorTab) {
-                        ForEach(EditorSession.InspectorTab.allCases, id: \.self) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .padding(8)
-                    switch session.inspectorTab {
-                    case .layers: LayersPanel(session: session)
-                    case .paths: PathsPanel(session: session)
-                    case .channels: ChannelsPanel(session: session)
-                    case .history: HistoryPanel(session: session)
-                    case .ai: AIPanel(session: session, ai: session.ai)
-                    }
-                }
-                .frame(maxHeight: .infinity, alignment: .top)
-                .inspectorColumnWidth(min: 260, ideal: 300, max: 420)
-            }
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        session.showLayersPanel.toggle()
-                    } label: {
-                        Label("Layers", systemImage: "square.3.layers.3d")
-                    }
-                    .help("Show or hide the Layers panel (⌥⌘L)")
-                }
             }
             .sheet(isPresented: $session.isExportSheetPresented) {
                 ExportSheet(session: session)
@@ -108,13 +96,97 @@ struct DocumentView: View {
             } message: {
                 Text(session.errorMessage ?? "")
             }
+            .preferredColorScheme(.dark)
+            .tint(Theme.accent)
             .focusedSceneValue(\.editorSession, session)
             .onAppear { session.undoManager = undoManager }
             .onChange(of: undoManager) { _, manager in session.undoManager = manager }
     }
 }
 
-private struct StatusPill: View {
+/// The buttons along the top right, as in the web app: AI, Tools, Layers, Export, ⌘K.
+private struct ChromeBar: View {
+    @Bindable var session: EditorSession
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ChromeChip(title: "AI", systemImage: "sparkles", isOn: session.showLayersPanel && session.inspectorTab == .ai) {
+                toggle(.ai)
+            }
+            .help("Assistant and AI tools")
+            ChromeChip(title: "Tools", systemImage: "wrench.and.screwdriver", isOn: session.showTools) {
+                session.showTools.toggle()
+            }
+            .help("Show or hide the tools")
+            ChromeChip(title: "Layers", systemImage: "square.3.layers.3d",
+                       isOn: session.showLayersPanel && session.inspectorTab != .ai) {
+                toggle(session.inspectorTab == .ai ? .layers : session.inspectorTab)
+            }
+            .help("Layers, paths, channels and history (⌥⌘L)")
+            ChromeChip(title: "Export", systemImage: "square.and.arrow.down") { session.perform(.export) }
+                .help("Export the image")
+            ChromeChip(title: "Command Palette", systemImage: "command", showsTitle: false) { session.isPaletteOpen = true }
+                .help("Search commands or ask the assistant (⌘K)")
+        }
+    }
+
+    private func toggle(_ tab: EditorSession.InspectorTab) {
+        let showing = session.showLayersPanel && (tab == .ai) == (session.inspectorTab == .ai)
+        if showing {
+            session.showLayersPanel = false
+        } else {
+            session.inspectorTab = tab
+            session.showLayersPanel = true
+        }
+    }
+}
+
+/// The floating panel under the chips: the assistant, or layers/paths/channels/history.
+private struct SidePanel: View {
+    @Bindable var session: EditorSession
+
+    private static let documentTabs: [EditorSession.InspectorTab] = [.layers, .paths, .channels, .history]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                if session.inspectorTab == .ai {
+                    Text("ASSISTANT & AI").font(.caption.weight(.semibold)).kerning(1).foregroundStyle(Theme.muted)
+                } else {
+                    Picker("Panel", selection: $session.inspectorTab) {
+                        ForEach(Self.documentTabs, id: \.self) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                }
+                Spacer(minLength: 8)
+                Button("Close", systemImage: "xmark") { session.showLayersPanel = false }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 42)
+            Divider().overlay(Theme.edge)
+            Group {
+                switch session.inspectorTab {
+                case .layers: LayersPanel(session: session)
+                case .paths: PathsPanel(session: session)
+                case .channels: ChannelsPanel(session: session)
+                case .history: HistoryPanel(session: session)
+                case .ai: AIPanel(session: session, ai: session.ai)
+                }
+            }
+            .frame(maxHeight: .infinity, alignment: .top)
+        }
+        .frame(width: 340)
+        .frame(maxHeight: 640)
+        .panelSurface(cornerRadius: 12)
+    }
+}
+
+/// Logo, document name, size and zoom, top left (plus whatever is in progress).
+private struct TitleChip: View {
     let session: EditorSession
 
     var body: some View {
@@ -125,7 +197,9 @@ private struct StatusPill: View {
 
     private var content: some View {
         HStack(spacing: 8) {
-            Text("\(session.state.width) × \(session.state.height) px")
+            Image(systemName: "sparkle").foregroundStyle(Theme.accent)
+            Text(session.documentName).fontWeight(.medium).lineLimit(1)
+            Text(verbatim: "\(session.state.width)×\(session.state.height)").foregroundStyle(.secondary)
             Text(session.canvas.zoom, format: .percent.precision(.fractionLength(0)))
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
@@ -142,9 +216,9 @@ private struct StatusPill: View {
             }
         }
         .font(.callout)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .glassEffect(.regular, in: .capsule)
+        .padding(.horizontal, 10)
+        .frame(height: 28)
+        .panelSurface(cornerRadius: 8)
         .allowsHitTesting(false)
     }
 }
@@ -180,7 +254,7 @@ private struct ToolPalette: View {
         }
         .padding(6)
         .fixedSize()
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .panelSurface(cornerRadius: 12)
     }
 }
 

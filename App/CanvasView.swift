@@ -24,6 +24,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     private let renderer: CanvasRenderer?
     private let compositor: DocumentCompositor?
     private var displayLink: CADisplayLink?
+    private var titleObservation: NSKeyValueObservation?
     private var needsRender = true
 
     private enum Drag {
@@ -219,6 +220,11 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         link.add(to: .main, forMode: .common)
         displayLink = link
         updateBackingScale()
+        // The title bar is hidden; the chip at the top left shows the document's name instead.
+        titleObservation = window?.observe(\.title, options: [.initial, .new]) { [weak self] window, _ in
+            let title = window.title
+            Task { @MainActor in self?.session.documentName = title }
+        }
         window?.makeFirstResponder(self)
     }
 
@@ -383,12 +389,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         if let grey = Preferences.canvasBackground.grey {
             return LinearColor.fromSRGB(grey, grey, grey)
         }
-        var color = SIMD4<Float>(0.05, 0.05, 0.05, 1)
-        effectiveAppearance.performAsCurrentDrawingAppearance {
-            if let c = NSColor.underPageBackgroundColor.usingColorSpace(.sRGB) {
-                color = LinearColor.fromSRGB(c.redComponent, c.greenComponent, c.blueComponent)
-            }
-        }
+        // "Match System" is Glimmer's own near-black, the same as the web app.
+        let color = LinearColor.fromSRGB(Theme.backgroundRGB.0, Theme.backgroundRGB.1, Theme.backgroundRGB.2)
         return color
     }
 

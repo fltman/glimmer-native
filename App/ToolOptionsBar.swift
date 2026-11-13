@@ -98,9 +98,9 @@ struct ToolOptionsBar: View {
             .padding(.vertical, 7)
         // Long option rows scroll instead of spilling past the canvas edges.
         return ViewThatFits(in: .horizontal) {
-            row.glassEffect(.regular, in: .capsule)
+            row.panelSurface(cornerRadius: 10)
             ScrollView(.horizontal, showsIndicators: false) { row }
-                .glassEffect(.regular, in: .capsule)
+                .panelSurface(cornerRadius: 10)
         }
         .padding(.horizontal, 12)
     }

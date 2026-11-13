@@ -71,14 +71,14 @@ extension AIController {
             isPlanning = true
             planTask = Task { [weak self] in
                 guard let self else { return }
-                let candidates = CommandSearch.candidates(for: goal, in: CommandPalette.allItems).map {
+                let candidates = CommandSearch.candidates(for: goal, in: Palette.allItems).map {
                     OnDeviceRouter.Candidate(id: $0.id, title: $0.title, subtitle: $0.subtitle)
                 }
                 let decision = (try? await OnDeviceRouter.route(goal, candidates: candidates)) ?? .assistant
                 if Task.isCancelled { self.isPlanning = false; return }
                 switch decision {
                 case .run(let id):
-                    if let item = CommandPalette.allItems.first(where: { $0.id == id }), self.session.runPaletteItem(item) {
+                    if let item = Palette.allItems.first(where: { $0.id == id }), self.session.runPaletteItem(item) {
                         self.isPlanning = false
                         self.messages.append(Message(fromUser: false, text: String(localized: "Done: \(String(localized: String.LocalizationValue(item.title))) (on this Mac, no AI cost).")))
                         self.agentHistory.append((goal, "Ran \(item.title)."))

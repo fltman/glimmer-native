@@ -48,7 +48,7 @@ struct NavigatorView: View {
         }
         .padding(10)
         .frame(width: 240)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .panelSurface(cornerRadius: 12)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Navigator")
     }

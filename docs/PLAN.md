@@ -385,6 +385,8 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **Sparade åtgärder i Genvägar:** `RunActionIntent` kör en sparad åtgärd utan fönster (`HeadlessEditor.run`). Justeringar, filter, presets, lagerstilar, text och bakgrundsborttagning stöds; steg som kräver fönstret eller betalda AI-jobb ger ett tydligt fel.
   - **CI** körs på den här Macen som self-hosted runner (`scripts/setup-runner.sh`).
 
+- **Gränssnitt efter webbversionen (2026-11-14):** mörkt tema med webbens färger (`Theme.swift`: bakgrund #0c0d11, panel #16171c, accent #6d7dff), dold titelrad och arbetsytan kant i kant. Sidopanelen (`.inspector`) är ersatt av en flytande panel under knappraden uppe till höger (AI, Tools, Layers, Export, ⌘K). Namn, storlek och zoom visas i en bricka uppe till vänster. Omnibaren är en riktig textrad: ↩ kör bästa träff, ⌘↩ frågar assistenten, träffar visas ovanför. Paletten och omnibaren delar logik i `Palette`.
+
 ## 4. Teststrategi
 
 - **GlimmerCore:** modell, COW-tiles, undo/redo-invarianter, serialisering (rundtur och versionsmigrering) och `.aips`-import mot riktiga filer från webbappen.

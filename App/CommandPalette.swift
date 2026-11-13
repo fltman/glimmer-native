@@ -2,26 +2,23 @@ import GlimmerCore
 import GlimmerTools
 import SwiftUI
 
-/// ⌘K: fuzzy search over every command, tool, filter, adjustment and preset.
-/// Text that reads like a request goes to the assistant instead.
-struct CommandPalette: View {
-    let session: EditorSession
-    @State private var query = ""
-    @State private var selection = 0
-    @FocusState private var focused: Bool
+/// One line in the command palette or under the omnibar.
+enum PaletteRow: Identifiable {
+    case item(PaletteItem)
+    case ask(String)
 
-    private enum Row: Identifiable {
-        case item(PaletteItem)
-        case ask(String)
-        var id: String {
-            switch self {
-            case .item(let i): i.id
-            case .ask: "ask"
-            }
+    var id: String {
+        switch self {
+        case .item(let i): i.id
+        case .ask: "ask"
         }
     }
+}
 
-    static let allItems: [PaletteItem] = {
+/// What the palette and the omnibar share: the searchable items, the rows for
+/// a query, and running a row.
+enum Palette {
+    @MainActor static let allItems: [PaletteItem] = {
         let registry = CommandRegistry.standard
         var items = registry.descriptors.filter { !$0.isSystemProvided && $0.id != .commandPalette }.map { d in
             PaletteItem(id: d.id.rawValue, title: d.title, subtitle: d.id.adjustmentKind != nil ? "Adjustment"
@@ -40,24 +37,27 @@ struct CommandPalette: View {
 
     static let recentsKey = "palette.recents"
 
-    /// Saved assistant actions are searchable alongside the commands.
-    private var items: [PaletteItem] {
-        Self.allItems + session.ai.savedActions.map {
+    /// Commands plus the saved assistant actions.
+    @MainActor
+    static func items(_ session: EditorSession) -> [PaletteItem] {
+        allItems + session.ai.savedActions.map {
             PaletteItem(id: "action.\($0.id)", title: $0.name, subtitle: "Action", keywords: ["action", "saved", "macro"],
                         action: .savedAction($0.id.uuidString))
         }
     }
 
-    private var rows: [Row] {
+    @MainActor
+    static func rows(for query: String, session: EditorSession, limit: Int = 9, recentsWhenEmpty: Bool = true) -> [PaletteRow] {
         let q = query.trimmingCharacters(in: .whitespaces)
-        let items = items
+        let items = items(session)
         guard !q.isEmpty else {
             // Nothing typed yet: what you used last.
-            let recents = UserDefaults.standard.stringArray(forKey: Self.recentsKey) ?? []
-            return recents.compactMap { id in items.first { $0.id == id } }.map(Row.item)
+            guard recentsWhenEmpty else { return [] }
+            let recents = UserDefaults.standard.stringArray(forKey: recentsKey) ?? []
+            return recents.compactMap { id in items.first { $0.id == id } }.map(PaletteRow.item)
         }
-        let results = CommandSearch.search(q, in: items, limit: 9)
-        var rows = results.map { Row.item($0.item) }
+        let results = CommandSearch.search(q, in: items, limit: limit)
+        var rows = results.map { PaletteRow.item($0.item) }
         if CommandSearch.looksLikeAssistantRequest(q, bestScore: results.first?.score) {
             rows.insert(.ask(q), at: 0)
         } else {
@@ -66,11 +66,90 @@ struct CommandPalette: View {
         return rows
     }
 
+    @MainActor
+    static func ask(_ text: String, session: EditorSession) {
+        session.showLayersPanel = true
+        session.inspectorTab = .ai
+        session.ai.ask(text)
+    }
+
+    @MainActor
+    static func run(_ row: PaletteRow, session: EditorSession) {
+        switch row {
+        case .ask(let q):
+            ask(q, session: session)
+        case .item(let item):
+            guard session.runPaletteItem(item) else { NSSound.beep(); return }
+            var recents = UserDefaults.standard.stringArray(forKey: recentsKey) ?? []
+            recents.removeAll { $0 == item.id }
+            recents.insert(item.id, at: 0)
+            UserDefaults.standard.set(Array(recents.prefix(6)), forKey: recentsKey)
+        }
+    }
+
+    static func symbol(_ item: PaletteItem) -> String {
+        switch item.action {
+        case .tool(let raw): ToolID(rawValue: raw)?.symbolName ?? "hammer"
+        case .preset: "camera.filters"
+        case .savedAction: "bookmark"
+        case .command(let id):
+            if id.filterKind != nil { "camera.aperture" } else if id.adjustmentKind != nil { "slider.horizontal.3" } else { "command" }
+        }
+    }
+}
+
+/// A row as the web app shows it: category in small capitals, then the title.
+struct PaletteRowView: View {
+    let row: PaletteRow
+    let selected: Bool
+
     var body: some View {
-        let rows = rows
+        HStack(spacing: 12) {
+            switch row {
+            case .item(let item):
+                Text(item.subtitle.uppercased())
+                    .font(.caption2.weight(.medium))
+                    .kerning(0.6)
+                    .foregroundStyle(Theme.muted)
+                    .lineLimit(1)
+                    .frame(width: 92, alignment: .leading)
+                Image(systemName: Palette.symbol(item)).frame(width: 16).foregroundStyle(Theme.muted)
+                Text(LocalizedStringKey(item.title)).lineLimit(1)
+                Spacer()
+                if case .command(let id) = item.action, let s = CommandRegistry.standard.descriptor(for: id)?.shortcut {
+                    Text(s.display).font(.caption.monospaced()).foregroundStyle(Theme.muted)
+                }
+            case .ask(let q):
+                Text("ASSISTANT")
+                    .font(.caption2.weight(.medium))
+                    .kerning(0.6)
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 92, alignment: .leading)
+                Image(systemName: "sparkles").frame(width: 16).foregroundStyle(Theme.accent)
+                Text("Ask the assistant: “\(q)”").lineLimit(1)
+                Spacer()
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(selected ? Theme.accent.opacity(0.28) : .clear, in: .rect(cornerRadius: 7))
+        .contentShape(.rect)
+    }
+}
+
+/// ⌘K: fuzzy search over every command, tool, filter, adjustment and preset.
+/// Text that reads like a request goes to the assistant instead.
+struct CommandPalette: View {
+    let session: EditorSession
+    @State private var query = ""
+    @State private var selection = 0
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        let rows = Palette.rows(for: query, session: session)
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkle.magnifyingglass").foregroundStyle(.secondary)
+            HStack(spacing: 10) {
+                Text("⌘K").font(.callout.monospaced()).foregroundStyle(Theme.muted)
                 TextField("Search commands, or ask for an edit…", text: $query)
                     .textFieldStyle(.plain)
                     .font(.title3)
@@ -80,82 +159,43 @@ struct CommandPalette: View {
                     .onKeyPress(.upArrow) { selection = max(selection - 1, 0); return .handled }
                     .onKeyPress(.escape) { session.isPaletteOpen = false; return .handled }
                     .onChange(of: query) { selection = 0 }
+                Text("↑↓ · Enter · Esc").font(.caption).foregroundStyle(Theme.muted)
             }
-            .padding(14)
+            .padding(16)
             if !rows.isEmpty {
-                Divider()
+                Divider().overlay(Theme.edge)
                 ScrollView {
                     VStack(spacing: 2) {
                         ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                            rowView(row, selected: index == selection)
-                                .contentShape(.rect)
+                            PaletteRowView(row: row, selected: index == selection)
                                 .onTapGesture { run(rows, index: index) }
                         }
                     }
                     .padding(6)
                 }
-                .frame(height: min(CGFloat(rows.count) * 34 + 12, 360))
+                .frame(height: min(CGFloat(rows.count) * 36 + 12, 380))
             } else {
                 Text("Try “blur”, “curves”, “brush”, or describe an edit: “make it look like film”.")
                     .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 14)
-                    .padding(.bottom, 12)
+                    .foregroundStyle(Theme.muted)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 14)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .frame(width: 560)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
-        .onAppear { focused = true }
-    }
-
-    @ViewBuilder private func rowView(_ row: Row, selected: Bool) -> some View {
-        HStack(spacing: 10) {
-            switch row {
-            case .item(let item):
-                Image(systemName: symbol(item)).frame(width: 18).foregroundStyle(.secondary)
-                Text(LocalizedStringKey(item.title))
-                Spacer()
-                Text(item.subtitle).font(.caption).foregroundStyle(.secondary)
-                if case .command(let id) = item.action, let s = CommandRegistry.standard.descriptor(for: id)?.shortcut {
-                    Text(s.display).font(.caption.monospaced()).foregroundStyle(.secondary)
-                }
-            case .ask(let q):
-                Image(systemName: "sparkles").frame(width: 18).foregroundStyle(.tint)
-                Text("Ask the assistant: “\(q)”").lineLimit(1)
-                Spacer()
-            }
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(selected ? Color.accentColor.opacity(0.2) : .clear, in: .rect(cornerRadius: 8))
-    }
-
-    private func symbol(_ item: PaletteItem) -> String {
-        switch item.action {
-        case .tool(let raw): ToolID(rawValue: raw)?.symbolName ?? "hammer"
-        case .preset: "camera.filters"
-        case .savedAction: "bookmark"
-        case .command(let id):
-            if id.filterKind != nil { "camera.aperture" } else if id.adjustmentKind != nil { "slider.horizontal.3" } else { "command" }
+        .frame(width: 620)
+        .panelSurface(cornerRadius: 14)
+        .task {
+            // The canvas holds the keyboard; take it once the field is in the window.
+            try? await Task.sleep(for: .milliseconds(60))
+            focused = true
         }
     }
 
-    private func run(_ rows: [Row], index: Int) {
+    private func run(_ rows: [PaletteRow], index: Int) {
         guard rows.indices.contains(index) else { return }
         session.isPaletteOpen = false
-        switch rows[index] {
-        case .ask(let q):
-            session.showLayersPanel = true
-            session.inspectorTab = .ai
-            session.ai.ask(q)
-        case .item(let item):
-            guard session.runPaletteItem(item) else { NSSound.beep(); return }
-            var recents = UserDefaults.standard.stringArray(forKey: Self.recentsKey) ?? []
-            recents.removeAll { $0 == item.id }
-            recents.insert(item.id, at: 0)
-            UserDefaults.standard.set(Array(recents.prefix(6)), forKey: Self.recentsKey)
-        }
+        Palette.run(rows[index], session: session)
     }
 }
 
@@ -182,26 +222,70 @@ extension EditorSession {
     }
 }
 
-/// The omnibar: a quiet pill at the bottom of the canvas that opens the palette.
+/// The omnibar: type a command or describe an edit, right on the canvas.
+/// ↩ runs the best match (or asks the assistant when the text reads like a
+/// request), ⌘↩ always asks the assistant.
 struct Omnibar: View {
     let session: EditorSession
+    @State private var query = ""
+    @State private var selection = 0
+    @FocusState private var focused: Bool
 
     var body: some View {
-        Button {
-            session.isPaletteOpen = true
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkle.magnifyingglass")
-                Text("Search or ask…")
-                Text("⌘K").font(.caption.monospaced()).foregroundStyle(.tertiary)
+        let rows = focused ? Palette.rows(for: query, session: session, limit: 5, recentsWhenEmpty: false) : []
+        VStack(spacing: 8) {
+            if !rows.isEmpty {
+                VStack(spacing: 2) {
+                    ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                        PaletteRowView(row: row, selected: index == selection)
+                            .onTapGesture { run(row) }
+                    }
+                }
+                .padding(6)
+                .panelSurface(cornerRadius: 12)
             }
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 7)
-            .glassEffect(.regular.interactive(), in: .capsule)
+            HStack(spacing: 12) {
+                Image(systemName: "sparkles").font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.accent)
+                TextField("Describe an edit, or type a command…", text: $query)
+                    .textFieldStyle(.plain)
+                    .font(.title3)
+                    .focused($focused)
+                    .onSubmit { if rows.indices.contains(selection) { run(rows[selection]) } }
+                    .onKeyPress(.return, phases: .down) { press in
+                        guard press.modifiers.contains(.command) else { return .ignored }
+                        let text = query.trimmingCharacters(in: .whitespaces)
+                        guard !text.isEmpty else { return .handled }
+                        finish()
+                        Palette.ask(text, session: session)
+                        return .handled
+                    }
+                    .onKeyPress(.downArrow) { selection = min(selection + 1, max(rows.count - 1, 0)); return .handled }
+                    .onKeyPress(.upArrow) { selection = max(selection - 1, 0); return .handled }
+                    .onKeyPress(.escape) { finish(); return .handled }
+                    .onChange(of: query) { selection = 0 }
+                    .accessibilityLabel("Describe an edit, or type a command")
+                Text("↩ run · ⌘↩ ask AI · ⌘K palette")
+                    .font(.caption)
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize()
+            }
+            .padding(.horizontal, 18)
+            .frame(height: 52)
+            .panelSurface(cornerRadius: 12)
         }
-        .buttonStyle(.plain)
-        .help("Search commands or ask the assistant (⌘K)")
+        .frame(width: 720)
+    }
+
+    private func run(_ row: PaletteRow) {
+        finish()
+        Palette.run(row, session: session)
+    }
+
+    /// Clears the field and hands the keyboard back to the canvas.
+    private func finish() {
+        query = ""
+        focused = false
+        NSApp.keyWindow?.makeFirstResponder(NSApp.keyWindow?.contentView)
     }
 }
 

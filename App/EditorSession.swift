@@ -133,7 +133,11 @@ final class EditorSession {
     @ObservationIgnored var lastStrokePoint: SIMD2<Double>?
     @ObservationIgnored var clipboard: (grid: TileGrid, changeCount: Int)?
 
-    var showLayersPanel = true
+    /// The floating side panel (layers and friends, or the assistant) and the tool rail.
+    var showLayersPanel = false
+    var showTools = true
+    /// The window title (document name), shown in the chip at the top left.
+    var documentName = "Untitled"
     var isExportSheetPresented = false
     var isLayerStylePresented = false
     var exportOptions = ExportOptions()

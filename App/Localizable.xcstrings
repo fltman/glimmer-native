@@ -192,6 +192,26 @@
         }
       }
     },
+    "ASSISTANT": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ASSISTENT"
+          }
+        }
+      }
+    },
+    "ASSISTANT & AI": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ASSISTENT & AI"
+          }
+        }
+      }
+    },
     "Action": {
       "localizations": {
         "sv": {
@@ -639,6 +659,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Assistent"
+          }
+        }
+      }
+    },
+    "Assistant and AI tools": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistent och AI-verktyg"
           }
         }
       }
@@ -1259,6 +1289,16 @@
         }
       }
     },
+    "Close": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stäng"
+          }
+        }
+      }
+    },
     "Collapse %@": {
       "localizations": {
         "sv": {
@@ -1350,6 +1390,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Färgruta"
+          }
+        }
+      }
+    },
+    "Command Palette": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kommandopalett"
           }
         }
       }
@@ -1678,6 +1728,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Djup (Depth Anything V2 Small)"
+          }
+        }
+      }
+    },
+    "Describe an edit, or type a command": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beskriv en ändring, eller skriv ett kommando"
+          }
+        }
+      }
+    },
+    "Describe an edit, or type a command…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beskriv en ändring, eller skriv ett kommando…"
           }
         }
       }
@@ -2223,6 +2293,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Exportera bild"
+          }
+        }
+      }
+    },
+    "Export the image": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera bilden"
           }
         }
       }
@@ -3418,6 +3498,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lager, grupper, masker, justeringslager, lagerstilar, smarta objekt och text – icke-destruktivt, i 16-bitars linjär färg."
+          }
+        }
+      }
+    },
+    "Layers, paths, channels and history (⌥⌘L)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lager, banor, kanaler och historik (⌥⌘L)"
           }
         }
       }
@@ -5805,6 +5895,16 @@
         }
       }
     },
+    "Show or hide the tools": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa eller göm verktygen"
+          }
+        }
+      }
+    },
     "Show the action bar at the selection": {
       "localizations": {
         "sv": {
@@ -6292,6 +6392,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "För stort för Real-ESRGAN; använd 2× eller Lanczos."
+          }
+        }
+      }
+    },
+    "Tools": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verktyg"
           }
         }
       }
@@ -6860,6 +6970,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "verktyg %@"
+          }
+        }
+      }
+    },
+    "↑↓ · Enter · Esc": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↑↓ · Retur · Esc"
+          }
+        }
+      }
+    },
+    "↩ run · ⌘↩ ask AI · ⌘K palette": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "↩ kör · ⌘↩ fråga AI · ⌘K palett"
           }
         }
       }

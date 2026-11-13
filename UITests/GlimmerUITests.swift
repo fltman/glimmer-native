@@ -39,7 +39,11 @@ final class GlimmerUITests: XCTestCase {
     }
 
     private func showHistory() {
-        window.radioButtons["History"].firstMatch.click()
+        // History lives in the floating panel behind the Layers chip.
+        let tab = window.radioButtons["History"].firstMatch
+        if !tab.exists { window.buttons["Layers"].firstMatch.click() }
+        XCTAssertTrue(tab.waitForExistence(timeout: 5), "the Layers panel didn't open")
+        tab.click()
     }
 
     /// Points the open/save panel at `directory`; for a save panel, also names the file.

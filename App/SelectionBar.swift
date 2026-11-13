@@ -37,7 +37,7 @@ struct SelectionBar: View {
             let x = min(max(rect.midX, width / 2 + 12), max(viewSize.width - width / 2 - 12, width / 2 + 12))
             bar
                 .frame(width: width, height: height)
-                .glassEffect(.regular, in: .capsule)
+                .panelSurface(cornerRadius: 10)
                 .position(x: x, y: y)
                 .transition(.opacity)
         }
