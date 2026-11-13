@@ -14,7 +14,12 @@ struct ToolOptionsBar: View {
             bar { liquifyOptions }
         } else if hasOptions(tool) {
             bar {
-                Text(LocalizedStringKey(tool.title)).font(.callout.weight(.semibold))
+                // The tool's name in small capitals, as in the web app.
+                Text(LocalizedStringKey(tool.title))
+                    .textCase(.uppercase)
+                    .font(.caption.weight(.semibold))
+                    .kerning(0.8)
+                    .foregroundStyle(Theme.muted)
                 switch tool {
                 case .brush, .eraser: brushOptions
                 case .magicWand: wandOptions(showSampleAll: true)
