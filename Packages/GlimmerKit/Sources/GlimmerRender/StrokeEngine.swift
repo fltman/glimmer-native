@@ -49,6 +49,7 @@ public final class StrokeEngine {
     private let opacity: Float
     private let maskTarget: Float
     private let selection: Selection?
+    private let effect: TileGrid?
     private var wet: [TileCoord: MTLTexture] = [:]
 
     public init(context: MetalContext, tiles: TileGrid, target: Target, erase: Bool, color: SIMD4<Float>,
@@ -66,6 +67,23 @@ public final class StrokeEngine {
         self.opacity = opacity
         self.maskTarget = maskTarget
         self.selection = selection
+        self.effect = nil
+    }
+
+    /// A retouch stroke on pixels: `.towardEffect` blends toward `effect`
+    /// (clone, heal, blur, sharpen); `.dodge`/`.burn` take exposure and range in `color.xy`.
+    public init(context: MetalContext, tiles: TileGrid, retouch mode: PixelOps.Mode, effect: TileGrid?,
+                parameters: SIMD4<Float> = .zero, opacity: Float, selection: Selection?) throws {
+        self.ops = try PixelOps(context: context)
+        self.original = tiles
+        self.result = tiles
+        self.target = .pixels
+        self.mode = mode
+        self.color = parameters
+        self.opacity = opacity
+        self.maskTarget = 0
+        self.selection = selection
+        self.effect = effect
     }
 
     /// Stamps `dabs` and updates `result`. Returns the coordinates that changed.
@@ -99,7 +117,7 @@ public final class StrokeEngine {
         if case .mask(let d) = target { sourceDefault = d }
         let updated = ops.encode(coords: coords, source: original, sourceDefault: sourceDefault, coverage: wet,
                                  fullCoverage: false, selection: selection, mode: mode, color: color,
-                                 opacity: opacity, maskTarget: maskTarget, commandBuffer: cb)
+                                 opacity: opacity, maskTarget: maskTarget, effect: effect, commandBuffer: cb)
         cb.commit()
         for (c, t) in updated { result[c] = t }
         return Set(coords)

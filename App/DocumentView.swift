@@ -25,6 +25,15 @@ struct DocumentView: View {
                 ToolOptionsBar(session: session)
                     .padding(.top, 10)
             }
+            .overlay(alignment: .topTrailing) {
+                // Floating, non-modal: the canvas stays visible for the live preview.
+                if let item = session.filterDialog.map(FilterDialogItem.init) {
+                    FilterSheet(session: session, settings: item.settings)
+                        .id(item.id)
+                        .glassEffect(.regular, in: .rect(cornerRadius: 18))
+                        .padding(14)
+                }
+            }
             .sheet(item: Binding(get: { session.selectionDialog.map(SelectionDialogItem.init) },
                                  set: { session.selectionDialog = $0?.id })) { item in
                 SelectionModifySheet(session: session, command: item.id)
@@ -40,9 +49,11 @@ struct DocumentView: View {
                     switch session.inspectorTab {
                     case .layers: LayersPanel(session: session)
                     case .paths: PathsPanel(session: session)
+                    case .channels: ChannelsPanel(session: session)
                     case .ai: AIPanel(session: session, ai: session.ai)
                     }
                 }
+                .frame(maxHeight: .infinity, alignment: .top)
                 .inspectorColumnWidth(min: 260, ideal: 300, max: 420)
             }
             .toolbar {
@@ -179,6 +190,13 @@ extension ToolID {
         case .gradient: "Gradient"
         case .eyedropper: "Eyedropper"
         case .crop: "Crop"
+        case .cloneStamp: "Clone Stamp"
+        case .healingBrush: "Healing Brush"
+        case .dodge: "Dodge"
+        case .burn: "Burn"
+        case .blur: "Blur"
+        case .sharpen: "Sharpen"
+        case .smudge: "Smudge"
         case .freeTransform: "Free Transform"
         case .type: "Type"
         case .pen: "Pen"
@@ -203,6 +221,13 @@ extension ToolID {
         case .gradient: "square.bottomhalf.filled"
         case .eyedropper: "eyedropper"
         case .crop: "crop"
+        case .cloneStamp: "seal"
+        case .healingBrush: "bandage"
+        case .dodge: "circle.lefthalf.filled"
+        case .burn: "flame"
+        case .blur: "drop.halffull"
+        case .sharpen: "triangle"
+        case .smudge: "hand.point.up"
         case .freeTransform: "arrow.up.left.and.down.right.and.arrow.up.right.and.down.left"
         case .type: "textformat"
         case .pen: "pencil.tip.crop.circle"

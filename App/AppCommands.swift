@@ -30,6 +30,15 @@ struct GlimmerCommands: Commands {
             Divider()
             toggle(.toggleGammaBlending)
         }
+        CommandMenu("Filter") {
+            items([.repeatFilter])
+            Divider()
+            items([.liquify])
+            Divider()
+            ForEach(["Blur", "Sharpen", "Noise", "Pixelate", "Stylize", "Lens"], id: \.self) { group in
+                Menu(group) { items(FilterKind.allCases.filter { $0.group == group }.map { .filter($0) }) }
+            }
+        }
         CommandMenu("Select") {
             items(registry.descriptors(in: .select))
         }

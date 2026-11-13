@@ -431,11 +431,13 @@ final class AIController {
     }
 
     func applyPreset(_ preset: Preset) {
+        // Like the web app, filter steps (grain, clarity, vignette …) bake into the active pixel layer;
+        // the adjustments go in a group above it.
+        if !preset.filterSteps.isEmpty, !session.applyFilterSteps(preset.filterSteps) {
+            messages.append(Message(fromUser: false, text: "“\(preset.name)” also uses filters (\(preset.filterSteps.map(\.0).joined(separator: ", "))). Select a pixel layer and apply it again to include them."))
+        }
         session.document.edit("Apply \(preset.name)", undoManager: session.undoManager) {
             $0.insertLayerAboveActive(preset.makeGroup())
-        }
-        if !preset.filterSteps.isEmpty {
-            messages.append(Message(fromUser: false, text: "“\(preset.name)” also uses filters (\(preset.filterSteps.map(\.0).joined(separator: ", "))), which arrive in a later version."))
         }
     }
 

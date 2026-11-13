@@ -548,10 +548,14 @@ vertex QuadOut present_vertex(uint vid [[vertex_id]], constant PresentUniforms &
 }
 
 /// Trilinear sampling of composited tiles; pixel-exact (nearest) when magnified.
-fragment float4 present_fragment(QuadOut in [[stage_in]], texture2d<float> tile [[texture(0)]]) {
+fragment float4 present_fragment(QuadOut in [[stage_in]], texture2d<float> tile [[texture(0)]],
+                                 constant int &channel [[buffer(0)]]) {
     constexpr sampler minifying(mag_filter::nearest, min_filter::linear, mip_filter::linear,
                                 address::clamp_to_edge);
-    return tile.sample(minifying, in.uv);
+    float4 c = tile.sample(minifying, in.uv);
+    // Channels panel: show one colour channel as grey (1 R, 2 G, 3 B).
+    if (channel >= 1 && channel <= 3) return float4(float3(c[channel - 1]), c.a);
+    return c;
 }
 
 /// Marching ants along the 0.5 contour of a selection tile.
@@ -704,6 +708,7 @@ fragment float4 pixel_apply_fragment(QuadOut in [[stage_in]],
                                      texture2d<float> original [[texture(0)]],
                                      texture2d<float> wet [[texture(1)]],
                                      texture2d<float> selection [[texture(2)]],
+                                     texture2d<float> effect [[texture(3)]],
                                      constant ApplyUniforms &u [[buffer(0)]]) {
     float4 o = original.sample(nearestSampler, in.uv);
     float s = selection.sample(nearestSampler, in.uv).a;
@@ -711,6 +716,17 @@ fragment float4 pixel_apply_fragment(QuadOut in [[stage_in]],
     float k = saturate(wet.sample(nearestSampler, in.uv).r) * u.opacity * s;
     if (u.mode == 1) return o * (1.0 - k);
     if (u.mode == 2) { float v = mix(o.a, u.maskTarget, k); return float4(v); }
+    if (u.mode == 4) return mix(o, effect.sample(nearestSampler, in.uv), k);  // retouch: blend toward a precomputed result
+    if (u.mode == 5 || u.mode == 6) {
+        // Dodge / burn in display space. color.x = exposure, color.y = range (0 shadows, 1 midtones, 2 highlights).
+        if (o.a <= 1e-6) return o;
+        float3 d = saturate(encodeSRGB(o.rgb / o.a));
+        float l = dot(d, float3(0.299, 0.587, 0.114));
+        float w = u.color.y < 0.5 ? (1.0 - l) * (1.0 - l) : (u.color.y < 1.5 ? 1.0 - abs(2.0 * l - 1.0) : l * l);
+        float e = u.color.x * w;
+        float3 r = u.mode == 5 ? d + (1.0 - d) * e * 0.6 : d * (1.0 - e * 0.6);
+        return mix(o, float4(decodeSRGB(r) * o.a, o.a), k);
+    }
     return u.color * k + o * (1.0 - k);
 }
 

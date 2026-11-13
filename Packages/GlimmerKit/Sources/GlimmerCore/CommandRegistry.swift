@@ -128,6 +128,16 @@ extension CommandID {
     public static let aiPresets: CommandID = "ai.presets"
     public static let aiLensBlur: CommandID = "ai.lensBlur"
 
+    public static func filter(_ kind: FilterKind) -> CommandID { CommandID(rawValue: "filter.\(kind.rawValue)") }
+    public static let liquify: CommandID = "filter.liquify"
+    public static let repeatFilter: CommandID = "filter.repeat"
+
+    /// The filter for a `filter(_:)` id.
+    public var filterKind: FilterKind? {
+        guard rawValue.hasPrefix("filter.") else { return nil }
+        return FilterKind(rawValue: String(rawValue.dropFirst("filter.".count)))
+    }
+
     public static func newAdjustment(_ kind: AdjustmentKind) -> CommandID { CommandID(rawValue: "layer.adjustment.\(kind.rawValue)") }
     public static let newSolidFill: CommandID = "layer.fill.solid"
     public static let newGradientFill: CommandID = "layer.fill.gradient"
@@ -258,7 +268,14 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.crop, "Crop", category: .image, keywords: ["trim", "canvas size"]),
         CommandDescriptor(.toggleGammaBlending, "Blend Colors in Gamma Space", category: .image,
                           keywords: ["photoshop", "linear", "color space"]),
+        CommandDescriptor(.repeatFilter, "Repeat Last Filter", category: .filter, shortcut: KeyShortcut("f", [.command, .control]),
+                          keywords: ["again", "filter"]),
+        CommandDescriptor(.liquify, "Liquify…", category: .filter, shortcut: KeyShortcut("x", [.command, .shift]),
+                          keywords: ["warp", "push", "bloat", "pucker", "twirl", "reshape"]),
     ] + AdjustmentKind.allCases.map {
         CommandDescriptor(.newAdjustment($0), $0.title, category: .image, keywords: ["adjustment", "layer"])
+    } + FilterKind.allCases.map {
+        CommandDescriptor(.filter($0), $0.fields.isEmpty ? $0.title : "\($0.title)…", category: .filter,
+                          keywords: ["filter", $0.group.lowercased()])
     })
 }

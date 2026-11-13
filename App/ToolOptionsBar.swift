@@ -1,5 +1,6 @@
 import AppKit
 import GlimmerCore
+import GlimmerRender
 import GlimmerTools
 import SwiftUI
 
@@ -9,8 +10,10 @@ struct ToolOptionsBar: View {
 
     var body: some View {
         let tool = session.tool
-        if hasOptions(tool) {
-            HStack(spacing: 14) {
+        if session.liquify != nil {
+            bar { liquifyOptions }
+        } else if hasOptions(tool) {
+            bar {
                 Text(tool.title).font(.callout.weight(.semibold))
                 switch tool {
                 case .brush, .eraser: brushOptions
@@ -52,16 +55,61 @@ struct ToolOptionsBar: View {
                         slider("Width", $session.shapeLineWidth, 1...100, display: "\(Int(session.shapeLineWidth)) px")
                     }
                     Text("⇧ constrains").foregroundStyle(.secondary)
+                case .cloneStamp, .healingBrush:
+                    retouchBrushOptions
+                    Toggle("Aligned", isOn: $session.cloneAligned)
+                    Text(session.cloneSource == nil ? "⌥-click to set the source" : "⌥-click sets a new source")
+                        .foregroundStyle(.secondary)
+                case .dodge, .burn:
+                    retouchBrushOptions
+                    Picker("Range", selection: $session.dodgeRange) {
+                        Text("Shadows").tag(0)
+                        Text("Midtones").tag(1)
+                        Text("Highlights").tag(2)
+                    }
+                    .frame(width: 130)
+                    slider("Exposure", $session.dodgeExposure, 0.01...1, percent: true)
+                case .blur, .sharpen, .smudge:
+                    retouchBrushOptions
+                    slider("Strength", $session.retouchStrength, 0.01...1, percent: true)
                 default: EmptyView()
                 }
             }
+        }
+    }
+
+    private func bar(@ViewBuilder _ content: () -> some View) -> some View {
+        HStack(spacing: 14) { content() }
             .font(.callout)
             .controlSize(.small)
             .fixedSize()
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
             .glassEffect(.regular, in: .capsule)
+    }
+
+    @ViewBuilder private var retouchBrushOptions: some View {
+        slider("Size", Binding(get: { log2(session.brush.size) }, set: { session.brush.size = pow(2, $0).rounded() }),
+               0...11, display: "\(Int(session.brush.size)) px")
+        slider("Hardness", $session.brush.hardness, 0...1, percent: true)
+        if session.tool == .cloneStamp || session.tool == .healingBrush {
+            slider("Opacity", $session.brush.opacity, 0...1, percent: true)
         }
+    }
+
+    @ViewBuilder private var liquifyOptions: some View {
+        Text("Liquify").font(.callout.weight(.semibold))
+        Picker("Mode", selection: $session.liquifyMode) {
+            ForEach(LiquifyEngine.Mode.allCases, id: \.self) { Text($0.title).tag($0) }
+        }
+        .frame(width: 190)
+        .labelsHidden()
+        slider("Size", Binding(get: { log2(session.liquifySize) }, set: { session.liquifySize = pow(2, $0).rounded() }),
+               3...11, display: "\(Int(session.liquifySize)) px")
+        slider("Pressure", $session.liquifyPressure, 0.01...1, percent: true)
+        Button("Cancel") { session.cancelLiquify() }
+        Button("Apply") { session.commitLiquify() }
+            .keyboardShortcut(.defaultAction)
     }
 
     @ViewBuilder private var transformOptions: some View {
@@ -262,5 +310,66 @@ private struct TextOptions: View {
     private func apply(_ change: @escaping (inout TextLayer) -> Void) {
         session.updateText(change)
         session.commitLiveEdit()
+    }
+}
+
+/// Settings for one filter with live preview on the canvas.
+struct FilterSheet: View {
+    let session: EditorSession
+    @State var settings: FilterSettings
+    @State private var preview = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text(settings.kind.title).font(.headline)
+                Spacer()
+                if session.isPreviewingFilter && preview { ProgressView().controlSize(.small) }
+            }
+            Form {
+                ForEach(settings.kind.fields, id: \.key) { field in
+                    if field.isToggle {
+                        Toggle(field.label, isOn: Binding(get: { settings.flag(field.key) },
+                                                          set: { settings.values[field.key] = $0 ? 1 : 0 }))
+                    } else {
+                        LabeledContent(field.label) {
+                            HStack {
+                                Slider(value: Binding(get: { settings.value(field.key) }, set: { settings.values[field.key] = $0 }),
+                                       in: field.range)
+                                    .frame(width: 200)
+                                Text(format(settings.value(field.key), field))
+                                    .monospacedDigit()
+                                    .frame(width: 56, alignment: .trailing)
+                            }
+                        }
+                    }
+                }
+            }
+            if session.state.selection != nil {
+                Label("Applies to the selection", systemImage: "selection.pin.in.out")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            HStack {
+                Toggle("Preview", isOn: $preview)
+                Spacer()
+                Button("Reset") { settings = FilterSettings(settings.kind) }
+                Button("Cancel", role: .cancel) { session.cancelFilterDialog() }
+                    .keyboardShortcut(.cancelAction)
+                Button("OK") { session.applyFilter(settings) }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 420)
+        .onChange(of: settings) { _, new in if preview { session.previewFilter(new) } }
+        .onChange(of: preview) { _, on in
+            if on { session.previewFilter(settings) } else { session.filterPreviewTask?.cancel(); session.overrides = .none }
+        }
+    }
+
+    private func format(_ v: Double, _ field: FilterField) -> String {
+        let text = field.range.upperBound <= 5 ? String(format: "%.2f", v) : String(format: "%.0f", v)
+        return field.unit.isEmpty ? text : "\(text) \(field.unit)"
     }
 }

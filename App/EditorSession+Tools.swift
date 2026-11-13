@@ -32,6 +32,10 @@ extension EditorSession {
 
     func beginStroke(at point: SIMD2<Double>, pressure: Double, erase: Bool, straightLine: Bool) {
         commitLiveEdit()
+        if Self.retouchTools.contains(tool) {
+            beginRetouch(at: point, pressure: pressure)
+            return
+        }
         guard let metal, let layer = activeLayer else { return }
         let maskTarget = paintsMask
         guard maskTarget || layer.isRaster else {
@@ -63,6 +67,10 @@ extension EditorSession {
     }
 
     func continueStroke(to point: SIMD2<Double>, pressure: Double) {
+        if smudge != nil {
+            continueSmudge(to: point, pressure: pressure)
+            return
+        }
         guard var s = stroke else { return }
         let dabs = s.sampler.move(to: .init(point, pressure: pressure))
         stroke = s
@@ -83,12 +91,17 @@ extension EditorSession {
     }
 
     func endStroke(at point: SIMD2<Double>?) {
+        if smudge != nil {
+            endSmudge()
+            return
+        }
         guard let s = stroke else { return }
         stroke = nil
         s.engine.finish()
         let result = s.engine.result
         let erase = tool == .eraser
-        edit(s.mask ? "Paint Mask" : (erase ? "Eraser" : "Brush Stroke")) { state in
+        let name = Self.retouchTools.contains(tool) ? retouchActionName : (s.mask ? "Paint Mask" : (erase ? "Eraser" : "Brush Stroke"))
+        edit(name) { state in
             state.updateLayer(s.layer) { layer in
                 if s.mask { layer.mask?.tiles = result } else { layer.tiles = result }
             }

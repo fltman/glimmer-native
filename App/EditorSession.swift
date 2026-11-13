@@ -37,6 +37,7 @@ final class EditorSession {
     enum InspectorTab: String, CaseIterable {
         case layers = "Layers"
         case paths = "Paths"
+        case channels = "Channels"
         case ai = "AI"
     }
 
@@ -92,6 +93,25 @@ final class EditorSession {
     var shapeLineWidth = 8.0
     var shapeDrag: (start: SIMD2<Double>, end: SIMD2<Double>)?
     var guideDrag: (id: UUID?, axis: Guide.Axis, position: Double)?
+
+    // Phase 7: filters, retouching, liquify, channels
+    var filterDialog: FilterSettings?
+    var lastFilter: FilterSettings?
+    var isPreviewingFilter = false
+    @ObservationIgnored var filterEngineCache: FilterEngine?
+    @ObservationIgnored var filterPreviewTask: Task<Void, Never>?
+    var cloneSource: SIMD2<Double>?
+    var cloneAligned = true
+    @ObservationIgnored var cloneOffset: SIMD2<Double>?
+    var retouchStrength = 0.5
+    var dodgeExposure = 0.5
+    var dodgeRange = 1
+    @ObservationIgnored var smudge: (engine: SmudgeEngine, sampler: StrokeSampler, layer: UUID, last: SIMD2<Double>)?
+    var liquify: LiquifySession?
+    var liquifyMode = LiquifyEngine.Mode.forward
+    var liquifySize = 150.0
+    var liquifyPressure = 0.5
+    var viewChannel = 0
 
     @ObservationIgnored var stroke: (engine: StrokeEngine, sampler: StrokeSampler, layer: UUID, mask: Bool)?
     @ObservationIgnored var lastStrokePoint: SIMD2<Double>?
@@ -258,7 +278,10 @@ final class EditorSession {
         let path = state.path(of: state.activeLayerID)
         let layer = state.activeLayer
         if id.adjustmentKind != nil { return true }
+        if id.filterKind != nil || id == .liquify { return layer?.isRaster == true && !(layer?.tiles.isEmpty ?? true) }
         switch id {
+        case .repeatFilter:
+            return lastFilter != nil && layer?.isRaster == true
         case .duplicateLayer, .deleteLayer, .groupLayers, .layerStyle:
             return layer != nil
         case .bringLayerForward, .bringLayerToFront:
@@ -315,7 +338,15 @@ final class EditorSession {
             addLayer(Layer(name: kind.title, content: .adjustment(Adjustment(kind))), actionName: "New \(kind.title)")
             return
         }
+        if let kind = id.filterKind {
+            openFilter(kind)
+            return
+        }
         switch id {
+        case .repeatFilter:
+            if let f = lastFilter { applyFilter(f) }
+        case .liquify:
+            beginLiquify()
         case .newLayer:
             addLayer(Layer(name: state.nextLayerName(), content: .raster(TileGrid())), actionName: "New Layer")
         case .newGroup:

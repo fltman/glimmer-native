@@ -39,6 +39,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case pen
         case shape
         case guide
+        case liquify
     }
 
     /// Transform box, crop frame, pen paths and their handles.
@@ -172,6 +173,10 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             _ = session.guideDrag
             _ = session.editingText
             _ = session.tool
+            _ = session.cloneSource
+            _ = session.liquify
+            _ = session.liquifySize
+            _ = session.viewChannel
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
@@ -343,7 +348,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             pasteboardColor: pasteboardColor()
         )
         renderer.encode(frame, tiles: tiles, tile: compositor.texture(at:), selection: state.selection,
-                        time: CACurrentMediaTime(), into: commandBuffer, target: drawable.texture)
+                        time: CACurrentMediaTime(), channel: session.viewChannel, into: commandBuffer, target: drawable.texture)
         commandBuffer.present(drawable)
         commandBuffer.commit()
         if more { setNeedsRender() }
@@ -411,6 +416,13 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
                     }
                 }
             }
+        }
+        if session.liquify == nil, let m = session.cloneMarker(for: session.hoverPoint) {
+            let c = v(m)
+            let r = max(session.brush.size * t.scale / 2, 4)
+            lines.addEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r))
+            lines.move(to: CGPoint(x: c.x - 5, y: c.y)); lines.addLine(to: CGPoint(x: c.x + 5, y: c.y))
+            lines.move(to: CGPoint(x: c.x, y: c.y - 5)); lines.addLine(to: CGPoint(x: c.x, y: c.y + 5))
         }
         chromeLines.path = lines
         chromeHandles.path = handles
@@ -524,11 +536,13 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
 
     private func updateBrushRing() {
         let tool = session.effectiveTool
-        guard tool == .brush || tool == .eraser, let hover = session.hoverPoint else {
+        let paints = tool == .brush || tool == .eraser || EditorSession.retouchTools.contains(tool) || session.liquify != nil
+        guard paints, let hover = session.hoverPoint else {
             brushRing.path = nil
             return
         }
-        let r = max(session.brush.size * controller.transform.scale / 2, 1)
+        let size = session.liquify != nil ? session.liquifySize : session.brush.size
+        let r = max(size * controller.transform.scale / 2, 1)
         let c = flipped(hover)
         let path = CGMutablePath()
         path.addEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r))
@@ -606,6 +620,11 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             drag = .guide
             return
         }
+        if session.liquify != nil {
+            session.liquifyDrag(to: controller.documentPoint(p), start: true)
+            drag = .liquify
+            return
+        }
         switch session.effectiveTool {
         case .move:
             session.beginMove(at: controller.documentPoint(p))
@@ -616,7 +635,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case .magicSelect:
             // Click adds a point on the object; ⌥-click marks what to leave out.
             session.ai.magicSelect(at: controller.documentPoint(p), positive: !event.modifierFlags.contains(.option))
-        case .brush, .eraser:
+        case let t where (t == .cloneStamp || t == .healingBrush) && event.modifierFlags.contains(.option):
+            session.setCloneSource(controller.documentPoint(p))
+        case .brush, .eraser, .cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge:
             session.beginStroke(at: controller.documentPoint(p), pressure: pressure(event),
                                 erase: session.effectiveTool == .eraser, straightLine: event.modifierFlags.contains(.shift))
             drag = .stroke
@@ -689,6 +710,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
                 }
             }
             session.shapeDrag = (s0.start, d)
+        case .liquify:
+            session.liquifyDrag(to: controller.documentPoint(p), start: false)
         case .guide:
             guard let g = session.guideDrag else { break }
             let d = controller.documentPoint(p)
@@ -733,6 +756,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case .lasso: session.finishLasso()
         case .gradient: session.finishGradient()
         case .transform: session.transformMouseUp()
+        case .liquify: session.liquifyMouseUp()
         case .crop: session.cropSession?.dragging = nil
         case .pen: session.penMouseUp()
         case .shape: session.finishShape()
@@ -801,7 +825,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         let cursor: NSCursor = switch session.effectiveTool {
         case .hand: .openHand
         case .rectangleMarquee, .ellipseMarquee, .magicSelect, .lasso, .polygonLasso, .magicWand,
-             .brush, .eraser, .gradient, .eyedropper, .paintBucket, .crop, .pen, .shape: .crosshair
+             .brush, .eraser, .gradient, .eyedropper, .paintBucket, .crop, .pen, .shape,
+             .cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge: .crosshair
         case .type: .iBeam
         default: .arrow
         }
@@ -850,6 +875,10 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             return
         }
         let isReturn = event.keyCode == 36 || event.keyCode == 76, isEscape = event.keyCode == 53
+        if session.liquify != nil, isReturn || isEscape {
+            isReturn ? session.commitLiquify() : session.cancelLiquify()
+            return
+        }
         if session.transformSession != nil, isReturn || isEscape {
             isReturn ? session.commitTransform() : session.cancelTransform()
             session.tool = .move
@@ -891,6 +920,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     /// Tools implemented so far (see docs/PLAN.md for the rest).
     static let availableTools: [ToolID] = [.move, .rectangleMarquee, .ellipseMarquee, .lasso, .polygonLasso, .magicWand,
                                            .magicSelect, .crop, .freeTransform, .brush, .eraser, .paintBucket, .gradient,
+                                           .cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge,
                                            .type, .pen, .shape, .eyedropper, .hand]
 
     private func arrowOffset(_ event: NSEvent) -> SIMD2<Int>? {

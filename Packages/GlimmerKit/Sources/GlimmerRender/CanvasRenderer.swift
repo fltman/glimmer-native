@@ -139,6 +139,7 @@ public final class CanvasRenderer: @unchecked Sendable {
         tile: (TileCoord) -> MTLTexture? = { _ in nil },
         selection: Selection? = nil,
         time: Double = 0,
+        channel: Int = 0,
         into commandBuffer: MTLCommandBuffer,
         target: MTLTexture
     ) {
@@ -166,6 +167,8 @@ public final class CanvasRenderer: @unchecked Sendable {
             let s = Float(TileGeometry.size)
 
             encoder.setRenderPipelineState(present)
+            var channelIndex = Int32(channel)
+            encoder.setFragmentBytes(&channelIndex, length: 4, index: 0)
             for coord in coords {
                 guard let texture = tile(coord) else { continue }
                 let r = coord.rect.intersection(docRect)  // never draw outside the document
