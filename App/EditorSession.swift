@@ -428,7 +428,7 @@ final class EditorSession {
         case .toggleClassicLayout:
             classicLayout.toggle()
             // The canvas just changed width: fit the image to it again.
-            DispatchQueue.main.async { [weak self] in self?.canvas.perform(.fitToWindow) }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.canvas.perform(.fitToWindow) }
         case .toggleNavigator:
             showNavigator.toggle()
         case .repeatFilter:

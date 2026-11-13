@@ -9,6 +9,18 @@ import Testing
         OnDeviceRouter.Candidate(id: "layer.new", title: "New Layer", subtitle: "Layer"),
     ]
 
+    @Test func compoundRequestsAreNeverASingleCommand() {
+        for text in ["make it a moody black and white with a vignette", "invert, then flip it", "warmer and sharper",
+                     "gör den svartvit med vinjett", "ljusare och varmare"] {
+            #expect(OnDeviceRouter.isCompound(text), "\(text)")
+            let route = OnDeviceRouter.Route(action: .run, optionID: "adjustment.invert", prompt: "")
+            #expect(OnDeviceRouter.decision(route, text: text, candidates: candidates) == .assistant)
+        }
+        for text in ["invert the colors", "make it black and white", "new layer", "gör den svart och vit"] {
+            #expect(!OnDeviceRouter.isCompound(text), "\(text)")
+        }
+    }
+
     @Test func unknownIdsFallBackToTheAssistant() {
         let route = OnDeviceRouter.Route(action: .run, optionID: "image.explode", prompt: "")
         #expect(OnDeviceRouter.decision(route, text: "explode", candidates: candidates) == .assistant)

@@ -71,7 +71,8 @@ extension AIController {
             isPlanning = true
             planTask = Task { [weak self] in
                 guard let self else { return }
-                let candidates = CommandSearch.candidates(for: goal, in: Palette.allItems).map {
+                // Commands that only open a dialog ("Vignette…") don't carry out a request by themselves.
+                let candidates = CommandSearch.candidates(for: goal, in: Palette.allItems).filter { !$0.title.hasSuffix("…") }.map {
                     OnDeviceRouter.Candidate(id: $0.id, title: $0.title, subtitle: $0.subtitle)
                 }
                 let decision = (try? await OnDeviceRouter.route(goal, candidates: candidates)) ?? .assistant

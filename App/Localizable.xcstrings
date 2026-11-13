@@ -242,6 +242,26 @@
         }
       }
     },
+    "AUTO-EDIT OFF": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AUTO-REDIGERING AV"
+          }
+        }
+      }
+    },
+    "AUTO-EDIT ON": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AUTO-REDIGERING PÅ"
+          }
+        }
+      }
+    },
     "Action": {
       "localizations": {
         "sv": {
@@ -1099,6 +1119,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kanaler"
+          }
+        }
+      }
+    },
+    "Chat to edit the whole image, or say “add a …” to generate a layer.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chatta för att redigera hela bilden, eller säg ”lägg till …” för att generera ett lager."
           }
         }
       }
@@ -2223,6 +2253,16 @@
         }
       }
     },
+    "Enter to send": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retur skickar"
+          }
+        }
+      }
+    },
     "Environment (optional), e.g. a neon-lit street": {
       "localizations": {
         "sv": {
@@ -3165,6 +3205,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Höjd"
+          }
+        }
+      }
+    },
+    "Hi — I'm your editing assistant. Tell me what you want: I'll adjust the photo (“make it warmer”), edit its content (“make the sky pink”), generate a new layer (“add a red bird”), or plan several steps and check the result.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hej – jag är din redigeringsassistent. Säg vad du vill: jag justerar fotot (”gör det varmare”), ändrar innehållet (”gör himlen rosa”), genererar ett nytt lager (”lägg till en röd fågel”), eller planerar flera steg och kontrollerar resultatet."
           }
         }
       }
@@ -6996,6 +7046,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "klippt"
+          }
+        }
+      }
+    },
+    "e.g. make the sky a warm sunset — or: add a red bird": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "t.ex. gör himlen till en varm solnedgång – eller: lägg till en röd fågel"
           }
         }
       }

@@ -116,6 +116,31 @@ private struct AssistantView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top) {
+                Text("Chat to edit the whole image, or say “add a …” to generate a layer.")
+                    .font(.caption)
+                    .foregroundStyle(Theme.muted)
+                Spacer(minLength: 8)
+                Button(autoRun ? "AUTO-EDIT ON" : "AUTO-EDIT OFF") { autoRun.toggle() }
+                    .buttonStyle(.plain)
+                    .font(.caption2.weight(.semibold))
+                    .kerning(0.6)
+                    .padding(.horizontal, 8)
+                    .frame(height: 22)
+                    .foregroundStyle(autoRun ? Theme.ink : Theme.muted)
+                    .background(autoRun ? Theme.accent.opacity(0.35) : Theme.raised, in: .rect(cornerRadius: 6))
+                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(autoRun ? Theme.accent : Theme.edge))
+                    .help("Plans that only use the editor's own tools always run straight away. Plans with AI jobs (which cost credits) wait for Run unless this is on.")
+                    .onChange(of: autoRun) { _, on in ai.autoRunAIPlans = on }
+            }
+            if ai.messages.isEmpty {
+                Text("Hi — I'm your editing assistant. Tell me what you want: I'll adjust the photo (“make it warmer”), edit its content (“make the sky pink”), generate a new layer (“add a red bird”), or plan several steps and check the result.")
+                    .font(.callout)
+                    .foregroundStyle(Theme.ink.opacity(0.85))
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Theme.raised, in: .rect(cornerRadius: 12))
+            }
             ForEach(ai.messages.suffix(10)) { message in
                 VStack(alignment: .leading, spacing: 6) {
                     Text(message.text)
@@ -123,10 +148,11 @@ private struct AssistantView: View {
                         .textSelection(.enabled)
                     if let plan = message.plan { PlanView(ai: ai, messageID: message.id, plan: plan) }
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 5)
-                .background(message.fromUser ? Color.accentColor.opacity(0.15) : Color.secondary.opacity(0.1),
-                            in: .rect(cornerRadius: 8))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .foregroundStyle(message.fromUser ? Color.white : Theme.ink)
+                .background(message.fromUser ? Theme.accent : Theme.raised, in: .rect(cornerRadius: 12))
+                .padding(message.fromUser ? .leading : .trailing, 28)
                 .frame(maxWidth: .infinity, alignment: message.fromUser ? .trailing : .leading)
             }
             if !ai.savedActions.isEmpty {
@@ -176,25 +202,33 @@ private struct AssistantView: View {
                     Text("Planning…").font(.callout).foregroundStyle(.secondary)
                 }
             }
-            HStack(alignment: .bottom) {
-                TextField("Ask for an edit: “moody black & white with a vignette”", text: $text, axis: .vertical)
-                    .lineLimit(1...4)
-                    .textFieldStyle(.roundedBorder)
+            HStack(alignment: .bottom, spacing: 8) {
+                TextField("e.g. make the sky a warm sunset — or: add a red bird", text: $text, axis: .vertical)
+                    .lineLimit(2...5)
+                    .textFieldStyle(.plain)
+                    .padding(10)
+                    .background(Theme.background, in: .rect(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.edge))
                     .focused($focused)
                     .onSubmit(send)
-                Button(action: send) {
-                    Image(systemName: "arrow.up.circle.fill").font(.title2)
-                }
-                .buttonStyle(.borderless)
-                .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty || ai.isPlanning)
-                .keyboardShortcut(.return, modifiers: .command)
-                .accessibilityLabel("Send")
+                Button("Send", action: send)
+                    .buttonStyle(.plain)
+                    .font(.callout.weight(.medium))
+                    .padding(.horizontal, 14)
+                    .frame(height: 36)
+                    .foregroundStyle(.white)
+                    .background(Theme.accent.opacity(canSend ? 1 : 0.4), in: .rect(cornerRadius: 8))
+                    .disabled(!canSend)
+                    .keyboardShortcut(.return, modifiers: .command)
             }
-            Toggle("Run AI steps without asking", isOn: $autoRun)
-                .font(.caption)
-                .onChange(of: autoRun) { _, on in ai.autoRunAIPlans = on }
-                .help("Plans that only use the editor's own tools always run straight away. Plans with AI jobs (which cost credits) wait for Run unless this is on.")
+            Text("Enter to send")
+                .font(.caption2)
+                .foregroundStyle(Theme.muted)
         }
+    }
+
+    private var canSend: Bool {
+        !text.trimmingCharacters(in: .whitespaces).isEmpty && !ai.isPlanning
     }
 
     private func send() {

@@ -73,11 +73,26 @@ public enum OnDeviceRouter {
         return decision(route, text: text, candidates: candidates)
     }
 
-    /// Validates the model's answer: unknown ids and empty prompts fall back to the assistant.
+    /// A request that names more than one thing ("black and white with a vignette",
+    /// "warmer, then sharpen") is a plan, never a single command.
+    static func isCompound(_ text: String) -> Bool {
+        let lower = " " + text.lowercased() + " "
+        let joiners = [",", ";", " with ", " then ", " plus ", " also ", " med ", " sedan ", " samt ", " och sen "]
+        if joiners.contains(where: lower.contains) { return true }
+        // "and" joins two requests unless it is part of a name such as "black and white".
+        let withoutNames = lower.replacingOccurrences(of: "black and white", with: "bw")
+            .replacingOccurrences(of: "svart och vit", with: "bw")
+        if withoutNames.contains(" and ") || withoutNames.contains(" och ") { return true }
+        return text.split(whereSeparator: \.isWhitespace).count > 8
+    }
+
+    /// Validates the model's answer: unknown ids and empty prompts fall back to the
+    /// assistant, and so does a single command for a request that asks for several things.
     static func decision(_ route: Route, text: String, candidates: [Candidate]) -> Decision {
         switch route.action {
         case .run:
             let id = route.optionID.trimmingCharacters(in: .whitespaces)
+            guard !isCompound(text) else { return .assistant }
             return candidates.contains { $0.id == id } ? .run(id) : .assistant
         case .generate:
             let prompt = route.prompt.trimmingCharacters(in: .whitespacesAndNewlines)
