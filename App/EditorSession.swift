@@ -15,7 +15,9 @@ final class EditorSession {
 
     @ObservationIgnored weak var undoManager: UndoManager?
 
-    var tool: ToolID = .move
+    var tool: ToolID = .move {
+        didSet { if oldValue == .magicSelect, tool != .magicSelect { ai?.resetMagicSelect() } }
+    }
     /// Space held: the Hand tool takes over temporarily.
     var temporaryHand = false
     var effectiveTool: ToolID { temporaryHand ? .hand : tool }
@@ -29,7 +31,7 @@ final class EditorSession {
     }
 
     enum AISection: String {
-        case assistant, generate, fill, expand, colorMatch
+        case assistant, generate, fill, expand, colorMatch, relight, reflections, harmonize, upscale, cleanup, presets, lensBlur
     }
 
     var inspectorTab = InspectorTab.layers
@@ -340,6 +342,13 @@ final class EditorSession {
             showAI(.expand)
         case .aiColorMatch:
             showAI(.colorMatch)
+        case .aiRelight: showAI(.relight)
+        case .aiReflections: showAI(.reflections)
+        case .aiHarmonize: showAI(.harmonize)
+        case .aiUpscale: showAI(.upscale)
+        case .aiDistractions: showAI(.cleanup)
+        case .aiPresets: showAI(.presets)
+        case .aiLensBlur: showAI(.lensBlur)
         case .placeImage:
             choosePlaceImage()
         case .export:

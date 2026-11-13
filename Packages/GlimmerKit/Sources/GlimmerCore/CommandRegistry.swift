@@ -107,6 +107,13 @@ extension CommandID {
     public static let aiRemoveBackground: CommandID = "ai.cutout"
     public static let aiColorMatch: CommandID = "ai.colorMatch"
     public static let showAssistant: CommandID = "ai.assistant"
+    public static let aiRelight: CommandID = "ai.relight"
+    public static let aiReflections: CommandID = "ai.reflections"
+    public static let aiHarmonize: CommandID = "ai.harmonize"
+    public static let aiUpscale: CommandID = "ai.upscale"
+    public static let aiDistractions: CommandID = "ai.distractions"
+    public static let aiPresets: CommandID = "ai.presets"
+    public static let aiLensBlur: CommandID = "ai.lensBlur"
 
     public static func newAdjustment(_ kind: AdjustmentKind) -> CommandID { CommandID(rawValue: "layer.adjustment.\(kind.rawValue)") }
     public static let newSolidFill: CommandID = "layer.fill.solid"
@@ -213,6 +220,13 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.aiRemoveBackground, "Remove Background", category: .ai,
                           keywords: ["cutout", "mask", "subject"]),
         CommandDescriptor(.aiColorMatch, "Match Color…", category: .ai, keywords: ["grade", "transfer", "reference"]),
+        CommandDescriptor(.aiRelight, "Relight…", category: .ai, keywords: ["light", "lighting", "shadow"]),
+        CommandDescriptor(.aiReflections, "Remove Reflections…", category: .ai, keywords: ["glare", "glass", "window"]),
+        CommandDescriptor(.aiHarmonize, "Harmonize Layer…", category: .ai, keywords: ["blend", "composite", "match lighting"]),
+        CommandDescriptor(.aiUpscale, "Upscale…", category: .ai, keywords: ["enlarge", "super resolution", "enhance"]),
+        CommandDescriptor(.aiDistractions, "Find Distractions…", category: .ai, keywords: ["cleanup", "clean up", "remove clutter"]),
+        CommandDescriptor(.aiPresets, "Presets…", category: .ai, keywords: ["look", "grade", "filter", "style"]),
+        CommandDescriptor(.aiLensBlur, "Lens Blur…", category: .ai, keywords: ["depth", "bokeh", "background blur", "portrait"]),
 
         CommandDescriptor(.toggleGammaBlending, "Blend Colors in Gamma Space", category: .image,
                           keywords: ["photoshop", "linear", "color space"]),

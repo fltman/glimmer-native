@@ -1,6 +1,7 @@
 import AppKit
 import GlimmerAI
 import GlimmerCore
+import GlimmerRender
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -32,12 +33,37 @@ struct AIPanel: View {
                     section("Match Color", id: EditorSession.AISection.colorMatch.rawValue, symbol: "eyedropper.halffull") {
                         ColorMatchView(ai: ai)
                     }
+                    section("Relight", id: EditorSession.AISection.relight.rawValue, symbol: "lightbulb.max") {
+                        RelightView(ai: ai)
+                    }
+                    section("Clean Up", id: EditorSession.AISection.cleanup.rawValue, symbol: "eraser.line.dashed") {
+                        CleanupView(ai: ai)
+                    }
+                    section("Remove Reflections", id: EditorSession.AISection.reflections.rawValue, symbol: "sun.max.trianglebadge.exclamationmark") {
+                        StrengthAction(ai: ai, note: "Removes glare from glass, water and screens — in the selection, or the whole image.",
+                                       button: "Remove Reflections", initial: 0.7) { ai.removeReflections(strength: $0) }
+                    }
+                    section("Harmonize", id: EditorSession.AISection.harmonize.rawValue, symbol: "wand.and.rays") {
+                        StrengthAction(ai: ai, note: "Relights and grades the active layer so it sits naturally in the scene below.",
+                                       button: "Harmonize Layer", initial: 0.6) { ai.harmonize(strength: $0) }
+                    }
+                    section("Upscale", id: EditorSession.AISection.upscale.rawValue, symbol: "arrow.up.backward.and.arrow.down.forward") {
+                        UpscaleView(ai: ai, size: SIMD2(session.state.width, session.state.height))
+                    }
+                    section("Presets", id: EditorSession.AISection.presets.rawValue, symbol: "camera.filters") {
+                        PresetsView(ai: ai)
+                    }
+                    section("Lens Blur", id: EditorSession.AISection.lensBlur.rawValue, symbol: "camera.aperture") {
+                        LensBlurView(ai: ai)
+                    }
                     section("On This Mac", id: "local", symbol: "cpu") {
                         VStack(alignment: .leading, spacing: 8) {
                             Button("Remove Background", systemImage: "person.crop.rectangle") { ai.removeBackground() }
                                 .help("Masks the active layer to its subject. Runs on this Mac, free.")
                             Button("Select Subject", systemImage: "person.and.background.dotted") { ai.selectSubject() }
                                 .help("Selects the main subject. Runs on this Mac, free.")
+                            Button("Magic Select Tool (A)", systemImage: "wand.and.sparkles") { session.tool = .magicSelect }
+                                .help("Click an object to select it; ⌥-click to exclude. Return keeps, Esc cancels.")
                         }
                     }
                     JobsView(ai: ai)
@@ -339,5 +365,168 @@ private struct JobsView: View {
             }
             .padding(.top, 6)
         }
+    }
+}
+
+
+private struct StrengthAction: View {
+    let ai: AIController
+    let note: String
+    let button: String
+    let initial: Double
+    let action: (Double) -> Void
+    @State private var strength: Double?
+
+    var body: some View {
+        let value = strength ?? initial
+        VStack(alignment: .leading, spacing: 8) {
+            Text(note).font(.callout).foregroundStyle(.secondary)
+            ParameterSlider(label: "Strength", value: value * 100, range: 0...100, step: 1,
+                            format: { "\(Int($0)) %" }, set: { strength = $0 / 100 }, commit: {})
+            Button(button) { action(value) }
+        }
+    }
+}
+
+private struct RelightView: View {
+    let ai: AIController
+    @State private var direction = AIPipelines.LightDirection.left
+    @State private var color = SRGBColor(1, 0.9, 0.75)
+    @State private var intensity = 0.6
+    @State private var environment = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("Light from", selection: $direction) {
+                ForEach(AIPipelines.LightDirection.allCases, id: \.self) { Text($0.title).tag($0) }
+            }
+            ColorWell(label: "Light color", color: color) { color = $0 }
+            ParameterSlider(label: "Intensity", value: intensity * 100, range: 0...100, step: 1,
+                            format: { "\(Int($0)) %" }, set: { intensity = $0 / 100 }, commit: {})
+            TextField("Environment (optional), e.g. a neon-lit street", text: $environment)
+                .textFieldStyle(.roundedBorder)
+            Button("Relight") { ai.relight(direction: direction, color: color, intensity: intensity, environment: environment) }
+        }
+    }
+}
+
+private struct CleanupView: View {
+    let ai: AIController
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Finds photobombers, litter, signs, cables and dust spots to remove.")
+                .font(.callout).foregroundStyle(.secondary)
+            Button("Find Distractions") { ai.findDistractions() }
+            if let message = ai.distractionMessage {
+                Text(message).font(.callout)
+            }
+            ForEach(ai.distractions) { d in
+                HStack {
+                    Circle()
+                        .fill(d.severity == "high" ? Color.red : (d.severity == "low" ? Color.yellow : Color.orange))
+                        .frame(width: 8, height: 8)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(d.label.capitalized).font(.callout)
+                        if let r = d.rationale { Text(r).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
+                    }
+                    Spacer()
+                    Button("Select") { ai.selectDistractions([d]) }
+                    Button("Remove") { ai.removeDistractions([d]) }
+                    Button("Dismiss", systemImage: "xmark") { ai.dismissDistraction(d.id) }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.borderless)
+                }
+                .controlSize(.small)
+            }
+            if ai.distractions.count > 1 {
+                Button("Remove All") { ai.removeDistractions(ai.distractions) }
+            }
+        }
+    }
+}
+
+private struct UpscaleView: View {
+    let ai: AIController
+    let size: SIMD2<Int>
+    @State private var scale = 2
+    @State private var enhance = false
+    @State private var creativity = 0.3
+
+    var body: some View {
+        let out = SIMD2(size.x * scale, size.y * scale)
+        let tiles = AIPipelines.enhanceTiles(width: out.x, height: out.y).count
+        VStack(alignment: .leading, spacing: 8) {
+            Picker("Scale", selection: $scale) {
+                Text("2×").tag(2)
+                Text("4×").tag(4)
+            }
+            .pickerStyle(.segmented)
+            Text("Result: \(out.x) × \(out.y) px, opened as a new document.")
+                .font(.caption).foregroundStyle(.secondary)
+            Toggle("Add AI detail", isOn: $enhance)
+            if enhance {
+                ParameterSlider(label: "Creativity", value: creativity * 100, range: 0...100, step: 1,
+                                format: { "\(Int($0)) %" }, set: { creativity = $0 / 100 }, commit: {})
+                Text("Runs the image model on \(tiles) tile\(tiles == 1 ? "" : "s").")
+                    .font(.caption)
+                    .foregroundStyle(tiles > 16 ? .orange : .secondary)
+            }
+            Button("Upscale") { ai.upscale(scale: scale, enhance: enhance, creativity: creativity) }
+                .disabled(enhance && max(out.x, out.y) > 8192)
+        }
+    }
+}
+
+private struct PresetsView: View {
+    let ai: AIController
+
+    var body: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 8)], spacing: 8) {
+            ForEach(Preset.all) { preset in
+                Button {
+                    ai.applyPreset(preset)
+                } label: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        LinearGradient(colors: [Color(hex: preset.swatch.0), Color(hex: preset.swatch.1)],
+                                       startPoint: .leading, endPoint: .trailing)
+                            .frame(height: 28)
+                            .clipShape(.rect(cornerRadius: 4))
+                        Text(preset.name).font(.caption).lineLimit(1)
+                    }
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .help(preset.description)
+            }
+        }
+    }
+}
+
+private struct LensBlurView: View {
+    let ai: AIController
+    @State private var p = DocumentEffects.LensBlurParameters()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Estimates depth on this Mac and blurs what's out of focus. The first run downloads a 48 MB model.")
+                .font(.callout).foregroundStyle(.secondary)
+            ParameterSlider(label: "Focus distance", value: p.focus * 100, range: 0...100, step: 1,
+                            format: { $0 > 66 ? "Near" : ($0 < 33 ? "Far" : "Middle") }, set: { p.focus = $0 / 100 }, commit: {})
+            ParameterSlider(label: "Focus range", value: p.focusRange * 100, range: 0...60, step: 1,
+                            format: { "\(Int($0)) %" }, set: { p.focusRange = $0 / 100 }, commit: {})
+            ParameterSlider(label: "Blur", value: p.amount * 1000, range: 2...60, step: 1,
+                            format: { String(format: "%.1f %%", $0 / 10) }, set: { p.amount = $0 / 1000 }, commit: {})
+            ParameterSlider(label: "Bokeh", value: p.bokeh * 100, range: 0...100, step: 1,
+                            format: { "\(Int($0)) %" }, set: { p.bokeh = $0 / 100 }, commit: {})
+            Button("Apply Lens Blur") { ai.lensBlur(p) }
+        }
+    }
+}
+
+extension Color {
+    init(hex: String) {
+        let v = UInt32(hex.trimmingCharacters(in: CharacterSet(charactersIn: "#")), radix: 16) ?? 0
+        self.init(.sRGB, red: Double((v >> 16) & 0xff) / 255, green: Double((v >> 8) & 0xff) / 255, blue: Double(v & 0xff) / 255)
     }
 }

@@ -285,7 +285,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - En AI-jobbkö i UI:t med progress, avbryt och resultat som lager.
 - En enkel assistentpanel: fri text routas till Generate eller Edit. Agenten med tool calling kommer i fas 8.
 
-### Fas 4 — AI, avancerat · L
+### Fas 4 — AI, avancerat · L ✅ (2026-11-13)
 - Relight, Reflections, Harmonize, Upscale (Core ML plus enhance) och Cleanup/distractions.
 - Magic Select via Core ML SAM, med konverteringsscript i `scripts/convert-models/`.
 - AI Lens Blur med Depth Anything V2.
@@ -341,6 +341,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - **Fas 3:** pipelinerna (generate, edit, inpaint/fill/remove/referens, expand) är porterade med webbens prompter ordagrant och med fixarna: 30 % kontextpadding, omskalning efter whole-image edit och nedskalning av indata till max 2048 px. Resultat blir nya lager vars alfa är den fjädrade masken. Remove Background lägger en lagermask via Vision. Ett live-test mot OpenRouter (`GLIMMER_LIVE_AI=1`) verifierar transport och tolkning av svaren.
 - **Whole-image edit färgmatchas inte.** Det skulle motverka avsiktliga färgändringar ("gör himlen till solnedgång").
 - **Marching ants:** kanten hittas genom grannsampling med uv-derivator. `fwidth` på det samplade värdet missar kanter mellan 2×2-pixelblock.
+- **Fas 4:** on-device-modellerna är Apples egna Core ML-konverteringar på Hugging Face (`apple/coreml-sam2.1-tiny` och `apple/coreml-depth-anything-v2-small`). De laddas ner vid första användningen till Application Support, kompileras och kan tas bort under Inställningar › Models. Egen konvertering med coremltools behövdes inte. Upscale öppnar ett nytt dokument (Lanczos i 16-bit via MPS, med valfri AI-detaljpass i tiles med mjuka skarvar). Presets blir en grupp av justeringslager; deras filtersteg väntar på fas 7.
 - **Kvar till fas 9:** minnesbudget för undo-historiken (idag obegränsad) och composite-cache för stora dokument vid utzoomning (idag full upplösning per tile).
 
 ## 4. Teststrategi

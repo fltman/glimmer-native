@@ -34,6 +34,10 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     /// Dashed outline of the marquee being dragged (white under black dashes).
     private let marqueeBase = CAShapeLayer()
     private let marqueeDashes = CAShapeLayer()
+    /// Boxes from Find Distractions and Magic Select click points.
+    private let hintLayer = CAShapeLayer()
+    private let pointsPositive = CAShapeLayer()
+    private let pointsNegative = CAShapeLayer()
     private var drag: Drag?
 
     init(session: EditorSession) {
@@ -56,6 +60,16 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             layer.actions = ["path": NSNull()]
         }
         marqueeDashes.lineDashPattern = [4, 4]
+        hintLayer.fillColor = NSColor.systemOrange.withAlphaComponent(0.12).cgColor
+        hintLayer.strokeColor = NSColor.systemOrange.cgColor
+        hintLayer.lineWidth = 2
+        hintLayer.lineDashPattern = [6, 3]
+        for (layer, color) in [(pointsPositive, NSColor.systemGreen), (pointsNegative, NSColor.systemRed)] {
+            layer.fillColor = color.cgColor
+            layer.strokeColor = NSColor.white.cgColor
+            layer.lineWidth = 2
+        }
+        for layer in [hintLayer, pointsPositive, pointsNegative] { layer.actions = ["path": NSNull()] }
         observeSession()
     }
 
@@ -75,8 +89,11 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         layer.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
         layer.framebufferOnly = true
         layer.isOpaque = true
+        layer.addSublayer(hintLayer)
         layer.addSublayer(marqueeBase)
         layer.addSublayer(marqueeDashes)
+        layer.addSublayer(pointsPositive)
+        layer.addSublayer(pointsNegative)
         return layer
     }
 
@@ -87,6 +104,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             _ = session.overrides
             _ = session.effectiveTool
             _ = session.marquee
+            _ = session.ai.distractions
+            _ = session.ai.magicPoints
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
@@ -162,6 +181,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     private func updateMarqueeOverlay() {
+        updateHints()
         guard let m = session.marquee else {
             marqueeBase.path = nil
             marqueeDashes.path = nil
@@ -225,6 +245,32 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         return color
     }
 
+    private func updateHints() {
+        // Document → layer coordinates (the Metal layer isn't flipped).
+        let t = controller.transform
+        func point(_ d: SIMD2<Double>) -> CGPoint {
+            let v = t.viewPoint(fromDocument: d)
+            return CGPoint(x: v.x, y: bounds.height - v.y)
+        }
+        let boxes = CGMutablePath()
+        let state = session.state
+        for d in session.ai.distractions {
+            let r = d.pixelRect(width: state.width, height: state.height)
+            let corners = [SIMD2(Double(r.x), Double(r.y)), SIMD2(Double(r.maxX), Double(r.y)),
+                           SIMD2(Double(r.maxX), Double(r.maxY)), SIMD2(Double(r.x), Double(r.maxY))]
+            boxes.addLines(between: corners.map(point))
+            boxes.closeSubpath()
+        }
+        hintLayer.path = boxes
+        let positive = CGMutablePath(), negative = CGMutablePath()
+        for p in session.ai.magicPoints {
+            let c = point(p.location)
+            (p.positive ? positive : negative).addEllipse(in: CGRect(x: c.x - 5, y: c.y - 5, width: 10, height: 10))
+        }
+        pointsPositive.path = positive
+        pointsNegative.path = negative
+    }
+
     // MARK: Pointer input
 
     private func location(of event: NSEvent) -> SIMD2<Double> {
@@ -264,6 +310,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case .rectangleMarquee, .ellipseMarquee:
             session.beginMarquee(at: controller.documentPoint(p), modifiers: event.modifierFlags)
             drag = .marquee
+        case .magicSelect:
+            // Click adds a point on the object; ⌥-click marks what to leave out.
+            session.ai.magicSelect(at: controller.documentPoint(p), positive: !event.modifierFlags.contains(.option))
         default:
             beginPan(at: p)
         }
@@ -314,7 +363,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     override func resetCursorRects() {
         let cursor: NSCursor = switch session.effectiveTool {
         case .hand: .openHand
-        case .rectangleMarquee, .ellipseMarquee: .crosshair
+        case .rectangleMarquee, .ellipseMarquee, .magicSelect: .crosshair
         default: .arrow
         }
         addCursorRect(bounds, cursor: cursor)
@@ -344,6 +393,12 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
                 return
             }
         }
+        if event.keyCode == 53 || event.keyCode == 36, session.effectiveTool == .magicSelect, !session.ai.magicPoints.isEmpty {
+            // Return keeps the Magic Select result, Esc discards it.
+            if event.keyCode == 53 { session.perform(.deselect) }
+            session.ai.resetMagicSelect()
+            return
+        }
         if event.keyCode == 53, session.state.selection != nil {  // Esc deselects
             session.perform(.deselect)
             return
@@ -360,7 +415,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     /// Tools implemented so far (see docs/PLAN.md for the rest).
-    static let availableTools: [ToolID] = [.move, .rectangleMarquee, .ellipseMarquee, .hand]
+    static let availableTools: [ToolID] = [.move, .rectangleMarquee, .ellipseMarquee, .magicSelect, .hand]
 
     private func arrowOffset(_ event: NSEvent) -> SIMD2<Int>? {
         switch event.keyCode {

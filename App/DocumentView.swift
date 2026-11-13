@@ -79,6 +79,10 @@ private struct StatusPill: View {
                 ProgressView().controlSize(.small)
                 Text("Exporting…").foregroundStyle(.secondary)
             }
+            if let job = session.ai.jobs.first(where: { $0.status == .running }) {
+                ProgressView().controlSize(.small)
+                Text(job.title + "…").foregroundStyle(.secondary).lineLimit(1)
+            }
         }
         .font(.callout)
         .padding(.horizontal, 12)
@@ -125,6 +129,7 @@ extension ToolID {
         case .hand: "Hand"
         case .rectangleMarquee: "Rectangular Marquee"
         case .ellipseMarquee: "Elliptical Marquee"
+        case .magicSelect: "Magic Select"
         default: rawValue.capitalized
         }
     }
@@ -135,6 +140,7 @@ extension ToolID {
         case .hand: "hand.raised"
         case .rectangleMarquee: "rectangle.dashed"
         case .ellipseMarquee: "circle.dashed"
+        case .magicSelect: "wand.and.sparkles"
         default: "questionmark"
         }
     }

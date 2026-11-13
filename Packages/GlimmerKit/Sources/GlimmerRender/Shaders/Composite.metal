@@ -574,3 +574,50 @@ fragment float4 ants_fragment(QuadOut in [[stage_in]],
     float dash = fmod(floor((p.x + p.y) / 5.0 + time * 6.0), 2.0);
     return dash > 0.5 ? float4(1.0) : float4(0.0, 0.0, 0.0, 1.0);
 }
+
+// ── Depth lens blur ─────────────────────────────────────────────────────────
+
+// Must match `LensBlurUniforms` in LensBlur.swift.
+struct LensBlurUniforms {
+    float focus;       // depth to keep sharp, 0 (far) ... 1 (near)
+    float maxRadius;   // pixels
+    float bokeh;       // highlight boost 0...1
+    float size;        // depth range that stays sharp
+};
+
+static float cocAt(float d, constant LensBlurUniforms &u) {
+    float distance = max(abs(d - u.focus) - u.size * 0.5, 0.0);
+    return saturate(distance * 2.5) * u.maxRadius;
+}
+
+/// Gather blur along a golden-angle spiral. Samples that are sharper than the
+/// sampling distance are down-weighted so in-focus edges don't bleed.
+kernel void lens_blur(texture2d<float, access::sample> color [[texture(0)]],
+                      texture2d<float, access::sample> depth [[texture(1)]],
+                      texture2d<float, access::write> out [[texture(2)]],
+                      constant LensBlurUniforms &u [[buffer(0)]],
+                      uint2 gid [[thread_position_in_grid]]) {
+    if (gid.x >= out.get_width() || gid.y >= out.get_height()) return;
+    constexpr sampler s(filter::linear, address::clamp_to_edge, coord::pixel);
+    float2 p = float2(gid) + 0.5;
+    float coc = cocAt(depth.sample(s, p).r, u);
+    float4 centre = color.sample(s, p);
+    if (coc < 0.5) { out.write(centre, gid); return; }
+
+    int n = clamp(int(coc * coc * 0.8), 24, 160);
+    float4 sum = 0.0;
+    float wsum = 0.0;
+    for (int i = 0; i < n; i++) {
+        float r = sqrt((float(i) + 0.5) / float(n)) * coc;
+        float a = float(i) * 2.39996323;
+        float2 q = p + r * float2(cos(a), sin(a));
+        float4 c = color.sample(s, q);
+        float sc = cocAt(depth.sample(s, q).r, u);
+        float w = sc >= r * 0.8 ? 1.0 : 0.15;
+        float luma = dot(c.rgb, float3(0.2126, 0.7152, 0.0722));
+        w *= 1.0 + u.bokeh * 6.0 * pow(saturate(luma), 4.0);
+        sum += c * w;
+        wsum += w;
+    }
+    out.write(sum / max(wsum, 1e-5), gid);
+}

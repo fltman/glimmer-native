@@ -7,6 +7,9 @@ struct SettingsView: View {
             Tab("AI", systemImage: "sparkles") {
                 AISettingsView()
             }
+            Tab("Models", systemImage: "cpu") {
+                ModelSettingsView()
+            }
         }
         .frame(width: 540)
     }
@@ -125,5 +128,48 @@ private struct AISettingsView: View {
             return "Valid · \(remaining.formatted(.currency(code: "USD"))) left"
         }
         return "Valid"
+    }
+}
+
+
+/// On-device models downloaded on first use.
+private struct ModelSettingsView: View {
+    @State private var installed: Set<OnDeviceModel> = []
+
+    var body: some View {
+        Form {
+            Section {
+                ForEach(OnDeviceModel.allCases, id: \.self) { model in
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text(model.title)
+                            Text(installed.contains(model) ? "Downloaded" : "Downloads on first use (\(model.approximateSize))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if installed.contains(model) {
+                            Button("Remove", role: .destructive) {
+                                Task {
+                                    try? await ModelStore.shared.remove(model)
+                                    await refresh()
+                                }
+                            }
+                        }
+                    }
+                }
+            } footer: {
+                Text("These models run on this Mac. They come from Apple's Core ML conversions on Hugging Face.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .task { await refresh() }
+    }
+
+    private func refresh() async {
+        var set: Set<OnDeviceModel> = []
+        for model in OnDeviceModel.allCases where await ModelStore.shared.isInstalled(model) { set.insert(model) }
+        installed = set
     }
 }
