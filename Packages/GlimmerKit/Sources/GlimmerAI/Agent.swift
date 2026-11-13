@@ -129,6 +129,29 @@ public struct AgentPlan: Sendable, Equatable {
     public var usesAI: Bool { steps.contains { AgentPlanner.op(named: $0.op)?.isAIJob == true } }
 }
 
+/// A plan kept for reuse: runs again without the planner (and without cost, unless it has AI steps).
+public struct SavedAction: Codable, Identifiable, Hashable, Sendable {
+    public var id = UUID()
+    public var name: String
+    public var steps: [AgentStep]
+
+    public init(name: String, steps: [AgentStep]) {
+        self.name = name
+        self.steps = steps
+    }
+
+    static let key = "assistant.savedActions"
+
+    public static func load(_ defaults: UserDefaults = .standard) -> [SavedAction] {
+        guard let data = defaults.data(forKey: key) else { return [] }
+        return (try? JSONDecoder().decode([SavedAction].self, from: data)) ?? []
+    }
+
+    public static func store(_ actions: [SavedAction], _ defaults: UserDefaults = .standard) {
+        defaults.set(try? JSONEncoder().encode(actions), forKey: key)
+    }
+}
+
 /// What the planner knows about the open document.
 public struct AgentContext: Sendable {
     public var width: Int

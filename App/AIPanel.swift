@@ -129,6 +129,21 @@ private struct AssistantView: View {
                             in: .rect(cornerRadius: 8))
                 .frame(maxWidth: .infinity, alignment: message.fromUser ? .trailing : .leading)
             }
+            if !ai.savedActions.isEmpty {
+                Menu("Actions", systemImage: "bookmark") {
+                    ForEach(ai.savedActions) { action in
+                        Button(action.name) { ai.run(action) }
+                    }
+                    Divider()
+                    Menu("Delete") {
+                        ForEach(ai.savedActions) { action in
+                            Button(action.name, role: .destructive) { ai.savedActions.removeAll { $0.id == action.id } }
+                        }
+                    }
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+            }
             if ai.isPlanning {
                 HStack(spacing: 6) {
                     ProgressView().controlSize(.small)
@@ -199,6 +214,14 @@ private struct PlanView: View {
                 HStack {
                     Spacer()
                     Button("Stop") { ai.cancelPlan(messageID) }.controlSize(.small)
+                }
+            case .finished?:
+                HStack {
+                    Spacer()
+                    Button("Save as Action", systemImage: "bookmark") { ai.saveAction(from: messageID) }
+                        .controlSize(.small)
+                        .buttonStyle(.borderless)
+                        .help("Keep these steps to run again from ⌘K or the Actions menu")
                 }
             default: EmptyView()
             }

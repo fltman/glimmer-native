@@ -38,11 +38,26 @@ struct CommandPalette: View {
         return items
     }()
 
+    static let recentsKey = "palette.recents"
+
+    /// Saved assistant actions are searchable alongside the commands.
+    private var items: [PaletteItem] {
+        Self.allItems + session.ai.savedActions.map {
+            PaletteItem(id: "action.\($0.id)", title: $0.name, subtitle: "Action", keywords: ["action", "saved", "macro"],
+                        action: .savedAction($0.id.uuidString))
+        }
+    }
+
     private var rows: [Row] {
         let q = query.trimmingCharacters(in: .whitespaces)
-        let results = CommandSearch.search(q, in: Self.allItems, limit: q.isEmpty ? 0 : 9)
+        let items = items
+        guard !q.isEmpty else {
+            // Nothing typed yet: what you used last.
+            let recents = UserDefaults.standard.stringArray(forKey: Self.recentsKey) ?? []
+            return recents.compactMap { id in items.first { $0.id == id } }.map(Row.item)
+        }
+        let results = CommandSearch.search(q, in: items, limit: 9)
         var rows = results.map { Row.item($0.item) }
-        guard !q.isEmpty else { return rows }
         if CommandSearch.looksLikeAssistantRequest(q, bestScore: results.first?.score) {
             rows.insert(.ask(q), at: 0)
         } else {
@@ -120,6 +135,7 @@ struct CommandPalette: View {
         switch item.action {
         case .tool(let raw): ToolID(rawValue: raw)?.symbolName ?? "hammer"
         case .preset: "camera.filters"
+        case .savedAction: "bookmark"
         case .command(let id):
             if id.filterKind != nil { "camera.aperture" } else if id.adjustmentKind != nil { "slider.horizontal.3" } else { "command" }
         }
@@ -134,7 +150,11 @@ struct CommandPalette: View {
             session.inspectorTab = .ai
             session.ai.ask(q)
         case .item(let item):
-            if !session.runPaletteItem(item) { NSSound.beep() }
+            guard session.runPaletteItem(item) else { NSSound.beep(); return }
+            var recents = UserDefaults.standard.stringArray(forKey: Self.recentsKey) ?? []
+            recents.removeAll { $0 == item.id }
+            recents.insert(item.id, at: 0)
+            UserDefaults.standard.set(Array(recents.prefix(6)), forKey: Self.recentsKey)
         }
     }
 }
@@ -153,6 +173,10 @@ extension EditorSession {
         case .preset(let id):
             guard let p = Preset.all.first(where: { $0.id == id }) else { return false }
             ai.applyPreset(p)
+        case .savedAction(let id):
+            guard let action = ai.savedActions.first(where: { $0.id.uuidString == id }) else { return false }
+            showAI(.assistant)
+            ai.run(action)
         }
         return true
     }

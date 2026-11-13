@@ -7,6 +7,7 @@ struct DocumentView: View {
     @State private var session: EditorSession
     @Environment(\.undoManager) private var undoManager
     @AppStorage(Preferences.showOmnibarKey) private var showOmnibar = true
+    @AppStorage(SelectionBar.showKey) private var showSelectionBar = true
 
     init(document: GlimmerDocument) {
         _session = State(initialValue: EditorSession(document: document))
@@ -34,6 +35,11 @@ struct DocumentView: View {
             .overlay(alignment: .bottom) {
                 if showOmnibar, session.liquify == nil, session.transformSession == nil, session.cropSession == nil {
                     Omnibar(session: session).padding(.bottom, 12)
+                }
+            }
+            .overlay {
+                if showSelectionBar {
+                    GeometryReader { geo in SelectionBar(session: session, viewSize: geo.size) }
                 }
             }
             .overlay(alignment: .top) {

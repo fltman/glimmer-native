@@ -230,6 +230,42 @@ extension AIController {
         planStatus[message.id] = Task.isCancelled ? .cancelled : (failed ? .failed : .finished)
     }
 
+    // MARK: Saved actions
+
+    /// Keeps a finished plan (and any corrections that followed it) as a reusable action.
+    func saveAction(from messageID: UUID) {
+        guard let index = messages.firstIndex(where: { $0.id == messageID }), let plan = messages[index].plan else { return }
+        var steps = plan.steps
+        // Corrections from the quality check directly after belong to the same result.
+        for later in messages[(index + 1)...] {
+            guard !later.fromUser, let extra = later.plan else { break }
+            steps += extra.steps
+        }
+        let goal = messages[..<index].last(where: \.fromUser)?.text ?? plan.message ?? "Action"
+        let name = goal.count > 48 ? String(goal.prefix(47)) + "…" : goal
+        savedActions.removeAll { $0.name == name }
+        savedActions.append(SavedAction(name: name, steps: steps))
+    }
+
+    /// Runs a saved action again: no planning, one undo step.
+    func run(_ action: SavedAction) {
+        guard !isPlanning else { return }
+        let steps = action.steps.map { AgentStep(op: $0.op, params: $0.params, rationale: $0.rationale) }
+        messages.append(Message(fromUser: true, text: action.name))
+        let plan = AgentPlan(steps: steps)
+        let message = Message(fromUser: false, text: String(localized: "Running the saved action."), plan: plan)
+        messages.append(message)
+        for step in steps { stepStatus[step.id] = .pending }
+        planStatus[message.id] = .running
+        session.document.beginTransaction(action.name)
+        planTask = Task { [weak self] in
+            guard let self else { return }
+            defer { self.session.document.endTransaction(undoManager: self.session.undoManager) }
+            let failed = await self.run(steps)
+            self.planStatus[message.id] = Task.isCancelled ? .cancelled : (failed ? .failed : .finished)
+        }
+    }
+
     /// "Assistant: make it warmer" (shortened).
     static func undoName(for goal: String) -> String {
         let short = goal.count > 40 ? String(goal.prefix(39)) + "…" : goal

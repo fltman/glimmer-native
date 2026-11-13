@@ -51,6 +51,8 @@ public struct PaletteItem: Identifiable, Sendable, Hashable {
         case command(CommandID)
         case tool(String)
         case preset(String)
+        /// A saved assistant plan, by id.
+        case savedAction(String)
     }
 
     public let id: String

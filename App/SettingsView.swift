@@ -226,6 +226,7 @@ private struct GeneralSettingsView: View {
     @AppStorage(Preferences.canvasBackgroundKey) private var background = Preferences.CanvasBackground.system.rawValue
     @AppStorage(Preferences.checkerSizeKey) private var checker = 8.0
     @AppStorage(Preferences.showOmnibarKey) private var showOmnibar = true
+    @AppStorage(SelectionBar.showKey) private var showSelectionBar = true
     @AppStorage(AIController.autoRunKey) private var autoRun = false
     @AppStorage(AIController.onDeviceRoutingKey) private var routeOnDevice = true
     @AppStorage(AIController.showImageKey) private var showImage = true
@@ -243,6 +244,7 @@ private struct GeneralSettingsView: View {
                     Text("Large").tag(16.0)
                 }
                 Toggle("Show the search bar on the canvas", isOn: $showOmnibar)
+                Toggle("Show the action bar at the selection", isOn: $showSelectionBar)
             }
             Section("Assistant") {
                 Toggle("Run AI steps without asking", isOn: $autoRun)

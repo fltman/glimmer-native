@@ -45,6 +45,7 @@ final class AIController {
     var stepStatus: [UUID: StepStatus] = [:]
     var planStatus: [UUID: PlanStatus] = [:]
     var isPlanning = false
+    var savedActions = SavedAction.load() { didSet { SavedAction.store(savedActions) } }
     @ObservationIgnored var agentHistory: [(user: String, reply: String)] = []
     @ObservationIgnored var planTask: Task<Void, Never>?
     var totalCost: Double { jobs.compactMap(\.cost).reduce(0, +) }
