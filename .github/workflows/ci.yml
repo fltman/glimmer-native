@@ -1,15 +1,16 @@
 name: CI
-# Manual for now: the app targets macOS 27, and GitHub's hosted runners stop at macOS 26
-# (a job asking for macos-27 just waits in the queue). When a macOS 27 runner exists, or a
-# self-hosted Mac is registered with that label, switch this back to push and pull_request.
+# Runs on a self-hosted Mac with macOS 27 (GitHub's hosted machines stop at macOS 26).
+# Register one with scripts/setup-runner.sh; until then, jobs wait in the queue.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
-    runs-on: macos-27
+    runs-on: [self-hosted, macos-27]
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +23,7 @@ jobs:
         run: swift test --package-path Packages/GlimmerKit
       - name: Build the app
         run: |
-          brew install xcodegen
+          which xcodegen || brew install xcodegen
           xcodegen generate --quiet
           xcodebuild -project Glimmer.xcodeproj -scheme Glimmer -configuration Debug \
             -destination 'platform=macOS' -derivedDataPath build/DerivedData build -quiet \

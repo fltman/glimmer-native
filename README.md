@@ -20,6 +20,10 @@ Opt-in suites: `GLIMMER_LIVE_AI=1` (real OpenRouter calls) and `GLIMMER_MODELS_D
 
 `scripts/uitest.sh` runs the UI tests against the real app (new document, paint, undo, save, export). macOS asks once to allow UI automation.
 
+## CI
+
+`.github/workflows/ci.yml` runs the package tests and builds the app on every push to `main`. The app targets macOS 27, which GitHub's hosted machines don't offer yet, so the job runs on a self-hosted Mac: `scripts/setup-runner.sh` registers this one (`scripts/setup-runner.sh remove` undoes it).
+
 ## Release
 
 `scripts/release.sh [<version>] [--publish]` runs the tests, sets the version and raises the build number, archives a Release build, has Xcode export it with the Developer ID certificate (Brattoo AB) and notarize it with the account signed in under Xcode › Settings › Accounts, packs the stapled app into a signed DMG and writes a Sparkle appcast. `--publish` also commits the version, tags it, pushes and creates a GitHub release with the DMG and `appcast.xml`.
