@@ -18,3 +18,5 @@ Package.resolved
 # macOS
 .DS_Store
 build/
+# The bundled Real-ESRGAN model is a source file.
+!Packages/GlimmerKit/Sources/GlimmerAI/Resources/RealESRGAN.mlmodelc/
