@@ -22,7 +22,7 @@ Opt-in suites: `GLIMMER_LIVE_AI=1` (real OpenRouter calls) and `GLIMMER_MODELS_D
 
 ## Release
 
-`scripts/release.sh` archives a Release build, has Xcode export it with the Developer ID certificate (Brattoo AB) and notarize it with the account signed in under Xcode › Settings › Accounts, packs the stapled app into a signed DMG and writes a Sparkle appcast. `--publish` also creates a GitHub release with the DMG and `appcast.xml`.
+`scripts/release.sh [<version>] [--publish]` runs the tests, sets the version and raises the build number, archives a Release build, has Xcode export it with the Developer ID certificate (Brattoo AB) and notarize it with the account signed in under Xcode › Settings › Accounts, packs the stapled app into a signed DMG and writes a Sparkle appcast. `--publish` also commits the version, tags it, pushes and creates a GitHub release with the DMG and `appcast.xml`.
 
 One-time setup:
 

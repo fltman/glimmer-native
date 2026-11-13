@@ -371,6 +371,14 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **UI-tester** (`scripts/uitest.sh`): nytt dokument, måla, ångra, spara, exportera. Kräver att macOS får slå på automationsläget (lösenord eller Touch ID en gång).
   - **Profilering med xctrace** (Time Profiler på release-byggda prestandatester): CPU-tiden domineras av processladdning; komposit och filter körs på GPU:n och Real-ESRGAN i Core ML. Inga CPU-hotspots i redigeringskoden.
 
+- **Förnyelse (2026-11-13, sent):**
+  - **Assistenten ser bilden** (JPEG, 1024 px) och känner alla reglage (namn, intervall, standardvärden genereras ur schemat). Svaren strömmas. Efter en plan jämför modellen före och efter och får justera en gång med redigerarens egna verktyg; rättelsen hamnar i samma ångra-steg.
+  - **Åtgärdsrad vid markeringen** (beskriv och generera, ta bort, invertera, fjädra, avmarkera), **sparade åtgärder** (en färdig plan körs om utan planerare, även från ⌘K) och **senaste kommandon** i ⌘K.
+  - **Vänd och rotera bild** (Image-menyn), byggt på samma kanvas-transform som rak beskärning.
+  - **Real-ESRGAN:** vektoriserade kopior, 4K → 2× går från 26 s till 6 s. **WebP:** kvalitet under 100 % avrundar färgerna (20–40 % mindre fil). Appstart profilerad: inget att hämta.
+  - **Kod och arbetssätt:** Phase6/Phase7-filerna uppdelade per funktion, CI (`.github/workflows/ci.yml`), `release.sh <version> --publish` höjer byggnumret (Sparkle jämför byggnummer), testar, taggar och publicerar.
+  - *Inte gjort:* ångra-historik till disk (kräver ändringar i ångra-kärnan som behöver egen testning) och förlustkomprimerad WebP (VP8).
+
 ## 4. Teststrategi
 
 - **GlimmerCore:** modell, COW-tiles, undo/redo-invarianter, serialisering (rundtur och versionsmigrering) och `.aips`-import mot riktiga filer från webbappen.
