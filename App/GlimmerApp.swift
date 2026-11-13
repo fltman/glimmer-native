@@ -23,6 +23,10 @@ struct GlimmerApp: App {
                     .keyboardShortcut("n")
             }
             GlimmerCommands()
+            CheckForUpdatesCommand()
+            CommandGroup(replacing: .help) {
+                Button("Welcome to Glimmer") { DocumentOpener.shared.showWelcomeWindow() }
+            }
         }
 
         Settings {

@@ -69,6 +69,15 @@ struct ToolOptionsBar: View {
                     }
                     .frame(width: 130)
                     slider("Exposure", $session.dodgeExposure, 0.01...1, percent: true)
+                case .patternStamp:
+                    retouchBrushOptions
+                    slider("Opacity", $session.brush.opacity, 0...1, percent: true)
+                    Picker("Pattern", selection: $session.patternKind) {
+                        ForEach(PatternKind.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
+                    }
+                    .frame(width: 140)
+                    slider("Scale", $session.patternScale, 4...256, display: "\(Int(session.patternScale)) px")
+                    Text("Uses the foreground and background colours").foregroundStyle(.secondary)
                 case .blur, .sharpen, .smudge:
                     retouchBrushOptions
                     slider("Strength", $session.retouchStrength, 0.01...1, percent: true)
@@ -79,13 +88,19 @@ struct ToolOptionsBar: View {
     }
 
     private func bar(@ViewBuilder _ content: () -> some View) -> some View {
-        HStack(spacing: 14) { content() }
+        let row = HStack(spacing: 14) { content() }
             .font(.callout)
             .controlSize(.small)
             .fixedSize()
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
-            .glassEffect(.regular, in: .capsule)
+        // Long option rows scroll instead of spilling past the canvas edges.
+        return ViewThatFits(in: .horizontal) {
+            row.glassEffect(.regular, in: .capsule)
+            ScrollView(.horizontal, showsIndicators: false) { row }
+                .glassEffect(.regular, in: .capsule)
+        }
+        .padding(.horizontal, 12)
     }
 
     @ViewBuilder private var retouchBrushOptions: some View {

@@ -659,7 +659,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             session.ai.magicSelect(at: controller.documentPoint(p), positive: !event.modifierFlags.contains(.option))
         case let t where (t == .cloneStamp || t == .healingBrush) && event.modifierFlags.contains(.option):
             session.setCloneSource(controller.documentPoint(p))
-        case .brush, .eraser, .cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge:
+        case .brush, .eraser, .cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge, .patternStamp:
             session.beginStroke(at: controller.documentPoint(p), pressure: pressure(event),
                                 erase: session.effectiveTool == .eraser, straightLine: event.modifierFlags.contains(.shift))
             drag = .stroke
@@ -848,7 +848,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case .hand: .openHand
         case .rectangleMarquee, .ellipseMarquee, .magicSelect, .lasso, .polygonLasso, .magicWand,
              .brush, .eraser, .gradient, .eyedropper, .paintBucket, .crop, .pen, .shape,
-             .cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge: .crosshair
+             .cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge, .patternStamp: .crosshair
         case .type: .iBeam
         default: .arrow
         }
@@ -942,7 +942,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     /// Tools implemented so far (see docs/PLAN.md for the rest).
     static let availableTools: [ToolID] = [.move, .rectangleMarquee, .ellipseMarquee, .lasso, .polygonLasso, .magicWand,
                                            .magicSelect, .crop, .freeTransform, .brush, .eraser, .paintBucket, .gradient,
-                                           .cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge,
+                                           .cloneStamp, .healingBrush, .patternStamp, .dodge, .burn, .blur, .sharpen, .smudge,
                                            .type, .pen, .shape, .eyedropper, .hand]
 
     private func arrowOffset(_ event: NSEvent) -> SIMD2<Int>? {

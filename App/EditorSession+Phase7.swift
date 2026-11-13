@@ -98,7 +98,7 @@ extension EditorSession {
 
     // MARK: Retouch tools
 
-    static let retouchTools: Set<ToolID> = [.cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge]
+    static let retouchTools: Set<ToolID> = [.cloneStamp, .healingBrush, .dodge, .burn, .blur, .sharpen, .smudge, .patternStamp]
 
     func setCloneSource(_ point: SIMD2<Double>) {
         cloneSource = point
@@ -147,6 +147,11 @@ extension EditorSession {
             case .sharpen:
                 effect = try engine.apply(FilterSettings(.unsharpMask, ["amount": 0.5 + 2 * retouchStrength, "radius": 1.5]),
                                           to: layer.tiles, frame: frame, selection: nil)
+                mode = .towardEffect
+            case .patternStamp:
+                let pattern = Layer(name: "Pattern", content: .fill(.pattern(PatternFill(
+                    kind: patternKind, scale: patternScale, foreground: foreground, background: background))))
+                effect = try DocumentCompositor.rasterize(pattern, bounds: frame, blendSpace: state.blendSpace, context: metal)
                 mode = .towardEffect
             case .dodge, .burn:
                 mode = tool == .dodge ? .dodge : .burn
@@ -199,6 +204,7 @@ extension EditorSession {
         case .blur: "Blur Tool"
         case .sharpen: "Sharpen Tool"
         case .smudge: "Smudge"
+        case .patternStamp: "Pattern Stamp"
         default: "Retouch"
         }
     }

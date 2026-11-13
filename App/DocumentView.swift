@@ -199,6 +199,88 @@ private struct ColorSwatches: View {
         }
         .frame(width: 66, height: 44, alignment: .topLeading)
         .help("Foreground and background colours (X swaps, D resets)")
+        Button {
+            showSwatches.toggle()
+        } label: {
+            Image(systemName: "swatchpalette").frame(width: 32, height: 22)
+        }
+        .buttonStyle(.plain)
+        .help("Swatches")
+        .accessibilityLabel("Swatches")
+        .popover(isPresented: $showSwatches, arrowEdge: .trailing) {
+            SwatchesView(session: session)
+        }
+    }
+
+    @State private var showSwatches = false
+}
+
+/// A palette of colour swatches: click sets the foreground, ⌥-click the
+/// background. Saved swatches persist across documents.
+private struct SwatchesView: View {
+    @Bindable var session: EditorSession
+    @AppStorage("swatches.saved") private var savedData = Data()
+
+    private static let defaults: [SRGBColor] = [
+        SRGBColor(0, 0, 0), SRGBColor(0.25, 0.25, 0.25), SRGBColor(0.5, 0.5, 0.5), SRGBColor(0.75, 0.75, 0.75), SRGBColor(1, 1, 1),
+        SRGBColor(0.86, 0.15, 0.15), SRGBColor(0.96, 0.45, 0.1), SRGBColor(0.98, 0.8, 0.1), SRGBColor(0.35, 0.72, 0.25),
+        SRGBColor(0.1, 0.6, 0.55), SRGBColor(0.15, 0.55, 0.9), SRGBColor(0.3, 0.3, 0.8), SRGBColor(0.55, 0.3, 0.75),
+        SRGBColor(0.9, 0.35, 0.6), SRGBColor(0.55, 0.36, 0.2), SRGBColor(0.96, 0.87, 0.72), SRGBColor(0.75, 0.55, 0.45),
+        SRGBColor(0.35, 0.45, 0.3), SRGBColor(0.2, 0.25, 0.35), SRGBColor(0.95, 0.6, 0.55),
+    ]
+
+    private var saved: [SRGBColor] { (try? JSONDecoder().decode([SRGBColor].self, from: savedData)) ?? [] }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Swatches").font(.headline)
+            grid(Self.defaults, removable: false)
+            HStack {
+                Text("Saved").font(.subheadline).foregroundStyle(.secondary)
+                Spacer()
+                Button("Add Foreground", systemImage: "plus") {
+                    var s = saved
+                    if !s.contains(session.foreground) { s.append(session.foreground) }
+                    savedData = (try? JSONEncoder().encode(s)) ?? savedData
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .help("Save the foreground colour")
+            }
+            if saved.isEmpty {
+                Text("Click + to save the foreground colour.").font(.caption).foregroundStyle(.secondary)
+            } else {
+                grid(saved, removable: true)
+            }
+            Text("Click: foreground · ⌥-click: background").font(.caption).foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .frame(width: 236)
+    }
+
+    private func grid(_ colors: [SRGBColor], removable: Bool) -> some View {
+        LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 8), count: 5), spacing: 8) {
+            ForEach(Array(colors.enumerated()), id: \.offset) { _, c in
+                RoundedRectangle(cornerRadius: 5)
+                    .fill(c.swiftUI)
+                    .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.separator))
+                    .frame(width: 30, height: 30)
+                    .onTapGesture {
+                        if NSEvent.modifierFlags.contains(.option) { session.background = c } else { session.foreground = c }
+                    }
+                    .contextMenu {
+                        if removable {
+                            Button("Remove") {
+                                let s = saved.filter { $0 != c }
+                                savedData = (try? JSONEncoder().encode(s)) ?? savedData
+                            }
+                        }
+                    }
+                    .accessibilityElement()
+                    .accessibilityLabel(Text("Colour swatch"))
+                    .accessibilityAddTraits(.isButton)
+            }
+        }
     }
 }
 
@@ -220,6 +302,7 @@ extension ToolID {
         case .eyedropper: "Eyedropper"
         case .crop: "Crop"
         case .cloneStamp: "Clone Stamp"
+        case .patternStamp: "Pattern Stamp"
         case .healingBrush: "Healing Brush"
         case .dodge: "Dodge"
         case .burn: "Burn"
@@ -230,7 +313,6 @@ extension ToolID {
         case .type: "Type"
         case .pen: "Pen"
         case .shape: "Shape"
-        default: rawValue.capitalized
         }
     }
 
@@ -251,6 +333,7 @@ extension ToolID {
         case .eyedropper: "eyedropper"
         case .crop: "crop"
         case .cloneStamp: "seal"
+        case .patternStamp: "square.grid.3x3.square"
         case .healingBrush: "bandage"
         case .dodge: "circle.lefthalf.filled"
         case .burn: "flame"
@@ -261,7 +344,6 @@ extension ToolID {
         case .type: "textformat"
         case .pen: "pencil.tip.crop.circle"
         case .shape: "square.on.circle"
-        default: "questionmark"
         }
     }
 

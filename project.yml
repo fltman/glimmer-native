@@ -20,6 +20,9 @@ settings:
 packages:
   GlimmerKit:
     path: Packages/GlimmerKit
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.7.0
 
 targets:
   Glimmer:
@@ -36,6 +39,7 @@ targets:
         product: GlimmerTools
       - package: GlimmerKit
         product: GlimmerAI
+      - package: Sparkle
       - target: GlimmerThumbnail
         embed: true
       - target: GlimmerPreview
@@ -48,12 +52,17 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         COMBINE_HIDPI_IMAGES: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SPARKLE_PUBLIC_KEY: ""
     entitlements:
       path: App/Glimmer.entitlements
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
         com.apple.security.files.user-selected.read-write: true
+        # Sparkle's installer XPC services in a sandboxed app.
+        com.apple.security.temporary-exception.mach-lookup.global-name:
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spks
+          - $(PRODUCT_BUNDLE_IDENTIFIER)-spki
     info:
       path: App/Info.plist
       properties:
@@ -61,6 +70,11 @@ targets:
         CFBundleDevelopmentRegion: en
         LSApplicationCategoryType: public.app-category.graphics-design
         NSHumanReadableCopyright: "© 2026 Brattoo AB"
+        # Updates (Sparkle). The updater stays off until SUPublicEDKey is set by scripts/release.sh.
+        SUFeedURL: https://github.com/fltman/glimmer-native/releases/latest/download/appcast.xml
+        SUPublicEDKey: $(SPARKLE_PUBLIC_KEY)
+        SUEnableInstallerLauncherService: true
+        SUEnableAutomaticChecks: true
         CFBundleDocumentTypes:
           - CFBundleTypeName: Glimmer Document
             CFBundleTypeRole: Editor

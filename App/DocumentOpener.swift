@@ -35,6 +35,29 @@ final class DocumentOpener {
         newDocumentWindow = window
     }
 
+    private var welcomeWindow: NSWindow?
+
+    func showWelcomeWindow() {
+        if let welcomeWindow {
+            welcomeWindow.makeKeyAndOrderFront(nil)
+            return
+        }
+        let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView],
+                              backing: .buffered, defer: false)
+        window.titlebarAppearsTransparent = true
+        window.title = String(localized: "Welcome to Glimmer")
+        window.isReleasedWhenClosed = false
+        window.contentViewController = NSHostingController(rootView: WelcomeView(dismiss: { [weak self] in
+            UserDefaults.standard.set(true, forKey: WelcomeView.shownKey)
+            self?.welcomeWindow?.close()
+            self?.welcomeWindow = nil
+        }))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        welcomeWindow = window
+        UserDefaults.standard.set(true, forKey: WelcomeView.shownKey)
+    }
+
     /// SwiftUI's action for opening a new document from an instance (captured
     /// from the environment by `GlimmerCommands`).
     var newDocumentAction: NewDocumentAction?
@@ -117,6 +140,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         didFinishLaunching = true
+        if !UserDefaults.standard.bool(forKey: WelcomeView.shownKey), !CommandLine.arguments.contains("-skipWelcome") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                MainActor.assumeIsolated { DocumentOpener.shared.showWelcomeWindow() }
+            }
+        }
         guard !deferredURLs.isEmpty else { return }
         let urls = deferredURLs
         deferredURLs = []

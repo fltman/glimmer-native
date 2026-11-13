@@ -1,46 +1,84 @@
 {
-  "sourceLanguage": "en",
-  "version": "1.0",
-  "strings": {
-    "Apply a ${applicationName} filter": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Använd ett ${applicationName}-filter"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Apply a ${applicationName} filter" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Apply a ${applicationName} filter"
+            ]
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Använd ett ${applicationName}-filter"
           }
         }
       }
     },
-    "Apply a ${applicationName} preset": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Använd en ${applicationName}-preset"
+    "Apply a ${applicationName} preset" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Apply a ${applicationName} preset",
+              "Apply ${preset} in ${applicationName}"
+            ]
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Använd en ${applicationName}-preset"
           }
         }
       }
     },
-    "Export with ${applicationName}": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Exportera med ${applicationName}"
+    "Export with ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Export with ${applicationName}"
+            ]
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Exportera med ${applicationName}"
           }
         }
       }
     },
-    "Remove the background with ${applicationName}": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta bort bakgrunden med ${applicationName}"
+    "Remove the background with ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Remove the background with ${applicationName}",
+              "Cut out an image with ${applicationName}"
+            ]
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ta bort bakgrunden med ${applicationName}"
           }
         }
       }
     }
-  }
+  },
+  "version" : "1.0"
 }

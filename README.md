@@ -7,3 +7,33 @@ A native macOS (Swift, Metal, SwiftUI) port of [Glimmer](https://github.com/fltm
 - **Requires** macOS 27 and Xcode 27.
 
 Architecture and roadmap: [docs/PLAN.md](docs/PLAN.md) (in Swedish).
+
+## Build and test
+
+```sh
+brew install xcodegen          # the .xcodeproj is generated from project.yml
+scripts/test.sh                # package tests + app build (build/DerivedData)
+open Glimmer.xcodeproj         # after `xcodegen generate`
+```
+
+Opt-in suites: `GLIMMER_LIVE_AI=1` (one real OpenRouter call) and `GLIMMER_MODELS_DIR=<dir>` (on-device Core ML models).
+
+## Release
+
+`scripts/release.sh` archives a Release build, exports it with the Developer ID certificate (Brattoo AB), notarizes and staples the app and the DMG, and writes a Sparkle appcast. `--publish` also creates a GitHub release with the DMG and `appcast.xml`.
+
+One-time setup:
+
+1. Store notarization credentials: `xcrun notarytool store-credentials glimmer --apple-id <apple id> --team-id V783A2L763` (use an app-specific password). Override the profile name with `NOTARY_PROFILE`.
+2. The first run creates the Sparkle EdDSA signing key in your login keychain and builds its public key into the app. Back the key up (`generate_keys -x <file>`, in `build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin`): updates can't be signed without it.
+3. Sparkle reads the feed from `https://github.com/fltman/glimmer-native/releases/latest/download/appcast.xml`. The repository has to be public (or the feed hosted elsewhere, via `SUFeedURL` in `project.yml`) for users to receive updates.
+
+`SKIP_SPARKLE=1 scripts/release.sh` is a dry run: signed DMG, no update key and no appcast. Without a notarization profile the script skips notarization and refuses `--publish`.
+
+## Shortcuts
+
+Glimmer adds Shortcuts actions that work on files without opening a window: Remove Background (on-device), Apply Glimmer Preset, Apply Glimmer Filter and Export Glimmer Document.
+
+## Localization
+
+English and Swedish via String Catalogs (`App/Localizable.xcstrings`). Strings shown through runtime values (menu titles from the command registry, tool, filter and adjustment names, undo action names) are catalog entries marked "manual".

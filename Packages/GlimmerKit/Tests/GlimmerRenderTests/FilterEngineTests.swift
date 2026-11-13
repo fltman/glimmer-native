@@ -111,3 +111,53 @@ import Testing
         #expect(suite.pixel(try engine.render(), 270, 128).x < 0.05)
     }
 }
+
+extension PerformanceTests {
+    func photoLayer(_ size: Int) -> TileGrid {
+        let tiles = (0..<4).map { textureTile(SIMD4(Float($0) * 0.2, 0.3, 0.5, 1)) }
+        var grid = TileGrid()
+        for (n, c) in PixelRect(x: 0, y: 0, width: size, height: size).tileCoords.enumerated() { grid[c] = tiles[n % 4] }
+        return grid
+    }
+
+    @Test func filtersOnAn8kLayer() throws {
+        let engine = try FilterEngine(context: try context())
+        let grid = photoLayer(8192)
+        let frame = PixelRect(x: 0, y: 0, width: 8192, height: 8192)
+        let clock = ContinuousClock()
+        for f in [FilterSettings(.gaussianBlur, ["radius": 20]), FilterSettings(.vignette), FilterSettings(.unsharpMask)] {
+            let t = try clock.measure { _ = try engine.apply(f, to: grid, frame: frame, selection: nil) }
+            print("\(f.kind.title) on 8k × 8k: \(t)")
+            #expect(t < .seconds(3))
+        }
+    }
+
+    /// Phase 5 budget: a batch of brush dabs on an 8k layer stays under a frame.
+    @Test func brushDabsOnAn8kLayer() throws {
+        let ctx = try context()
+        let engine = try StrokeEngine(context: ctx, tiles: photoLayer(8192), target: .pixels, erase: false,
+                                      color: SIMD4(1, 0, 0, 1), opacity: 1, selection: nil)
+        let dabs = (0..<12).map { i in DabInstance(center: SIMD2(4000 + Float(i) * 6, 4000), radius: 60, hardness: 0.8, flow: 1) }
+        engine.add(dabs)
+        engine.finish()
+        let clock = ContinuousClock()
+        let t = clock.measure {
+            engine.add(dabs.map { var d = $0; d.center.y += 30; return d })
+            engine.finish()
+        }
+        print("12 dabs (r 60) on 8k layer: \(t)")
+        #expect(t < .milliseconds(16))
+    }
+
+    @Test func liquifyRenderOn4k() throws {
+        let engine = try LiquifyEngine(context: try context(), tiles: photoLayer(4096), region: PixelRect(x: 0, y: 0, width: 4096, height: 4096))
+        engine.dab(.forward, at: SIMD2(2000, 2000), delta: SIMD2(10, 0), radius: 200, strength: 0.5)
+        _ = try engine.render()
+        let t = try ContinuousClock().measure {
+            engine.dab(.forward, at: SIMD2(2010, 2000), delta: SIMD2(10, 0), radius: 200, strength: 0.5)
+            _ = try engine.render()
+        }
+        print("Liquify dab + render on 4k: \(t)")
+        #expect(t < .milliseconds(150))
+    }
+}

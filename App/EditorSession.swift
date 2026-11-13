@@ -105,6 +105,8 @@ final class EditorSession {
     var cloneAligned = true
     @ObservationIgnored var cloneOffset: SIMD2<Double>?
     var retouchStrength = 0.5
+    var patternKind = PatternKind.checkerboard
+    var patternScale = 32.0
     var dodgeExposure = 0.5
     var dodgeRange = 1
     @ObservationIgnored var smudge: (engine: SmudgeEngine, sampler: StrokeSampler, layer: UUID, last: SIMD2<Double>)?

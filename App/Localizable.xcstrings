@@ -20,6 +20,12 @@
             "state": "new",
             "value": "%1$lld by %2$lld pixels, %3$lld layers, zoom %4$lld percent"
           }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld gånger %2$lld pixlar, %3$lld lager, zoom %4$lld procent"
+          }
         }
       }
     },
@@ -38,6 +44,12 @@
         "en": {
           "stringUnit": {
             "state": "new",
+            "value": "%1$lld × %2$lld px"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
             "value": "%1$lld × %2$lld px"
           }
         }
@@ -74,12 +86,42 @@
         }
       }
     },
+    "A photo editor for the Mac, with AI where it helps.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En bildredigerare för Mac, med AI där den gör nytta."
+          }
+        }
+      }
+    },
+    "A real layer editor": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En riktig lagerredigerare"
+          }
+        }
+      }
+    },
     "AI": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "AI"
+          }
+        }
+      }
+    },
+    "AI with your own key": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI med din egen nyckel"
           }
         }
       }
@@ -121,6 +163,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lägg till AI-detaljer"
+          }
+        }
+      }
+    },
+    "Add Foreground": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till förgrundsfärg"
           }
         }
       }
@@ -174,6 +226,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lägg till brus…"
+          }
+        }
+      }
+    },
+    "Add OpenRouter Key…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till OpenRouter-nyckel…"
           }
         }
       }
@@ -648,6 +710,16 @@
         }
       }
     },
+    "Brushes with pressure, clone and healing, dodge and burn, liquify and 14 filters that respect your selection.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Penslar med tryckkänslighet, kloning och läkning, skugga och efterbelys, fluida och 14 filter som respekterar din markering."
+          }
+        }
+      }
+    },
     "Burn": {
       "extractionState": "manual",
       "localizations": {
@@ -764,6 +836,16 @@
         }
       }
     },
+    "Check for Updates…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sök efter uppdateringar…"
+          }
+        }
+      }
+    },
     "Checkerboard": {
       "extractionState": "manual",
       "localizations": {
@@ -859,6 +941,16 @@
         }
       }
     },
+    "Click + to save the foreground colour.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka på + för att spara förgrundsfärgen."
+          }
+        }
+      }
+    },
     "Click a channel to view it in grey. Channel views don't change the image.": {
       "localizations": {
         "sv": {
@@ -915,6 +1007,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Klicka för förgrundsfärg · ⌥-klicka för bakgrundsfärg"
+          }
+        }
+      }
+    },
+    "Click: foreground · ⌥-click: background": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klick: förgrund · ⌥-klick: bakgrund"
           }
         }
       }
@@ -1021,6 +1123,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Färgprofil"
+          }
+        }
+      }
+    },
+    "Colour swatch": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgruta"
           }
         }
       }
@@ -2168,6 +2280,16 @@
         }
       }
     },
+    "Generate, fill, expand, relight and more through OpenRouter. Subject selection, depth blur and background removal run on this Mac.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generera, fyll, utöka, ljussätt om och mer via OpenRouter. Motivmarkering, djuposkärpa och bakgrundsborttagning körs på den här Macen."
+          }
+        }
+      }
+    },
     "Generative Fill": {
       "extractionState": "manual",
       "localizations": {
@@ -2625,6 +2747,16 @@
       }
     },
     "JPEG": {},
+    "Just ask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fråga bara"
+          }
+        }
+      }
+    },
     "Keeps the last %lld steps. Change it in Settings › General.": {
       "localizations": {
         "sv": {
@@ -2732,6 +2864,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lager"
+          }
+        }
+      }
+    },
+    "Layers, groups, masks, adjustment layers, layer styles, smart objects and text — non-destructive, in 16-bit linear colour.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lager, grupper, masker, justeringslager, lagerstilar, smarta objekt och text – icke-destruktivt, i 16-bitars linjär färg."
           }
         }
       }
@@ -3287,6 +3429,16 @@
         }
       }
     },
+    "New Document": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nytt dokument"
+          }
+        }
+      }
+    },
     "New Fill Layer": {
       "localizations": {
         "sv": {
@@ -3369,6 +3521,12 @@
           "stringUnit": {
             "state": "new",
             "value": "New size: %1$lld × %2$lld px"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny storlek: %1$lld × %2$lld px"
           }
         }
       }
@@ -3510,6 +3668,16 @@
         }
       }
     },
+    "Open Image…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna bild…"
+          }
+        }
+      }
+    },
     "Open Settings…": {
       "localizations": {
         "sv": {
@@ -3595,6 +3763,16 @@
         }
       }
     },
+    "Paint and retouch": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Måla och retuschera"
+          }
+        }
+      }
+    },
     "Paint mask": {
       "localizations": {
         "sv": {
@@ -3664,6 +3842,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mönsterfyllning"
+          }
+        }
+      }
+    },
+    "Pattern Stamp": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mönsterstämpel"
           }
         }
       }
@@ -3875,6 +4064,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Presets…"
+          }
+        }
+      }
+    },
+    "Press ⌘K to find any command, or describe an edit and the assistant plans it with the editor's own tools.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tryck ⌘K för att hitta ett kommando, eller beskriv en ändring så planerar assistenten den med redigerarens egna verktyg."
           }
         }
       }
@@ -4294,6 +4493,12 @@
             "state": "new",
             "value": "Result: %1$lld × %2$lld px, opened as a new document."
           }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resultat: %1$lld × %2$lld px, öppnas som ett nytt dokument."
+          }
         }
       }
     },
@@ -4409,6 +4614,12 @@
             "state": "new",
             "value": "Runs the image model on %1$lld tile%2$@."
           }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör bildmodellen på %1$lld ruta/rutor%2$@."
+          }
         }
       }
     },
@@ -4439,6 +4650,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spara"
+          }
+        }
+      }
+    },
+    "Save the foreground colour": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara förgrundsfärgen"
+          }
+        }
+      }
+    },
+    "Saved": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sparade"
           }
         }
       }
@@ -4983,6 +5214,16 @@
         }
       }
     },
+    "Swatches": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgrutor"
+          }
+        }
+      }
+    },
     "TIFF": {},
     "Test Key": {
       "localizations": {
@@ -5257,6 +5498,16 @@
         }
       }
     },
+    "Uses the foreground and background colours": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använder förgrunds- och bakgrundsfärgen"
+          }
+        }
+      }
+    },
     "Vibrance": {
       "extractionState": "manual",
       "localizations": {
@@ -5296,6 +5547,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "B"
+          }
+        }
+      }
+    },
+    "Welcome to Glimmer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välkommen till Glimmer"
           }
         }
       }
