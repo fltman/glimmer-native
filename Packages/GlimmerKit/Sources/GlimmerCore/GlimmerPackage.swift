@@ -76,7 +76,8 @@ public enum GlimmerPackage {
                 r.fill = fill
             case .smart(let smart):
                 r.kind = .smart
-                r.smart = .init(width: smart.width, height: smart.height, transform: smart.transform)
+                r.smart = .init(width: smart.width, height: smart.height, transform: smart.transform,
+                                filters: smart.filters.isEmpty ? nil : smart.filters)
                 try addTiles(smart.source, name: "\(id).smart.tiles")
             case .text(let text):
                 r.kind = .text
@@ -149,7 +150,8 @@ public enum GlimmerPackage {
             case .smart:
                 guard let s = r.smart else { throw GlimmerPackageError.corruptLayer("smart object “\(r.name)”") }
                 content = .smart(SmartObject(source: try tiles("\(id).smart.tiles", for: r),
-                                             width: s.width, height: s.height, transform: s.transform))
+                                             width: s.width, height: s.height, transform: s.transform,
+                                             filters: s.filters ?? []))
             case .text:
                 guard let t = r.text else { throw GlimmerPackageError.corruptLayer("text “\(r.name)”") }
                 content = .text(t)

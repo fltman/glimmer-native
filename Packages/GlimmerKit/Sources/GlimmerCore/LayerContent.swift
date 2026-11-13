@@ -307,18 +307,32 @@ public struct AffineTransform: Codable, Hashable, Sendable {
     }
 }
 
+/// A filter applied non-destructively to a smart object (after its transform).
+public struct SmartFilter: Codable, Hashable, Sendable, Identifiable {
+    public var id = UUID()
+    public var settings: FilterSettings
+    public var isEnabled = true
+
+    public init(_ settings: FilterSettings) {
+        self.settings = settings
+    }
+}
+
 public struct SmartObject: Sendable {
     /// Source pixels, top-left at the origin.
     public var source: TileGrid
     public var width: Int
     public var height: Int
     public var transform: AffineTransform
+    /// Smart filters, applied in order on top of the transformed source.
+    public var filters: [SmartFilter]
 
-    public init(source: TileGrid, width: Int, height: Int, transform: AffineTransform) {
+    public init(source: TileGrid, width: Int, height: Int, transform: AffineTransform, filters: [SmartFilter] = []) {
         self.source = source
         self.width = width
         self.height = height
         self.transform = transform
+        self.filters = filters
     }
 
     public var sourceSize: SIMD2<Double> { SIMD2(Double(width), Double(height)) }

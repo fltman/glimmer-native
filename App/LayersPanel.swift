@@ -206,6 +206,49 @@ private struct LayerRow: View {
     private var layer: Layer { item.layer }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            mainRow
+            if case .smart(let smart) = layer.content, !smart.filters.isEmpty {
+                smartFilterList(smart.filters)
+            }
+        }
+    }
+
+    @ViewBuilder private func smartFilterList(_ filters: [SmartFilter]) -> some View {
+        Text("Smart Filters").font(.caption).foregroundStyle(.secondary).padding(.leading, 64)
+        ForEach(Array(filters.enumerated()), id: \.element.id) { i, f in
+            HStack(spacing: 6) {
+                Button {
+                    session.setSmartFilterEnabled(layerID: layer.id, index: i, !f.isEnabled)
+                } label: {
+                    Image(systemName: f.isEnabled ? "eye" : "eye.slash").font(.caption)
+                        .foregroundStyle(f.isEnabled ? .secondary : .tertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(f.isEnabled ? "Hide" : "Show"))
+                Text(LocalizedStringKey(f.settings.kind.title))
+                    .font(.callout)
+                    .foregroundStyle(f.isEnabled ? .primary : .tertiary)
+                Spacer()
+                Button {
+                    session.editSmartFilter(layerID: layer.id, index: i)
+                } label: {
+                    Image(systemName: "slider.horizontal.3").font(.caption)
+                }
+                .buttonStyle(.plain)
+                .help("Edit the filter settings")
+            }
+            .padding(.leading, 64)
+            .contentShape(.rect)
+            .onTapGesture(count: 2) { session.editSmartFilter(layerID: layer.id, index: i) }
+            .contextMenu {
+                Button("Edit…") { session.editSmartFilter(layerID: layer.id, index: i) }
+                Button("Delete Smart Filter", role: .destructive) { session.deleteSmartFilter(layerID: layer.id, index: i) }
+            }
+        }
+    }
+
+    private var mainRow: some View {
         HStack(spacing: 6) {
             Button {
                 session.setVisibility(layer.id, !layer.isVisible)

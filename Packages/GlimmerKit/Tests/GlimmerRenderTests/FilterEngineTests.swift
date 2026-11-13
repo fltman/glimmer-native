@@ -161,3 +161,18 @@ extension PerformanceTests {
         #expect(t < .milliseconds(150))
     }
 }
+
+@Suite struct SmartFilterTests {
+    @Test func smartFiltersRenderAndToggle() throws {
+        let source = TileGrid.solid(SIMD4(1, 1, 1, 1), covering: PixelRect(x: 0, y: 0, width: 512, height: 512))
+        var smart = SmartObject(source: source, width: 512, height: 512, transform: .identity)
+        smart.filters = [SmartFilter(FilterSettings(.vignette, ["amount": 1, "midpoint": 0, "feather": 0.2]))]
+        var state = DocumentState(width: 512, height: 512, layers: [Layer(name: "s", content: .smart(smart))])
+        let corner = try renderPixel(state, x: 2, y: 2)
+        let centre = try renderPixel(state, x: 256, y: 256)
+        #expect(corner.x < 0.1 && centre.x > 0.9, "corner \(corner) centre \(centre)")
+        smart.filters[0].isEnabled = false
+        state.layers[0].content = .smart(smart)
+        #expect(try renderPixel(state, x: 2, y: 2).x > 0.99)
+    }
+}

@@ -1443,6 +1443,17 @@
         }
       }
     },
+    "Delete Smart Filter": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera smart filter"
+          }
+        }
+      }
+    },
     "Delete the path": {
       "localizations": {
         "sv": {
@@ -1729,12 +1740,34 @@
         }
       }
     },
+    "Edit the filter settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera filterinställningarna"
+          }
+        }
+      }
+    },
     "Editing mask": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Redigerar mask"
+          }
+        }
+      }
+    },
+    "Edit…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera…"
           }
         }
       }
@@ -2089,6 +2122,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Filterfärg"
+          }
+        }
+      }
+    },
+    "Filters work on pixel layers and smart objects. Rasterize the layer first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filter fungerar på pixellager och smarta objekt. Rastrera lagret först."
           }
         }
       }
@@ -2639,6 +2683,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Göm %@"
+          }
+        }
+      }
+    },
+    "Hide Smart Filter": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göm smart filter"
           }
         }
       }
@@ -5040,6 +5095,17 @@
         }
       }
     },
+    "Show Smart Filter": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa smart filter"
+          }
+        }
+      }
+    },
     "Show layer": {
       "localizations": {
         "sv": {
@@ -5108,6 +5174,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Liten"
+          }
+        }
+      }
+    },
+    "Smart Filter": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smart filter"
+          }
+        }
+      }
+    },
+    "Smart Filters": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Smarta filter"
           }
         }
       }

@@ -38,6 +38,7 @@ public struct LayerRecord: Codable, Sendable {
         public var width: Int
         public var height: Int
         public var transform: AffineTransform
+        public var filters: [SmartFilter]?
     }
 
     public var id: UUID

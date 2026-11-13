@@ -102,6 +102,9 @@ final class EditorSession {
     var isPreviewingFilter = false
     @ObservationIgnored var filterEngineCache: FilterEngine?
     @ObservationIgnored var filterPreviewTask: Task<Void, Never>?
+    /// While previewing a smart filter: the state to restore on Cancel, and the filter being edited.
+    @ObservationIgnored var smartFilterPreviewBase: DocumentState?
+    @ObservationIgnored var smartFilterEditIndex: Int?
     var cloneSource: SIMD2<Double>?
     var cloneAligned = true
     @ObservationIgnored var cloneOffset: SIMD2<Double>?
@@ -320,9 +323,14 @@ final class EditorSession {
         let path = state.path(of: state.activeLayerID)
         let layer = state.activeLayer
         if id.adjustmentKind != nil { return true }
-        if id.filterKind != nil || id == .liquify { return layer?.isRaster == true && !(layer?.tiles.isEmpty ?? true) }
+        if id.filterKind != nil {
+            if case .smart? = layer?.content { return true }
+            return layer?.isRaster == true && !(layer?.tiles.isEmpty ?? true)
+        }
+        if id == .liquify { return layer?.isRaster == true && !(layer?.tiles.isEmpty ?? true) }
         switch id {
         case .repeatFilter:
+            if case .smart? = layer?.content { return lastFilter != nil }
             return lastFilter != nil && layer?.isRaster == true
         case .duplicateLayer, .deleteLayer, .groupLayers, .layerStyle:
             return layer != nil

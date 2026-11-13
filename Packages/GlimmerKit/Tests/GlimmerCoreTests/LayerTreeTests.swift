@@ -257,3 +257,15 @@ private func raster(_ name: String) -> Layer {
         #expect(far < near / 20, "near \(near) far \(far)")
     }
 }
+
+@Suite struct SmartFilterStorageTests {
+    @Test func smartFiltersRoundTrip() throws {
+        var smart = SmartObject(source: TileGrid(), width: 10, height: 10, transform: .identity)
+        smart.filters = [SmartFilter(FilterSettings(.gaussianBlur, ["radius": 6]))]
+        smart.filters[0].isEnabled = false
+        let state = DocumentState(width: 10, height: 10, layers: [Layer(name: "s", content: .smart(smart))])
+        let read = try GlimmerPackage.state(from: GlimmerPackage.fileWrapper(for: state))
+        guard case .smart(let s) = read.layers[0].content else { Issue.record("smart"); return }
+        #expect(s.filters == smart.filters)
+    }
+}

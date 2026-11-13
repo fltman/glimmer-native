@@ -88,6 +88,7 @@ public final class DocumentCompositor {
     private let styles: LayerStyleRenderer
     private let smartRenderer: SmartObjectRenderer
     private let featherRenderer: MaskFeatherRenderer
+    private lazy var filterEngine = try? FilterEngine(context: context)
 
     private var cache: [TileCoord: Entry] = [:]
     private var pool: [MTLTexture] = []
@@ -150,12 +151,20 @@ public final class DocumentCompositor {
                 case .smart(let smart):
                     var h = Hasher()
                     h.combine(smart.source.contentSignature); h.combine(smart.transform); h.combine(limit)
+                    h.combine(smart.filters); h.combine(state.bounds)
                     let key = h.finalize()
                     let grid: TileGrid
                     if let hit = smartCache[layer.id], hit.key == key {
                         grid = hit.value
                     } else {
-                        grid = (try? smartRenderer.render(smart, limit: limit)) ?? TileGrid()
+                        var rendered = (try? smartRenderer.render(smart, limit: limit)) ?? TileGrid()
+                        // Smart filters run in document space on the transformed pixels.
+                        for f in smart.filters where f.isEnabled {
+                            if let filtered = try? filterEngine?.apply(f.settings, to: rendered, frame: state.bounds, selection: nil) {
+                                rendered = filtered
+                            }
+                        }
+                        grid = rendered
                         smartCache[layer.id] = (key, grid)
                     }
                     nodes.append(pixelsNode(layer, grid: grid, common: common, offset: o, overlay: overlay, limit: limit))
