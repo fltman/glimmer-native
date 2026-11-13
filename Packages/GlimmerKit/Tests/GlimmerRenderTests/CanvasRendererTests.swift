@@ -263,7 +263,7 @@ enum Reference {
         let flat = try ImageExporter.flatten(state, context: try context())
         #expect(flat.width == 300 && flat.height == 200)
 
-        let data = try ImageExporter.encode(flat, options: ExportOptions(format: format, sixteenBit: true))
+        let data = try ImageExporter.encode(flat, options: ExportOptions(format: format, bitDepth: .sixteen))
         let source = try #require(CGImageSourceCreateWithData(data as CFData, nil))
         let image = try #require(CGImageSourceCreateImageAtIndex(source, 0, nil))
         #expect(image.width == 300 && image.height == 200)

@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 
 public struct ExportOptions: Equatable, Sendable {
     public enum Format: String, CaseIterable, Sendable, Identifiable {
-        case png, jpeg, heic, tiff
+        case png, jpeg, heic, tiff, webp
 
         public var id: String { rawValue }
         public var title: String {
@@ -16,6 +16,7 @@ public struct ExportOptions: Equatable, Sendable {
             case .jpeg: "JPEG"
             case .heic: "HEIC"
             case .tiff: "TIFF"
+            case .webp: "WebP"
             }
         }
         public var contentType: UTType {
@@ -24,25 +25,54 @@ public struct ExportOptions: Equatable, Sendable {
             case .jpeg: .jpeg
             case .heic: .heic
             case .tiff: .tiff
+            case .webp: .webP
             }
         }
-        public var supportsAlpha: Bool { self == .png || self == .tiff || self == .heic }
-        public var supports16Bit: Bool { self == .png || self == .tiff }
+        public var supportsAlpha: Bool { self != .jpeg }
+        /// Bit depths the format can store (WebP is written losslessly, 8-bit).
+        public var bitDepths: [BitDepth] {
+            switch self {
+            case .png: [.eight, .sixteen]
+            case .tiff: [.eight, .sixteen, .float32]
+            case .jpeg, .heic, .webp: [.eight]
+            }
+        }
+        public var supports16Bit: Bool { bitDepths.contains(.sixteen) }
         public var isLossy: Bool { self == .jpeg || self == .heic }
     }
 
+    public enum BitDepth: Int, CaseIterable, Sendable, Identifiable {
+        case eight = 8, sixteen = 16
+        /// 32-bit float, linear light (HDR values above 1 are kept).
+        case float32 = 32
+
+        public var id: Int { rawValue }
+        public var title: String {
+            switch self {
+            case .eight: "8-bit"
+            case .sixteen: "16-bit"
+            case .float32: "32-bit float (linear)"
+            }
+        }
+    }
+
     public var format: Format
-    public var sixteenBit: Bool
+    public var bitDepth: BitDepth
+
+    /// The depth actually written: the requested one, or the deepest the format supports below it.
+    public var effectiveBitDepth: BitDepth {
+        format.bitDepths.last { $0.rawValue <= bitDepth.rawValue } ?? .eight
+    }
     /// 0...1, lossy formats only.
     public var quality: Double
     public var colorSpace: WorkingColorSpace
     /// Straight sRGB colour used behind transparent pixels for formats without alpha.
     public var matte: SIMD3<Double>
 
-    public init(format: Format = .png, sixteenBit: Bool = false, quality: Double = 0.92,
+    public init(format: Format = .png, bitDepth: BitDepth = .eight, quality: Double = 0.92,
                 colorSpace: WorkingColorSpace = .sRGB, matte: SIMD3<Double> = SIMD3(1, 1, 1)) {
         self.format = format
-        self.sixteenBit = sixteenBit
+        self.bitDepth = bitDepth
         self.quality = quality
         self.colorSpace = colorSpace
         self.matte = matte
@@ -91,13 +121,21 @@ public enum ImageExporter {
     /// Converts a linear image to the export colour space and bit depth, and
     /// flattens it over the matte when the format has no alpha.
     public static func convert(_ image: CGImage, options: ExportOptions) throws -> CGImage {
-        let space = CGColorSpace(name: options.colorSpace == .displayP3 ? CGColorSpace.displayP3 : CGColorSpace.sRGB)!
-        let sixteen = options.sixteenBit && options.format.supports16Bit
+        let depth = options.effectiveBitDepth
+        let p3 = options.colorSpace == .displayP3
+        // Float output stays linear and unclamped; integer output is gamma-encoded.
+        let space = depth == .float32
+            ? CGColorSpace(name: p3 ? CGColorSpace.extendedLinearDisplayP3 : CGColorSpace.extendedLinearSRGB)!
+            : CGColorSpace(name: p3 ? CGColorSpace.displayP3 : CGColorSpace.sRGB)!
         let keepAlpha = options.format.supportsAlpha
-        let bpc = sixteen ? 16 : 8
+        let bpc = depth.rawValue
         let alpha: CGImageAlphaInfo = keepAlpha ? .premultipliedLast : .noneSkipLast
         var info = alpha.rawValue
-        if sixteen { info |= CGBitmapInfo.byteOrder16Little.rawValue }
+        switch depth {
+        case .eight: break
+        case .sixteen: info |= CGBitmapInfo.byteOrder16Little.rawValue
+        case .float32: info |= CGBitmapInfo.byteOrder32Little.rawValue | CGBitmapInfo.floatComponents.rawValue
+        }
 
         guard let ctx = CGContext(data: nil, width: image.width, height: image.height,
                                   bitsPerComponent: bpc, bytesPerRow: 0, space: space, bitmapInfo: info) else {
@@ -116,6 +154,7 @@ public enum ImageExporter {
     }
 
     public static func encode(_ image: CGImage, options: ExportOptions) throws -> Data {
+        if options.format == .webp { return try encodeWebP(image, options: options) }
         let data = NSMutableData()
         guard let dest = CGImageDestinationCreateWithData(
             data as CFMutableData, options.format.contentType.identifier as CFString, 1, nil) else {
@@ -128,6 +167,30 @@ public enum ImageExporter {
             throw RenderError.resourceCreationFailed("encoding \(options.format.title) failed")
         }
         return data as Data
+    }
+
+    /// Lossless WebP through `WebPEncoder`, with the ICC profile embedded for Display P3.
+    static func encodeWebP(_ image: CGImage, options: ExportOptions) throws -> Data {
+        var eight = options
+        eight.bitDepth = .eight
+        let converted = try convert(image, options: eight)
+        let w = converted.width, h = converted.height
+        var px = [UInt8](repeating: 0, count: w * h * 4)
+        let drawn = px.withUnsafeMutableBytes { buffer -> Bool in
+            guard let space = converted.colorSpace,
+                  let ctx = CGContext(data: buffer.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                      space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            ctx.draw(converted, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        guard drawn else { throw RenderError.resourceCreationFailed("WebP pixels") }
+        // Straight alpha.
+        for i in stride(from: 0, to: px.count, by: 4) where px[i + 3] < 255 && px[i + 3] > 0 {
+            let a = Int(px[i + 3])
+            for c in 0..<3 { px[i + c] = UInt8(min((Int(px[i + c]) * 255 + a / 2) / a, 255)) }
+        }
+        let icc = options.colorSpace == .displayP3 ? converted.colorSpace?.copyICCData() as Data? : nil
+        return try WebPEncoder.encode(rgba: px, width: w, height: h, iccProfile: icc)
     }
 
     public static func export(_ state: DocumentState, options: ExportOptions, to url: URL,

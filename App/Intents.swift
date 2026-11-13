@@ -98,10 +98,11 @@ enum ImageFormatOption: String, AppEnum {
     case jpeg = "jpeg"
     case heic = "heic"
     case tiff = "tiff"
+    case webp = "webp"
 
     static let typeDisplayRepresentation: TypeDisplayRepresentation = "Image Format"
     static let caseDisplayRepresentations: [ImageFormatOption: DisplayRepresentation] = [
-        .png: "PNG", .jpeg: "JPEG", .heic: "HEIC", .tiff: "TIFF",
+        .png: "PNG", .jpeg: "JPEG", .heic: "HEIC", .tiff: "TIFF", .webp: "WebP",
     ]
 
     var format: ExportOptions.Format { ExportOptions.Format(rawValue: rawValue) ?? .png }
@@ -229,7 +230,7 @@ struct ApplyFilterIntent: AppIntent {
 
 struct ExportImageIntent: AppIntent {
     static let title: LocalizedStringResource = "Export Glimmer Document"
-    static let description = IntentDescription("Flattens a Glimmer document (or converts an image) to PNG, JPEG, HEIC or TIFF.")
+    static let description = IntentDescription("Flattens a Glimmer document (or converts an image) to PNG, JPEG, HEIC, TIFF or WebP.")
     static var supportedModes: IntentModes { .background }
 
     @Parameter(title: "Document", supportedContentTypes: [.package, .image])

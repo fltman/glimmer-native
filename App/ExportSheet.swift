@@ -13,8 +13,17 @@ struct ExportSheet: View {
                 Picker("Format", selection: $session.exportOptions.format) {
                     ForEach(ExportOptions.Format.allCases) { Text(LocalizedStringKey($0.title)).tag($0) }
                 }
-                Toggle("16 bits per channel", isOn: $session.exportOptions.sixteenBit)
-                    .disabled(!format.supports16Bit)
+                if format.bitDepths.count > 1 {
+                    Picker("Bit depth", selection: Binding(get: { session.exportOptions.effectiveBitDepth },
+                                                           set: { session.exportOptions.bitDepth = $0 })) {
+                        ForEach(format.bitDepths) { Text(LocalizedStringKey($0.title)).tag($0) }
+                    }
+                }
+                if format == .webp {
+                    Text("WebP is saved lossless.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
                 if format.isLossy {
                     LabeledContent("Quality") {
                         HStack {
