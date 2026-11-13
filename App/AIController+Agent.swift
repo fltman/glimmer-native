@@ -128,7 +128,7 @@ extension AIController {
                 if case .bool(let b) = v { adjustment.flags[k] = b } else if let n = v.number { adjustment.numbers[k] = n }
                 if let c = parseHexColor(v.string) { adjustment.colors[k] = c }
             }
-            s.addLayer(Layer(name: kind.title, content: .adjustment(adjustment)), actionName: "New \(kind.title)")
+            s.addLayer(Layer(name: kind.title, content: .adjustment(adjustment)), actionName: String(localized: "New \(String(localized: String.LocalizationValue(kind.title)))"))
         case "apply_filter":
             guard let kind = FilterKind(rawValue: step.string("type") ?? "") else { throw StepError("Unknown filter.") }
             try ensurePixelLayer()

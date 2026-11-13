@@ -451,7 +451,7 @@ final class AIController {
         if !preset.filterSteps.isEmpty, !session.applyFilterSteps(preset.filterSteps) {
             messages.append(Message(fromUser: false, text: "“\(preset.name)” also uses filters (\(preset.filterSteps.map(\.0).joined(separator: ", "))). Select a pixel layer and apply it again to include them."))
         }
-        session.document.edit("Apply \(preset.name)", undoManager: session.undoManager) {
+        session.document.edit(String(localized: "Apply \(preset.name)"), undoManager: session.undoManager) {
             $0.insertLayerAboveActive(preset.makeGroup())
         }
     }

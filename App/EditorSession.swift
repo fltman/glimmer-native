@@ -92,6 +92,7 @@ final class EditorSession {
     var penOpen = false
     var shapeKind = ShapeKind.rectangle
     var shapeLineWidth = 8.0
+    var shapeCornerRadius = 32.0
     var shapeDrag: (start: SIMD2<Double>, end: SIMD2<Double>)?
     var guideDrag: (id: UUID?, axis: Guide.Axis, position: Double)?
 
@@ -377,7 +378,7 @@ final class EditorSession {
     func perform(_ id: CommandID) {
         guard canPerform(id) else { return }
         if let kind = id.adjustmentKind {
-            addLayer(Layer(name: kind.title, content: .adjustment(Adjustment(kind))), actionName: "New \(kind.title)")
+            addLayer(Layer(name: kind.title, content: .adjustment(Adjustment(kind))), actionName: String(localized: "New \(String(localized: String.LocalizationValue(kind.title)))"))
             return
         }
         if let kind = id.filterKind {

@@ -394,6 +394,16 @@
         }
       }
     },
+    "Apply %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd %@"
+          }
+        }
+      }
+    },
     "Apply Filter": {
       "localizations": {
         "sv": {
@@ -3409,6 +3419,16 @@
         }
       }
     },
+    "New %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till %@"
+          }
+        }
+      }
+    },
     "New Adjustment Layer": {
       "localizations": {
         "sv": {
@@ -4552,6 +4572,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rotera vyn 15° åt höger"
+          }
+        }
+      }
+    },
+    "Rounded Rectangle": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rundad rektangel"
           }
         }
       }

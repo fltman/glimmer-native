@@ -48,9 +48,11 @@ struct ToolOptionsBar: View {
                     Picker("Shape", selection: $session.shapeKind) {
                         ForEach(EditorSession.ShapeKind.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
                     }
-                    .pickerStyle(.segmented)
                     .labelsHidden()
-                    .frame(width: 200)
+                    .fixedSize()
+                    if session.shapeKind == .roundedRectangle {
+                        slider("Radius", $session.shapeCornerRadius, 1...400, display: "\(Int(session.shapeCornerRadius)) px")
+                    }
                     if session.shapeKind == .line {
                         slider("Width", $session.shapeLineWidth, 1...100, display: "\(Int(session.shapeLineWidth)) px")
                     }

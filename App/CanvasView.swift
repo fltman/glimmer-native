@@ -292,6 +292,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             case .rectangle:
                 let pts = [SIMD2(r.minX, r.minY), SIMD2(r.maxX, r.minY), SIMD2(r.maxX, r.maxY), SIMD2(r.minX, r.maxY), SIMD2(r.minX, r.minY)]
                 path.addLines(between: pts.map { flipped(t.viewPoint(fromDocument: $0)) })
+            case .roundedRectangle:
+                let pts = EditorSession.roundedRectPolygon(r, radius: session.shapeCornerRadius)
+                path.addLines(between: (pts + [pts[0]]).map { flipped(t.viewPoint(fromDocument: $0)) })
             }
             marqueeBase.path = path
             marqueeDashes.path = path

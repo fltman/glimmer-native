@@ -549,8 +549,35 @@ extension EditorSession {
     // MARK: Shapes
 
     enum ShapeKind: String, CaseIterable {
-        case rectangle, ellipse, line
-        var title: String { rawValue.capitalized }
+        case rectangle, roundedRectangle, ellipse, line
+        var title: String {
+            switch self {
+            case .rectangle: "Rectangle"
+            case .roundedRectangle: "Rounded Rectangle"
+            case .ellipse: "Ellipse"
+            case .line: "Line"
+            }
+        }
+    }
+
+    /// Outline of a rounded rectangle (corner arcs sampled finely enough for antialiasing).
+    static func roundedRectPolygon(_ r: CGRectLike, radius: Double) -> [SIMD2<Double>] {
+        let rad = max(0, min(radius, r.width / 2, r.height / 2))
+        guard rad > 0.5 else {
+            return [SIMD2(r.minX, r.minY), SIMD2(r.maxX, r.minY), SIMD2(r.maxX, r.maxY), SIMD2(r.minX, r.maxY)]
+        }
+        let steps = max(8, Int(rad / 2).clamped(to: 8...48))
+        let centres = [SIMD2(r.maxX - rad, r.minY + rad), SIMD2(r.maxX - rad, r.maxY - rad),
+                       SIMD2(r.minX + rad, r.maxY - rad), SIMD2(r.minX + rad, r.minY + rad)]
+        var points: [SIMD2<Double>] = []
+        for (i, c) in centres.enumerated() {
+            let start = -Double.pi / 2 + Double(i) * Double.pi / 2
+            for k in 0...steps {
+                let a = start + Double(k) / Double(steps) * Double.pi / 2
+                points.append(c + SIMD2(cos(a), sin(a)) * rad)
+            }
+        }
+        return points
     }
 
     /// A shape becomes a solid colour fill layer with the shape as its mask, so
@@ -564,6 +591,9 @@ extension EditorSession {
         case .rectangle:
             guard r.width >= 1, r.height >= 1 else { return }
             mask = .rectangle(r)
+        case .roundedRectangle:
+            guard r.width >= 1, r.height >= 1 else { return }
+            mask = .polygon(Self.roundedRectPolygon(r, radius: shapeCornerRadius))
         case .ellipse:
             guard r.width >= 1, r.height >= 1 else { return }
             mask = .ellipse(in: r)
@@ -574,7 +604,7 @@ extension EditorSession {
             mask = .polygon([drag.start + n, drag.end + n, drag.end - n, drag.start - n])
         }
         let layer = Layer(name: shapeKind.title, mask: mask.asMask, content: .fill(.solid(foreground)))
-        edit("New \(shapeKind.title)") { $0.insertLayerAboveActive(layer) }
+        edit(String(localized: "New \(String(localized: String.LocalizationValue(shapeKind.title)))")) { $0.insertLayerAboveActive(layer) }
     }
 
     // MARK: Guides, grid, snapping
@@ -622,4 +652,8 @@ enum RegionOps_public {
 extension TileGrid {
     /// The same tiles (alpha is what selection bounds read).
     func mapAlphaOnly() -> TileGrid { self }
+}
+
+extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self { min(max(self, range.lowerBound), range.upperBound) }
 }
