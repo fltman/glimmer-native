@@ -76,6 +76,22 @@ extension EditorSession {
         case move(start: SIMD2<Double>, box: TransformBox)
         case rotate(startAngle: Double, box: TransformBox)
         case scale(sx: Double, sy: Double)
+        /// Free-corner modes: which corner/edge, where the drag started, the quad then.
+        case corner(Int, start: SIMD2<Double>, quad: [SIMD2<Double>])
+        case edge(Int, start: SIMD2<Double>, quad: [SIMD2<Double>])
+        case moveQuad(start: SIMD2<Double>, quad: [SIMD2<Double>])
+    }
+
+    enum TransformMode: String, CaseIterable {
+        case scaleRotate, distort, skew, perspective
+        var title: String {
+            switch self {
+            case .scaleRotate: "Scale & Rotate"
+            case .distort: "Distort"
+            case .skew: "Skew"
+            case .perspective: "Perspective"
+            }
+        }
     }
 
     struct TransformSession {
@@ -85,6 +101,33 @@ extension EditorSession {
         var box: TransformBox
         var handle: TransformHandle?
         var originalSmartTransform: GlimmerCore.AffineTransform?
+        /// Free corners (top-left, top-right, bottom-right, bottom-left) once the
+        /// layer has been distorted, skewed or put in perspective.
+        var quad: [SIMD2<Double>]?
+        var mode = TransformMode.scaleRotate
+
+        var corners: [SIMD2<Double>] { quad ?? box.corners }
+        var edges: [SIMD2<Double>] {
+            let c = corners
+            return (0..<4).map { (c[$0] + c[($0 + 1) % 4]) / 2 }
+        }
+        var transform: GlimmerCore.AffineTransform {
+            quad.map { GlimmerCore.AffineTransform.quad(sourceSize: box.sourceSize, to: $0) } ?? box.affine
+        }
+
+        func contains(_ p: SIMD2<Double>) -> Bool {
+            // Convex quad: same side of every edge.
+            let c = corners
+            var sign = 0.0
+            for i in 0..<4 {
+                let a = c[i], b = c[(i + 1) % 4]
+                let cross = (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)
+                if cross != 0 {
+                    if sign == 0 { sign = cross } else if (cross > 0) != (sign > 0) { return false }
+                }
+            }
+            return true
+        }
     }
 
     func beginTransform() {
@@ -100,9 +143,15 @@ extension EditorSession {
                     box: TransformBox(x: Double(bounds.x), y: Double(bounds.y), scaleX: 1, scaleY: 1, rotation: 0, sourceSize: size))
             case .smart(let smart):
                 let d = smart.transform.decompose(sourceSize: smart.sourceSize)
-                transformSession = TransformSession(layerID: layer.id, source: smart.source, isSmart: true,
+                var session = TransformSession(layerID: layer.id, source: smart.source, isSmart: true,
                     box: TransformBox(x: d.x, y: d.y, scaleX: d.scaleX, scaleY: d.scaleY, rotation: d.rotation,
                                       sourceSize: smart.sourceSize), originalSmartTransform: smart.transform)
+                if !smart.transform.isAffine {
+                    let z = smart.sourceSize
+                    session.quad = [SIMD2(0, 0), SIMD2(z.x, 0), z, SIMD2(0, z.y)].map(smart.transform.apply)
+                    session.mode = .distort
+                }
+                transformSession = session
             default:
                 errorMessage = "Free Transform works on pixel layers and smart objects."
                 return
@@ -123,14 +172,14 @@ extension EditorSession {
         guard let t = transformSession, let metal else { return }
         do {
             let smart = SmartObject(source: t.source, width: Int(t.box.sourceSize.x), height: Int(t.box.sourceSize.y),
-                                    transform: t.box.affine)
+                                    transform: t.transform)
             let grid = try SmartObjectRenderer(context: metal).render(smart, limit: RegionOps_public.expand(state.bounds, by: 512))
             overrides = LayerOverrides(pixels: [t.layerID: grid])
             if t.isSmart {
                 // Smart objects preview through their own transform.
                 overrides = LayerOverrides()
                 document.state.updateLayer(t.layerID) { layer in
-                    if case .smart(var s) = layer.content { s.transform = t.box.affine; layer.content = .smart(s) }
+                    if case .smart(var s) = layer.content { s.transform = t.transform; layer.content = .smart(s) }
                 }
             }
         } catch {
@@ -170,9 +219,35 @@ extension EditorSession {
         overrides = .none
     }
 
-    func transformMouseDown(at doc: SIMD2<Double>, viewTolerance: Double) {
+    func transformMouseDown(at doc: SIMD2<Double>, viewTolerance: Double, command: Bool = false) {
         guard var t = transformSession else { return }
         let tol = viewTolerance / max(canvas.transform.scale, 0.001)
+        // ⌘ on a corner distorts, like Photoshop, from any mode.
+        let mode = command && t.mode == .scaleRotate ? TransformMode.distort : t.mode
+        if mode != .scaleRotate || t.quad != nil {
+            let quad = t.corners
+            if let i = quad.firstIndex(where: { simd_distance($0, doc) < tol }) {
+                t.quad = quad
+                t.handle = mode == .skew ? .edge(i, start: doc, quad: quad) : .corner(i, start: doc, quad: quad)
+                if mode == .skew {
+                    // Skewing from a corner moves its top/bottom edge.
+                    t.handle = .edge(i < 2 ? 0 : 2, start: doc, quad: quad)
+                }
+                t.mode = mode
+            } else if let i = t.edges.firstIndex(where: { simd_distance($0, doc) < tol }) {
+                t.quad = quad
+                t.handle = .edge(i, start: doc, quad: quad)
+                t.mode = mode
+            } else if t.contains(doc) {
+                t.quad = t.quad ?? (mode == .scaleRotate ? nil : quad)
+                t.handle = t.quad == nil ? .move(start: doc, box: t.box) : .moveQuad(start: doc, quad: quad)
+            } else if t.quad == nil {
+                let v = doc - t.box.centre
+                t.handle = .rotate(startAngle: atan2(v.y, v.x), box: t.box)
+            }
+            transformSession = t
+            return
+        }
         let signs: [(Double, Double)] = [(-1, -1), (1, -1), (1, 1), (-1, 1)]
         let edgeSigns: [(Double, Double)] = [(0, -1), (1, 0), (0, 1), (-1, 0)]
         if let i = t.box.corners.firstIndex(where: { simd_distance($0, doc) < tol }) {
@@ -210,9 +285,49 @@ extension EditorSession {
         case .scale(let sx, let sy):
             // Corners scale proportionally unless Shift is held (Photoshop's default).
             t.box.drag(sx: sx, sy: sy, to: doc, proportional: sx != 0 && sy != 0 && !shift)
+        case .moveQuad(let start, let quad):
+            t.quad = quad.map { $0 + doc - start }
+        case .corner(let i, let start, let quad):
+            var q = quad
+            let delta = doc - start
+            q[i] = quad[i] + delta
+            if t.mode == .perspective {
+                // The corner sharing the top/bottom edge mirrors the move along that edge.
+                let partner = i ^ 1
+                let edge = simd_normalize(quad[partner] - quad[i])
+                q[partner] = quad[partner] - edge * simd_dot(delta, edge)
+            }
+            if Self.isConvex(q) { t.quad = q }
+        case .edge(let i, let start, let quad):
+            // Skew: slide the edge's two corners along the edge direction.
+            var q = quad
+            let a = i, b = (i + 1) % 4
+            let dir = simd_normalize(quad[b] - quad[a])
+            let delta = t.mode == .skew ? dir * simd_dot(doc - start, dir) : doc - start
+            q[a] = quad[a] + delta
+            q[b] = quad[b] + delta
+            if Self.isConvex(q) { t.quad = q }
         }
         transformSession = t
         updateTransformPreview()
+    }
+
+    static func isConvex(_ q: [SIMD2<Double>]) -> Bool {
+        var sign = 0.0
+        for i in 0..<4 {
+            let a = q[i], b = q[(i + 1) % 4], c = q[(i + 2) % 4]
+            let cross = (b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x)
+            if abs(cross) < 1e-9 { return false }
+            if sign == 0 { sign = cross } else if (cross > 0) != (sign > 0) { return false }
+        }
+        return true
+    }
+
+    func setTransformMode(_ mode: TransformMode) {
+        guard var t = transformSession else { return }
+        t.mode = mode
+        if mode != .scaleRotate, t.quad == nil { t.quad = t.box.corners }
+        transformSession = t
     }
 
     func transformMouseUp() {
@@ -471,12 +586,7 @@ extension EditorSession {
 
     /// `outer ∘ inner` (inner applied first).
     static func concat(_ outer: GlimmerCore.AffineTransform, _ inner: GlimmerCore.AffineTransform) -> GlimmerCore.AffineTransform {
-        GlimmerCore.AffineTransform(a: outer.a * inner.a + outer.c * inner.b,
-                                    b: outer.b * inner.a + outer.d * inner.b,
-                                    c: outer.a * inner.c + outer.c * inner.d,
-                                    d: outer.b * inner.c + outer.d * inner.d,
-                                    tx: outer.a * inner.tx + outer.c * inner.ty + outer.tx,
-                                    ty: outer.b * inner.tx + outer.d * inner.ty + outer.ty)
+        outer.concatenating(inner)
     }
 
     // MARK: Text

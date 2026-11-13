@@ -131,10 +131,20 @@ struct ToolOptionsBar: View {
 
     @ViewBuilder private var transformOptions: some View {
         if let t = session.transformSession {
-            numberField("W", t.box.scaleX * 100, suffix: "%") { session.setTransform(scaleXPercent: $0) }
-            numberField("H", t.box.scaleY * 100, suffix: "%") { session.setTransform(scaleYPercent: $0) }
-            numberField("∠", t.box.rotation * 180 / .pi, suffix: "°") { session.setTransform(degrees: $0) }
-            Text("⇧ keeps proportions · drag outside to rotate").foregroundStyle(.secondary)
+            Picker("Mode", selection: Binding(get: { t.mode }, set: { session.setTransformMode($0) })) {
+                ForEach(EditorSession.TransformMode.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
+            }
+            .labelsHidden()
+            .fixedSize()
+            if t.quad == nil {
+                numberField("W", t.box.scaleX * 100, suffix: "%") { session.setTransform(scaleXPercent: $0) }
+                numberField("H", t.box.scaleY * 100, suffix: "%") { session.setTransform(scaleYPercent: $0) }
+                numberField("∠", t.box.rotation * 180 / .pi, suffix: "°") { session.setTransform(degrees: $0) }
+                Text("⇧ keeps proportions · drag outside to rotate · ⌘-drag a corner to distort").foregroundStyle(.secondary)
+            } else {
+                Text(t.mode == .skew ? "Drag an edge to slant it" : t.mode == .perspective
+                     ? "Drag a corner; its neighbour mirrors it" : "Drag corners freely").foregroundStyle(.secondary)
+            }
             Button("Cancel") { session.cancelTransform(); session.tool = .move }
             Button("Apply") { session.commitTransform(); session.tool = .move }
                 .keyboardShortcut(.defaultAction)

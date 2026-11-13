@@ -186,11 +186,59 @@ public enum Fill: Codable, Hashable, Sendable {
 
 /// Affine map from smart-object source pixels to document pixels:
 /// `doc = [a c; b d] · src + (tx, ty)`.
+/// A 2D transform: affine, plus an optional projective row (`g`, `h`) for
+/// perspective/distort. With g = h = 0 it's an ordinary affine transform.
+/// Matrix (column vectors): x' = (a·x + c·y + tx) / w, y' = (b·x + d·y + ty) / w, w = g·x + h·y + 1.
 public struct AffineTransform: Codable, Hashable, Sendable {
     public var a: Double, b: Double, c: Double, d: Double, tx: Double, ty: Double
+    public var g: Double, h: Double
 
-    public init(a: Double = 1, b: Double = 0, c: Double = 0, d: Double = 1, tx: Double = 0, ty: Double = 0) {
-        self.a = a; self.b = b; self.c = c; self.d = d; self.tx = tx; self.ty = ty
+    public init(a: Double = 1, b: Double = 0, c: Double = 0, d: Double = 1, tx: Double = 0, ty: Double = 0,
+                g: Double = 0, h: Double = 0) {
+        self.a = a; self.b = b; self.c = c; self.d = d; self.tx = tx; self.ty = ty; self.g = g; self.h = h
+    }
+
+    enum CodingKeys: String, CodingKey { case a, b, c, d, tx, ty, g, h }
+
+    public init(from decoder: Decoder) throws {
+        let k = try decoder.container(keyedBy: CodingKeys.self)
+        a = try k.decode(Double.self, forKey: .a); b = try k.decode(Double.self, forKey: .b)
+        c = try k.decode(Double.self, forKey: .c); d = try k.decode(Double.self, forKey: .d)
+        tx = try k.decode(Double.self, forKey: .tx); ty = try k.decode(Double.self, forKey: .ty)
+        g = try k.decodeIfPresent(Double.self, forKey: .g) ?? 0
+        h = try k.decodeIfPresent(Double.self, forKey: .h) ?? 0
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var k = encoder.container(keyedBy: CodingKeys.self)
+        try k.encode(a, forKey: .a); try k.encode(b, forKey: .b); try k.encode(c, forKey: .c)
+        try k.encode(d, forKey: .d); try k.encode(tx, forKey: .tx); try k.encode(ty, forKey: .ty)
+        if !isAffine {
+            try k.encode(g, forKey: .g); try k.encode(h, forKey: .h)
+        }
+    }
+
+    public var isAffine: Bool { abs(g) < 1e-15 && abs(h) < 1e-15 }
+
+    /// The projective transform taking the source rectangle (0,0)–size to the
+    /// quadrilateral `corners` (top-left, top-right, bottom-right, bottom-left).
+    public static func quad(sourceSize size: SIMD2<Double>, to corners: [SIMD2<Double>]) -> AffineTransform {
+        precondition(corners.count == 4)
+        let (p0, p1, p2, p3) = (corners[0], corners[1], corners[2], corners[3])
+        // Unit square → quad (Heckbert).
+        let s = p0 - p1 + p2 - p3
+        let d1 = p1 - p2, d2 = p3 - p2
+        var g = 0.0, h = 0.0
+        let den = d1.x * d2.y - d2.x * d1.y
+        if abs(s.x) > 1e-12 || abs(s.y) > 1e-12, abs(den) > 1e-12 {
+            g = (s.x * d2.y - d2.x * s.y) / den
+            h = (d1.x * s.y - s.x * d1.y) / den
+        }
+        let a = p1.x - p0.x + g * p1.x, b = p1.y - p0.y + g * p1.y
+        let c = p3.x - p0.x + h * p3.x, d = p3.y - p0.y + h * p3.y
+        // Pre-scale the unit square to the source size.
+        let sx = 1 / max(size.x, 1e-12), sy = 1 / max(size.y, 1e-12)
+        return AffineTransform(a: a * sx, b: b * sx, c: c * sy, d: d * sy, tx: p0.x, ty: p0.y, g: g * sx, h: h * sy)
     }
 
     public static let identity = AffineTransform()
@@ -221,22 +269,33 @@ public struct AffineTransform: Codable, Hashable, Sendable {
     }
 
     public func apply(_ p: SIMD2<Double>) -> SIMD2<Double> {
-        SIMD2(a * p.x + c * p.y + tx, b * p.x + d * p.y + ty)
+        let w = g * p.x + h * p.y + 1
+        let q = SIMD2(a * p.x + c * p.y + tx, b * p.x + d * p.y + ty)
+        return abs(w) > 1e-12 ? q / w : q
+    }
+
+    public var matrix: simd_double3x3 {
+        simd_double3x3(columns: (SIMD3(a, b, g), SIMD3(c, d, h), SIMD3(tx, ty, 1)))
+    }
+
+    public init(matrix m: simd_double3x3) {
+        let k = abs(m.columns.2.z) > 1e-15 ? 1 / m.columns.2.z : 1
+        self.init(a: m.columns.0.x * k, b: m.columns.0.y * k, c: m.columns.1.x * k, d: m.columns.1.y * k,
+                  tx: m.columns.2.x * k, ty: m.columns.2.y * k, g: m.columns.0.z * k, h: m.columns.1.z * k)
     }
 
     public var inverse: AffineTransform {
-        let det = a * d - b * c
-        guard abs(det) > 1e-12 else { return .identity }
-        let ia = d / det, ib = -b / det, ic = -c / det, id = a / det
-        return AffineTransform(a: ia, b: ib, c: ic, d: id,
-                               tx: -(ia * tx + ic * ty), ty: -(ib * tx + id * ty))
+        guard abs(matrix.determinant) > 1e-15 else { return .identity }
+        return AffineTransform(matrix: matrix.inverse)
+    }
+
+    /// `self ∘ inner` (inner applied first).
+    public func concatenating(_ inner: AffineTransform) -> AffineTransform {
+        AffineTransform(matrix: matrix * inner.matrix)
     }
 
     public func translated(by o: SIMD2<Double>) -> AffineTransform {
-        var t = self
-        t.tx += o.x
-        t.ty += o.y
-        return t
+        AffineTransform(a: 1, b: 0, c: 0, d: 1, tx: o.x, ty: o.y).concatenating(self)
     }
 
     /// Document-space bounding box of a source rectangle.

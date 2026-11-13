@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+import simd
 @testable import GlimmerCore
 
 private func raster(_ name: String) -> Layer {
@@ -201,5 +202,33 @@ private func raster(_ name: String) -> Layer {
         guard case .text(let t) = read.layers[0].content else { Issue.record("text"); return }
         #expect(t.string == "x")
         #expect(read.paths == state.paths && read.aids == state.aids)
+    }
+}
+
+@Suite struct ProjectiveTransformTests {
+    let size = SIMD2(200.0, 100.0)
+    let quad = [SIMD2(10.0, 20.0), SIMD2(250.0, 0.0), SIMD2(230.0, 180.0), SIMD2(30.0, 140.0)]
+
+    @Test func quadMapsTheSourceCorners() {
+        let t = GlimmerCore.AffineTransform.quad(sourceSize: size, to: quad)
+        let src = [SIMD2(0.0, 0.0), SIMD2(size.x, 0), size, SIMD2(0, size.y)]
+        for (s, q) in zip(src, quad) { #expect(simd_distance(t.apply(s), q) < 1e-6) }
+        #expect(!t.isAffine)
+        let back = t.inverse.apply(quad[2])
+        #expect(simd_distance(back, size) < 1e-6)
+    }
+
+    @Test func parallelogramStaysAffine() {
+        let p = [SIMD2(0.0, 0.0), SIMD2(200.0, 0.0), SIMD2(250.0, 100.0), SIMD2(50.0, 100.0)]
+        #expect(GlimmerCore.AffineTransform.quad(sourceSize: size, to: p).isAffine)
+    }
+
+    @Test func codableIsBackwardCompatible() throws {
+        let old = #"{"a":2,"b":0,"c":0,"d":2,"tx":5,"ty":6}"#
+        let t = try JSONDecoder().decode(GlimmerCore.AffineTransform.self, from: Data(old.utf8))
+        #expect(t.isAffine && t.apply(SIMD2(1, 1)) == SIMD2(7, 8))
+        let p = GlimmerCore.AffineTransform.quad(sourceSize: size, to: quad)
+        let back = try JSONDecoder().decode(GlimmerCore.AffineTransform.self, from: JSONEncoder().encode(p))
+        #expect(back == p)
     }
 }

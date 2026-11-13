@@ -406,9 +406,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         cropShade.path = nil
 
         if let ts = session.transformSession {
-            let corners = ts.box.corners
+            let corners = ts.corners
             lines.addLines(between: (corners + [corners[0]]).map(v))
-            handleSquares(corners + ts.box.edges, into: handles)
+            handleSquares(corners + ts.edges, into: handles)
         }
         if let c = session.cropSession {
             let r = c.rect
@@ -683,7 +683,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             session.sampleColor(at: controller.documentPoint(p), intoBackground: event.modifierFlags.contains(.option))
             drag = .eyedropper
         case .freeTransform:
-            session.transformMouseDown(at: controller.documentPoint(p), viewTolerance: 8)
+            session.transformMouseDown(at: controller.documentPoint(p), viewTolerance: 8,
+                                       command: event.modifierFlags.contains(.command))
             drag = .transform
         case .crop:
             session.cropMouseDown(at: session.snapped(controller.documentPoint(p)), viewTolerance: 8)

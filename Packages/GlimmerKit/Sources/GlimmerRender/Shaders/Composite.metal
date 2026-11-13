@@ -449,7 +449,8 @@ vertex QuadOut smart_vertex(uint vid [[vertex_id]], constant SmartUniforms &u [[
     float2 corner = float2(vid & 1, vid >> 1);
     float3 clip = u.sourceToClip * float3(corner * u.sourceSize, 1.0);
     QuadOut out;
-    out.position = float4(clip.xy, 0.0, 1.0);
+    // w = clip.z: perspective (projective) transforms interpolate uv correctly.
+    out.position = float4(clip.xy, 0.0, clip.z);
     out.uv = corner;
     return out;
 }

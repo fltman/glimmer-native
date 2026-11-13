@@ -213,7 +213,7 @@ public final class SmartObjectRenderer {
 
         var grid = TileGrid()
         let t = smart.transform
-        let srcToDoc = simd_double3x3(columns: (SIMD3(t.a, t.b, 0), SIMD3(t.c, t.d, 0), SIMD3(t.tx, t.ty, 1)))
+        let srcToDoc = t.matrix  // includes the projective row for perspective
         let s = Double(TileGeometry.size)
         for coord in region.tileCoords {
             let o = SIMD2(Double(coord.rect.x), Double(coord.rect.y))

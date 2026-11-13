@@ -1527,6 +1527,17 @@
         }
       }
     },
+    "Distort": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förvräng"
+          }
+        }
+      }
+    },
     "Document": {
       "localizations": {
         "sv": {
@@ -1585,6 +1596,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Laddas ner första gången (%@)"
+          }
+        }
+      }
+    },
+    "Drag a corner; its neighbour mirrors it": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dra i ett hörn; grannhörnet speglar det"
+          }
+        }
+      }
+    },
+    "Drag an edge to slant it": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dra i en kant för att snedvrida"
+          }
+        }
+      }
+    },
+    "Drag corners freely": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dra hörnen fritt"
           }
         }
       }
@@ -3909,6 +3953,17 @@
         }
       }
     },
+    "Perspective": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perspektiv"
+          }
+        }
+      }
+    },
     "Photo Filter": {
       "extractionState": "manual",
       "localizations": {
@@ -4715,6 +4770,17 @@
         }
       }
     },
+    "Scale & Rotate": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skala och rotera"
+          }
+        }
+      }
+    },
     "Scatter": {
       "localizations": {
         "sv": {
@@ -5010,6 +5076,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Storlek"
+          }
+        }
+      }
+    },
+    "Skew": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snedvrid"
           }
         }
       }
@@ -5809,6 +5886,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "⇧ behåller proportioner · dra utanför för att rotera"
+          }
+        }
+      }
+    },
+    "⇧ keeps proportions · drag outside to rotate · ⌘-drag a corner to distort": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧ behåller proportioner · dra utanför för att rotera · ⌘-dra ett hörn för att förvränga"
           }
         }
       }
