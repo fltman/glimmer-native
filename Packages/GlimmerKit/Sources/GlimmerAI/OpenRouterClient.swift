@@ -185,6 +185,49 @@ public actor OpenRouterClient {
         return TextResponse(text: text, cost: Self.cost(json))
     }
 
+    public struct ToolCall: Sendable, Equatable {
+        public var name: String
+        /// The arguments as the model sent them (a JSON object string).
+        public var arguments: String
+    }
+
+    public struct ToolResponse: Sendable {
+        public var text: String?
+        public var toolCalls: [ToolCall]
+        public var cost: Double?
+    }
+
+    /// Chat completion with function tools. `messages` are OpenAI-style
+    /// `{"role", "content"}` dictionaries; `tools` are `{"type": "function", …}` schemas.
+    public func toolCompletion(model: String, messages: [[String: Any]], tools: [[String: Any]],
+                               temperature: Double = 0.2) async throws -> ToolResponse {
+        let body: [String: Any] = ["model": model, "messages": messages, "tools": tools, "tool_choice": "auto",
+                                   "parallel_tool_calls": true, "temperature": temperature,
+                                   "usage": ["include": true]]
+        let data = try await sendWithRetry(try request(path: "chat/completions", method: "POST",
+                                                       body: JSONSerialization.data(withJSONObject: body)))
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any], Self.message(json) != nil else {
+            throw OpenRouterError.unexpectedResponse(status: 200, message: "no message in response")
+        }
+        return ToolResponse(text: Self.extractText(from: json), toolCalls: Self.extractToolCalls(from: json), cost: Self.cost(json))
+    }
+
+    static func extractToolCalls(from json: [String: Any]) -> [ToolCall] {
+        guard let calls = message(json)?["tool_calls"] as? [[String: Any]] else { return [] }
+        return calls.compactMap { call in
+            guard let function = call["function"] as? [String: Any], let name = function["name"] as? String else { return nil }
+            let args: String
+            if let s = function["arguments"] as? String {
+                args = s
+            } else if let o = function["arguments"], let d = try? JSONSerialization.data(withJSONObject: o) {
+                args = String(decoding: d, as: UTF8.self)
+            } else {
+                args = "{}"
+            }
+            return ToolCall(name: name, arguments: args)
+        }
+    }
+
     // MARK: Response parsing (mirrors workers/aips/providers/openrouter.py)
 
     static func cost(_ json: [String: Any]) -> Double? {

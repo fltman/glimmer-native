@@ -55,4 +55,62 @@ import Testing
         #expect(parseHexColor("00ff00cc") == SRGBColor(0, 1, 0))
         #expect(parseHexColor("red") == nil)
     }
+
+    @Test func toolSchemasCoverEveryOp() throws {
+        let tools = AgentPlanner.toolSchemas()
+        #expect(tools.count == AgentPlanner.ops.count)
+        let data = try JSONSerialization.data(withJSONObject: tools)
+        let text = String(decoding: data, as: UTF8.self)
+        #expect(text.contains("\"enum\""))
+        let filter = tools.compactMap { $0["function"] as? [String: Any] }.first { $0["name"] as? String == "apply_filter" }
+        let params = filter?["parameters"] as? [String: Any]
+        #expect((params?["required"] as? [String])?.contains("type") == true)
+        let text_ = tools.compactMap { $0["function"] as? [String: Any] }.first { $0["name"] as? String == "add_text" }
+        let required = ((text_?["parameters"] as? [String: Any])?["required"] as? [String]) ?? []
+        #expect(required.contains("text") && !required.contains("color") && !required.contains("size"))
+    }
+
+    @Test func toolCallsBecomeSteps() throws {
+        let response = OpenRouterClient.ToolResponse(text: "Black and white with a vignette.", toolCalls: [
+            .init(name: "add_adjustment", arguments: #"{"type":"black_white","params":{},"rationale":"Monochrome."}"#),
+            .init(name: "apply_filter", arguments: #"{"type":"vignette","params":"{\"amount\":0.4}"}"#),
+            .init(name: "teleport", arguments: "{}"),
+        ], cost: nil)
+        let plan = try AgentPlanner.plan(from: response)
+        #expect(plan.steps.map(\.op) == ["add_adjustment", "apply_filter"])
+        #expect(plan.steps[0].rationale == "Monochrome.")
+        #expect(plan.steps[0].params["rationale"] == nil)
+        #expect(plan.steps[1].object("params")["amount"]?.number == 0.4)
+        #expect(plan.droppedOps == ["teleport"])
+        #expect(plan.message == "Black and white with a vignette.")
+    }
+
+    @Test func toolReplyWithoutCallsIsAChatAnswer() throws {
+        let plan = try AgentPlanner.plan(from: .init(text: "Which layer do you mean?", toolCalls: [], cost: nil))
+        #expect(plan.steps.isEmpty && plan.message == "Which layer do you mean?")
+        #expect(throws: AgentError.self) { try AgentPlanner.plan(from: .init(text: " ", toolCalls: [], cost: nil)) }
+    }
+
+    @Test func toolMessagesCarryHistoryAndState() {
+        let context = AgentContext(width: 800, height: 600, layerCount: 2, hasSelection: true,
+                                   activeLayerKind: "raster", activeLayerName: "Photo")
+        let messages = AgentPlanner.toolMessages(goal: "warmer", context: context, history: [("hi", "Hello!")])
+        #expect(messages.count == 4)
+        #expect(messages[1]["content"] as? String == "hi" && messages[2]["role"] as? String == "assistant")
+        let last = messages[3]["content"] as? String ?? ""
+        #expect(last.contains("800×600") && last.contains("there is a selection") && last.hasSuffix("warmer"))
+    }
+
+    @Test func extractsToolCallsFromAResponse() {
+        let json: [String: Any] = ["choices": [["message": [
+            "content": NSNull(),
+            "tool_calls": [["id": "1", "type": "function",
+                            "function": ["name": "select_all", "arguments": "{}"]],
+                           ["id": "2", "type": "function",
+                            "function": ["name": "fill", "arguments": ["color": "#ff0000"]]]],
+        ]]]]
+        let calls = OpenRouterClient.extractToolCalls(from: json)
+        #expect(calls.map(\.name) == ["select_all", "fill"])
+        #expect(calls[1].arguments.contains("#ff0000"))
+    }
 }

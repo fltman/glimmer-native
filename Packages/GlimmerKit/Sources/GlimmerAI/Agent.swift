@@ -315,13 +315,98 @@ public enum AgentPlanner {
         return nil
     }
 
-    /// Asks the text model for a plan.
+    // MARK: Tool calling
+
+    static let toolPreamble = """
+    You are the planning brain of Glimmer, a native macOS photo editor (a modern Photoshop). The user states a goal in natural language; you carry it out by calling the editor's tools. Every tool call becomes one step of a plan that a deterministic executor runs in the order you call them.
+
+    Guidelines:
+    - Call tools in the order an expert retoucher would (select before inpainting; remove the background before adding a drop shadow).
+    - Prefer the editor's native, non-destructive tools (add_adjustment, apply_preset, add_layer_effect, apply_filter, selection tools). Use image_edit_composite and generate_layer only for content changes the native tools cannot express: they cost money and take time.
+    - inpaint_selection needs a selection. If there is none and the goal needs one, make one first (select_subject, select_all …) or ask a clarifying question.
+    - Colours are #RRGGBB hex strings. When unsure about a setting, pass {} to get sensible defaults rather than guessing exotic numbers.
+    - Give each call a one-sentence "rationale".
+    - Alongside the calls, reply with one short sentence summarising the plan, in the user's language.
+    - If the goal is ambiguous, contradictory or impossible with these tools, call no tools and ask a short clarifying question.
+    - If the user is only chatting or asking about the editor, answer briefly without calling tools.
+    """
+
+    /// One function tool per op; the schemas are generated from `ops`.
+    public static func toolSchemas() -> [[String: Any]] {
+        ops.map { op in
+            var properties: [String: Any] = [:]
+            var required: [String] = []
+            for p in op.params {
+                var schema: [String: Any] = ["description": p.description]
+                switch p.type {
+                case "number": schema["type"] = "number"
+                case "object": schema["type"] = "object"
+                default: schema["type"] = "string"
+                }
+                if let options = p.options { schema["enum"] = options }
+                properties[p.name] = schema
+                if !p.description.localizedCaseInsensitiveContains("optional") { required.append(p.name) }
+            }
+            properties["rationale"] = ["type": "string", "description": "One short sentence: why this step."]
+            let parameters: [String: Any] = ["type": "object", "properties": properties, "required": required]
+            let description = op.isAIJob ? op.description + " (AI job: costs money and takes a while.)" : op.description
+            return ["type": "function", "function": ["name": op.name, "description": description, "parameters": parameters]]
+        }
+    }
+
+    /// The conversation: system prompt, earlier turns, then the goal with the editor's state.
+    public static func toolMessages(goal: String, context: AgentContext,
+                                    history: [(user: String, reply: String)]) -> [[String: Any]] {
+        var messages: [[String: Any]] = [["role": "system", "content": toolPreamble]]
+        for turn in history.suffix(8) {
+            messages.append(["role": "user", "content": turn.user])
+            messages.append(["role": "assistant", "content": turn.reply])
+        }
+        let state = """
+        [Editor state: canvas \(context.width)×\(context.height) px, \(context.layerCount) layers, \
+        active layer “\(context.activeLayerName)” (\(context.activeLayerKind)), \
+        \(context.hasSelection ? "there is a selection" : "no selection").]
+        """
+        messages.append(["role": "user", "content": state + "\n\n" + goal])
+        return messages
+    }
+
+    /// Turns tool calls into a plan, dropping unknown tools and calls with unreadable arguments.
+    public static func plan(from response: OpenRouterClient.ToolResponse) throws -> AgentPlan {
+        var steps: [AgentStep] = []
+        var dropped: [String] = []
+        for call in response.toolCalls {
+            guard op(named: call.name) != nil else {
+                dropped.append(call.name)
+                continue
+            }
+            var params = (try? JSONDecoder().decode([String: JSONValue].self, from: Data(call.arguments.utf8))) ?? [:]
+            let rationale = params.removeValue(forKey: "rationale")?.string
+            // Some models send nested objects as JSON strings.
+            for (key, value) in params {
+                if case .string(let s) = value, s.hasPrefix("{"),
+                   let o = try? JSONDecoder().decode([String: JSONValue].self, from: Data(s.utf8)) {
+                    params[key] = .object(o)
+                }
+            }
+            steps.append(AgentStep(op: call.name, params: params, rationale: rationale))
+        }
+        let text = response.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+        if steps.isEmpty, dropped.isEmpty, let text, text.contains("\"steps\"") {
+            // A model that ignored the tools and wrote a JSON plan anyway.
+            return try parsePlan(text)
+        }
+        if steps.isEmpty, dropped.isEmpty, text?.isEmpty ?? true { throw AgentError.emptyResponse }
+        return AgentPlan(steps: steps, message: text?.isEmpty == false ? text : nil, droppedOps: dropped)
+    }
+
+    /// Asks the text model for a plan through tool calling.
     public static func plan(goal: String, context: AgentContext, history: [(user: String, reply: String)],
                             client: OpenRouterClient, model: String) async throws -> (AgentPlan, Double?) {
-        let response = try await client.textCompletion(model: model, system: systemPrompt(),
-                                                       user: userPrompt(goal: goal, context: context, history: history),
-                                                       jsonMode: true, temperature: 0.2)
-        return (try parsePlan(response.text), response.cost)
+        let response = try await client.toolCompletion(model: model,
+                                                       messages: toolMessages(goal: goal, context: context, history: history),
+                                                       tools: toolSchemas())
+        return (try plan(from: response), response.cost)
     }
 }
 

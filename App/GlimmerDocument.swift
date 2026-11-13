@@ -34,6 +34,10 @@ final class GlimmerDocument: Document {
     /// the state is passed on to a fresh document instead of being lost.
     @ObservationIgnored var queuedState: DocumentState?
 
+    /// While set, edits don't register their own undo steps; `endTransaction`
+    /// registers one step for all of them (an assistant plan undoes as a whole).
+    @ObservationIgnored private var transaction: (name: String, before: DocumentState, changed: Bool)?
+
     init(state: DocumentState = .new(width: 1920, height: 1080, background: .white)) {
         self.state = state
     }
@@ -103,8 +107,27 @@ final class GlimmerDocument: Document {
     }
 
     @MainActor
+    func beginTransaction(_ actionName: String) {
+        guard transaction == nil else { return }
+        transaction = (actionName, state, false)
+    }
+
+    @MainActor
+    func endTransaction(undoManager: UndoManager?) {
+        guard let t = transaction else { return }
+        transaction = nil
+        if t.changed { registerUndo(t.name, undoManager: undoManager, restoring: t.before) }
+    }
+
+    var isInTransaction: Bool { transaction != nil }
+
+    @MainActor
     private func registerUndo(_ actionName: String, undoManager: UndoManager?, restoring snapshot: DocumentState) {
         guard let undoManager else { return }
+        if transaction != nil, !undoManager.isUndoing, !undoManager.isRedoing {
+            transaction?.changed = true
+            return
+        }
         // Snapshots share tiles, so a step costs only the tiles it changed; the
         // limit keeps long sessions from holding on to every intermediate tile.
         if undoManager.levelsOfUndo != Self.historyLimit { undoManager.levelsOfUndo = Self.historyLimit }

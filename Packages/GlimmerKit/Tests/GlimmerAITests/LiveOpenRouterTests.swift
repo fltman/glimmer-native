@@ -28,4 +28,16 @@ struct LiveOpenRouterTests {
             _ = try await client.keyInfo()
         }
     }
+
+    @Test func plansWithToolCalls() async throws {
+        let context = AgentContext(width: 1600, height: 1200, layerCount: 1, hasSelection: false,
+                                   activeLayerKind: "raster", activeLayerName: "Photo")
+        let (plan, cost) = try await AgentPlanner.plan(goal: "Make it black and white and add a vignette",
+                                                       context: context, history: [],
+                                                       client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel)
+        print("Plan: \(plan.steps.map { "\($0.op) \($0.params)" }), message: \(plan.message ?? "-"), cost \(cost ?? -1)")
+        #expect(plan.steps.contains { $0.op == "add_adjustment" && $0.string("type") == "black_white" })
+        #expect(plan.steps.contains { ($0.op == "apply_filter" && $0.string("type") == "vignette") || $0.op == "apply_preset" })
+        #expect(plan.droppedOps.isEmpty)
+    }
 }

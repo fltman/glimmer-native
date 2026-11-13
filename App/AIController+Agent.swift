@@ -80,8 +80,13 @@ extension AIController {
     func runPlan(_ messageID: UUID) {
         guard let plan = messages.first(where: { $0.id == messageID })?.plan, planStatus[messageID] == .proposed else { return }
         planStatus[messageID] = .running
+        // The whole plan is one undo step, named after the request.
+        let index = messages.firstIndex { $0.id == messageID } ?? messages.endIndex
+        let goal = messages[..<index].last(where: \.fromUser)?.text ?? ""
+        session.document.beginTransaction(Self.undoName(for: goal))
         planTask = Task { [weak self] in
             guard let self else { return }
+            defer { self.session.document.endTransaction(undoManager: self.session.undoManager) }
             var failed = false
             for step in plan.steps {
                 if Task.isCancelled || failed {
@@ -99,6 +104,12 @@ extension AIController {
             }
             self.planStatus[messageID] = Task.isCancelled ? .cancelled : (failed ? .failed : .finished)
         }
+    }
+
+    /// "Assistant: make it warmer" (shortened).
+    static func undoName(for goal: String) -> String {
+        let short = goal.count > 40 ? String(goal.prefix(39)) + "…" : goal
+        return short.isEmpty ? String(localized: "Assistant") : String(localized: "Assistant: \(short)")
     }
 
     func cancelPlan(_ messageID: UUID) {
