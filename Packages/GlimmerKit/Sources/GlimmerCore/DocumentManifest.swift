@@ -49,6 +49,7 @@ public struct LayerRecord: Codable, Sendable {
     public var blendMode: BlendMode
     public var clipped: Bool?
     public var mask: MaskRecord?
+    public var vectorMask: VectorPath?
     public var effects: LayerEffects?
     public var adjustment: Adjustment?
     public var fill: Fill?

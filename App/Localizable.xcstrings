@@ -2,6 +2,17 @@
   "sourceLanguage": "en",
   "strings": {
     "%@": {},
+    "%@ Shape Path": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formbana för %@"
+          }
+        }
+      }
+    },
     "%@ curve": {
       "localizations": {
         "sv": {
@@ -1751,6 +1762,17 @@
         }
       }
     },
+    "Edit the shape with the Pen tool": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera formen med pennverktyget"
+          }
+        }
+      }
+    },
     "Editing mask": {
       "localizations": {
         "sv": {
@@ -2300,6 +2322,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fri omformning"
+          }
+        }
+      }
+    },
+    "Free Transform works on pixel layers, shapes and smart objects.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fri omformning fungerar på pixellager, former och smarta objekt."
           }
         }
       }

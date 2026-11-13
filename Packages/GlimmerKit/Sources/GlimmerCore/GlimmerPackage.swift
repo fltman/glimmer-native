@@ -59,6 +59,7 @@ public enum GlimmerPackage {
                                 opacity: layer.opacity, blendMode: layer.blendMode,
                                 clipped: layer.isClipped ? true : nil,
                                 effects: layer.effects.hasEnabled || layer.effects != LayerEffects() ? layer.effects : nil)
+            r.vectorMask = layer.vectorMask
             if let mask = layer.mask {
                 r.mask = .init(defaultValue: mask.defaultValue, enabled: mask.isEnabled,
                                density: mask.density, feather: mask.feather)
@@ -164,7 +165,7 @@ public enum GlimmerPackage {
                                  isEnabled: m.enabled, density: min(max(m.density, 0), 1), feather: max(0, m.feather))
             }
             return Layer(id: r.id, name: r.name, isVisible: r.visible, opacity: min(max(r.opacity, 0), 1),
-                         blendMode: r.blendMode, mask: mask, isClipped: r.clipped ?? false,
+                         blendMode: r.blendMode, mask: mask, vectorMask: r.vectorMask, isClipped: r.clipped ?? false,
                          effects: r.effects ?? LayerEffects(), content: content)
         }
 

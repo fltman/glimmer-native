@@ -83,6 +83,7 @@ public enum TileOperations {
             mask.tiles = try translate(mask.tiles, by: offset, context: context)
             moved.mask = mask
         }
+        moved.vectorMask = layer.vectorMask?.applying(AffineTransform(tx: d.x, ty: d.y))
         switch layer.content {
         case .raster(let grid):
             moved.content = .raster(try translate(grid, by: offset, context: context))
@@ -98,6 +99,7 @@ public enum TileOperations {
             moved.content = .group(group)
         case .text(var text):
             text.origin += d
+            text.onPath = text.onPath?.map { $0 + d }
             moved.content = .text(text)
         case .fill, .adjustment:
             break

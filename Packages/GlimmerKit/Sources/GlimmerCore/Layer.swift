@@ -101,6 +101,9 @@ public struct Layer: Identifiable, Sendable {
     public var opacity: Double
     public var blendMode: BlendMode
     public var mask: LayerMask?
+    /// Shape layers: the path the mask is rasterized from (kept so the shape
+    /// stays editable and scales without losing quality).
+    public var vectorMask: VectorPath?
     /// Clips to the nearest non-clipped sibling below.
     public var isClipped: Bool
     public var effects: LayerEffects
@@ -113,10 +116,12 @@ public struct Layer: Identifiable, Sendable {
         opacity: Double = 1,
         blendMode: BlendMode = .normal,
         mask: LayerMask? = nil,
+        vectorMask: VectorPath? = nil,
         isClipped: Bool = false,
         effects: LayerEffects = LayerEffects(),
         content: LayerContent
     ) {
+        self.vectorMask = vectorMask
         self.id = id
         self.name = name
         self.isVisible = isVisible

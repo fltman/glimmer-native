@@ -105,6 +105,8 @@ extension EditorSession {
         /// layer has been distorted, skewed or put in perspective.
         var quad: [SIMD2<Double>]?
         var mode = TransformMode.scaleRotate
+        /// Shape layers transform their vector mask (no resampling).
+        var originalVector: VectorPath?
 
         var corners: [SIMD2<Double>] { quad ?? box.corners }
         var edges: [SIMD2<Double>] {
@@ -152,8 +154,16 @@ extension EditorSession {
                     session.mode = .distort
                 }
                 transformSession = session
+            case .fill where layer.vectorMask != nil:
+                let path = layer.vectorMask!
+                guard let r = path.controlBounds, r.width > 0, r.height > 0 else { return }
+                var session = TransformSession(layerID: layer.id, source: TileGrid(), isSmart: false,
+                    box: TransformBox(x: r.minX, y: r.minY, scaleX: 1, scaleY: 1, rotation: 0, sourceSize: SIMD2(r.width, r.height)))
+                session.originalVector = path
+                transformSession = session
+                originalShapeState = state
             default:
-                errorMessage = "Free Transform works on pixel layers and smart objects."
+                errorMessage = "Free Transform works on pixel layers, shapes and smart objects."
                 return
             }
             updateTransformPreview()
@@ -170,6 +180,20 @@ extension EditorSession {
 
     func updateTransformPreview() {
         guard let t = transformSession, let metal else { return }
+        if let original = t.originalVector, let r = original.controlBounds {
+            // Source space = the path's bounds at the origin.
+            let toSource = GlimmerCore.AffineTransform(tx: -r.minX, ty: -r.minY)
+            let path = original.applying(t.transform.concatenating(toSource))
+            document.state.updateLayer(t.layerID) { l in
+                l.vectorMask = path
+                var mask = path.asSelection.asMask
+                mask.isEnabled = l.mask?.isEnabled ?? true
+                mask.density = l.mask?.density ?? 1
+                mask.feather = l.mask?.feather ?? 0
+                l.mask = mask
+            }
+            return
+        }
         do {
             let smart = SmartObject(source: t.source, width: Int(t.box.sourceSize.x), height: Int(t.box.sourceSize.y),
                                     transform: t.transform)
@@ -190,6 +214,11 @@ extension EditorSession {
     func commitTransform() {
         guard let t = transformSession else { return }
         transformSession = nil
+        if t.originalVector != nil, let before = originalShapeState {
+            originalShapeState = nil
+            document.commitInteractiveEdit("Free Transform", undoManager: undoManager, before: before)
+            return
+        }
         if t.isSmart {
             // Already applied live; record a single undo step from the original transform.
             let current = state
@@ -211,6 +240,11 @@ extension EditorSession {
     func cancelTransform() {
         guard let t = transformSession else { return }
         transformSession = nil
+        if t.originalVector != nil, let before = originalShapeState {
+            originalShapeState = nil
+            document.state = before
+            return
+        }
         if t.isSmart, let original = t.originalSmartTransform {
             document.state.updateLayer(t.layerID) { layer in
                 if case .smart(var s) = layer.content { s.transform = original; layer.content = .smart(s) }
@@ -535,7 +569,15 @@ extension EditorSession {
             }
             func rotateLayer(_ layer: Layer) throws -> Layer {
                 var l = layer
-                if let mask = layer.mask {
+                if let path = layer.vectorMask {
+                    let p = path.applying(rot)
+                    l.vectorMask = p
+                    var m = p.asSelection.asMask
+                    m.isEnabled = layer.mask?.isEnabled ?? true
+                    m.density = layer.mask?.density ?? 1
+                    m.feather = layer.mask?.feather ?? 0
+                    l.mask = m
+                } else if let mask = layer.mask {
                     l.mask?.tiles = try resample(mask.tiles, fillTo: mask.defaultValue > 0 ? mask.defaultValue : nil)
                 }
                 switch layer.content {
@@ -664,7 +706,17 @@ extension EditorSession {
 
     // MARK: Pen tool and paths
 
-    var activePath: VectorPath? { state.paths.first { $0.id == activePathID } }
+    var activePath: VectorPath? {
+        if let p = state.paths.first(where: { $0.id == activePathID }) { return p }
+        if let layer = shapeLayerForActivePath { return layer.vectorMask }
+        return nil
+    }
+
+    /// The shape layer whose vector mask is being edited, if any.
+    var shapeLayerForActivePath: Layer? {
+        guard let id = activePathID else { return nil }
+        return state.allLayers.first { $0.vectorMask?.id == id }
+    }
 
     /// Click: drag an existing anchor/handle, close the open subpath, or add an anchor.
     func penMouseDown(at doc: SIMD2<Double>, viewTolerance: Double) {
@@ -739,7 +791,21 @@ extension EditorSession {
     private func updatePath(live: Bool = false, _ change: @escaping (inout VectorPath) -> Void) {
         guard let id = activePathID else { return }
         let apply: (inout DocumentState) -> Void = { state in
-            if let i = state.paths.firstIndex(where: { $0.id == id }) { change(&state.paths[i]) }
+            if let i = state.paths.firstIndex(where: { $0.id == id }) {
+                change(&state.paths[i])
+            } else if let layer = state.allLayers.first(where: { $0.vectorMask?.id == id }) {
+                // Shape layer: edit the vector mask and re-rasterize the mask from it.
+                state.updateLayer(layer.id) { l in
+                    guard var path = l.vectorMask else { return }
+                    change(&path)
+                    l.vectorMask = path
+                    var mask = path.asSelection.asMask
+                    mask.isEnabled = l.mask?.isEnabled ?? true
+                    mask.density = l.mask?.density ?? 1
+                    mask.feather = l.mask?.feather ?? 0
+                    l.mask = mask
+                }
+            }
         }
         if live { self.live("Edit Path", apply) } else { edit("Edit Path", apply) }
     }
@@ -851,24 +917,26 @@ extension EditorSession {
         guard let drag = shapeDrag else { return }
         shapeDrag = nil
         let r = CGRectLike(x0: drag.start.x, y0: drag.start.y, x1: drag.end.x, y1: drag.end.y)
-        let mask: Selection
+        let path: VectorPath
         switch shapeKind {
         case .rectangle:
             guard r.width >= 1, r.height >= 1 else { return }
-            mask = .rectangle(r)
+            path = .rectangle(r)
         case .roundedRectangle:
             guard r.width >= 1, r.height >= 1 else { return }
-            mask = .polygon(Self.roundedRectPolygon(r, radius: shapeCornerRadius))
+            path = .roundedRectangle(r, radius: shapeCornerRadius)
         case .ellipse:
             guard r.width >= 1, r.height >= 1 else { return }
-            mask = .ellipse(in: r)
+            path = .ellipse(r)
         case .line:
             let v = drag.end - drag.start
             guard simd_length(v) >= 1 else { return }
             let n = SIMD2(-v.y, v.x) / simd_length(v) * max(shapeLineWidth, 1) / 2
-            mask = .polygon([drag.start + n, drag.end + n, drag.end - n, drag.start - n])
+            path = VectorPath(name: "Line", subpaths: [Subpath(anchors: [drag.start + n, drag.end + n, drag.end - n, drag.start - n].map { PathAnchor($0) },
+                                                                isClosed: true)])
         }
-        let layer = Layer(name: shapeKind.title, mask: mask.asMask, content: .fill(.solid(foreground)))
+        // A shape is a solid fill layer with a vector mask: recolourable, editable with the pen, scalable.
+        let layer = Layer(name: shapeKind.title, mask: path.asSelection.asMask, vectorMask: path, content: .fill(.solid(foreground)))
         edit(String(localized: "New \(String(localized: String.LocalizationValue(shapeKind.title)))")) { $0.insertLayerAboveActive(layer) }
     }
 

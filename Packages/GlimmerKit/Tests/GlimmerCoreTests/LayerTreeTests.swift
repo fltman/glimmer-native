@@ -269,3 +269,27 @@ private func raster(_ name: String) -> Layer {
         #expect(s.filters == smart.filters)
     }
 }
+
+@Suite struct VectorShapeTests {
+    @Test func shapesAndTransforms() throws {
+        let r = CGRectLike(x0: 10, y0: 20, x1: 110, y1: 70)
+        let e = VectorPath.ellipse(r)
+        let b = try #require(e.controlBounds)
+        #expect(abs(b.minX - 10) < 1e-9 && abs(b.maxY - 70) < 1e-9)
+        let scaled = e.applying(GlimmerCore.AffineTransform(a: 2, d: 2))
+        #expect(abs(try #require(scaled.controlBounds).maxX - 220) < 1e-9)
+        let sel = VectorPath.roundedRectangle(r, radius: 10).asSelection
+        let inside = sel.values(in: PixelRect(x: 60, y: 45, width: 1, height: 1))[0]
+        let corner = sel.values(in: PixelRect(x: 10, y: 20, width: 1, height: 1))[0]
+        #expect(inside > 0.99 && corner < 0.1)
+    }
+
+    @Test func vectorMaskRoundTrips() throws {
+        let path = VectorPath.ellipse(CGRectLike(x0: 0, y0: 0, x1: 50, y1: 40))
+        let state = DocumentState(width: 64, height: 64, layers: [
+            Layer(name: "shape", mask: path.asSelection.asMask, vectorMask: path, content: .fill(.solid(.black))),
+        ])
+        let read = try GlimmerPackage.state(from: GlimmerPackage.fileWrapper(for: state))
+        #expect(read.layers[0].vectorMask == path)
+    }
+}

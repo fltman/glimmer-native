@@ -202,6 +202,74 @@ public struct VectorPath: Codable, Identifiable, Hashable, Sendable {
         self.subpaths = subpaths
     }
 
+    /// The path with every point mapped through `t`.
+    public func applying(_ t: AffineTransform) -> VectorPath {
+        var p = self
+        p.subpaths = subpaths.map { sub in
+            var s = sub
+            s.anchors = sub.anchors.map { PathAnchor(t.apply($0.point), handleIn: t.apply($0.handleIn), handleOut: t.apply($0.handleOut)) }
+            return s
+        }
+        return p
+    }
+
+    /// The area enclosed by the path (each subpath filled; overlapping subpaths add).
+    public var asSelection: Selection {
+        let shapes = polygons().filter { $0.count > 2 }.map(Selection.polygon)
+        guard var s = shapes.first else { return Selection() }
+        for o in shapes.dropFirst() { s = s.combined(with: o, .add) }
+        return s
+    }
+
+    /// Bounding box of all anchors and handles.
+    public var controlBounds: CGRectLike? {
+        let pts = subpaths.flatMap { $0.anchors.flatMap { [$0.point, $0.handleIn, $0.handleOut] } }
+        guard let f = pts.first else { return nil }
+        let lo = pts.reduce(f) { simd_min($0, $1) }, hi = pts.reduce(f) { simd_max($0, $1) }
+        return CGRectLike(x0: lo.x, y0: lo.y, x1: hi.x, y1: hi.y)
+    }
+
+    // MARK: Shapes (cubic Béziers, so they scale cleanly)
+
+    public static func rectangle(_ r: CGRectLike, name: String = "Rectangle") -> VectorPath {
+        roundedRectangle(r, radius: 0, name: name)
+    }
+
+    public static func roundedRectangle(_ r: CGRectLike, radius: Double, name: String = "Rounded Rectangle") -> VectorPath {
+        let rad = max(0, min(radius, r.width / 2, r.height / 2))
+        guard rad > 0.01 else {
+            return VectorPath(name: name, subpaths: [Subpath(anchors: [
+                PathAnchor(SIMD2(r.minX, r.minY)), PathAnchor(SIMD2(r.maxX, r.minY)),
+                PathAnchor(SIMD2(r.maxX, r.maxY)), PathAnchor(SIMD2(r.minX, r.maxY)),
+            ], isClosed: true)])
+        }
+        let k = rad * 0.5522847498
+        let (x0, y0, x1, y1) = (r.minX, r.minY, r.maxX, r.maxY)
+        let a: [PathAnchor] = [
+            PathAnchor(SIMD2(x0 + rad, y0), handleIn: SIMD2(x0 + rad - k, y0)),
+            PathAnchor(SIMD2(x1 - rad, y0), handleOut: SIMD2(x1 - rad + k, y0)),
+            PathAnchor(SIMD2(x1, y0 + rad), handleIn: SIMD2(x1, y0 + rad - k)),
+            PathAnchor(SIMD2(x1, y1 - rad), handleOut: SIMD2(x1, y1 - rad + k)),
+            PathAnchor(SIMD2(x1 - rad, y1), handleIn: SIMD2(x1 - rad + k, y1)),
+            PathAnchor(SIMD2(x0 + rad, y1), handleOut: SIMD2(x0 + rad - k, y1)),
+            PathAnchor(SIMD2(x0, y1 - rad), handleIn: SIMD2(x0, y1 - rad + k)),
+            PathAnchor(SIMD2(x0, y0 + rad), handleOut: SIMD2(x0, y0 + rad - k)),
+        ]
+        return VectorPath(name: name, subpaths: [Subpath(anchors: a, isClosed: true)])
+    }
+
+    public static func ellipse(_ r: CGRectLike, name: String = "Ellipse") -> VectorPath {
+        let cx = (r.minX + r.maxX) / 2, cy = (r.minY + r.maxY) / 2, rx = r.width / 2, ry = r.height / 2
+        let kx = rx * 0.5522847498, ky = ry * 0.5522847498
+        let a: [PathAnchor] = [
+            PathAnchor(SIMD2(cx, cy - ry), handleIn: SIMD2(cx - kx, cy - ry), handleOut: SIMD2(cx + kx, cy - ry)),
+            PathAnchor(SIMD2(cx + rx, cy), handleIn: SIMD2(cx + rx, cy - ky), handleOut: SIMD2(cx + rx, cy + ky)),
+            PathAnchor(SIMD2(cx, cy + ry), handleIn: SIMD2(cx + kx, cy + ry), handleOut: SIMD2(cx - kx, cy + ry)),
+            PathAnchor(SIMD2(cx - rx, cy), handleIn: SIMD2(cx - rx, cy + ky), handleOut: SIMD2(cx - rx, cy - ky)),
+        ]
+        return VectorPath(name: name, subpaths: [Subpath(anchors: a, isClosed: true)])
+    }
+
     /// Flattened polygons (one per subpath), `steps` samples per curved segment.
     public func polygons(steps: Int = 24) -> [[SIMD2<Double>]] {
         subpaths.map { sub in

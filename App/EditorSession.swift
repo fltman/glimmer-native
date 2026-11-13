@@ -93,6 +93,7 @@ final class EditorSession {
     var shapeKind = ShapeKind.rectangle
     var shapeLineWidth = 8.0
     var shapeCornerRadius = 32.0
+    @ObservationIgnored var originalShapeState: DocumentState?
     var shapeDrag: (start: SIMD2<Double>, end: SIMD2<Double>)?
     var guideDrag: (id: UUID?, axis: Guide.Axis, position: Double)?
 
@@ -362,7 +363,7 @@ final class EditorSession {
         case .layerViaCopy:
             return activeLayer?.isRaster ?? false
         case .freeTransform:
-            return activeLayer.map { $0.isRaster || { if case .smart = $0.content { true } else { false } }($0) } ?? false
+            return activeLayer.map { $0.isRaster || $0.vectorMask != nil || { if case .smart = $0.content { true } else { false } }($0) } ?? false
         case .zoomIn, .zoomOut, .fitToWindow, .actualSize, .rotateViewLeft, .rotateViewRight, .resetViewRotation:
             return canvas.canPerform(id)
         default:
@@ -449,7 +450,7 @@ final class EditorSession {
             let enabled = activeLayer?.mask?.isEnabled == true
             editActive(enabled ? "Disable Layer Mask" : "Enable Layer Mask") { $0.mask?.isEnabled = !enabled }
         case .deleteMask:
-            editActive("Delete Layer Mask") { $0.mask = nil }
+            editActive("Delete Layer Mask") { $0.mask = nil; $0.vectorMask = nil }
         case .convertToSmartObject:
             convertToSmartObject()
         case .rasterizeLayer:

@@ -9,6 +9,26 @@ struct PathsPanel: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            if let shape = session.activeLayer, let vector = shape.vectorMask {
+                Button {
+                    session.activePathID = session.activePathID == vector.id ? nil : vector.id
+                    if session.activePathID != nil { session.tool = .pen }
+                } label: {
+                    HStack {
+                        Image(systemName: "square.on.circle").foregroundStyle(.secondary)
+                        Text("\(shape.name) Shape Path")
+                        Spacer()
+                        if session.activePathID == vector.id { Image(systemName: "pencil").foregroundStyle(.tint) }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(session.activePathID == vector.id ? Color.accentColor.opacity(0.15) : .clear)
+                    .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .help("Edit the shape with the Pen tool")
+                Divider()
+            }
             if session.state.paths.isEmpty {
                 ContentUnavailableView("No Paths", systemImage: "pencil.tip.crop.circle",
                                        description: Text("Draw with the Pen tool (P) to create a path."))
