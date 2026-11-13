@@ -45,6 +45,9 @@ final class AIController {
     var stepStatus: [UUID: StepStatus] = [:]
     var planStatus: [UUID: PlanStatus] = [:]
     var isPlanning = false
+    /// Edits proposed for the current image, and whether they're being fetched.
+    var suggestions: [AgentPlanner.Suggestion] = []
+    var isSuggesting = false
     var savedActions = SavedAction.load() { didSet { SavedAction.store(savedActions) } }
     @ObservationIgnored var agentHistory: [(user: String, reply: String)] = []
     @ObservationIgnored var planTask: Task<Void, Never>?

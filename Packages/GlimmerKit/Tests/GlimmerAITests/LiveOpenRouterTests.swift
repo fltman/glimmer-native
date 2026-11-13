@@ -66,6 +66,13 @@ struct LiveOpenRouterTests {
         #expect(seen.count >= 1)
     }
 
+    @Test func suggestsEditsForAnImage() async throws {
+        let s = try await AgentPlanner.suggestions(image: try jpeg(40, 40, 60), language: "sv",
+                                                   client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel)
+        print("Suggestions: \(s.map { "\($0.title): \($0.goal)" })")
+        #expect(s.count == 3)
+    }
+
     @Test func reviewCorrectsAResultThatMissed() async throws {
         // Asked for much darker; "after" is brighter than "before".
         let steps = [AgentStep(op: "add_adjustment", params: ["type": .string("exposure"), "params": .object(["exposure": .number(1)])])]

@@ -192,6 +192,16 @@
         }
       }
     },
+    "Action": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åtgärd"
+          }
+        }
+      }
+    },
     "Actions": {
       "localizations": {
         "sv": {
@@ -2773,6 +2783,16 @@
         }
       }
     },
+    "Glimmer Action": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer-åtgärd"
+          }
+        }
+      }
+    },
     "Glimmer calls OpenRouter directly with your own key. It is stored in your keychain and only sent to openrouter.ai. [Get a key](https://openrouter.ai/keys)": {
       "localizations": {
         "sv": {
@@ -3441,6 +3461,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Linsoskärpa…"
+          }
+        }
+      }
+    },
+    "Let the assistant look at the image and propose three edits": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Låt assistenten titta på bilden och föreslå tre redigeringar"
           }
         }
       }
@@ -5328,12 +5358,42 @@
         }
       }
     },
+    "Run ${action} on ${image}": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör ${action} på ${image}"
+          }
+        }
+      }
+    },
     "Run AI steps without asking": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Kör AI-steg utan att fråga"
+          }
+        }
+      }
+    },
+    "Run Action": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör åtgärd"
+          }
+        }
+      }
+    },
+    "Run Glimmer Action": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör Glimmer-åtgärd"
           }
         }
       }
@@ -5354,6 +5414,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kör ett Glimmer-filter med standardinställningar på en bild."
+          }
+        }
+      }
+    },
+    "Runs an action you saved from the Glimmer assistant on an image. Repeat it over a folder to edit many photos the same way.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör en åtgärd som du sparat från Glimmers assistent på en bild. Upprepa över en mapp för att redigera många foton på samma sätt."
           }
         }
       }
@@ -6057,6 +6127,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Motiv"
+          }
+        }
+      }
+    },
+    "Suggest Edits": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föreslå redigeringar"
           }
         }
       }

@@ -147,3 +147,18 @@ import Testing
         #expect(r.toolCalls == [.init(name: "add_adjustment", arguments: "{\"type\":\"black_white\"}"), .init(name: "deselect", arguments: "{}")])
     }
 }
+
+@Suite struct SuggestionTests {
+    @Test func parsesAndLimitsSuggestions() {
+        let text = """
+        ```json
+        {"suggestions": [{"title": "Warm Glow", "goal": "Warm the sunset tones."}, {"title": "Warm Glow", "goal": "dup"},
+         {"title": "", "goal": "x"}, {"title": "Moody B&W", "goal": "Convert to high-contrast black and white."},
+         {"title": "Sharpen Bridge", "goal": "Sharpen the bridge."}, {"title": "Fourth", "goal": "no"}]}
+        ```
+        """
+        let s = AgentPlanner.parseSuggestions(text)
+        #expect(s.map(\.title) == ["Warm Glow", "Moody B&W", "Sharpen Bridge"])
+        #expect(AgentPlanner.parseSuggestions("sorry").isEmpty)
+    }
+}

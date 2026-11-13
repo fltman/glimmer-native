@@ -357,6 +357,47 @@ public enum AgentPlanner {
         return nil
     }
 
+    // MARK: Suggestions
+
+    /// An edit the assistant proposes for this particular photo.
+    public struct Suggestion: Sendable, Hashable, Identifiable {
+        public var id: String { title }
+        /// Two or three words for a button.
+        public var title: String
+        /// The request to send to the planner when it is chosen.
+        public var goal: String
+    }
+
+    static let suggestionPrompt = """
+    You are a photo retoucher looking at a user's image in a photo editor. Propose exactly three different edits that would genuinely improve or creatively transform THIS photo, based on what you see (its light, colours, subject, flaws). Make them distinct: for example one corrective, one mood, one bold.
+    The editor can do: tonal and colour adjustments, black & white, blur/sharpen/vignette/grain filters, photo looks, text, removing the background, and AI edits of content.
+    Return ONLY JSON: {"suggestions": [{"title": "<2-3 words>", "goal": "<one sentence instructing the edit, specific to this photo>"}]}
+    Write title and goal in the language with code "%@".
+    """
+
+    public static func parseSuggestions(_ text: String) -> [Suggestion] {
+        struct Raw: Decodable {
+            struct Item: Decodable { var title: String?; var goal: String? }
+            var suggestions: [Item]?
+        }
+        guard let json = extractJSONObject(text), let raw = try? JSONDecoder().decode(Raw.self, from: Data(json.utf8)) else { return [] }
+        var seen = Set<String>()
+        return (raw.suggestions ?? []).compactMap { item in
+            guard let title = item.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty,
+                  let goal = item.goal?.trimmingCharacters(in: .whitespacesAndNewlines), !goal.isEmpty,
+                  seen.insert(title).inserted else { return nil }
+            return Suggestion(title: title, goal: goal)
+        }.prefix(3).map { $0 }
+    }
+
+    /// Looks at the image (JPEG) and proposes three edits.
+    public static func suggestions(image: Data, language: String, client: OpenRouterClient, model: String) async throws -> [Suggestion] {
+        let response = try await client.textCompletion(model: model, system: nil,
+                                                       user: String(format: suggestionPrompt, language),
+                                                       images: [image], imageType: "image/jpeg", jsonMode: true, temperature: 0.7)
+        return parseSuggestions(response.text)
+    }
+
     // MARK: Tool calling
 
     static let toolPreamble = """

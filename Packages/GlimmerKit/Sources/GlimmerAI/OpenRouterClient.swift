@@ -160,6 +160,7 @@ public actor OpenRouterClient {
 
     /// Text-only (optionally multimodal) completion. `jsonMode` requests a JSON object.
     public func textCompletion(model: String, system: String?, user: String, images: [Data] = [],
+                               imageType: String = "image/png",
                                jsonMode: Bool = false, temperature: Double = 0.2) async throws -> TextResponse {
         var messages: [[String: Any]] = []
         if let system { messages.append(["role": "system", "content": system]) }
@@ -169,7 +170,7 @@ public actor OpenRouterClient {
             var content: [[String: Any]] = [["type": "text", "text": user]]
             for png in images {
                 content.append(["type": "image_url",
-                                "image_url": ["url": "data:image/png;base64," + png.base64EncodedString()]])
+                                "image_url": ["url": "data:\(imageType);base64," + png.base64EncodedString()]])
             }
             messages.append(["role": "user", "content": content])
         }

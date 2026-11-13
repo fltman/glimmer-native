@@ -380,6 +380,11 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **Ångra-historik till disk:** varje steg är en `UndoSnapshot`; när historiken överskrider minnesbudgeten skrivs de äldsta som paket i temp-katalogen (i bakgrunden) och läses in igen vid ångra. Markeringen ligger kvar i minnet. Filerna tas bort när steget släpps och vid nästa start.
   - **Förlustkomprimerad WebP:** en egen VP8-kodare (`VP8Encoder.swift`, RFC 6386) med 16 × 16-prediktion (DC, V, H, TM), anpassade koefficientsannolikheter i två pass och alfa som förlustfri `ALPH`-chunk. Rekonstruktionen är bitexakt mot libwebps dekoder. På 4K-testfotot vid kvalitet 80: 653 kB mot cwebps 570 kB vid samma PSNR. Saknar 4 × 4-prediktion, som är det som skiljer i storlek. 100 % kvalitet ger fortfarande förlustfri VP8L.
 
+- **Andra förnyelseomgången (2026-11-13, natt):**
+  - **Förslag utifrån bilden:** "Suggest Edits" låter textmodellen titta på fotot och föreslå tre redigeringar (titel + mål) på användarens språk; ett klick skickar målet till planeraren.
+  - **Sparade åtgärder i Genvägar:** `RunActionIntent` kör en sparad åtgärd utan fönster (`HeadlessEditor.run`). Justeringar, filter, presets, lagerstilar, text och bakgrundsborttagning stöds; steg som kräver fönstret eller betalda AI-jobb ger ett tydligt fel.
+  - **CI** körs på den här Macen som self-hosted runner (`scripts/setup-runner.sh`).
+
 ## 4. Teststrategi
 
 - **GlimmerCore:** modell, COW-tiles, undo/redo-invarianter, serialisering (rundtur och versionsmigrering) och `.aips`-import mot riktiga filer från webbappen.

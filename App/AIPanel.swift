@@ -144,6 +144,32 @@ private struct AssistantView: View {
                 .menuStyle(.borderlessButton)
                 .fixedSize()
             }
+            if ai.hasAPIKey {
+                HStack(spacing: 6) {
+                    Button("Suggest Edits", systemImage: "wand.and.sparkles") { ai.suggestEdits() }
+                        .disabled(ai.isSuggesting)
+                        .help("Let the assistant look at the image and propose three edits")
+                    if ai.isSuggesting { ProgressView().controlSize(.small) }
+                }
+                .controlSize(.small)
+                ForEach(ai.suggestions) { suggestion in
+                    Button {
+                        ai.suggestions = []
+                        ai.ask(suggestion.goal)
+                    } label: {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(suggestion.title).font(.callout.weight(.medium))
+                            Text(suggestion.goal).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.leading)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(6)
+                        .background(Color.accentColor.opacity(0.08), in: .rect(cornerRadius: 8))
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(ai.isPlanning)
+                }
+            }
             if ai.isPlanning {
                 HStack(spacing: 6) {
                     ProgressView().controlSize(.small)

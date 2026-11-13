@@ -230,6 +230,27 @@ extension AIController {
         planStatus[message.id] = Task.isCancelled ? .cancelled : (failed ? .failed : .finished)
     }
 
+    // MARK: Suggestions
+
+    /// Asks the model to look at the image and propose three edits.
+    func suggestEdits() {
+        guard !isSuggesting, let metal = MetalContext.shared, let key = (try? Self.apiKey()) ?? nil else { return }
+        let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
+        let state = session.state
+        let language = Locale.current.language.languageCode?.identifier ?? "en"
+        isSuggesting = true
+        Task { [weak self] in
+            let image = await Task.detached { Self.snapshotJPEG(state, metal: metal) }.value
+            var found: [AgentPlanner.Suggestion] = []
+            if let image {
+                found = (try? await AgentPlanner.suggestions(image: image, language: language,
+                                                             client: OpenRouterClient(apiKey: key), model: model)) ?? []
+            }
+            self?.suggestions = found
+            self?.isSuggesting = false
+        }
+    }
+
     // MARK: Saved actions
 
     /// Keeps a finished plan (and any corrections that followed it) as a reusable action.
@@ -294,11 +315,7 @@ extension AIController {
         switch step.op {
         case "add_adjustment":
             guard let kind = AdjustmentKind(rawValue: step.string("type") ?? "") else { throw StepError("Unknown adjustment.") }
-            var adjustment = Adjustment(kind)
-            for (k, v) in step.object("params") {
-                if case .bool(let b) = v { adjustment.flags[k] = b } else if let n = v.number { adjustment.numbers[k] = n }
-                if let c = parseHexColor(v.string) { adjustment.colors[k] = c }
-            }
+            let adjustment = Self.adjustment(kind, step.object("params"))
             s.addLayer(Layer(name: kind.title, content: .adjustment(adjustment)), actionName: String(localized: "New \(String(localized: String.LocalizationValue(kind.title)))"))
         case "apply_filter":
             guard let kind = FilterKind(rawValue: step.string("type") ?? "") else { throw StepError("Unknown filter.") }
@@ -398,10 +415,18 @@ extension AIController {
         session.addLayer(Layer(name: name, content: .text(text)), actionName: "Add Text")
     }
 
-    /// Applies a web-style effect patch: `enabled` → isEnabled, hex colours → SRGBColor.
-    private func addLayerEffect(_ type: String, _ params: [String: JSONValue]) throws {
-        guard let layer = session.state.activeLayer else { throw StepError("Select a layer first.") }
-        var effects = layer.effects
+    nonisolated static func adjustment(_ kind: AdjustmentKind, _ params: [String: JSONValue]) -> Adjustment {
+        var adjustment = Adjustment(kind)
+        for (k, v) in params {
+            if case .bool(let b) = v { adjustment.flags[k] = b } else if let n = v.number { adjustment.numbers[k] = n }
+            if let c = parseHexColor(v.string) { adjustment.colors[k] = c }
+        }
+        return adjustment
+    }
+
+    /// Applies a web-style effect patch to a layer's styles: `enabled` → isEnabled, hex colours → SRGBColor.
+    nonisolated static func patched(_ effects: LayerEffects, type: String, _ params: [String: JSONValue]) throws -> LayerEffects {
+        var effects = effects
         func patch<T: Codable>(_ value: T) throws -> T {
             var dict = (try JSONSerialization.jsonObject(with: JSONEncoder().encode(value)) as? [String: Any]) ?? [:]
             for (key, v) in params {
@@ -423,6 +448,12 @@ extension AIController {
         case "colorOverlay": effects.colorOverlay = try patch(effects.colorOverlay ?? ColorOverlayEffect())
         default: throw StepError("Unknown layer effect.")
         }
+        return effects
+    }
+
+    private func addLayerEffect(_ type: String, _ params: [String: JSONValue]) throws {
+        guard let layer = session.state.activeLayer else { throw StepError("Select a layer first.") }
+        let effects = try Self.patched(layer.effects, type: type, params)
         session.edit("Layer Style") { $0.updateLayer(layer.id) { $0.effects = effects } }
     }
 }

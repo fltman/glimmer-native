@@ -78,6 +78,25 @@
           }
         }
       }
+    },
+    "Run a ${applicationName} action" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Run a ${applicationName} action"
+            ]
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kör en ${applicationName}-åtgärd"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

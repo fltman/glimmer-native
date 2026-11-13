@@ -37,7 +37,7 @@ One-time setup:
 
 ## Shortcuts
 
-Glimmer adds Shortcuts actions that work on files without opening a window: Remove Background (on-device), Apply Glimmer Preset, Apply Glimmer Filter and Export Glimmer Document (PNG, JPEG, HEIC, TIFF or WebP).
+Glimmer adds Shortcuts actions that work on files without opening a window: Remove Background (on-device), Apply Glimmer Preset, Apply Glimmer Filter, Run Glimmer Action (an action saved from the assistant, for editing many photos the same way) and Export Glimmer Document (PNG, JPEG, HEIC, TIFF or WebP).
 
 ## WebP
 
