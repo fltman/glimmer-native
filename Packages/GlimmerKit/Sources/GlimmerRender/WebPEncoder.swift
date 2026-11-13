@@ -22,7 +22,10 @@ public enum WebPEncoder {
 
     /// Encodes straight-alpha RGBA8 pixels (row-major, top-down).
     /// `iccProfile` is embedded through the extended (VP8X) container.
-    public static func encode(rgba: [UInt8], width: Int, height: Int, iccProfile: Data? = nil) throws -> Data {
+    /// `nearLossless` drops that many low bits (0…3) of each colour channel before
+    /// coding: invisible at 1–2, and the smoother residuals compress much better.
+    public static func encode(rgba: [UInt8], width: Int, height: Int, iccProfile: Data? = nil,
+                              nearLossless bits: Int = 0) throws -> Data {
         guard width <= maxDimension, height <= maxDimension, width > 0, height > 0 else {
             throw Error.tooLarge(width: width, height: height)
         }
@@ -35,7 +38,13 @@ public enum WebPEncoder {
                     let a = UInt32(src[i * 4 + 3])
                     if a != 255 { hasAlpha = true }
                     // Fully transparent pixels carry no colour; zero them so they compress.
-                    dst[i] = a == 0 ? 0 : (a << 24) | (UInt32(src[i * 4]) << 16) | (UInt32(src[i * 4 + 1]) << 8) | UInt32(src[i * 4 + 2])
+                    @inline(__always) func q(_ v: UInt8) -> UInt32 {
+                        guard bits > 0 else { return UInt32(v) }
+                        // Round to the nearest multiple of 2^bits, keeping pure white reachable.
+                        let step = UInt32(1) << UInt32(min(bits, 3))
+                        return min((UInt32(v) + step / 2) / step * step, 255)
+                    }
+                    dst[i] = a == 0 ? 0 : (a << 24) | (q(src[i * 4]) << 16) | (q(src[i * 4 + 1]) << 8) | q(src[i * 4 + 2])
                 }
             }
         }

@@ -132,5 +132,15 @@ private func decodeRGBA(_ data: Data) throws -> (pixels: [UInt8], width: Int, he
         let data = try WebPEncoder.encode(rgba: px, width: w, height: h)
         print("WebP 2048×1536: \(data.count / 1024) kB in \(String(format: "%.2f", Date().timeIntervalSince(start))) s")
         #expect(data.count < px.count / 3)
+        // Near-lossless: clearly smaller, and no channel off by more than the rounding step.
+        for bits in [1, 2] {
+            let small = try WebPEncoder.encode(rgba: px, width: w, height: h, nearLossless: bits)
+            print("  near-lossless \(bits) bit: \(small.count / 1024) kB")
+            #expect(Double(small.count) < Double(data.count) * (bits == 1 ? 0.9 : 0.75))
+            let decoded = try decodeRGBA(small).pixels
+            var worst = 0
+            for i in stride(from: 0, to: px.count, by: 97) { worst = max(worst, abs(Int(decoded[i]) - Int(px[i]))) }
+            #expect(worst <= 1 << (bits - 1) + (bits == 1 ? 0 : 1))
+        }
     }
 }

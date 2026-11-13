@@ -19,12 +19,7 @@ struct ExportSheet: View {
                         ForEach(format.bitDepths) { Text(LocalizedStringKey($0.title)).tag($0) }
                     }
                 }
-                if format == .webp {
-                    Text("WebP is saved lossless.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-                if format.isLossy {
+                if format.hasQuality {
                     LabeledContent("Quality") {
                         HStack {
                             Slider(value: $session.exportOptions.quality, in: 0.1...1)
@@ -33,6 +28,11 @@ struct ExportSheet: View {
                                 .frame(width: 44, alignment: .trailing)
                         }
                     }
+                }
+                if format == .webp {
+                    Text("WebP is lossless at 100 %. Lower settings round colours slightly for a smaller file.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
                 }
                 Picker("Color profile", selection: $session.exportOptions.colorSpace) {
                     Text("sRGB").tag(WorkingColorSpace.sRGB)
