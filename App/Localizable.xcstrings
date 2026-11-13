@@ -5139,6 +5139,17 @@
         }
       }
     },
+    "Straighten": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Räta upp"
+          }
+        }
+      }
+    },
     "Strength": {
       "extractionState": "manual",
       "localizations": {

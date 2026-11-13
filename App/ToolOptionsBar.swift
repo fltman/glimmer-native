@@ -156,6 +156,9 @@ struct ToolOptionsBar: View {
             Text("9:16").tag(9.0 / 16)
         }
         .frame(width: 140)
+        slider("Straighten", Binding(get: { (session.cropSession?.angle ?? 0) * 180 / .pi },
+                                     set: { session.setCropAngle(degrees: $0) }), -45...45,
+               display: String(format: "%.1f°", (session.cropSession?.angle ?? 0) * 180 / .pi))
         if let r = session.cropSession?.rect {
             Text("\(Int(r.width.rounded())) × \(Int(r.height.rounded())) px").monospacedDigit().foregroundStyle(.secondary)
         }

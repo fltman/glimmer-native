@@ -240,6 +240,39 @@ extension EditorSession {
         var aspect: Double?
         var dragging: Int?  // 0…7 handles, 8 = move, 9 = new rect
         var anchor: SIMD2<Double> = .zero
+        /// Straighten angle (radians). `rect` lives in a frame rotated by `angle` about `pivot`.
+        var angle: Double = 0
+        var pivot: SIMD2<Double> = .zero
+        /// Box size before straightening (the auto-fit scales from this).
+        var baseSize: SIMD2<Double>?
+
+        func local(_ doc: SIMD2<Double>) -> SIMD2<Double> { rotate(doc - pivot, by: -angle) + pivot }
+        func world(_ local: SIMD2<Double>) -> SIMD2<Double> { rotate(local - pivot, by: angle) + pivot }
+        var corners: [SIMD2<Double>] {
+            [SIMD2(rect.minX, rect.minY), SIMD2(rect.maxX, rect.minY), SIMD2(rect.maxX, rect.maxY), SIMD2(rect.minX, rect.maxY)].map(world)
+        }
+
+        private func rotate(_ v: SIMD2<Double>, by a: Double) -> SIMD2<Double> {
+            SIMD2(cos(a) * v.x - sin(a) * v.y, sin(a) * v.x + cos(a) * v.y)
+        }
+    }
+
+    /// Straighten: rotates the crop box about its centre (degrees, −45…45).
+    func setCropAngle(degrees: Double) {
+        guard var c = cropSession else { return }
+        let centre = c.world(SIMD2((c.rect.minX + c.rect.maxX) / 2, (c.rect.minY + c.rect.maxY) / 2))
+        if abs(c.angle) < 1e-9 || c.baseSize == nil { c.baseSize = SIMD2(c.rect.width, c.rect.height) }
+        let base = c.baseSize!
+        let a = degrees * .pi / 180
+        // Largest box of the original proportions that stays inside the image at this angle.
+        let ca = abs(cos(a)), sa = abs(sin(a))
+        let halfW = min(centre.x, Double(state.width) - centre.x), halfH = min(centre.y, Double(state.height) - centre.y)
+        let k = min(1, 2 * halfW / max(base.x * ca + base.y * sa, 1e-9), 2 * halfH / max(base.x * sa + base.y * ca, 1e-9))
+        let w = base.x * max(k, 0.01), h = base.y * max(k, 0.01)
+        c.pivot = centre
+        c.rect = CGRectLike(x0: centre.x - w / 2, y0: centre.y - h / 2, x1: centre.x + w / 2, y1: centre.y + h / 2)
+        c.angle = a
+        cropSession = c
     }
 
     func beginCrop() {
@@ -247,8 +280,9 @@ extension EditorSession {
         cropSession = CropSession(rect: CGRectLike(x0: 0, y0: 0, x1: Double(state.width), y1: Double(state.height)))
     }
 
-    func cropMouseDown(at doc: SIMD2<Double>, viewTolerance: Double) {
+    func cropMouseDown(at docPoint: SIMD2<Double>, viewTolerance: Double) {
         guard var c = cropSession else { return }
+        let doc = c.local(docPoint)
         let tol = viewTolerance / max(canvas.transform.scale, 0.001)
         let r = c.rect
         let handles = cropHandles(r)
@@ -271,8 +305,9 @@ extension EditorSession {
                 SIMD2(r.maxX, r.maxY), SIMD2(mx, r.maxY), SIMD2(r.minX, r.maxY), SIMD2(r.minX, my)]
     }
 
-    func cropDrag(to doc: SIMD2<Double>) {
+    func cropDrag(to docPoint: SIMD2<Double>) {
         guard var c = cropSession, let handle = c.dragging else { return }
+        let doc = c.local(docPoint)
         var r = c.rect
         switch handle {
         case 8:
@@ -297,6 +332,7 @@ extension EditorSession {
                 : CGRectLike(x0: r.minX, y0: r.minY, x1: r.maxX, y1: r.minY + h)
         }
         c.rect = r
+        c.baseSize = nil
         cropSession = c
     }
 
@@ -315,6 +351,10 @@ extension EditorSession {
     /// layer to bring them back); every layer, mask, path and guide shifts.
     func applyCrop() {
         guard let c = cropSession, let metal else { return }
+        if abs(c.angle) > 1e-6 {
+            applyRotatedCrop(c, metal: metal)
+            return
+        }
         cropSession = nil
         let x = Int(c.rect.minX.rounded()), y = Int(c.rect.minY.rounded())
         let w = Int(c.rect.width.rounded()), h = Int(c.rect.height.rounded())
@@ -349,6 +389,94 @@ extension EditorSession {
         } catch {
             report(error)
         }
+    }
+
+    /// Straightened crop: every layer is resampled into the rotated box. Pixels
+    /// outside the box are dropped (they'd no longer line up with the canvas).
+    /// Text layers are rasterized; smart objects and gradients keep their parameters.
+    private func applyRotatedCrop(_ c: CropSession, metal: MetalContext) {
+        cropSession = nil
+        let w = Int(c.rect.width.rounded()), h = Int(c.rect.height.rounded())
+        guard w >= 1, h >= 1 else { return }
+        let centre = c.world(SIMD2((c.rect.minX + c.rect.maxX) / 2, (c.rect.minY + c.rect.maxY) / 2))
+        // p' = R(−angle)(p − centre) + size / 2
+        let phi = -c.angle
+        let cs = cos(phi), sn = sin(phi)
+        let t = SIMD2(Double(w) / 2, Double(h) / 2) - SIMD2(cs * centre.x - sn * centre.y, sn * centre.x + cs * centre.y)
+        let rot = GlimmerCore.AffineTransform(a: cs, b: sn, c: -sn, d: cs, tx: t.x, ty: t.y)
+        let limit = PixelRect(x: 0, y: 0, width: w, height: h)
+        let docBounds = state.bounds
+        do {
+            let renderer = try SmartObjectRenderer(context: metal)
+            func resample(_ grid: TileGrid, fillTo: Float? = nil) throws -> TileGrid {
+                var grid = grid
+                if let v = fillTo {  // materialize a mask's default inside the old canvas
+                    for coord in docBounds.tileCoords where grid[coord] == nil { grid[coord] = .solid(SIMD4(repeating: v)) }
+                }
+                guard let b = grid.tileBounds else { return TileGrid() }
+                let source = try TileOperations.translate(grid, by: SIMD2(-b.x, -b.y), context: metal)
+                let m = Self.concat(rot, GlimmerCore.AffineTransform(tx: Double(b.x), ty: Double(b.y)))
+                return try renderer.render(SmartObject(source: source, width: b.width, height: b.height, transform: m), limit: limit)
+            }
+            func rotateLayer(_ layer: Layer) throws -> Layer {
+                var l = layer
+                if let mask = layer.mask {
+                    l.mask?.tiles = try resample(mask.tiles, fillTo: mask.defaultValue > 0 ? mask.defaultValue : nil)
+                }
+                switch layer.content {
+                case .raster(let grid):
+                    l.content = .raster(try resample(grid))
+                case .text:
+                    let raster = try DocumentCompositor.rasterize(layer, bounds: docBounds, blendSpace: state.blendSpace, context: metal)
+                    l.content = .raster(try resample(raster))
+                case .smart(var smart):
+                    smart.transform = Self.concat(rot, smart.transform)
+                    l.content = .smart(smart)
+                case .fill(.gradient(var g)):
+                    g.start = rot.apply(g.start)
+                    g.end = rot.apply(g.end)
+                    l.content = .fill(.gradient(g))
+                case .group(var group):
+                    group.children = try group.children.map(rotateLayer)
+                    l.content = .group(group)
+                case .fill, .adjustment:
+                    break
+                }
+                return l
+            }
+            let layers = try state.layers.map(rotateLayer)
+            edit("Crop") { state in
+                state.layers = layers
+                state.width = w
+                state.height = h
+                state.selection = nil
+                state.aids.guides = []
+                state.paths = state.paths.map { path in
+                    var p = path
+                    p.subpaths = p.subpaths.map { sub in
+                        var s = sub
+                        s.anchors = s.anchors.map { a in
+                            PathAnchor(rot.apply(a.point), handleIn: rot.apply(a.handleIn), handleOut: rot.apply(a.handleOut))
+                        }
+                        return s
+                    }
+                    return p
+                }
+            }
+            canvas.perform(.fitToWindow)
+        } catch {
+            report(error)
+        }
+    }
+
+    /// `outer ∘ inner` (inner applied first).
+    static func concat(_ outer: GlimmerCore.AffineTransform, _ inner: GlimmerCore.AffineTransform) -> GlimmerCore.AffineTransform {
+        GlimmerCore.AffineTransform(a: outer.a * inner.a + outer.c * inner.b,
+                                    b: outer.b * inner.a + outer.d * inner.b,
+                                    c: outer.a * inner.c + outer.c * inner.d,
+                                    d: outer.b * inner.c + outer.d * inner.d,
+                                    tx: outer.a * inner.tx + outer.c * inner.ty + outer.tx,
+                                    ty: outer.b * inner.tx + outer.d * inner.ty + outer.ty)
     }
 
     // MARK: Text

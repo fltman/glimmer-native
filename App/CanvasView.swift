@@ -412,21 +412,20 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         }
         if let c = session.cropSession {
             let r = c.rect
-            let doc = PixelRect(x: 0, y: 0, width: session.state.width, height: session.state.height)
             let outer = CGMutablePath()
-            let big = [SIMD2(Double(doc.x) - 1e5, Double(doc.y) - 1e5), SIMD2(1e5, Double(doc.y) - 1e5),
-                       SIMD2(1e5, 1e5), SIMD2(Double(doc.x) - 1e5, 1e5)]
+            let big = [SIMD2(-1e5, -1e5), SIMD2(1e5, -1e5), SIMD2(1e5, 1e5), SIMD2(-1e5, 1e5)]
             outer.addLines(between: big.map(v)); outer.closeSubpath()
-            let rc = [SIMD2(r.minX, r.minY), SIMD2(r.maxX, r.minY), SIMD2(r.maxX, r.maxY), SIMD2(r.minX, r.maxY)]
+            let rc = c.corners
             outer.addLines(between: rc.map(v)); outer.closeSubpath()
             cropShade.path = outer
             lines.addLines(between: (rc + [rc[0]]).map(v))
-            for i in 1...2 {  // rule of thirds
-                let fx = r.minX + r.width * Double(i) / 3, fy = r.minY + r.height * Double(i) / 3
-                lines.move(to: v(SIMD2(fx, r.minY))); lines.addLine(to: v(SIMD2(fx, r.maxY)))
-                lines.move(to: v(SIMD2(r.minX, fy))); lines.addLine(to: v(SIMD2(r.maxX, fy)))
+            let thirds = abs(c.angle) > 1e-6 ? 6 : 3  // a finer grid helps when straightening
+            for i in 1..<thirds {
+                let fx = r.minX + r.width * Double(i) / Double(thirds), fy = r.minY + r.height * Double(i) / Double(thirds)
+                lines.move(to: v(c.world(SIMD2(fx, r.minY)))); lines.addLine(to: v(c.world(SIMD2(fx, r.maxY))))
+                lines.move(to: v(c.world(SIMD2(r.minX, fy)))); lines.addLine(to: v(c.world(SIMD2(r.maxX, fy))))
             }
-            handleSquares(session.cropHandles(r), into: handles)
+            handleSquares(session.cropHandles(r).map(c.world), into: handles)
         }
         if session.effectiveTool == .pen || session.activePathID != nil, let path = session.activePath {
             for sub in path.subpaths where !sub.anchors.isEmpty {
