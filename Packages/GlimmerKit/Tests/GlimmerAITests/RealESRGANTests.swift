@@ -55,3 +55,17 @@ import Testing
         #expect(abs(up.pixels[mid] - 200) < 6 && abs(up.pixels[mid + 1] - 100) < 6 && abs(up.pixels[mid + 2] - 50) < 6)
     }
 }
+
+@Suite(.enabled(if: ProcessInfo.processInfo.environment["GLIMMER_PERF"] == "1"))
+struct RealESRGANPerformance {
+    @Test func fourK() async throws {
+        let w = 3840, h = 2160
+        var px = [Float](repeating: 255, count: w * h * 4)
+        for i in stride(from: 0, to: px.count, by: 4) { px[i] = Float(i % 251); px[i + 1] = Float(i % 127) }
+        let image = RGBAImage(width: w, height: h, pixels: px)
+        _ = try await RealESRGAN.upscale(RGBAImage(width: 64, height: 64, fill: SIMD4(1, 1, 1, 255)), scale: 2)  // warm up
+        let start = Date()
+        let up = try await RealESRGAN.upscale(image, scale: 2)
+        print("Real-ESRGAN 4K 2×: \(String(format: "%.2f", Date().timeIntervalSince(start))) s → \(up.width)×\(up.height)")
+    }
+}

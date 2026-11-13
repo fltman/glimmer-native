@@ -1,3 +1,4 @@
+import Accelerate
 import CoreML
 import Foundation
 
@@ -64,17 +65,19 @@ public enum RealESRGAN {
         for y0 in ys {
             for x0 in xs {
                 try Task.checkCancellation()
-                // Gather the tile, clamping at the image edges.
+                // Gather the tile row by row (vectorised), clamping at the image edges.
                 input.withUnsafeMutableBufferPointer(ofType: Float.self) { dst, _ in
                     image.pixels.withUnsafeBufferPointer { src in
+                        var scale: Float = 1 / 255
+                        let first = max(-x0, 0), last = min(w - x0, tile)  // tile columns inside the image
                         for ty in 0..<tile {
                             let sy = min(max(y0 + ty, 0), h - 1)
-                            for tx in 0..<tile {
-                                let sx = min(max(x0 + tx, 0), w - 1)
-                                let s = (sy * w + sx) * 4, d = ty * tile + tx
-                                dst[d] = src[s] / 255
-                                dst[plane + d] = src[s + 1] / 255
-                                dst[2 * plane + d] = src[s + 2] / 255
+                            for c in 0..<3 {
+                                let row = dst.baseAddress! + c * plane + ty * tile
+                                vDSP_vsmul(src.baseAddress! + (sy * w + x0 + first) * 4 + c, 4, &scale, row + first, 1,
+                                           vDSP_Length(last - first))
+                                if first > 0 { var v = row[first]; vDSP_vfill(&v, row, 1, vDSP_Length(first)) }
+                                if last < tile { var v = row[last - 1]; vDSP_vfill(&v, row + last, 1, vDSP_Length(tile - last)) }
                             }
                         }
                     }
@@ -86,18 +89,29 @@ public enum RealESRGAN {
                 output.withUnsafeBufferPointer(ofType: Float.self) { src in
                     let strides = output.strides.map(\.intValue)
                     let cs = strides[1], rs = strides[2]
-                    let weight = 255 / Float(down * down)
+                    // Columns and rows of the 4× tile to keep, clipped to the image.
+                    let tx0 = max(keepX0 * f, -x0 * f), tx1 = min((tile - margin) * f, (w - x0) * f)
+                    let ty0 = max(keepY0 * f, -y0 * f), ty1 = min((tile - margin) * f, (h - y0) * f)
+                    guard tx1 > tx0, ty1 > ty0 else { return }
+                    let n = tx1 - tx0
+                    var lo: Float = 0, hi: Float = 1, weight: Float = 255 / Float(down * down)
+                    var clipped = [Float](repeating: 0, count: n)
+                    var paired = [Float](repeating: 0, count: n / 2)
                     out.withUnsafeMutableBufferPointer { dst in
-                        for ty in (keepY0 * f)..<((tile - margin) * f) {
+                        for ty in ty0..<ty1 {
                             let dy = (y0 * f + ty) / down
-                            guard y0 * f + ty >= 0, dy < oh else { continue }
-                            for tx in (keepX0 * f)..<((tile - margin) * f) {
-                                let dx = (x0 * f + tx) / down
-                                guard x0 * f + tx >= 0, dx < ow else { continue }
-                                let d = (dy * ow + dx) * 4, s = ty * rs + tx
-                                dst[d] += min(max(src[s], 0), 1) * weight
-                                dst[d + 1] += min(max(src[cs + s], 0), 1) * weight
-                                dst[d + 2] += min(max(src[2 * cs + s], 0), 1) * weight
+                            for c in 0..<3 {
+                                vDSP_vclip(src.baseAddress! + c * cs + ty * rs + tx0, 1, &lo, &hi, &clipped, 1, vDSP_Length(n))
+                                let target = dst.baseAddress! + (dy * ow + (x0 * f + tx0) / down) * 4 + c
+                                if down == 1 {
+                                    vDSP_vsmul(clipped, 1, &weight, target, 4, vDSP_Length(n))
+                                } else {
+                                    // Average 2 × 2: add neighbours across, accumulate the two rows.
+                                    clipped.withUnsafeBufferPointer { p in
+                                        vDSP_vadd(p.baseAddress!, 2, p.baseAddress! + 1, 2, &paired, 1, vDSP_Length(n / 2))
+                                    }
+                                    vDSP_vsma(paired, 1, &weight, target, 4, target, 4, vDSP_Length(n / 2))
+                                }
                             }
                         }
                     }
@@ -106,9 +120,16 @@ public enum RealESRGAN {
                 progress?(done / total)
             }
         }
-        // Alpha: plain resampling.
-        let alpha = image.resized(width: ow, height: oh)
-        for i in stride(from: 3, to: out.count, by: 4) { out[i] = alpha.pixels[i] }
+        // Alpha: opaque images (the usual case) just get 255; otherwise plain resampling.
+        var minAlpha: Float = 255
+        image.pixels.withUnsafeBufferPointer { vDSP_minv($0.baseAddress! + 3, 4, &minAlpha, vDSP_Length(w * h)) }
+        if minAlpha >= 255 {
+            var opaque: Float = 255
+            out.withUnsafeMutableBufferPointer { vDSP_vfill(&opaque, $0.baseAddress! + 3, 4, vDSP_Length(ow * oh)) }
+        } else {
+            let alpha = image.resized(width: ow, height: oh)
+            for i in stride(from: 3, to: out.count, by: 4) { out[i] = alpha.pixels[i] }
+        }
         return RGBAImage(width: ow, height: oh, pixels: out)
     }
 }
