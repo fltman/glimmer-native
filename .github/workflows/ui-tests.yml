@@ -13,7 +13,8 @@ jobs:
       - name: UI tests
         shell: zsh {0}
         run: |
-          if scripts/uitest.sh > uitest.log 2>&1; then
+          # The background service can't reach the signing key in the login keychain, so sign ad hoc.
+          if scripts/uitest.sh CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= > uitest.log 2>&1; then
             grep -E "Test Case|Executed" uitest.log
           else
             grep -E "Test Case|error:|Executed|Testing failed" -A3 uitest.log | tail -40
