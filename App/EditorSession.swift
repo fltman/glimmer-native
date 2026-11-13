@@ -126,6 +126,8 @@ final class EditorSession {
     }
     var navigatorImage: CGImage?
     @ObservationIgnored var navigatorTask: Task<Void, Never>?
+    /// Histogram of what the Levels layer being edited receives (the layers below it).
+    var levelsHistogram: (layerID: UUID, histogram: Histogram)?
 
     @ObservationIgnored var stroke: (engine: StrokeEngine, sampler: StrokeSampler, layer: UUID, mask: Bool)?
     @ObservationIgnored var lastStrokePoint: SIMD2<Double>?
@@ -201,6 +203,20 @@ final class EditorSession {
             guard !Task.isCancelled, let self, let image else { return }
             self.navigatorImage = image
         }
+    }
+
+    /// Recomputes `levelsHistogram` for `layerID` off the main thread.
+    func refreshLevelsHistogram(for layerID: UUID) async {
+        guard let metal else { return }
+        let below = state.below(layerID)
+        try? await Task.sleep(for: .milliseconds(150))
+        guard !Task.isCancelled else { return }
+        let histogram = await Task.detached(priority: .utility) { () -> Histogram? in
+            guard let full = try? ImageExporter.flattenedSRGB(below, context: metal) else { return nil }
+            return Histogram(image: full)
+        }.value
+        guard !Task.isCancelled, let histogram else { return }
+        levelsHistogram = (layerID, histogram)
     }
 
     nonisolated static func downscaled(_ image: CGImage, maxSide: Int) -> CGImage? {

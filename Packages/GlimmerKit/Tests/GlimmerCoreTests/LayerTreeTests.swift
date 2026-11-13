@@ -364,3 +364,38 @@ private func raster(_ name: String) -> Layer {
         #expect(AipsImporter.textLayer(["text": "Hi", "warp": ["style": "none", "bend": 0]], origin: .zero).warp == nil)
     }
 }
+
+@Suite struct HistogramTests {
+    @Test func countsVisiblePixelsPerChannel() {
+        // Two opaque pixels and one fully transparent one.
+        let h = Histogram(rgba: [255, 0, 0, 255, 0, 0, 255, 255, 9, 9, 9, 0])
+        #expect(h.red[255] == 1 && h.red[0] == 1 && h.red[9] == 0)
+        #expect(h.blue[255] == 1 && h.green[0] == 2)
+        #expect(h.luminance[54] == 1 && h.luminance[18] == 1)
+        #expect(h.bins(.rgb) == h.luminance && h.bins(.green) == h.green)
+    }
+
+    @Test func imageHistogramUnpremultiplies() throws {
+        let ctx = try #require(CGContext(data: nil, width: 4, height: 4, bitsPerComponent: 8, bytesPerRow: 0,
+                                         space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        ctx.setFillColor(CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.5))
+        ctx.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        let image = try #require(ctx.makeImage())
+        let h = try #require(Histogram(image: image))
+        #expect(h.red[255] + h.red[254] == 16)
+    }
+
+    @Test func belowHidesTheLayerAndEverythingAbove() {
+        let a = Layer(name: "A", content: .raster(TileGrid()))
+        let b = Layer(name: "B", content: .raster(TileGrid()))
+        let c = Layer(name: "C", content: .raster(TileGrid()))
+        let group = Layer(name: "G", content: .group(LayerGroup(children: [b, c])))
+        let d = Layer(name: "D", content: .raster(TileGrid()))
+        let state = DocumentState(width: 10, height: 10, layers: [a, group, d])
+        let below = state.below(c.id)
+        #expect(below.layer(id: a.id)?.isVisible == true && below.layer(id: group.id)?.isVisible == true)
+        #expect(below.layer(id: b.id)?.isVisible == true)
+        #expect(below.layer(id: c.id)?.isVisible == false && below.layer(id: d.id)?.isVisible == false)
+    }
+}

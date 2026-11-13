@@ -17,10 +17,14 @@ struct PropertiesPanel: View {
         VStack(alignment: .leading, spacing: 14) {
             switch layer.content {
             case .adjustment(let adjustment):
-                AdjustmentEditor(adjustment: adjustment) { new in
+                AdjustmentEditor(adjustment: adjustment,
+                                 histogram: session.levelsHistogram?.layerID == layer.id ? session.levelsHistogram?.histogram : nil) { new in
                     session.liveLayer("Edit \(adjustment.kind.title)") { $0.content = .adjustment(new) }
                 } commit: {
                     session.commitLiveEdit()
+                }
+                .task(id: adjustment.kind == .levels ? "\(layer.id)-\(session.document.history.count)-\(session.document.historyIndex)" : "") {
+                    if adjustment.kind == .levels { await session.refreshLevelsHistogram(for: layer.id) }
                 }
             case .fill(let fill):
                 FillEditor(fill: fill, documentSize: session.state.size) { new in
@@ -90,6 +94,7 @@ struct ColorWell: View {
 
 struct AdjustmentEditor: View {
     let adjustment: Adjustment
+    var histogram: Histogram?
     let update: (Adjustment) -> Void
     let commit: () -> Void
 
@@ -118,6 +123,12 @@ struct AdjustmentEditor: View {
                 .frame(height: 220)
             case .levels:
                 channelPicker
+                LevelsHistogramView(bins: histogram?.bins(channel), levels: adjustment.levelsChannel(channel), channel: channel) { ch in
+                    var a = adjustment
+                    a.levels[channel] = ch
+                    update(a)
+                } commit: { commit() }
+                .frame(height: 150)
                 levelsSliders
             case .gradientMap:
                 GradientStopsEditor(stops: adjustment.gradient) { stops in
@@ -178,6 +189,120 @@ struct AdjustmentEditor: View {
                 update(a)
             } commit: { commit() }
         }
+    }
+}
+
+/// The input histogram with draggable black, gamma and white input handles
+/// (like the web app's Levels editor).
+struct LevelsHistogramView: View {
+    let bins: [UInt32]?
+    let levels: LevelsChannel
+    let channel: CurveChannel
+    let change: (LevelsChannel) -> Void
+    let commit: () -> Void
+
+    @State private var dragging: Handle?
+
+    enum Handle { case black, gamma, white }
+
+    private static let handleHeight = 14.0
+
+    /// Where the gamma handle sits between black and white (web: 0.5^(1/γ)).
+    private var gammaPosition: Double {
+        levels.inBlack + pow(0.5, 1 / min(max(levels.gamma, 0.1), 9.99)) * (levels.inWhite - levels.inBlack)
+    }
+
+    private var tint: Color {
+        switch channel {
+        case .rgb: .primary
+        case .red: .red
+        case .green: .green
+        case .blue: .blue
+        }
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, graphH = geo.size.height - Self.handleHeight - 4
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: 4).fill(.quaternary.opacity(0.5))
+                    .frame(height: graphH)
+                if let bins {
+                    histogramPath(bins, width: w, height: graphH)
+                        .fill(tint.opacity(0.55))
+                } else {
+                    ProgressView().controlSize(.small).frame(width: w, height: graphH)
+                }
+                handle(.black, at: levels.inBlack, fill: .black, width: w, top: graphH + 4)
+                handle(.gamma, at: gammaPosition, fill: .gray, width: w, top: graphH + 4)
+                handle(.white, at: levels.inWhite, fill: .white, width: w, top: graphH + 4)
+            }
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 0)
+                .onChanged { value in
+                    let t = min(max(value.location.x / w, 0), 1)
+                    if dragging == nil { dragging = nearest(to: t, startX: value.startLocation.x / w) }
+                    drag(dragging!, to: t)
+                }
+                .onEnded { _ in
+                    dragging = nil
+                    commit()
+                })
+        }
+        .accessibilityElement()
+        .accessibilityLabel("Levels histogram")
+        .accessibilityValue("Black \(Int(levels.inBlack * 255)), gamma \(String(format: "%.2f", levels.gamma)), white \(Int(levels.inWhite * 255))")
+    }
+
+    private func histogramPath(_ bins: [UInt32], width: Double, height: Double) -> Path {
+        // Clip the tallest spikes (e.g. pure black or white) so the rest stays readable.
+        let sorted = bins.sorted()
+        let cap = Double(max(sorted[min(sorted.count - 1, sorted.count * 99 / 100)], 1)) * 1.15
+        return Path { p in
+            p.move(to: CGPoint(x: 0, y: height))
+            for (i, v) in bins.enumerated() {
+                let x = Double(i) / 255 * width
+                p.addLine(to: CGPoint(x: x, y: height - min(Double(v) / cap, 1) * (height - 4)))
+            }
+            p.addLine(to: CGPoint(x: width, y: height))
+            p.closeSubpath()
+        }
+    }
+
+    private func handle(_ h: Handle, at t: Double, fill: Color, width: Double, top: Double) -> some View {
+        Path { p in
+            let x = t * width, s = Self.handleHeight
+            p.move(to: CGPoint(x: x, y: top))
+            p.addLine(to: CGPoint(x: x + s * 0.55, y: top + s))
+            p.addLine(to: CGPoint(x: x - s * 0.55, y: top + s))
+            p.closeSubpath()
+        }
+        .fill(fill)
+        .overlay(Path { p in
+            let x = t * width, s = Self.handleHeight
+            p.move(to: CGPoint(x: x, y: top))
+            p.addLine(to: CGPoint(x: x + s * 0.55, y: top + s))
+            p.addLine(to: CGPoint(x: x - s * 0.55, y: top + s))
+            p.closeSubpath()
+        }.stroke(.secondary, lineWidth: 0.75))
+    }
+
+    private func nearest(to t: Double, startX: Double) -> Handle {
+        let candidates: [(Handle, Double)] = [(.black, levels.inBlack), (.gamma, gammaPosition), (.white, levels.inWhite)]
+        return candidates.min { abs($0.1 - startX) < abs($1.1 - startX) }!.0
+    }
+
+    private func drag(_ h: Handle, to t: Double) {
+        var l = levels
+        switch h {
+        case .black: l.inBlack = min(t, l.inWhite - 0.01)
+        case .white: l.inWhite = max(t, l.inBlack + 0.01)
+        case .gamma:
+            let span = max(l.inWhite - l.inBlack, 0.001)
+            let mid = min(max((t - l.inBlack) / span, 0.001), 0.999)
+            l.gamma = min(max(log(0.5) / log(mid), 0.1), 9.99)
+        }
+        change(l)
     }
 }
 
