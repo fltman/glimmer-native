@@ -69,6 +69,18 @@ extension CommandID {
     public static let rotateViewLeft: CommandID = "view.rotateLeft"
     public static let rotateViewRight: CommandID = "view.rotateRight"
     public static let resetViewRotation: CommandID = "view.resetRotation"
+    public static let toggleLayersPanel: CommandID = "view.toggleLayers"
+
+    public static let placeImage: CommandID = "file.placeImage"
+    public static let export: CommandID = "file.export"
+
+    public static let newLayer: CommandID = "layer.new"
+    public static let duplicateLayer: CommandID = "layer.duplicate"
+    public static let deleteLayer: CommandID = "layer.delete"
+    public static let bringLayerForward: CommandID = "layer.forward"
+    public static let sendLayerBackward: CommandID = "layer.backward"
+    public static let bringLayerToFront: CommandID = "layer.front"
+    public static let sendLayerToBack: CommandID = "layer.back"
 }
 
 public struct CommandRegistry: Sendable {
@@ -106,5 +118,27 @@ public struct CommandRegistry: Sendable {
                           keywords: ["rotate", "canvas"]),
         CommandDescriptor(.resetViewRotation, "Reset View Rotation", category: .view,
                           keywords: ["rotate", "straighten"]),
+        CommandDescriptor(.toggleLayersPanel, "Show/Hide Layers", category: .view,
+                          shortcut: KeyShortcut("l", [.command, .option]), keywords: ["panel", "inspector"]),
+
+        CommandDescriptor(.placeImage, "Place Image…", category: .file,
+                          shortcut: KeyShortcut("p", [.command, .option]), keywords: ["import", "open", "layer"]),
+        CommandDescriptor(.export, "Export…", category: .file,
+                          shortcut: KeyShortcut("w", [.command, .option, .shift]),
+                          keywords: ["png", "jpeg", "heic", "tiff", "save as"]),
+
+        CommandDescriptor(.newLayer, "New Layer", category: .layer,
+                          shortcut: KeyShortcut("n", [.command, .shift]), keywords: ["add"]),
+        CommandDescriptor(.duplicateLayer, "Duplicate Layer", category: .layer,
+                          shortcut: KeyShortcut("j"), keywords: ["copy"]),
+        CommandDescriptor(.deleteLayer, "Delete Layer", category: .layer, keywords: ["remove"]),
+        CommandDescriptor(.bringLayerForward, "Bring Forward", category: .layer,
+                          shortcut: KeyShortcut("]"), keywords: ["arrange", "up"]),
+        CommandDescriptor(.sendLayerBackward, "Send Backward", category: .layer,
+                          shortcut: KeyShortcut("["), keywords: ["arrange", "down"]),
+        CommandDescriptor(.bringLayerToFront, "Bring to Front", category: .layer,
+                          shortcut: KeyShortcut("]", [.command, .shift]), keywords: ["arrange", "top"]),
+        CommandDescriptor(.sendLayerToBack, "Send to Back", category: .layer,
+                          shortcut: KeyShortcut("[", [.command, .shift]), keywords: ["arrange", "bottom"]),
     ])
 }

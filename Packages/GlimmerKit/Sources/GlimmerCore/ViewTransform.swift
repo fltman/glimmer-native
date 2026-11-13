@@ -49,6 +49,27 @@ public struct ViewTransform: Equatable, Sendable {
         ))
     }
 
+    /// Homogeneous document → view matrix (column-major).
+    public var documentToViewMatrix: simd_double3x3 {
+        let a = rotationMatrix * scale
+        return simd_double3x3(columns: (
+            SIMD3(a.columns.0, 0),
+            SIMD3(a.columns.1, 0),
+            SIMD3(translation, 1)
+        ))
+    }
+
+    /// Document-space bounding box of the visible view area.
+    public func visibleDocumentRect(viewSize: SIMD2<Double>) -> PixelRect {
+        let corners = [SIMD2(0, 0), SIMD2(viewSize.x, 0), SIMD2(0, viewSize.y), viewSize]
+            .map { documentPoint(fromView: $0) }
+        let lo = corners.reduce(corners[0]) { simd_min($0, $1) }
+        let hi = corners.reduce(corners[0]) { simd_max($0, $1) }
+        let x0 = Int(lo.x.rounded(.down)), y0 = Int(lo.y.rounded(.down))
+        let x1 = Int(hi.x.rounded(.up)), y1 = Int(hi.y.rounded(.up))
+        return PixelRect(x: x0, y: y0, width: x1 - x0, height: y1 - y0)
+    }
+
     // MARK: Manipulation (all anchored so the document point under `anchor` stays put)
 
     public mutating func pan(by delta: SIMD2<Double>) {

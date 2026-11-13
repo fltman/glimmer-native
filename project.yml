@@ -60,6 +60,11 @@ targets:
             LSTypeIsPackage: true
             LSItemContentTypes:
               - com.brattoo.glimmer.document
+          - CFBundleTypeName: Image
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.image
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: com.brattoo.glimmer.document
             UTTypeDescription: Glimmer Document

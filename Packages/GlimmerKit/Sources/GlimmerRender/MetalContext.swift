@@ -1,4 +1,5 @@
 import Foundation
+import GlimmerCore
 import Metal
 
 public enum RenderError: Error {
@@ -18,7 +19,7 @@ public final class MetalContext: @unchecked Sendable {
 
     public static let shared: MetalContext? = try? MetalContext()
 
-    public init(device: MTLDevice? = MTLCreateSystemDefaultDevice()) throws {
+    public init(device: MTLDevice? = GPU.device) throws {
         guard let device else { throw RenderError.noMetalDevice }
         guard let queue = device.makeCommandQueue() else {
             throw RenderError.resourceCreationFailed("command queue")

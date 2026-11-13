@@ -1,21 +1,34 @@
 import GlimmerCore
 import SwiftUI
 
-/// Builds the View menu from the command registry and routes it to the
-/// focused window's canvas.
-struct ViewMenuCommands: Commands {
-    @FocusedValue(\.canvasController) private var canvas
+/// Builds menus from the command registry and routes them to the focused
+/// window's editor session.
+struct GlimmerCommands: Commands {
+    @FocusedValue(\.editorSession) private var session
+
+    private let registry = CommandRegistry.standard
 
     var body: some Commands {
+        CommandGroup(replacing: .importExport) {
+            items(registry.descriptors(in: .file))
+        }
         CommandGroup(before: .toolbar) {
-            ForEach(CommandRegistry.standard.descriptors(in: .view)) { command in
-                Button(command.title) {
-                    canvas?.perform(command.id)
-                }
-                .keyboardShortcut(command.shortcut?.swiftUI)
-                .disabled(!(canvas?.canPerform(command.id) ?? false))
-            }
+            items(registry.descriptors(in: .view))
             Divider()
+        }
+        CommandMenu("Layer") {
+            items(registry.descriptors(in: .layer))
+        }
+    }
+
+    @ViewBuilder
+    private func items(_ commands: [CommandDescriptor]) -> some View {
+        ForEach(commands) { command in
+            Button(command.title) {
+                session?.perform(command.id)
+            }
+            .keyboardShortcut(command.shortcut?.swiftUI)
+            .disabled(!(session?.canPerform(command.id) ?? false))
         }
     }
 }

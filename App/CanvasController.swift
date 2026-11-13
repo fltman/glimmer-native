@@ -1,5 +1,6 @@
 import GlimmerCore
 import SwiftUI
+import simd
 
 /// Per-window view state for the canvas: zoom, pan, rotation.
 /// Reachable from menu commands through `FocusedValues.canvasController`.
@@ -10,7 +11,7 @@ final class CanvasController {
         didSet { requestRender() }
     }
 
-    var documentSize: SIMD2<Double> = DocumentManifest.defaultNewDocument.size {
+    var documentSize: SIMD2<Double> = SIMD2(1920, 1080) {
         didSet {
             guard documentSize != oldValue else { return }
             hasFitted = false
@@ -34,7 +35,7 @@ final class CanvasController {
 
     private var viewCenter: SIMD2<Double> { viewSize / 2 }
 
-    private func requestRender() { onNeedsRender?() }
+    func requestRender() { onNeedsRender?() }
 
     // MARK: View lifecycle
 
@@ -119,6 +120,22 @@ final class CanvasController {
     }
 }
 
-extension FocusedValues {
-    @Entry var canvasController: CanvasController?
+extension CanvasController {
+    /// Tiles of `bounds` that are on screen, nearest to the view centre first.
+    func visibleTiles(in bounds: PixelRect) -> [TileCoord] {
+        guard viewSize.x > 0, viewSize.y > 0 else { return [] }
+        let visible = transform.visibleDocumentRect(viewSize: viewSize).intersection(bounds)
+        let center = transform.documentPoint(fromView: viewSize / 2)
+        let s = Double(TileGeometry.size)
+        return visible.tileCoords.sorted { a, b in
+            let da = SIMD2(Double(a.x) + 0.5, Double(a.y) + 0.5) * s - center
+            let db = SIMD2(Double(b.x) + 0.5, Double(b.y) + 0.5) * s - center
+            return simd_length_squared(da) < simd_length_squared(db)
+        }
+    }
+
+    /// Document pixel under a view point.
+    func documentPoint(_ viewPoint: SIMD2<Double>) -> SIMD2<Double> {
+        transform.documentPoint(fromView: viewPoint)
+    }
 }

@@ -1,35 +1,47 @@
 import AppKit
 import GlimmerCore
 import GlimmerRender
+import GlimmerTools
 import QuartzCore
 import SwiftUI
 
 struct CanvasView: NSViewRepresentable {
-    let controller: CanvasController
+    let session: EditorSession
 
     func makeNSView(context: Context) -> CanvasNSView {
-        CanvasNSView(controller: controller)
+        CanvasNSView(session: session)
     }
 
     func updateNSView(_ view: CanvasNSView, context: Context) {}
 }
 
-/// Hosts the Metal canvas and turns mouse, trackpad and (later) tablet input
-/// into view and tool actions.
-final class CanvasNSView: NSView {
-    private let controller: CanvasController
+/// Hosts the Metal canvas and turns mouse, trackpad and keyboard input into
+/// view changes and tool actions.
+final class CanvasNSView: NSView, NSUserInterfaceValidations {
+    private let session: EditorSession
+    private var controller: CanvasController { session.canvas }
     private let renderer: CanvasRenderer?
+    private let compositor: DocumentCompositor?
     private var displayLink: CADisplayLink?
     private var needsRender = true
-    private var lastDragPoint: SIMD2<Double>?
 
-    init(controller: CanvasController) {
-        self.controller = controller
-        self.renderer = MetalContext.shared.flatMap { try? CanvasRenderer(context: $0) }
+    private enum Drag {
+        case pan(last: SIMD2<Double>)
+        case move
+    }
+    private var drag: Drag?
+
+    init(session: EditorSession) {
+        self.session = session
+        let metal = MetalContext.shared
+        self.renderer = metal.flatMap { try? CanvasRenderer(context: $0) }
+        self.compositor = metal.flatMap { try? DocumentCompositor(context: $0) }
         super.init(frame: .zero)
         wantsLayer = true
         layerContentsRedrawPolicy = .never
+        registerForDraggedTypes([.fileURL, .png, .tiff])
         controller.onNeedsRender = { [weak self] in self?.setNeedsRender() }
+        observeSession()
     }
 
     @available(*, unavailable)
@@ -49,6 +61,22 @@ final class CanvasNSView: NSView {
         layer.framebufferOnly = true
         layer.isOpaque = true
         return layer
+    }
+
+    /// Re-renders and refreshes cursors whenever inputs the canvas draws change.
+    private func observeSession() {
+        withObservationTracking {
+            _ = session.document.state
+            _ = session.overrides
+            _ = session.effectiveTool
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.setNeedsRender()
+                self.window?.invalidateCursorRects(for: self)
+                self.observeSession()
+            }
+        }
     }
 
     // MARK: Lifecycle
@@ -112,15 +140,26 @@ final class CanvasNSView: NSView {
     }
 
     private func draw() {
-        guard let renderer, let metalLayer, bounds.width > 0, bounds.height > 0,
-              let drawable = metalLayer.nextDrawable() else { return }
+        guard let renderer, let compositor, let metalLayer, bounds.width > 0, bounds.height > 0,
+              let drawable = metalLayer.nextDrawable(),
+              let commandBuffer = renderer.context.commandQueue.makeCommandBuffer() else { return }
+        let state = session.document.state
+        let tiles = controller.visibleTiles(in: state.bounds)
+        compositor.purge(outside: state.bounds)
+        // Composite progressively so huge documents stay responsive.
+        let more = compositor.update(state, overrides: session.overrides, coords: tiles,
+                                     budget: 96, commandBuffer: commandBuffer)
         let frame = CanvasFrame(
-            viewToDocument: controller.transform.viewToDocumentMatrix,
+            transform: controller.transform,
+            viewSize: SIMD2(bounds.width, bounds.height),
             backingScale: Double(metalLayer.contentsScale),
-            documentSize: controller.documentSize,
+            documentSize: state.size,
             pasteboardColor: pasteboardColor()
         )
-        renderer.render(frame, to: drawable)
+        renderer.encode(frame, tiles: tiles, tile: compositor.texture(at:), into: commandBuffer, target: drawable.texture)
+        commandBuffer.present(drawable)
+        commandBuffer.commit()
+        if more { setNeedsRender() }
     }
 
     private func pasteboardColor() -> SIMD4<Float> {
@@ -133,7 +172,7 @@ final class CanvasNSView: NSView {
         return color
     }
 
-    // MARK: Input
+    // MARK: Pointer input
 
     private func location(of event: NSEvent) -> SIMD2<Double> {
         let p = convert(event.locationInWindow, from: nil)
@@ -143,10 +182,8 @@ final class CanvasNSView: NSView {
     override func scrollWheel(with event: NSEvent) {
         let zoomModifier = !event.modifierFlags.isDisjoint(with: [.option, .command])
         if event.hasPreciseScrollingDeltas, !zoomModifier {
-            // Trackpad / Magic Mouse: two-finger scroll pans.
             controller.pan(by: SIMD2(event.scrollingDeltaX, event.scrollingDeltaY))
         } else {
-            // Mouse wheel, or ⌥/⌘-scroll: zoom around the cursor.
             let step = event.hasPreciseScrollingDeltas ? 0.01 : 0.1
             controller.zoom(by: exp(event.scrollingDeltaY * step), around: location(of: event))
         }
@@ -158,7 +195,6 @@ final class CanvasNSView: NSView {
 
     override func rotate(with event: NSEvent) {
         if event.phase == .began { controller.beginRotationGesture() }
-        // AppKit reports counter-clockwise degrees; the view transform is clockwise.
         controller.rotateGesture(by: -Double(event.rotation) * .pi / 180, around: location(of: event))
     }
 
@@ -166,31 +202,128 @@ final class CanvasNSView: NSView {
         controller.toggleFitAndActualSize(around: location(of: event))
     }
 
-    // Phase 0 has no tools yet: any drag pans (the Hand tool).
-    override func mouseDown(with event: NSEvent) { beginPan(event) }
-    override func mouseDragged(with event: NSEvent) { continuePan(event) }
-    override func mouseUp(with event: NSEvent) { endPan() }
-    override func otherMouseDown(with event: NSEvent) { beginPan(event) }
-    override func otherMouseDragged(with event: NSEvent) { continuePan(event) }
-    override func otherMouseUp(with event: NSEvent) { endPan() }
+    override func mouseDown(with event: NSEvent) {
+        let p = location(of: event)
+        switch session.effectiveTool {
+        case .move:
+            session.beginMove(at: controller.documentPoint(p))
+            drag = .move
+        default:
+            beginPan(at: p)
+        }
+    }
 
-    private func beginPan(_ event: NSEvent) {
-        lastDragPoint = location(of: event)
+    override func mouseDragged(with event: NSEvent) {
+        let p = location(of: event)
+        switch drag {
+        case .pan(let last):
+            controller.pan(by: p - last)
+            drag = .pan(last: p)
+        case .move:
+            session.updateMove(to: controller.documentPoint(p))
+        case nil:
+            break
+        }
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        if case .move = drag { session.endMove() }
+        endDrag()
+    }
+
+    override func otherMouseDown(with event: NSEvent) { beginPan(at: location(of: event)) }
+    override func otherMouseDragged(with event: NSEvent) { mouseDragged(with: event) }
+    override func otherMouseUp(with event: NSEvent) { endDrag() }
+
+    private func beginPan(at p: SIMD2<Double>) {
+        drag = .pan(last: p)
         NSCursor.closedHand.push()
     }
 
-    private func continuePan(_ event: NSEvent) {
-        let p = location(of: event)
-        if let last = lastDragPoint { controller.pan(by: p - last) }
-        lastDragPoint = p
-    }
-
-    private func endPan() {
-        if lastDragPoint != nil { NSCursor.pop() }
-        lastDragPoint = nil
+    private func endDrag() {
+        if case .pan = drag { NSCursor.pop() }
+        drag = nil
     }
 
     override func resetCursorRects() {
-        addCursorRect(bounds, cursor: .openHand)
+        let cursor: NSCursor = switch session.effectiveTool {
+        case .hand: .openHand
+        default: .arrow
+        }
+        addCursorRect(bounds, cursor: cursor)
+    }
+
+    // MARK: Keyboard
+
+    override func keyDown(with event: NSEvent) {
+        let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if event.keyCode == 49 {  // space
+            if !event.isARepeat { session.temporaryHand = true }
+            return
+        }
+        if session.effectiveTool == .move, let arrow = arrowOffset(event) {
+            session.nudgeActiveLayer(by: mods.contains(.shift) ? arrow &* 10 : arrow)
+            return
+        }
+        if mods.isDisjoint(with: [.command, .control, .option]),
+           let key = event.charactersIgnoringModifiers?.lowercased().first,
+           let tool = ToolID.allCases.first(where: { $0.shortcutKey == key && Self.availableTools.contains($0) }) {
+            session.tool = tool
+            return
+        }
+        super.keyDown(with: event)
+    }
+
+    override func keyUp(with event: NSEvent) {
+        if event.keyCode == 49 {
+            session.temporaryHand = false
+            return
+        }
+        super.keyUp(with: event)
+    }
+
+    /// Tools implemented so far (see docs/PLAN.md for the rest).
+    static let availableTools: [ToolID] = [.move, .hand]
+
+    private func arrowOffset(_ event: NSEvent) -> SIMD2<Int>? {
+        switch event.keyCode {
+        case 123: SIMD2(-1, 0)
+        case 124: SIMD2(1, 0)
+        case 125: SIMD2(0, 1)
+        case 126: SIMD2(0, -1)
+        default: nil
+        }
+    }
+
+    // MARK: Paste and drop
+
+    @objc func paste(_ sender: Any?) {
+        if !session.place(from: .general) { NSSound.beep() }
+    }
+
+    func validateUserInterfaceItem(_ item: any NSValidatedUserInterfaceItem) -> Bool {
+        if item.action == #selector(paste(_:)) {
+            let pb = NSPasteboard.general
+            return pb.canReadObject(forClasses: [NSURL.self], options: [
+                .urlReadingContentsConformToTypes: [UTType.image.identifier],
+            ]) || pb.availableType(from: [.png, .tiff]) != nil
+        }
+        return true
+    }
+
+    override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
+        canAccept(sender.draggingPasteboard) ? .copy : []
+    }
+
+    override func performDragOperation(_ sender: any NSDraggingInfo) -> Bool {
+        session.place(from: sender.draggingPasteboard)
+    }
+
+    private func canAccept(_ pb: NSPasteboard) -> Bool {
+        pb.canReadObject(forClasses: [NSURL.self], options: [
+            .urlReadingContentsConformToTypes: [UTType.image.identifier],
+        ]) || pb.availableType(from: [.png, .tiff]) != nil
     }
 }
+
+import UniformTypeIdentifiers

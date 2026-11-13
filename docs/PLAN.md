@@ -93,7 +93,7 @@ glimmer-native/
 ```
 
 - **XcodeGen** finns redan installerat. Det håller projektfilen diffbar och undviker merge-konflikter.
-- Modulerna är fyra targets i **ett lokalt Swift Package** (`GlimmerKit`). Det ger tydliga beroendegränser och snabba unit-tester, och `GlimmerCore` kan testas helt utan GPU.
+- Modulerna är fyra targets i **ett lokalt Swift Package** (`GlimmerKit`). Det ger tydliga beroendegränser och snabba unit-tester. `GlimmerCore` använder Metal för pixellagring (se fas 1-besluten).
 - **Swift Testing** används för alla nya tester.
 
 ### 2.2 Dokumentmodell (`GlimmerCore`)
@@ -258,7 +258,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - `CommandRegistry` med Undo och Redo som första kommandon, kopplade till menyn.
 - **Klart när:** appen öppnar ett tomt dokument, zoom och pan känns native, och testerna körs i CI-scriptet.
 
-### Fas 1 — Vertikal slice: rasterlager · L
+### Fas 1 — Vertikal slice: rasterlager · L ✅ (2026-11-13)
 - Öppna bild via ImageIO och ICC till linjär 16F, med drag-och-släpp och klistra in.
 - `TileStore` med COW-tiles. Compositor med de 18 blend modes, opacity och synlighet. Mip-pyramid.
 - Lagerpanel: lägg till, ta bort, duplicera, flytta, döp om, miniatyrer, blend och opacity.
@@ -326,6 +326,15 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - QuickLook-tillägg, Sparkle, notarisering, DMG, ikon och onboarding.
 
 **Kritisk väg:** 0 → 1 → 2 → 3 (AI). AI ligger direkt efter lagerträdet för att få wow-effekten tidigt. Fas 5–7 kan delvis köras parallellt efter fas 4.
+
+### Beslut och lärdomar under bygget
+
+- **Tiles är delade Metal-texturer** (`.shared`, unified memory) med en unik id per tile. Därför importerar `GlimmerCore` Metal; en ren CPU-modell hade krävt dubbla kopior. Enfärgade tiles lagras som en färg.
+- **Dirty tracking sker via signaturer.** Varje dokument-tile får en hash av de bidragande lagrens tile-id:n och parametrar, så explicit invalidering behövs inte.
+- **Bilder öppnas aldrig som dokument.** En öppnad JPEG skrevs över av autosave med ett `.glimmer`-paket. Nu blir bilder nya, namnlösa dokument (`DocumentOpener`); `GlimmerDocument` läser bara `.glimmer`.
+- **`makeDocument` anropas även när en fil öppnas** och kan inte skilja det från "ny" på macOS. Därför blockerar den aldrig; dialogen New Document köar ett tillstånd som `makeDocument` hämtar.
+- **Mätt prestanda (M5):** 8k × 8k × 20 lager compositas på 0,15 s, och en omkontroll utan ändringar tar 8 ms.
+- **Kvar till fas 9:** minnesbudget för undo-historiken (idag obegränsad) och composite-cache för stora dokument vid utzoomning (idag full upplösning per tile).
 
 ## 4. Teststrategi
 
