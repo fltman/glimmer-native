@@ -329,6 +329,16 @@ public enum AgentPlanner {
     - Alongside the calls, reply with one short sentence summarising the plan, in the user's language.
     - If the goal is ambiguous, contradictory or impossible with these tools, call no tools and ask a short clarifying question.
     - If the user is only chatting or asking about the editor, answer briefly without calling tools.
+    - When a picture of the current image is attached, look at it: choose settings that suit this photo (its exposure, colours and subject) rather than generic ones.
+    """
+
+    static let reviewPreamble = """
+    You are the quality check of Glimmer, a photo editor. The user asked for an edit and the editor carried out the steps listed. You see the image BEFORE (first picture) and AFTER (second picture).
+
+    Judge whether the result meets what the user asked for.
+    - If it does (or is close enough), call no tools and reply with one short sentence saying what was done, in the user's language.
+    - If it clearly falls short (too weak, too strong, wrong direction, something asked for is missing), call at most three tools to correct it, building on the current result, and say in one short sentence what you are adjusting. Do not repeat steps that already worked.
+    Colours are #RRGGBB. Pass {} for default settings.
     """
 
     /// One function tool per op; the schemas are generated from `ops`.
@@ -356,7 +366,7 @@ public enum AgentPlanner {
 
     /// The conversation: system prompt, earlier turns, then the goal with the editor's state.
     public static func toolMessages(goal: String, context: AgentContext,
-                                    history: [(user: String, reply: String)]) -> [[String: Any]] {
+                                    history: [(user: String, reply: String)], image: Data? = nil) -> [[String: Any]] {
         var messages: [[String: Any]] = [["role": "system", "content": toolPreamble]]
         for turn in history.suffix(8) {
             messages.append(["role": "user", "content": turn.user])
@@ -367,8 +377,44 @@ public enum AgentPlanner {
         active layer “\(context.activeLayerName)” (\(context.activeLayerKind)), \
         \(context.hasSelection ? "there is a selection" : "no selection").]
         """
-        messages.append(["role": "user", "content": state + "\n\n" + goal])
+        let text = state + "\n\n" + goal
+        if let image {
+            messages.append(["role": "user", "content": [["type": "text", "text": text], imagePart(image)]])
+        } else {
+            messages.append(["role": "user", "content": text])
+        }
         return messages
+    }
+
+    static func imagePart(_ jpeg: Data) -> [String: Any] {
+        ["type": "image_url", "image_url": ["url": "data:image/jpeg;base64," + jpeg.base64EncodedString()]]
+    }
+
+    /// The quality check after a plan ran: goal, what was done, before and after.
+    public static func reviewMessages(goal: String, steps: [AgentStep], before: Data, after: Data) -> [[String: Any]] {
+        let done = steps.map { step -> String in
+            let params = (try? JSONEncoder().encode(step.params)).map { String(decoding: $0, as: UTF8.self) } ?? "{}"
+            return "- \(step.op) \(params)"
+        }.joined(separator: "\n")
+        let text = "USER REQUEST:\n\(goal)\n\nSTEPS CARRIED OUT:\n\(done)"
+        return [["role": "system", "content": reviewPreamble],
+                ["role": "user", "content": [["type": "text", "text": text], imagePart(before), imagePart(after)]]]
+    }
+
+    /// Tools the quality check may use: the editor's own, never paid AI jobs.
+    public static func reviewToolSchemas() -> [[String: Any]] {
+        zip(ops, toolSchemas()).filter { !$0.0.isAIJob }.map(\.1)
+    }
+
+    /// Asks the model to judge the result; returns corrective steps (possibly none).
+    public static func review(goal: String, steps: [AgentStep], before: Data, after: Data,
+                              client: OpenRouterClient, model: String) async throws -> AgentPlan {
+        let response = try await client.toolCompletion(model: model,
+                                                       messages: reviewMessages(goal: goal, steps: steps, before: before, after: after),
+                                                       tools: reviewToolSchemas())
+        var plan = try plan(from: response)
+        plan.steps = Array(plan.steps.filter { op(named: $0.op)?.isAIJob == false }.prefix(3))
+        return plan
     }
 
     /// Turns tool calls into a plan, dropping unknown tools and calls with unreadable arguments.
@@ -402,10 +448,14 @@ public enum AgentPlanner {
 
     /// Asks the text model for a plan through tool calling.
     public static func plan(goal: String, context: AgentContext, history: [(user: String, reply: String)],
-                            client: OpenRouterClient, model: String) async throws -> (AgentPlan, Double?) {
-        let response = try await client.toolCompletion(model: model,
-                                                       messages: toolMessages(goal: goal, context: context, history: history),
-                                                       tools: toolSchemas())
+                            image: Data? = nil, client: OpenRouterClient, model: String,
+                            onText: (@Sendable (String) -> Void)? = nil) async throws -> (AgentPlan, Double?) {
+        let messages = toolMessages(goal: goal, context: context, history: history, image: image)
+        let response = if let onText {
+            try await client.toolCompletionStreaming(model: model, messages: messages, tools: toolSchemas(), onText: onText)
+        } else {
+            try await client.toolCompletion(model: model, messages: messages, tools: toolSchemas())
+        }
         return (try plan(from: response), response.cost)
     }
 }

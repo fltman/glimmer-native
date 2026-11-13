@@ -2,11 +2,30 @@ import AppKit
 import GlimmerAI
 import GlimmerCore
 import GlimmerRender
+import ImageIO
 
 /// The assistant: plans with the text model, shows the plan, runs it step by step.
 extension AIController {
     static let autoRunKey = "ai.autoRunPlans"
     static let onDeviceRoutingKey = "ai.routeOnDevice"
+    static let showImageKey = "ai.assistantSeesImage"
+    static let reviewKey = "ai.reviewResults"
+
+    /// The planner gets a small picture of the document (default on).
+    var assistantSeesImage: Bool { UserDefaults.standard.object(forKey: Self.showImageKey) as? Bool ?? true }
+    /// After a plan ran, the model compares before and after and may adjust once (default on).
+    var reviewsResults: Bool { UserDefaults.standard.object(forKey: Self.reviewKey) as? Bool ?? true }
+
+    /// The document as a JPEG of at most 1024 px, for the text model to look at.
+    nonisolated static func snapshotJPEG(_ state: DocumentState, metal: MetalContext) -> Data? {
+        guard let full = try? ImageExporter.flatten(state, context: metal),
+              let flat = try? ImageExporter.convert(full, options: ExportOptions(format: .jpeg)),
+              let small = EditorSession.downscaled(flat, maxSide: 1024) else { return nil }
+        let data = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(data, "public.jpeg" as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(dest, small, [kCGImageDestinationLossyCompressionQuality: 0.8] as CFDictionary)
+        return CGImageDestinationFinalize(dest) ? data as Data : nil
+    }
 
     /// Try Apple's on-device model first: one-command requests and "make a
     /// picture of …" don't need the paid planner.
@@ -93,13 +112,36 @@ extension AIController {
         let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
         let context = agentContext
         let history = agentHistory
+        let state = session.state
+        let metal = assistantSeesImage ? MetalContext.shared : nil
         isPlanning = true
+        // The reply streams into this message; `receive` then attaches the plan.
+        let placeholder = Message(fromUser: false, text: "")
+        let messageID = placeholder.id
         planTask = Task { [weak self] in
             do {
-                let (plan, _) = try await AgentPlanner.plan(goal: goal, context: context, history: history,
-                                                            client: OpenRouterClient(apiKey: key), model: model)
+                let image = await Task.detached { metal.flatMap { Self.snapshotJPEG(state, metal: $0) } }.value
+                let (plan, _) = try await AgentPlanner.plan(goal: goal, context: context, history: history, image: image,
+                                                            client: OpenRouterClient(apiKey: key), model: model) { text in
+                    Task { @MainActor in
+                        guard let self else { return }
+                        if let i = self.messages.firstIndex(where: { $0.id == messageID }) {
+                            self.messages[i].text = text
+                        } else if self.isPlanning {
+                            var m = placeholder
+                            m.text = text
+                            self.messages.append(m)
+                        }
+                    }
+                }
+                // Let queued text updates land before the final message replaces them.
+                await Task.yield()
+                self?.messages.removeAll { $0.id == messageID }
                 self?.receive(plan, goal: goal)
+            } catch is CancellationError {
+                self?.messages.removeAll { $0.id == messageID }
             } catch {
+                self?.messages.removeAll { $0.id == messageID }
                 let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
                 self?.messages.append(Message(fromUser: false, text: "I couldn't plan that: \(message)"))
             }
@@ -129,26 +171,63 @@ extension AIController {
         let index = messages.firstIndex { $0.id == messageID } ?? messages.endIndex
         let goal = messages[..<index].last(where: \.fromUser)?.text ?? ""
         session.document.beginTransaction(Self.undoName(for: goal))
+        let before = session.state
         planTask = Task { [weak self] in
             guard let self else { return }
+            // Corrections from the quality check land in the same undo step.
             defer { self.session.document.endTransaction(undoManager: self.session.undoManager) }
-            var failed = false
-            for step in plan.steps {
-                if Task.isCancelled || failed {
-                    self.stepStatus[step.id] = .skipped
-                    continue
-                }
-                self.stepStatus[step.id] = .running
-                do {
-                    try await self.execute(step)
-                    self.stepStatus[step.id] = .done
-                } catch {
-                    failed = true
-                    self.stepStatus[step.id] = .failed((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
-                }
-            }
+            let failed = await self.run(plan.steps)
             self.planStatus[messageID] = Task.isCancelled ? .cancelled : (failed ? .failed : .finished)
+            if !failed, !Task.isCancelled { await self.review(goal: goal, steps: plan.steps, before: before) }
         }
+    }
+
+    /// Runs steps in order; returns true when one failed (the rest are skipped).
+    private func run(_ steps: [AgentStep]) async -> Bool {
+        var failed = false
+        for step in steps {
+            if Task.isCancelled || failed {
+                stepStatus[step.id] = .skipped
+                continue
+            }
+            stepStatus[step.id] = .running
+            do {
+                try await execute(step)
+                stepStatus[step.id] = .done
+            } catch {
+                failed = true
+                stepStatus[step.id] = .failed((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+            }
+        }
+        return failed
+    }
+
+    /// The quality check: the model compares before and after and may adjust once.
+    private func review(goal: String, steps: [AgentStep], before: DocumentState) async {
+        guard reviewsResults, !goal.isEmpty, let metal = MetalContext.shared,
+              let key = (try? Self.apiKey()) ?? nil else { return }
+        let after = session.state
+        let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
+        isPlanning = true
+        defer { isPlanning = false }
+        let images = await Task.detached {
+            (Self.snapshotJPEG(before, metal: metal), Self.snapshotJPEG(after, metal: metal))
+        }.value
+        guard let b = images.0, let a = images.1,
+              let plan = try? await AgentPlanner.review(goal: goal, steps: steps, before: b, after: a,
+                                                        client: OpenRouterClient(apiKey: key), model: model),
+              !Task.isCancelled else { return }
+        guard !plan.steps.isEmpty else {
+            // Approved: nothing to add to the conversation.
+            return
+        }
+        let message = Message(fromUser: false, text: plan.message ?? String(localized: "Adjusting the result."), plan: plan)
+        messages.append(message)
+        agentHistory.append((goal, "Adjusted: " + plan.steps.map(\.op).joined(separator: ", ")))
+        for step in plan.steps { stepStatus[step.id] = .pending }
+        planStatus[message.id] = .running
+        let failed = await run(plan.steps)
+        planStatus[message.id] = Task.isCancelled ? .cancelled : (failed ? .failed : .finished)
     }
 
     /// "Assistant: make it warmer" (shortened).

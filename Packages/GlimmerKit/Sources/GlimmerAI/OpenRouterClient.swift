@@ -212,6 +212,71 @@ public actor OpenRouterClient {
         return ToolResponse(text: Self.extractText(from: json), toolCalls: Self.extractToolCalls(from: json), cost: Self.cost(json))
     }
 
+    /// Accumulates a streamed chat completion (SSE `data:` chunks): text deltas
+    /// are joined, and tool-call deltas are merged by their index.
+    struct StreamAccumulator {
+        var text = ""
+        var calls: [Int: ToolCall] = [:]
+        var cost: Double?
+
+        /// Returns the text delta in this chunk, if any.
+        mutating func consume(_ json: [String: Any]) -> String? {
+            if let c = OpenRouterClient.cost(json) { cost = c }
+            guard let delta = ((json["choices"] as? [[String: Any]])?.first)?["delta"] as? [String: Any] else { return nil }
+            for call in delta["tool_calls"] as? [[String: Any]] ?? [] {
+                let index = call["index"] as? Int ?? calls.count
+                let function = call["function"] as? [String: Any] ?? [:]
+                var current = calls[index] ?? ToolCall(name: "", arguments: "")
+                if let name = function["name"] as? String { current.name += name }
+                if let args = function["arguments"] as? String { current.arguments += args }
+                calls[index] = current
+            }
+            guard let piece = delta["content"] as? String, !piece.isEmpty else { return nil }
+            text += piece
+            return piece
+        }
+
+        var response: ToolResponse {
+            let ordered = calls.keys.sorted().compactMap { calls[$0] }.filter { !$0.name.isEmpty }
+                .map { ToolCall(name: $0.name, arguments: $0.arguments.isEmpty ? "{}" : $0.arguments) }
+            return ToolResponse(text: text.isEmpty ? nil : text, toolCalls: ordered, cost: cost)
+        }
+    }
+
+    /// Like `toolCompletion`, but streams: `onText` gets the reply text so far as
+    /// it grows. Falls back to the plain (retrying) call if the stream can't start.
+    public func toolCompletionStreaming(model: String, messages: [[String: Any]], tools: [[String: Any]],
+                                        temperature: Double = 0.2,
+                                        onText: @escaping @Sendable (String) -> Void) async throws -> ToolResponse {
+        let body: [String: Any] = ["model": model, "messages": messages, "tools": tools, "tool_choice": "auto",
+                                   "parallel_tool_calls": true, "temperature": temperature,
+                                   "usage": ["include": true], "stream": true]
+        let request = try request(path: "chat/completions", method: "POST", body: JSONSerialization.data(withJSONObject: body))
+        var accumulator = StreamAccumulator()
+        do {
+            let (bytes, response) = try await session.bytes(for: request)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+                throw OpenRouterError.unavailable(status: (response as? HTTPURLResponse)?.statusCode ?? 0)
+            }
+            for try await line in bytes.lines {
+                guard line.hasPrefix("data:") else { continue }
+                let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+                if payload == "[DONE]" { break }
+                guard let json = try? JSONSerialization.jsonObject(with: Data(payload.utf8)) as? [String: Any] else { continue }
+                if accumulator.consume(json) != nil { onText(accumulator.text) }
+            }
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            // Nothing usable arrived: use the ordinary call, which reports errors properly and retries.
+            if accumulator.text.isEmpty && accumulator.calls.isEmpty {
+                return try await toolCompletion(model: model, messages: messages, tools: tools, temperature: temperature)
+            }
+            throw OpenRouterError.network(error.localizedDescription)
+        }
+        return accumulator.response
+    }
+
     static func extractToolCalls(from json: [String: Any]) -> [ToolCall] {
         guard let calls = message(json)?["tool_calls"] as? [[String: Any]] else { return [] }
         return calls.compactMap { call in

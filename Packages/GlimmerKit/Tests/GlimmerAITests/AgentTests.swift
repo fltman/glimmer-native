@@ -114,3 +114,36 @@ import Testing
         #expect(calls[1].arguments.contains("#ff0000"))
     }
 }
+
+@Suite struct AgentVisionAndStreamingTests {
+    @Test func imageRidesAlongWithTheGoal() throws {
+        let context = AgentContext(width: 8, height: 8, layerCount: 1, hasSelection: false, activeLayerKind: "raster", activeLayerName: "A")
+        let messages = AgentPlanner.toolMessages(goal: "warmer", context: context, history: [], image: Data([1, 2, 3]))
+        let parts = try #require(messages.last?["content"] as? [[String: Any]])
+        #expect(parts.count == 2 && (parts[0]["text"] as? String)?.hasSuffix("warmer") == true)
+        #expect(((parts[1]["image_url"] as? [String: Any])?["url"] as? String) == "data:image/jpeg;base64,AQID")
+    }
+
+    @Test func reviewGetsBothPicturesAndNoPaidTools() throws {
+        let m = AgentPlanner.reviewMessages(goal: "darker", steps: [AgentStep(op: "add_adjustment", params: ["type": .string("exposure")])],
+                                            before: Data([1]), after: Data([2]))
+        let parts = try #require(m[1]["content"] as? [[String: Any]])
+        #expect(parts.count == 3 && (parts[0]["text"] as? String)?.contains("add_adjustment") == true)
+        let names = AgentPlanner.reviewToolSchemas().compactMap { ($0["function"] as? [String: Any])?["name"] as? String }
+        #expect(names.contains("add_adjustment") && !names.contains("generate_layer") && !names.contains("upscale"))
+    }
+
+    @Test func streamedChunksAreMerged() throws {
+        var acc = OpenRouterClient.StreamAccumulator()
+        func chunk(_ delta: [String: Any]) -> [String: Any] { ["choices": [["delta": delta]]] }
+        #expect(acc.consume(chunk(["content": "Black "])) == "Black ")
+        #expect(acc.consume(chunk(["tool_calls": [["index": 0, "function": ["name": "add_adjustment", "arguments": "{\"type\":"]]]])) == nil)
+        _ = acc.consume(chunk(["tool_calls": [["index": 0, "function": ["arguments": "\"black_white\"}"]],
+                                              ["index": 1, "function": ["name": "deselect", "arguments": ""]]]]))
+        _ = acc.consume(chunk(["content": "and white."]))
+        _ = acc.consume(["choices": [], "usage": ["cost": 0.002]])
+        let r = acc.response
+        #expect(r.text == "Black and white." && r.cost == 0.002)
+        #expect(r.toolCalls == [.init(name: "add_adjustment", arguments: "{\"type\":\"black_white\"}"), .init(name: "deselect", arguments: "{}")])
+    }
+}

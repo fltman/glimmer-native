@@ -27,7 +27,7 @@ final class AIController {
     struct Message: Identifiable {
         let id = UUID()
         let fromUser: Bool
-        let text: String
+        var text: String
         /// The assistant's plan, shown as a checklist under the message.
         var plan: AgentPlan?
     }
