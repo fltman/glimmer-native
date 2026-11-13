@@ -140,6 +140,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         didFinishLaunching = true
+        // UI tests start from a fresh 800 × 600 document.
+        if CommandLine.arguments.contains("-uiTestingNewDocument") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                MainActor.assumeIsolated {
+                    DocumentOpener.shared.createDocument(.new(width: 800, height: 600, background: .white))
+                }
+            }
+        }
         if !UserDefaults.standard.bool(forKey: WelcomeView.shownKey), !CommandLine.arguments.contains("-skipWelcome") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 MainActor.assumeIsolated { DocumentOpener.shared.showWelcomeWindow() }

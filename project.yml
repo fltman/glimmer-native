@@ -169,7 +169,29 @@ targets:
             QLIsDataBasedPreview: true
             QLSupportsSearchableItems: false
 
+  GlimmerUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - UITests
+    dependencies:
+      - target: Glimmer
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.brattoo.glimmer.uitests
+        TEST_TARGET_NAME: Glimmer
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
+  GlimmerUITests:
+    build:
+      targets:
+        Glimmer: all
+        GlimmerUITests: [test]
+    test:
+      targets:
+        - GlimmerUITests
   Glimmer:
     build:
       targets:
