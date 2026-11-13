@@ -82,19 +82,18 @@ Kartläggningen visade att flera grundval i motorn är workarounds för WebGL/AN
 glimmer-native/
   project.yml                 # XcodeGen. .xcodeproj genereras och checkas inte in
   App/                        # app-target: SwiftUI-scener, vyer, menyer, inställningar
-  Packages/
-    GlimmerCore/              # ren Swift, ingen Metal. Modell, tiles, undo, format
-    GlimmerRender/            # Metal + MSL-shaders + Core Image/MPS
-    GlimmerTools/             # interaktiva verktyg (beror på Core + Render)
-    GlimmerAI/                # OpenRouter-klient, pipelines, on-device-modeller
-  Tests/
-    GoldenImages/             # referensbilder för render-tester
+  Packages/GlimmerKit/       # ett lokalt paket med fyra targets:
+    Sources/GlimmerCore/      #   ren Swift, ingen Metal. Modell, tiles, undo, format
+    Sources/GlimmerRender/    #   Metal + MSL-shaders + Core Image/MPS
+    Sources/GlimmerTools/     #   interaktiva verktyg (beror på Core + Render)
+    Sources/GlimmerAI/        #   OpenRouter-klient, pipelines, on-device-modeller
+    Tests/                    #   Swift Testing per target, golden images för render
   docs/
   scripts/                    # notarize.sh, make-dmg.sh, convert-models/ (coremltools)
 ```
 
 - **XcodeGen** finns redan installerat. Det håller projektfilen diffbar och undviker merge-konflikter.
-- Modulerna är **lokala Swift Packages**. Det ger tydliga beroendegränser och snabba unit-tester, och `GlimmerCore` kan testas helt utan GPU.
+- Modulerna är fyra targets i **ett lokalt Swift Package** (`GlimmerKit`). Det ger tydliga beroendegränser och snabba unit-tester, och `GlimmerCore` kan testas helt utan GPU.
 - **Swift Testing** används för alla nya tester.
 
 ### 2.2 Dokumentmodell (`GlimmerCore`)
@@ -252,7 +251,7 @@ glimmer-native/
 
 Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en körbar app och gröna tester.
 
-### Fas 0 — Grund · S
+### Fas 0 — Grund · S ✅ (2026-11-13)
 - XcodeGen-projekt, fyra lokala paket, app-target och testtargets. Ett script bygger och testar via `xcodebuild`.
 - `DocumentGroup` med en tom `.glimmer`-typ (UTType-deklaration) och ett inställningsfönster med Keychain-lagrad nyckel.
 - Metal-pipeline: `CanvasView` visar en textur med zoom, pan och rotation, inklusive trackpad-gester.

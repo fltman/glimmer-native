@@ -1,0 +1,84 @@
+name: Glimmer
+options:
+  bundleIdPrefix: com.brattoo
+  deploymentTarget:
+    macOS: "27.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "27.0"
+    DEVELOPMENT_TEAM: V783A2L763
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  GlimmerKit:
+    path: Packages/GlimmerKit
+
+targets:
+  Glimmer:
+    type: application
+    platform: macOS
+    sources:
+      - App
+    dependencies:
+      - package: GlimmerKit
+        product: GlimmerCore
+      - package: GlimmerKit
+        product: GlimmerRender
+      - package: GlimmerKit
+        product: GlimmerTools
+      - package: GlimmerKit
+        product: GlimmerAI
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.brattoo.glimmer
+        PRODUCT_NAME: Glimmer
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+        COMBINE_HIDPI_IMAGES: YES
+    entitlements:
+      path: App/Glimmer.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        com.apple.security.files.user-selected.read-write: true
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Glimmer
+        CFBundleDevelopmentRegion: en
+        LSApplicationCategoryType: public.app-category.graphics-design
+        NSHumanReadableCopyright: "© 2026 Brattoo AB"
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Glimmer Document
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSTypeIsPackage: true
+            LSItemContentTypes:
+              - com.brattoo.glimmer.document
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.brattoo.glimmer.document
+            UTTypeDescription: Glimmer Document
+            UTTypeConformsTo:
+              - com.apple.package
+              - public.composite-content
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - glimmer
+
+schemes:
+  Glimmer:
+    build:
+      targets:
+        Glimmer: all
+    run:
+      config: Debug
+    test:
+      targets:
+        - package: GlimmerKit/GlimmerCoreTests
+        - package: GlimmerKit/GlimmerRenderTests
+        - package: GlimmerKit/GlimmerAITests
