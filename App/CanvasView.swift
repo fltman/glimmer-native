@@ -136,6 +136,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     override func isAccessibilityElement() -> Bool { true }
     override func accessibilityRole() -> NSAccessibility.Role? { .image }
     override func accessibilityIdentifier() -> String { "canvas" }
+    override func isAccessibilityEnabled() -> Bool { true }
     override func accessibilityLabel() -> String? { String(localized: "Canvas") }
     override func accessibilityValue() -> Any? {
         let state = session.state

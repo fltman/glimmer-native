@@ -8,3 +8,5 @@ cd "$(dirname "$0")/.."
 xcodegen generate --quiet
 xcodebuild test -project Glimmer.xcodeproj -scheme GlimmerUITests -destination 'platform=macOS' \
   -derivedDataPath build/DerivedData "$@"
+# The sandboxed runner can't delete what the app saved.
+rm -rf /private/tmp/GlimmerUITest-*

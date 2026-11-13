@@ -4745,6 +4745,16 @@
         }
       }
     },
+    "Redo %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gör om %@"
+          }
+        }
+      }
+    },
     "Redo to this step": {
       "localizations": {
         "sv": {
@@ -6098,6 +6108,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ångra"
+          }
+        }
+      }
+    },
+    "Undo %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ångra %@"
           }
         }
       }

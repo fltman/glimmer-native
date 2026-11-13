@@ -15,7 +15,7 @@ final class GlimmerUITests: XCTestCase {
     override func setUpWithError() throws {
         continueAfterFailure = false
         app = XCUIApplication()
-        app.launchArguments = ["-skipWelcome", "-ApplePersistenceIgnoreState", "YES", "-uiTestingNewDocument"]
+        app.launchArguments = ["-skipWelcome", "-uiTestingNewDocument"]
         app.launch()
         XCTAssertTrue(canvas.waitForExistence(timeout: 15), "no document window")
     }
@@ -24,24 +24,36 @@ final class GlimmerUITests: XCTestCase {
         app?.terminate()
     }
 
-    private var canvas: XCUIElement { app.images["canvas"].firstMatch }
+    /// The frontmost document window.
+    private var window: XCUIElement { app.windows.element(boundBy: 0) }
+    private var canvas: XCUIElement { window.images["canvas"].firstMatch }
 
+    /// One brush dab. (XCUITest's press-and-drag doesn't reach the canvas as
+    /// mouse events; clicks do, and a click is a one-dab stroke.)
     private func paintStroke() {
-        app.buttons["Brush"].firstMatch.click()
-        let from = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.3, dy: 0.4))
-        let to = canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.7, dy: 0.6))
-        from.press(forDuration: 0.1, thenDragTo: to)
+        window.buttons["Brush"].firstMatch.click()
+        canvas.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.5)).click()
     }
 
     private func showHistory() {
-        let tab = app.radioButtons["History"].firstMatch
-        if tab.exists { tab.click() } else { app.buttons["History"].firstMatch.click() }
+        window.radioButtons["History"].firstMatch.click()
     }
 
     /// Points the open/save panel at `directory`; for a save panel, also names the file.
     private func choose(_ file: String, saving: Bool) {
-        let panel = app.sheets.firstMatch.exists ? app.sheets.firstMatch : app.dialogs.firstMatch
-        XCTAssertTrue(panel.waitForExistence(timeout: 5), "no file panel")
+        // Sandboxed apps get the panel as its own window ("save-panel"/"open-panel").
+        let candidates = [app.windows["save-panel"], app.windows["open-panel"], app.sheets.firstMatch, app.dialogs.firstMatch]
+        let deadline = Date().addingTimeInterval(8)
+        var found: XCUIElement?
+        while found == nil, Date() < deadline {
+            found = candidates.first { $0.exists }
+            if found == nil { usleep(250_000) }
+        }
+        guard let panel = found else {
+            attachState("no file panel")
+            XCTFail("no file panel")
+            return
+        }
         if saving {
             let nameField = panel.textFields.firstMatch
             nameField.click()
@@ -57,14 +69,35 @@ final class GlimmerUITests: XCTestCase {
         app.typeKey(.return, modifierFlags: [])
     }
 
+    /// The window's own screenshot plus the accessibility tree, for diagnosing failures.
+    private func attachState(_ name: String) {
+        let shot = XCTAttachment(screenshot: window.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+        let tree = XCTAttachment(string: app.debugDescription)
+        tree.name = name + " (tree)"
+        tree.lifetime = .keepAlways
+        add(tree)
+    }
+
     func testPaintAndUndo() {
         paintStroke()
         showHistory()
-        XCTAssertTrue(app.staticTexts["Brush Stroke"].firstMatch.waitForExistence(timeout: 5), "the stroke isn't in the history")
-        app.typeKey("z", modifierFlags: .command)
-        app.menuBars.menuBarItems["Edit"].click()
+        // History rows: "Open" plus one per step.
+        let rows = window.outlineRows
+        let deadline = Date().addingTimeInterval(5)
+        while rows.count < 2, Date() < deadline { usleep(200_000) }
+        if rows.count < 2 { attachState("after stroke") }
+        XCTAssertEqual(rows.count, 2, "the stroke isn't in the history")
+        let edit = app.menuBars.menuBarItems["Edit"]
+        edit.click()
+        let undo = app.menuItems["Undo Brush Stroke"].firstMatch
+        XCTAssertTrue(undo.waitForExistence(timeout: 3), "no Undo Brush Stroke")
+        undo.click()
+        edit.click()
         let redo = app.menuItems["Redo Brush Stroke"].firstMatch
-        XCTAssertTrue(redo.waitForExistence(timeout: 3))
+        XCTAssertTrue(redo.waitForExistence(timeout: 3), "no Redo Brush Stroke")
         XCTAssertTrue(redo.isEnabled)
         app.typeKey(.escape, modifierFlags: [])
     }

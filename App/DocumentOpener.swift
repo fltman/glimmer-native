@@ -138,6 +138,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var didFinishLaunching = false
     private var deferredURLs: [URL] = []
 
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // UI tests start clean: no restored windows. Volatile, so the user's own
+        // restoration setting is never touched.
+        if CommandLine.arguments.contains("-uiTestingNewDocument") {
+            var args = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+            args["ApplePersistenceIgnoreState"] = true
+            UserDefaults.standard.setVolatileDomain(args, forName: UserDefaults.argumentDomain)
+        }
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         didFinishLaunching = true
         // UI tests start from a fresh 800 × 600 document.

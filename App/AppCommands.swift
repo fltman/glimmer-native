@@ -1,3 +1,4 @@
+import AppKit
 import GlimmerCore
 import SwiftUI
 
@@ -13,6 +14,26 @@ struct GlimmerCommands: Commands {
         let _ = DocumentOpener.shared.newDocumentAction = newDocument
         CommandGroup(replacing: .importExport) {
             items(registry.descriptors(in: .file))
+        }
+        // The system items read just "Undo"/"Redo"; these name the step (from the
+        // document's history) and still go through the responder chain, so text
+        // fields keep their own undo.
+        CommandGroup(replacing: .undoRedo) {
+            let editingText = NSApp.keyWindow?.firstResponder is NSText
+            let document = session?.document
+            let index = document?.historyIndex ?? 0, history = document?.history ?? []
+            Button(editingText || index == 0 ? String(localized: "Undo")
+                   : String(localized: "Undo \(String(localized: String.LocalizationValue(history[index - 1])))")) {
+                NSApp.sendAction(Selector(("undo:")), to: nil, from: nil)
+            }
+            .keyboardShortcut("z", modifiers: .command)
+            .disabled(!editingText && index == 0)
+            Button(editingText || index >= history.count ? String(localized: "Redo")
+                   : String(localized: "Redo \(String(localized: String.LocalizationValue(history[index])))")) {
+                NSApp.sendAction(Selector(("redo:")), to: nil, from: nil)
+            }
+            .keyboardShortcut("z", modifiers: [.command, .shift])
+            .disabled(!editingText && index >= history.count)
         }
         CommandGroup(before: .toolbar) {
             items(registry.descriptors(in: .view).filter { ![.toggleRulers, .toggleGrid, .toggleSnap, .toggleNavigator].contains($0.id) })
