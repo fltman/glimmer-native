@@ -69,6 +69,7 @@ public final class CanvasRenderer: @unchecked Sendable {
     public let context: MetalContext
     private let background: MTLRenderPipelineState
     private let present: MTLRenderPipelineState
+    private let ants: MTLRenderPipelineState
 
     private let checkerLight = LinearColor.fromSRGB(1, 1, 1)
     private let checkerDark = LinearColor.fromSRGB(0.8, 0.8, 0.8)
@@ -95,11 +96,16 @@ public final class CanvasRenderer: @unchecked Sendable {
         a.destinationRGBBlendFactor = .oneMinusSourceAlpha
         a.destinationAlphaBlendFactor = .oneMinusSourceAlpha
 
-        for d in [bg, tiles] where d.vertexFunction == nil || d.fragmentFunction == nil {
+        let antsDesc = tiles.copy() as! MTLRenderPipelineDescriptor
+        antsDesc.label = "Selection outline"
+        antsDesc.fragmentFunction = library.makeFunction(name: "ants_fragment")
+
+        for d in [bg, tiles, antsDesc] where d.vertexFunction == nil || d.fragmentFunction == nil {
             throw RenderError.libraryUnavailable("\(d.label ?? "canvas") shader functions missing")
         }
         self.background = try context.device.makeRenderPipelineState(descriptor: bg)
         self.present = try context.device.makeRenderPipelineState(descriptor: tiles)
+        self.ants = try context.device.makeRenderPipelineState(descriptor: antsDesc)
     }
 
     public var device: MTLDevice { context.device }
@@ -131,6 +137,8 @@ public final class CanvasRenderer: @unchecked Sendable {
         _ frame: CanvasFrame,
         tiles coords: [TileCoord] = [],
         tile: (TileCoord) -> MTLTexture? = { _ in nil },
+        selection: Selection? = nil,
+        time: Double = 0,
         into commandBuffer: MTLCommandBuffer,
         target: MTLTexture
     ) {
@@ -171,6 +179,23 @@ public final class CanvasRenderer: @unchecked Sendable {
                 encoder.setVertexBytes(&p, length: MemoryLayout<PresentUniforms>.stride, index: 0)
                 encoder.setFragmentTexture(texture, index: 0)
                 encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+            }
+
+            // Marching ants on stored selection tiles (uniform areas have no edges).
+            if let selection, !selection.tiles.isEmpty {
+                encoder.setRenderPipelineState(ants)
+                var t = Float(time.truncatingRemainder(dividingBy: 1000))
+                encoder.setFragmentBytes(&t, length: 4, index: 0)
+                for coord in coords {
+                    guard case .texture(let tex)? = selection.tiles[coord] else { continue }
+                    let r = coord.rect
+                    var p = PresentUniforms(documentToClip: docToClip,
+                                            documentRect: SIMD4(Float(r.x), Float(r.y), s, s),
+                                            uvRect: SIMD4(0, 0, 1, 1))
+                    encoder.setVertexBytes(&p, length: MemoryLayout<PresentUniforms>.stride, index: 0)
+                    encoder.setFragmentTexture(tex.texture, index: 0)
+                    encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: 4)
+                }
             }
         }
         encoder.endEncoding()

@@ -22,8 +22,19 @@ struct DocumentView: View {
                     .padding(12)
             }
             .inspector(isPresented: $session.showLayersPanel) {
-                LayersPanel(session: session)
-                    .inspectorColumnWidth(min: 230, ideal: 270, max: 400)
+                VStack(spacing: 0) {
+                    Picker("Panel", selection: $session.inspectorTab) {
+                        ForEach(EditorSession.InspectorTab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .padding(8)
+                    switch session.inspectorTab {
+                    case .layers: LayersPanel(session: session)
+                    case .ai: AIPanel(session: session, ai: session.ai)
+                    }
+                }
+                .inspectorColumnWidth(min: 260, ideal: 300, max: 420)
             }
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -112,6 +123,8 @@ extension ToolID {
         switch self {
         case .move: "Move"
         case .hand: "Hand"
+        case .rectangleMarquee: "Rectangular Marquee"
+        case .ellipseMarquee: "Elliptical Marquee"
         default: rawValue.capitalized
         }
     }
@@ -120,6 +133,8 @@ extension ToolID {
         switch self {
         case .move: "arrow.up.and.down.and.arrow.left.and.right"
         case .hand: "hand.raised"
+        case .rectangleMarquee: "rectangle.dashed"
+        case .ellipseMarquee: "circle.dashed"
         default: "questionmark"
         }
     }

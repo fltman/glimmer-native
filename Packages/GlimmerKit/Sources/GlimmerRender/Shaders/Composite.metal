@@ -553,3 +553,24 @@ fragment float4 present_fragment(QuadOut in [[stage_in]], texture2d<float> tile 
                                 address::clamp_to_edge);
     return tile.sample(minifying, in.uv);
 }
+
+/// Marching ants along the 0.5 contour of a selection tile.
+///
+/// Edges are found by sampling the neighbouring screen pixels (uv derivatives are
+/// linear, so they're valid everywhere). Derivatives of the sampled value itself
+/// are not: they're computed per 2×2 quad and miss edges that fall between quads.
+fragment float4 ants_fragment(QuadOut in [[stage_in]],
+                              texture2d<float> selection [[texture(0)]],
+                              constant float &time [[buffer(0)]]) {
+    constexpr sampler s(filter::linear, address::clamp_to_edge);
+    float2 dx = dfdx(in.uv), dy = dfdy(in.uv);
+    bool inside = selection.sample(s, in.uv).a >= 0.5;
+    bool edge = (selection.sample(s, in.uv - dx).a >= 0.5) != inside
+             || (selection.sample(s, in.uv + dx).a >= 0.5) != inside
+             || (selection.sample(s, in.uv - dy).a >= 0.5) != inside
+             || (selection.sample(s, in.uv + dy).a >= 0.5) != inside;
+    if (!inside || !edge) discard_fragment();
+    float2 p = in.position.xy;
+    float dash = fmod(floor((p.x + p.y) / 5.0 + time * 6.0), 2.0);
+    return dash > 0.5 ? float4(1.0) : float4(0.0, 0.0, 0.0, 1.0);
+}

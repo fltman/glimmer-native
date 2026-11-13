@@ -94,6 +94,20 @@ extension CommandID {
     public static let layerStyle: CommandID = "layer.style"
     public static let toggleGammaBlending: CommandID = "image.gammaBlending"
 
+    public static let selectAll: CommandID = "select.all"
+    public static let deselect: CommandID = "select.none"
+    public static let invertSelection: CommandID = "select.invert"
+    public static let selectSubject: CommandID = "select.subject"
+
+    public static let aiGenerate: CommandID = "ai.generate"
+    public static let aiEditImage: CommandID = "ai.edit"
+    public static let aiGenerativeFill: CommandID = "ai.fill"
+    public static let aiRemoveObject: CommandID = "ai.remove"
+    public static let aiExpand: CommandID = "ai.expand"
+    public static let aiRemoveBackground: CommandID = "ai.cutout"
+    public static let aiColorMatch: CommandID = "ai.colorMatch"
+    public static let showAssistant: CommandID = "ai.assistant"
+
     public static func newAdjustment(_ kind: AdjustmentKind) -> CommandID { CommandID(rawValue: "layer.adjustment.\(kind.rawValue)") }
     public static let newSolidFill: CommandID = "layer.fill.solid"
     public static let newGradientFill: CommandID = "layer.fill.gradient"
@@ -181,6 +195,25 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.newSolidFill, "Solid Color…", category: .layer, keywords: ["fill"]),
         CommandDescriptor(.newGradientFill, "Gradient…", category: .layer, keywords: ["fill"]),
         CommandDescriptor(.newPatternFill, "Pattern…", category: .layer, keywords: ["fill"]),
+        CommandDescriptor(.selectAll, "All", category: .select, shortcut: KeyShortcut("a"), keywords: ["select all"]),
+        CommandDescriptor(.deselect, "Deselect", category: .select, shortcut: KeyShortcut("d"), keywords: ["select none"]),
+        CommandDescriptor(.invertSelection, "Inverse", category: .select,
+                          shortcut: KeyShortcut("i", [.command, .shift]), keywords: ["invert selection"]),
+        CommandDescriptor(.selectSubject, "Subject", category: .select,
+                          keywords: ["select subject", "person", "object", "ai"]),
+
+        CommandDescriptor(.showAssistant, "Assistant", category: .ai,
+                          shortcut: KeyShortcut("k", [.command, .shift]), keywords: ["chat", "ai", "prompt"]),
+        CommandDescriptor(.aiGenerate, "Generate Image…", category: .ai, keywords: ["text to image", "create"]),
+        CommandDescriptor(.aiEditImage, "Edit Image with Prompt…", category: .ai, keywords: ["describe", "change"]),
+        CommandDescriptor(.aiGenerativeFill, "Generative Fill…", category: .ai, keywords: ["inpaint", "replace", "selection"]),
+        CommandDescriptor(.aiRemoveObject, "Remove Object", category: .ai,
+                          keywords: ["content-aware fill", "erase", "delete", "cleanup"]),
+        CommandDescriptor(.aiExpand, "Expand…", category: .ai, keywords: ["outpaint", "extend", "uncrop"]),
+        CommandDescriptor(.aiRemoveBackground, "Remove Background", category: .ai,
+                          keywords: ["cutout", "mask", "subject"]),
+        CommandDescriptor(.aiColorMatch, "Match Color…", category: .ai, keywords: ["grade", "transfer", "reference"]),
+
         CommandDescriptor(.toggleGammaBlending, "Blend Colors in Gamma Space", category: .image,
                           keywords: ["photoshop", "linear", "color space"]),
     ] + AdjustmentKind.allCases.map {

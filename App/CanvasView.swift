@@ -28,7 +28,12 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     private enum Drag {
         case pan(last: SIMD2<Double>)
         case move
+        case marquee
     }
+
+    /// Dashed outline of the marquee being dragged (white under black dashes).
+    private let marqueeBase = CAShapeLayer()
+    private let marqueeDashes = CAShapeLayer()
     private var drag: Drag?
 
     init(session: EditorSession) {
@@ -40,7 +45,17 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         wantsLayer = true
         layerContentsRedrawPolicy = .never
         registerForDraggedTypes([.fileURL, .png, .tiff])
-        controller.onNeedsRender = { [weak self] in self?.setNeedsRender() }
+        controller.onNeedsRender = { [weak self] in
+            self?.setNeedsRender()
+            self?.updateMarqueeOverlay()
+        }
+        for (layer, color) in [(marqueeBase, NSColor.white), (marqueeDashes, NSColor.black)] {
+            layer.fillColor = nil
+            layer.strokeColor = color.cgColor
+            layer.lineWidth = 1
+            layer.actions = ["path": NSNull()]
+        }
+        marqueeDashes.lineDashPattern = [4, 4]
         observeSession()
     }
 
@@ -60,6 +75,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         layer.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
         layer.framebufferOnly = true
         layer.isOpaque = true
+        layer.addSublayer(marqueeBase)
+        layer.addSublayer(marqueeDashes)
         return layer
     }
 
@@ -69,10 +86,12 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             _ = session.document.state
             _ = session.overrides
             _ = session.effectiveTool
+            _ = session.marquee
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
                 self.setNeedsRender()
+                self.updateMarqueeOverlay()
                 self.window?.invalidateCursorRects(for: self)
                 self.observeSession()
             }
@@ -131,12 +150,45 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     @objc private func step(_ link: CADisplayLink) {
-        guard needsRender else {
+        // Marching ants animate while there is a selection.
+        let animating = session.state.selection.map { !$0.tiles.isEmpty } ?? false
+        guard needsRender || animating else {
             link.isPaused = true
             return
         }
         needsRender = false
         draw()
+        if animating { link.isPaused = false }
+    }
+
+    private func updateMarqueeOverlay() {
+        guard let m = session.marquee else {
+            marqueeBase.path = nil
+            marqueeDashes.path = nil
+            return
+        }
+        let r = m.rect
+        let corners = [SIMD2(r.minX, r.minY), SIMD2(r.maxX, r.minY), SIMD2(r.maxX, r.maxY), SIMD2(r.minX, r.maxY)]
+            .map { controller.transform.viewPoint(fromDocument: $0) }
+        let path = CGMutablePath()
+        if m.ellipse {
+            // An ellipse in document space, mapped through the (possibly rotated) view.
+            let t = controller.transform
+            let c = SIMD2((r.minX + r.maxX) / 2, (r.minY + r.maxY) / 2)
+            for i in 0...64 {
+                let a = Double(i) / 64 * 2 * .pi
+                let p = t.viewPoint(fromDocument: c + SIMD2(cos(a) * r.width / 2, sin(a) * r.height / 2))
+                i == 0 ? path.move(to: CGPoint(x: p.x, y: p.y)) : path.addLine(to: CGPoint(x: p.x, y: p.y))
+            }
+        } else {
+            path.addLines(between: corners.map { CGPoint(x: $0.x, y: $0.y) })
+            path.closeSubpath()
+        }
+        // The Metal layer isn't flipped: convert from view (y-down) coordinates.
+        var flip = CGAffineTransform(translationX: 0, y: bounds.height).scaledBy(x: 1, y: -1)
+        let flipped = path.copy(using: &flip)
+        marqueeBase.path = flipped
+        marqueeDashes.path = flipped
     }
 
     private func draw() {
@@ -156,7 +208,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             documentSize: state.size,
             pasteboardColor: pasteboardColor()
         )
-        renderer.encode(frame, tiles: tiles, tile: compositor.texture(at:), into: commandBuffer, target: drawable.texture)
+        renderer.encode(frame, tiles: tiles, tile: compositor.texture(at:), selection: state.selection,
+                        time: CACurrentMediaTime(), into: commandBuffer, target: drawable.texture)
         commandBuffer.present(drawable)
         commandBuffer.commit()
         if more { setNeedsRender() }
@@ -208,6 +261,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case .move:
             session.beginMove(at: controller.documentPoint(p))
             drag = .move
+        case .rectangleMarquee, .ellipseMarquee:
+            session.beginMarquee(at: controller.documentPoint(p), modifiers: event.modifierFlags)
+            drag = .marquee
         default:
             beginPan(at: p)
         }
@@ -221,6 +277,15 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             drag = .pan(last: p)
         case .move:
             session.updateMove(to: controller.documentPoint(p))
+        case .marquee:
+            var d = controller.documentPoint(p)
+            if event.modifierFlags.contains(.shift), let m = session.marquee, m.operation == .replace {
+                // Shift constrains to a square / circle.
+                let v = d - m.start
+                let side = max(abs(v.x), abs(v.y))
+                d = m.start + SIMD2(v.x < 0 ? -side : side, v.y < 0 ? -side : side)
+            }
+            session.updateMarquee(to: d)
         case nil:
             break
         }
@@ -228,6 +293,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
 
     override func mouseUp(with event: NSEvent) {
         if case .move = drag { session.endMove() }
+        if case .marquee = drag { session.endMarquee() }
         endDrag()
     }
 
@@ -248,6 +314,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     override func resetCursorRects() {
         let cursor: NSCursor = switch session.effectiveTool {
         case .hand: .openHand
+        case .rectangleMarquee, .ellipseMarquee: .crosshair
         default: .arrow
         }
         addCursorRect(bounds, cursor: cursor)
@@ -266,9 +333,19 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             return
         }
         if mods.isDisjoint(with: [.command, .control, .option]),
-           let key = event.charactersIgnoringModifiers?.lowercased().first,
-           let tool = ToolID.allCases.first(where: { $0.shortcutKey == key && Self.availableTools.contains($0) }) {
-            session.tool = tool
+           let key = event.charactersIgnoringModifiers?.lowercased().first {
+            if key == "m" {
+                // M toggles between the rectangular and elliptical marquee.
+                session.tool = session.tool == .rectangleMarquee ? .ellipseMarquee : .rectangleMarquee
+                return
+            }
+            if let tool = ToolID.allCases.first(where: { $0.shortcutKey == key && Self.availableTools.contains($0) }) {
+                session.tool = tool
+                return
+            }
+        }
+        if event.keyCode == 53, session.state.selection != nil {  // Esc deselects
+            session.perform(.deselect)
             return
         }
         super.keyDown(with: event)
@@ -283,7 +360,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     /// Tools implemented so far (see docs/PLAN.md for the rest).
-    static let availableTools: [ToolID] = [.move, .hand]
+    static let availableTools: [ToolID] = [.move, .rectangleMarquee, .ellipseMarquee, .hand]
 
     private func arrowOffset(_ event: NSEvent) -> SIMD2<Int>? {
         switch event.keyCode {
@@ -296,6 +373,10 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     // MARK: Paste and drop
+
+    @objc override func selectAll(_ sender: Any?) {
+        session.perform(.selectAll)
+    }
 
     @objc func paste(_ sender: Any?) {
         if !session.place(from: .general) { NSSound.beep() }

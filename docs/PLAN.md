@@ -276,7 +276,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - `.aips`-import.
 - Dokumentval för blandning i linjärt ljus eller gamma.
 
-### Fas 3 — AI, grund · L
+### Fas 3 — AI, grund · L ✅ (2026-11-13)
 - **Grundselektion** (krävs för inpaint): rektangel- och ellipsmarkering, selektionsmask som tile-store, marching ants, invert. Add, subtract och intersect via modifierare.
 - `OpenRouterClient` med retry, cache, kostnadsvisning och nyckelhantering.
 - Bildprimitiverna från §2.8, med enhetstester mot referensvärden från Python-koden.
@@ -338,6 +338,9 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - **Justeringar** använder en schema-plus-parameter-modell (`Adjustment`) i stället för typade structs per typ. Samma schema driver UI, shader-packning och `.aips`-import, och kommer att driva agentens verktyg.
 - **Nya dokument skapas via SwiftUI:s `newDocument(_:)`** med en färdig instans. Kön genom `makeDocument` kolliderade med fönsteråterställning vid kallstart.
 - **Kvar från fas 2:** histogram i Levels-editorn, transform-UI för smart objects (fas 6) och maskmålning (fas 5).
+- **Fas 3:** pipelinerna (generate, edit, inpaint/fill/remove/referens, expand) är porterade med webbens prompter ordagrant och med fixarna: 30 % kontextpadding, omskalning efter whole-image edit och nedskalning av indata till max 2048 px. Resultat blir nya lager vars alfa är den fjädrade masken. Remove Background lägger en lagermask via Vision. Ett live-test mot OpenRouter (`GLIMMER_LIVE_AI=1`) verifierar transport och tolkning av svaren.
+- **Whole-image edit färgmatchas inte.** Det skulle motverka avsiktliga färgändringar ("gör himlen till solnedgång").
+- **Marching ants:** kanten hittas genom grannsampling med uv-derivator. `fwidth` på det samplade värdet missar kanter mellan 2×2-pixelblock.
 - **Kvar till fas 9:** minnesbudget för undo-historiken (idag obegränsad) och composite-cache för stora dokument vid utzoomning (idag full upplösning per tile).
 
 ## 4. Teststrategi

@@ -370,3 +370,80 @@ enum Reference {
         #expect(idle < .milliseconds(100))
     }
 }
+
+@Suite struct SelectionOutlineTests {
+    @Test(arguments: [1.0, 0.29])
+    func antsAppearOnTheSelectionEdge(zoom: Double) throws {
+        let ctx = try context()
+        let renderer = try CanvasRenderer(context: ctx)
+        let width = 128
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: CanvasRenderer.pixelFormat,
+                                                         width: width, height: width, mipmapped: false)
+        d.usage = [.renderTarget, .shaderRead]
+        d.storageMode = .shared
+        let target = try #require(ctx.device.makeTexture(descriptor: d))
+        let k = 1 / zoom
+        let selection = Selection.rectangle(CGRectLike(x0: 20 * k, y0: 20 * k, x1: 80 * k, y1: 80 * k))
+        let frame = CanvasFrame(transform: ViewTransform(scale: zoom), viewSize: SIMD2(128, 128), backingScale: 1,
+                                documentSize: SIMD2(128 * k, 128 * k), pasteboardColor: SIMD4(0.1, 0.2, 0.3, 1), checkerSize: 4)
+        let cb = try #require(ctx.commandQueue.makeCommandBuffer())
+        renderer.encode(frame, tiles: PixelRect(x: 0, y: 0, width: Int(128 * k), height: Int(128 * k)).tileCoords,
+                        tile: { _ in nil }, selection: selection, time: 312_345.678,
+                        into: cb, target: target)
+        cb.commit(); cb.waitUntilCompleted()
+        var px = [Float16](repeating: 0, count: width * width * 4)
+        px.withUnsafeMutableBytes {
+            target.getBytes($0.baseAddress!, bytesPerRow: width * 8, from: MTLRegionMake2D(0, 0, width, width), mipmapLevel: 0)
+        }
+        // Along the left edge (x = 20) some pixels are pure black or white ants.
+        var antPixels = 0
+        for y in 22..<78 {
+            for x in 18...21 {
+                let i = (y * width + x) * 4
+                let r = Float(px[i]), g = Float(px[i + 1])
+                if (r < 0.05 && g < 0.05) || (r > 0.95 && g > 0.95 && Float(px[i + 2]) > 0.95 && (x + y) % 2 == 0) { antPixels += 1 }
+            }
+        }
+        #expect(antPixels > 20, "found \(antPixels) ant pixels")
+    }
+}
+
+@Suite struct SelectionOutlineAppFrameTests {
+    @Test func antsVisibleInAZoomedOutRetinaFrame() throws {
+        let ctx = try context()
+        let renderer = try CanvasRenderer(context: ctx)
+        let compositor = try DocumentCompositor(context: ctx)
+        let state = DocumentState(width: 3840, height: 2160, layers: [solidLayer(SIMD4(0.5, 0.4, 0.3, 1), size: 3840)])
+        let viewSize = SIMD2(500.0, 300.0), bs = 2.0
+        let transform = ViewTransform.fitting(documentSize: state.size, in: viewSize)
+        let w = Int(viewSize.x * bs), h = Int(viewSize.y * bs)
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: CanvasRenderer.pixelFormat, width: w, height: h, mipmapped: false)
+        d.usage = [.renderTarget, .shaderRead]
+        d.storageMode = .shared
+        let target = try #require(ctx.device.makeTexture(descriptor: d))
+        let rect = CGRectLike(x0: 1500.3, y0: 1000.7, x1: 2200.2, y1: 1400.9)
+        let selection = Selection.rectangle(rect)
+        let coords = state.bounds.tileCoords
+        let frame = CanvasFrame(transform: transform, viewSize: viewSize, backingScale: bs, documentSize: state.size,
+                                pasteboardColor: SIMD4(0.1, 0.2, 0.3, 1))
+        let cb = try #require(ctx.commandQueue.makeCommandBuffer())
+        compositor.update(state, coords: coords, commandBuffer: cb)
+        renderer.encode(frame, tiles: coords, tile: compositor.texture(at:), selection: selection, time: 1234.5,
+                        into: cb, target: target)
+        cb.commit(); cb.waitUntilCompleted()
+        var px = [Float16](repeating: 0, count: w * h * 4)
+        px.withUnsafeMutableBytes {
+            target.getBytes($0.baseAddress!, bytesPerRow: w * 8, from: MTLRegionMake2D(0, 0, w, h), mipmapLevel: 0)
+        }
+        // Left edge of the selection in device pixels.
+        let edge = transform.viewPoint(fromDocument: SIMD2(rect.minX, (rect.minY + rect.maxY) / 2)) * bs
+        var extremes = 0
+        for y in Int(edge.y) - 40..<Int(edge.y) + 40 {
+            for x in Int(edge.x) - 3...Int(edge.x) + 3 {
+                let r = Float(px[(y * w + x) * 4])
+                if r < 0.1 || r > 0.9 { extremes += 1 }
+            }
+        }
+        #expect(extremes > 20, "found \(extremes) ant pixels near x=\(edge.x)")
+    }
+}

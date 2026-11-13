@@ -70,6 +70,24 @@ public enum ImageExporter {
         return image
     }
 
+    /// The document composite as 8-bit straight sRGB (what AI models receive).
+    public static func flattenedSRGB(_ state: DocumentState, context: MetalContext) throws -> CGImage {
+        try convert(flatten(state, context: context), options: ExportOptions(format: .png))
+    }
+
+    /// One layer on its own (normal blending, full opacity, no mask) over the document bounds.
+    public static func layerImageSRGB(_ layer: Layer, in state: DocumentState, context: MetalContext) throws -> CGImage {
+        var solo = layer
+        solo.isVisible = true
+        solo.opacity = 1
+        solo.blendMode = layer.isGroup ? .passThrough : .normal
+        solo.mask = nil
+        solo.isClipped = false
+        var single = state
+        single.layers = [solo]
+        return try flattenedSRGB(single, context: context)
+    }
+
     /// Converts a linear image to the export colour space and bit depth, and
     /// flattens it over the matte when the format has no alpha.
     public static func convert(_ image: CGImage, options: ExportOptions) throws -> CGImage {

@@ -25,6 +25,12 @@ struct GlimmerCommands: Commands {
             Divider()
             toggle(.toggleGammaBlending)
         }
+        CommandMenu("Select") {
+            items(registry.descriptors(in: .select))
+        }
+        CommandMenu("AI") {
+            items(registry.descriptors(in: .ai))
+        }
         CommandMenu("Layer") {
             Menu("New") { items([.newLayer, .newGroup]) }
             Menu("New Adjustment Layer") { items(AdjustmentKind.allCases.map { .newAdjustment($0) }) }
@@ -60,7 +66,8 @@ struct GlimmerCommands: Commands {
             Button(command.title) {
                 session?.perform(command.id)
             }
-            .keyboardShortcut(command.shortcut?.swiftUI)
+            // ⌘A stays with Edit › Select All so text fields keep it; the canvas answers selectAll:.
+            .keyboardShortcut(command.id == .selectAll ? nil : command.shortcut?.swiftUI)
             .disabled(!(session?.canPerform(command.id) ?? false))
         }
     }

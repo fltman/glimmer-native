@@ -23,6 +23,30 @@ final class EditorSession {
     /// Non-undoable preview of an in-progress tool action.
     var overrides = LayerOverrides.none
 
+    enum InspectorTab: String, CaseIterable {
+        case layers = "Layers"
+        case ai = "AI"
+    }
+
+    enum AISection: String {
+        case assistant, generate, fill, expand, colorMatch
+    }
+
+    var inspectorTab = InspectorTab.layers
+    /// The AI panel section to reveal (set by menu commands).
+    var aiSection = AISection.assistant
+    @ObservationIgnored private(set) var ai: AIController!
+
+    /// The marquee being dragged (document coordinates).
+    struct Marquee: Equatable {
+        var start: SIMD2<Double>
+        var current: SIMD2<Double>
+        var ellipse: Bool
+        var operation: Selection.Operation
+        var rect: CGRectLike { CGRectLike(x0: start.x, y0: start.y, x1: current.x, y1: current.y) }
+    }
+    var marquee: Marquee?
+
     var showLayersPanel = true
     var isExportSheetPresented = false
     var isLayerStylePresented = false
@@ -42,6 +66,7 @@ final class EditorSession {
     init(document: GlimmerDocument) {
         self.document = document
         canvas.documentSize = document.state.size
+        ai = AIController(session: self)
         observeDocument()
         refreshThumbnails()
     }
@@ -207,6 +232,8 @@ final class EditorSession {
             return !layer.isRaster && !layer.isAdjustment
         case .export:
             return !isExporting
+        case .deselect, .invertSelection, .aiRemoveObject:
+            return state.selection != nil
         case .zoomIn, .zoomOut, .fitToWindow, .actualSize, .rotateViewLeft, .rotateViewRight, .resetViewRotation:
             return canvas.canPerform(id)
         default:
@@ -263,7 +290,14 @@ final class EditorSession {
             let clipped = activeLayer?.isClipped == true
             editActive(clipped ? "Release Clipping Mask" : "Create Clipping Mask") { $0.isClipped = !clipped }
         case .addMaskRevealAll:
-            editActive("Add Layer Mask") { $0.mask = .revealAll }
+            if let selection = state.selection, let id = state.activeLayerID {
+                edit("Add Layer Mask") {
+                    $0.updateLayer(id) { $0.mask = selection.asMask }
+                    $0.selection = nil
+                }
+            } else {
+                editActive("Add Layer Mask") { $0.mask = .revealAll }
+            }
         case .addMaskHideAll:
             editActive("Add Layer Mask") { $0.mask = .hideAll }
         case .toggleMask:
@@ -282,12 +316,78 @@ final class EditorSession {
             edit(gamma ? "Blend in Linear Light" : "Blend in Gamma Space") { $0.blendSpace = gamma ? .linear : .gamma }
         case .toggleLayersPanel:
             showLayersPanel.toggle()
+        case .selectAll:
+            edit("Select All") { $0.selection = .all() }
+        case .deselect:
+            edit("Deselect") { $0.selection = nil }
+        case .invertSelection:
+            edit("Select Inverse") { $0.selection = $0.selection?.inverted() }
+        case .selectSubject:
+            ai.selectSubject()
+        case .aiRemoveBackground:
+            ai.removeBackground()
+        case .aiRemoveObject:
+            ai.fill(mode: .remove, prompt: "", reference: nil)
+        case .showAssistant:
+            showAI(.assistant)
+        case .aiGenerate:
+            showAI(.generate)
+        case .aiEditImage:
+            showAI(.assistant)
+        case .aiGenerativeFill:
+            showAI(.fill)
+        case .aiExpand:
+            showAI(.expand)
+        case .aiColorMatch:
+            showAI(.colorMatch)
         case .placeImage:
             choosePlaceImage()
         case .export:
             isExportSheetPresented = true
         default:
             canvas.perform(id)
+        }
+    }
+
+    func showAI(_ section: AISection) {
+        showLayersPanel = true
+        inspectorTab = .ai
+        aiSection = section
+    }
+
+    // MARK: Marquee tools
+
+    func beginMarquee(at point: SIMD2<Double>, modifiers: NSEvent.ModifierFlags) {
+        commitLiveEdit()
+        let op: Selection.Operation = switch (modifiers.contains(.shift), modifiers.contains(.option)) {
+        case (true, true): .intersect
+        case (true, false): .add
+        case (false, true): .subtract
+        default: .replace
+        }
+        marquee = Marquee(start: point, current: point, ellipse: tool == .ellipseMarquee, operation: op)
+    }
+
+    func updateMarquee(to point: SIMD2<Double>) {
+        marquee?.current = point
+    }
+
+    func endMarquee() {
+        guard let m = marquee else { return }
+        marquee = nil
+        let r = m.rect
+        if r.width < 1 || r.height < 1 {
+            // A click without a drag deselects (replace mode only).
+            if m.operation == .replace, state.selection != nil { edit("Deselect") { $0.selection = nil } }
+            return
+        }
+        let shape = m.ellipse ? Selection.ellipse(in: r) : Selection.rectangle(r)
+        edit(m.ellipse ? "Elliptical Marquee" : "Rectangular Marquee") { state in
+            if let current = state.selection, m.operation != .replace {
+                state.selection = current.combined(with: shape, m.operation)
+            } else {
+                state.selection = m.operation == .subtract ? nil : shape
+            }
         }
     }
 

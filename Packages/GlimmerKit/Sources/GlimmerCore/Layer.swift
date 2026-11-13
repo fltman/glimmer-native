@@ -172,6 +172,8 @@ public struct DocumentState: Sendable {
     /// Root layers, bottom → top.
     public var layers: [Layer]
     public var activeLayerID: UUID?
+    /// The current pixel selection (nil = nothing selected). Not saved with the document.
+    public var selection: Selection?
 
     public init(
         width: Int,

@@ -20,6 +20,8 @@ public enum OpenRouterError: Error, Equatable, LocalizedError {
     case unavailable(status: Int)
     case network(String)
     case unexpectedResponse(status: Int, message: String?)
+    /// The model answered without an image (often a refusal or a clarifying question).
+    case noImageInResponse(String?)
 
     public var isRetryable: Bool {
         switch self {
@@ -39,6 +41,7 @@ public enum OpenRouterError: Error, Equatable, LocalizedError {
         case .unavailable(let s): "OpenRouter is unavailable (HTTP \(s))."
         case .network(let m): "Network error: \(m)"
         case .unexpectedResponse(let s, let m): "Unexpected response (HTTP \(s))." + (m.map { " \($0)" } ?? "")
+        case .noImageInResponse(let m): "The model didn't return an image." + (m.map { " It said: \($0.prefix(300))" } ?? "")
         }
     }
 
@@ -95,7 +98,6 @@ public struct OpenRouterConfiguration: Sendable {
 }
 
 /// Talks to OpenRouter with the user's own API key.
-/// Image/text completion endpoints arrive in phase 3.
 public actor OpenRouterClient {
     private let apiKey: String
     private let configuration: OpenRouterConfiguration
@@ -118,12 +120,151 @@ public actor OpenRouterClient {
         }
     }
 
+    // MARK: Chat completions
+
+    public struct ImageResponse: Sendable {
+        public var imageData: Data
+        public var cost: Double?
+        public var model: String?
+    }
+
+    public struct TextResponse: Sendable {
+        public var text: String
+        public var cost: Double?
+    }
+
+    /// One user message with text plus images (PNG), asking for an image back.
+    public func imageCompletion(model: String, text: String, images: [Data], seed: Int? = nil) async throws -> ImageResponse {
+        var content: [[String: Any]] = [["type": "text", "text": text]]
+        for png in images {
+            content.append(["type": "image_url",
+                            "image_url": ["url": "data:image/png;base64," + png.base64EncodedString()]])
+        }
+        var body: [String: Any] = [
+            "model": model,
+            "messages": [["role": "user", "content": content]],
+            "modalities": ["image", "text"],
+            "usage": ["include": true],
+        ]
+        if let seed { body["seed"] = seed }
+        let data = try await sendWithRetry(try request(path: "chat/completions", method: "POST",
+                                                       body: JSONSerialization.data(withJSONObject: body)))
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw OpenRouterError.unexpectedResponse(status: 200, message: "not JSON")
+        }
+        guard let image = Self.extractImage(from: json) else {
+            throw OpenRouterError.noImageInResponse(Self.extractText(from: json))
+        }
+        return ImageResponse(imageData: image, cost: Self.cost(json), model: json["model"] as? String)
+    }
+
+    /// Text-only (optionally multimodal) completion. `jsonMode` requests a JSON object.
+    public func textCompletion(model: String, system: String?, user: String, images: [Data] = [],
+                               jsonMode: Bool = false, temperature: Double = 0.2) async throws -> TextResponse {
+        var messages: [[String: Any]] = []
+        if let system { messages.append(["role": "system", "content": system]) }
+        if images.isEmpty {
+            messages.append(["role": "user", "content": user])
+        } else {
+            var content: [[String: Any]] = [["type": "text", "text": user]]
+            for png in images {
+                content.append(["type": "image_url",
+                                "image_url": ["url": "data:image/png;base64," + png.base64EncodedString()]])
+            }
+            messages.append(["role": "user", "content": content])
+        }
+        var body: [String: Any] = ["model": model, "messages": messages, "temperature": temperature,
+                                   "usage": ["include": true]]
+        if jsonMode { body["response_format"] = ["type": "json_object"] }
+        let data = try await sendWithRetry(try request(path: "chat/completions", method: "POST",
+                                                       body: JSONSerialization.data(withJSONObject: body)))
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let text = Self.extractText(from: json) else {
+            throw OpenRouterError.unexpectedResponse(status: 200, message: "no text in response")
+        }
+        return TextResponse(text: text, cost: Self.cost(json))
+    }
+
+    // MARK: Response parsing (mirrors workers/aips/providers/openrouter.py)
+
+    static func cost(_ json: [String: Any]) -> Double? {
+        ((json["usage"] as? [String: Any])?["cost"] as? NSNumber)?.doubleValue
+    }
+
+    static func message(_ json: [String: Any]) -> [String: Any]? {
+        ((json["choices"] as? [[String: Any]])?.first)?["message"] as? [String: Any]
+    }
+
+    static func extractText(from json: [String: Any]) -> String? {
+        guard let message = message(json) else { return nil }
+        if let s = message["content"] as? String { return s }
+        if let parts = message["content"] as? [[String: Any]] {
+            let texts = parts.compactMap { $0["type"] as? String == "text" ? $0["text"] as? String : nil }
+            return texts.isEmpty ? nil : texts.joined(separator: "\n")
+        }
+        return nil
+    }
+
+    /// Finds image bytes in the three shapes OpenRouter image models return.
+    static func extractImage(from json: [String: Any]) -> Data? {
+        guard let message = message(json) else { return nil }
+        // 1. message.images[*].image_url.url
+        for img in message["images"] as? [[String: Any]] ?? [] {
+            if let url = (img["image_url"] as? [String: Any])?["url"] as? String, let d = decodeDataURL(url) { return d }
+        }
+        // 2. content parts
+        if let parts = message["content"] as? [[String: Any]] {
+            for part in parts {
+                let type = part["type"] as? String
+                if type == "image_url" || type == "output_image" || type == "image" {
+                    let url = (part["image_url"] as? [String: Any])?["url"] as? String ?? part["url"] as? String
+                    if let url, let d = decodeDataURL(url) { return d }
+                }
+                if type == "text", let t = part["text"] as? String, let d = scanForDataURL(t) { return d }
+            }
+        }
+        // 3. a data URL embedded in text
+        if let s = message["content"] as? String { return scanForDataURL(s) }
+        return nil
+    }
+
+    static func decodeDataURL(_ url: String) -> Data? {
+        guard url.hasPrefix("data:"), let comma = url.firstIndex(of: ",") else { return nil }
+        return Data(base64Encoded: String(url[url.index(after: comma)...]), options: .ignoreUnknownCharacters)
+    }
+
+    static func scanForDataURL(_ text: String) -> Data? {
+        guard let start = text.range(of: "data:image/") else { return nil }
+        let tail = text[start.lowerBound...]
+        let end = tail.firstIndex { $0 == ")" || $0 == "\"" || $0 == " " || $0 == "\n" } ?? tail.endIndex
+        return decodeDataURL(String(tail[..<end]))
+    }
+
+    // MARK: Transport
+
+    /// Retries rate limits, 5xx and network errors with exponential backoff
+    /// (as the web workers do). 401/402 are fatal and surface immediately.
+    func sendWithRetry(_ request: URLRequest, maxRetries: Int = 4) async throws -> Data {
+        var attempt = 0
+        while true {
+            do {
+                return try await send(request)
+            } catch let error as OpenRouterError where error.isRetryable && attempt < maxRetries {
+                var delay = min(15, 0.5 * pow(2, Double(attempt))) * Double.random(in: 0.5...1)
+                if case .rateLimited(let after?) = error { delay = min(after, 60) }
+                attempt += 1
+                try await Task.sleep(for: .seconds(delay))
+            }
+        }
+    }
+
     func request(path: String, method: String = "GET", body: Data? = nil) throws -> URLRequest {
         guard !apiKey.isEmpty else { throw OpenRouterError.missingAPIKey }
         var request = URLRequest(url: configuration.baseURL.appending(path: path))
         request.httpMethod = method
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue(configuration.appTitle, forHTTPHeaderField: "X-Title")
+        request.timeoutInterval = 240
         if let body {
             request.httpBody = body
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
