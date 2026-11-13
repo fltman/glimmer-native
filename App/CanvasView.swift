@@ -359,8 +359,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         let tiles = controller.visibleTiles(in: state.bounds)
         compositor.purge(outside: state.bounds)
         // Composite progressively so huge documents stay responsive.
-        let more = compositor.update(state, overrides: session.overrides, coords: tiles,
-                                     budget: 96, commandBuffer: commandBuffer)
+        let more = compositor.update(state, overrides: session.overrides, coords: tiles, budget: 96,
+                                     detailLevel: DocumentCompositor.detailLevel(forZoom: controller.zoom),
+                                     commandBuffer: commandBuffer)
         let frame = CanvasFrame(
             transform: controller.transform,
             viewSize: SIMD2(bounds.width, bounds.height),

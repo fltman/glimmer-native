@@ -176,3 +176,25 @@ extension PerformanceTests {
         #expect(try renderPixel(state, x: 2, y: 2).x > 0.99)
     }
 }
+
+@Suite struct CompositeDetailLevelTests {
+    @Test func zoomedOutKeepsSmallTilesAndZoomingInRestoresDetail() throws {
+        let ctx = try context()
+        let state = DocumentState(width: 512, height: 256, layers: [solidLayer(SIMD4(0.2, 0.4, 0.6, 1), size: 512)])
+        let compositor = try DocumentCompositor(context: ctx)
+        let coords = PixelRect(x: 0, y: 0, width: 512, height: 256).tileCoords
+        func run(_ level: Int) throws {
+            let cb = try #require(ctx.commandQueue.makeCommandBuffer())
+            compositor.update(state, coords: coords, detailLevel: level, commandBuffer: cb)
+            cb.commit(); cb.waitUntilCompleted()
+        }
+        try run(2)
+        #expect(compositor.texture(at: TileCoord(0, 0))?.width == 64)
+        try run(0)
+        #expect(compositor.texture(at: TileCoord(0, 0))?.width == 256)
+        try run(3)  // shrinking an up-to-date tile needs no recomposite
+        #expect(compositor.texture(at: TileCoord(1, 0))?.width == 32)
+        #expect(DocumentCompositor.detailLevel(forZoom: 1) == 0)
+        #expect(DocumentCompositor.detailLevel(forZoom: 0.2) == 2)
+    }
+}

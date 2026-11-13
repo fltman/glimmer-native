@@ -81,7 +81,13 @@ public final class DocumentCompositor {
         var signature: Int
         /// nil when nothing visible contributes (fully transparent).
         var texture: MTLTexture?
+        /// Mip level the texture starts at: 0 = full 256 px; k = 256 >> k px.
+        /// Zoomed-out views keep only the level they show, which saves memory.
+        var level = 0
     }
+
+    /// Released full-size textures kept for reuse (bounded so memory is returned).
+    static let poolLimit = 96
 
     private let context: MetalContext
     private let pipelines: TilePipelines
@@ -281,9 +287,12 @@ public final class DocumentCompositor {
         overrides: LayerOverrides = .none,
         coords: [TileCoord],
         budget: Int = .max,
+        detailLevel: Int = 0,
         commandBuffer: MTLCommandBuffer
     ) -> Bool {
+        let level = max(0, min(detailLevel, 5))
         let nodes = resolve(state, overrides: overrides)
+        var reductions: [(TileCoord, MTLTexture)] = []
         let gamma = state.blendSpace == .gamma
         var done = 0
         var remaining = false
@@ -294,7 +303,13 @@ public final class DocumentCompositor {
             h.combine(gamma)
             let visible = signature(nodes, at: coord, into: &h)
             let sig = h.finalize()
-            if cache[coord]?.signature == sig { continue }
+            if let entry = cache[coord], entry.signature == sig {
+                // Up to date: keep it if it has enough detail, shrink it if it has more than needed.
+                if entry.level <= level {
+                    if entry.level < level, let t = entry.texture { reductions.append((coord, t)) }
+                    continue
+                }
+            }
             if done >= budget {
                 remaining = true
                 break
@@ -302,22 +317,63 @@ public final class DocumentCompositor {
             done += 1
 
             guard visible else {
-                if let old = cache[coord]?.texture { pool.append(old) }
+                if let old = cache[coord]?.texture { recycle(old) }
                 cache[coord] = Entry(signature: sig, texture: nil)
                 continue
             }
-            let texture = cache[coord]?.texture ?? makeCompositeTexture()
+            let reuse = cache[coord].flatMap { $0.level == 0 ? $0.texture : nil }
+            let texture = reuse ?? makeCompositeTexture()
             render(nodes, at: coord, into: texture, clear: true, gamma: gamma, commandBuffer: commandBuffer)
             mipTargets.append(texture)
             cache[coord] = Entry(signature: sig, texture: texture)
+            if level > 0 { reductions.append((coord, texture)) }
         }
 
-        if !mipTargets.isEmpty, let blit = commandBuffer.makeBlitCommandEncoder() {
+        if !mipTargets.isEmpty || !reductions.isEmpty, let blit = commandBuffer.makeBlitCommandEncoder() {
             blit.label = "Composite mips"
             for texture in mipTargets { blit.generateMipmaps(for: texture) }
+            // Keep only the levels a zoomed-out view samples.
+            for (coord, full) in reductions {
+                guard var entry = cache[coord], entry.texture === full else { continue }
+                let fromLevel = level - entry.level
+                guard fromLevel > 0, let small = makeReducedTexture(level: level) else { continue }
+                for i in 0..<small.mipmapLevelCount {
+                    let size = max(1, TileGeometry.size >> (level + i))
+                    blit.copy(from: full, sourceSlice: 0, sourceLevel: fromLevel + i, sourceOrigin: MTLOrigin(),
+                              sourceSize: MTLSize(width: size, height: size, depth: 1),
+                              to: small, destinationSlice: 0, destinationLevel: i, destinationOrigin: MTLOrigin())
+                }
+                if entry.level == 0 { recycle(full) }
+                entry.texture = small
+                entry.level = level
+                cache[coord] = entry
+            }
             blit.endEncoding()
         }
         return remaining
+    }
+
+    private func makeReducedTexture(level: Int) -> MTLTexture? {
+        let size = TileGeometry.size >> level
+        let d = MTLTextureDescriptor.texture2DDescriptor(pixelFormat: TileGeometry.pixelFormat,
+                                                         width: size, height: size, mipmapped: true)
+        d.mipmapLevelCount = Self.mipLevels - level
+        d.usage = [.shaderRead]
+        d.storageMode = .private
+        let t = context.device.makeTexture(descriptor: d)
+        t?.label = "Composite tile (level \(level))"
+        return t
+    }
+
+    private func recycle(_ texture: MTLTexture) {
+        guard texture.width == TileGeometry.size, pool.count < Self.poolLimit else { return }
+        pool.append(texture)
+    }
+
+    /// Detail level for a view showing `zoom` device pixels per document pixel.
+    public static func detailLevel(forZoom zoom: Double) -> Int {
+        guard zoom > 0, zoom < 0.5 else { return 0 }
+        return min(5, Int(log2(1 / zoom).rounded(.down)))
     }
 
     // MARK: Rendering one tile
@@ -546,7 +602,7 @@ public final class DocumentCompositor {
     public func purge(outside bounds: PixelRect) {
         let keep = Set(bounds.tileCoords)
         for (coord, entry) in cache where !keep.contains(coord) {
-            if let t = entry.texture { pool.append(t) }
+            if let t = entry.texture { recycle(t) }
             cache[coord] = nil
         }
     }
