@@ -3,14 +3,12 @@
 #
 #   scripts/release.sh [--publish]
 #
-# One-time setup:
-#   xcrun notarytool store-credentials glimmer --apple-id <id> --team-id V783A2L763   (app-specific password)
-#   The first run creates the Sparkle EdDSA key in your login keychain (Sparkle's generate_keys).
-# Env: NOTARY_PROFILE (default "glimmer"); SKIP_SPARKLE=1 builds without update signing (dry runs).
+# Notarization goes through Xcode, using the account in Xcode › Settings › Accounts.
+# The first run creates the Sparkle EdDSA key in your login keychain (Sparkle's generate_keys).
+# Env: SKIP_SPARKLE=1 builds without update signing.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-PROFILE=${NOTARY_PROFILE:-glimmer}
 OUT=build/release
 VERSION=$(awk '/MARKETING_VERSION/ {gsub(/"/,"",$2); print $2; exit}' project.yml)
 rm -rf "$OUT" && mkdir -p "$OUT"
@@ -40,38 +38,28 @@ xcodebuild archive -project Glimmer.xcodeproj -scheme Glimmer -configuration Rel
   -derivedDataPath build/DerivedData -archivePath "$OUT/Glimmer.xcarchive" \
   SPARKLE_PUBLIC_KEY="$PUBKEY" -quiet
 
+# Xcode uploads the app for notarization with the Apple ID signed in under Xcode › Settings › Accounts.
 cat > "$OUT/ExportOptions.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>method</key><string>developer-id</string>
+  <key>destination</key><string>upload</string>
   <key>teamID</key><string>V783A2L763</string>
   <key>signingStyle</key><string>automatic</string>
 </dict></plist>
 PLIST
 
-echo "▸ Exporting (Developer ID)"
-xcodebuild -exportArchive -archivePath "$OUT/Glimmer.xcarchive" -exportPath "$OUT/export" \
-  -exportOptionsPlist "$OUT/ExportOptions.plist" -quiet
+echo "▸ Exporting and notarizing (Xcode)"
+xcodebuild -exportArchive -archivePath "$OUT/Glimmer.xcarchive" -exportPath "$OUT/upload" \
+  -exportOptionsPlist "$OUT/ExportOptions.plist" -allowProvisioningUpdates -quiet
+for i in {1..90}; do
+  xcodebuild -exportNotarizedApp -archivePath "$OUT/Glimmer.xcarchive" -exportPath "$OUT/export" >/dev/null 2>&1 && break
+  (( i == 90 )) && { echo "Notarization didn't finish in 30 minutes."; exit 1; }
+  sleep 20
+done
 APP="$OUT/export/Glimmer.app"
-codesign --verify --deep --strict "$APP"
-
-notarize() {
-  if xcrun notarytool history --keychain-profile "$PROFILE" >/dev/null 2>&1; then
-    echo "▸ Notarizing $(basename "$1")"
-    xcrun notarytool submit "$1" --keychain-profile "$PROFILE" --wait
-    return 0
-  fi
-  echo "⚠︎ No notarytool profile \"$PROFILE\"; skipping notarization (see the header of this script)."
-  return 1
-}
-
-NOTARIZED=0
-ditto -c -k --keepParent "$APP" "$OUT/Glimmer.zip"
-if notarize "$OUT/Glimmer.zip"; then
-  xcrun stapler staple "$APP"
-  NOTARIZED=1
-fi
+xcrun stapler validate "$APP"
 
 echo "▸ Building the DMG"
 STAGE="$OUT/dmg"
@@ -81,9 +69,6 @@ ln -s /Applications "$STAGE/Applications"
 DMG="$OUT/Glimmer-$VERSION.dmg"
 hdiutil create -volname "Glimmer $VERSION" -srcfolder "$STAGE" -ov -format ULFO "$DMG" >/dev/null
 codesign --sign "Developer ID Application: Brattoo AB (V783A2L763)" --timestamp "$DMG"
-if [[ $NOTARIZED == 1 ]] && notarize "$DMG"; then
-  xcrun stapler staple "$DMG"
-fi
 
 if [[ "${SKIP_SPARKLE:-0}" == 1 ]]; then echo "✔ $DMG (no appcast)"; exit 0; fi
 echo "▸ Sparkle appcast"
@@ -92,9 +77,8 @@ cp "$DMG" "$OUT/updates/"
 "$SPARKLE_BIN/generate_appcast" --download-url-prefix "https://github.com/fltman/glimmer-native/releases/download/v$VERSION/" "$OUT/updates"
 
 if [[ "${1:-}" == "--publish" ]]; then
-  [[ $NOTARIZED == 1 ]] || { echo "Refusing to publish an unnotarized build."; exit 1; }
   gh release create "v$VERSION" "$DMG" "$OUT/updates/appcast.xml" --title "Glimmer $VERSION" --generate-notes
 fi
 
 echo "✔ $DMG"
-[[ $NOTARIZED == 1 ]] && spctl --assess --type open --context context:primary-signature -v "$DMG" || true
+spctl --assess --type execute -v "$APP"

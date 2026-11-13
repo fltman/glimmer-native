@@ -20,15 +20,14 @@ Opt-in suites: `GLIMMER_LIVE_AI=1` (one real OpenRouter call) and `GLIMMER_MODEL
 
 ## Release
 
-`scripts/release.sh` archives a Release build, exports it with the Developer ID certificate (Brattoo AB), notarizes and staples the app and the DMG, and writes a Sparkle appcast. `--publish` also creates a GitHub release with the DMG and `appcast.xml`.
+`scripts/release.sh` archives a Release build, has Xcode export it with the Developer ID certificate (Brattoo AB) and notarize it with the account signed in under Xcode › Settings › Accounts, packs the stapled app into a signed DMG and writes a Sparkle appcast. `--publish` also creates a GitHub release with the DMG and `appcast.xml`.
 
 One-time setup:
 
-1. Store notarization credentials: `xcrun notarytool store-credentials glimmer --apple-id <apple id> --team-id V783A2L763` (use an app-specific password). Override the profile name with `NOTARY_PROFILE`.
-2. The first run creates the Sparkle EdDSA signing key in your login keychain and builds its public key into the app. Back the key up (`generate_keys -x <file>`, in `build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin`): updates can't be signed without it.
-3. Sparkle reads the feed from `https://github.com/fltman/glimmer-native/releases/latest/download/appcast.xml`. The repository has to be public (or the feed hosted elsewhere, via `SUFeedURL` in `project.yml`) for users to receive updates.
+1. The first run creates the Sparkle EdDSA signing key in your login keychain and builds its public key into the app. Back the key up (`generate_keys -x <file>`, in `build/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin`): updates can't be signed without it.
+2. Sparkle reads the feed from `https://github.com/fltman/glimmer-native/releases/latest/download/appcast.xml`. The repository has to be public (or the feed hosted elsewhere, via `SUFeedURL` in `project.yml`) for users to receive updates.
 
-`SKIP_SPARKLE=1 scripts/release.sh` is a dry run: signed DMG, no update key and no appcast. Without a notarization profile the script skips notarization and refuses `--publish`.
+`SKIP_SPARKLE=1 scripts/release.sh` builds without the update key and appcast.
 
 ## Shortcuts
 
