@@ -11,5 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: UI tests
-        run: scripts/uitest.sh 2>&1 | grep -E "Test Case|error:|Executed|TEST" ; exit ${pipestatus[1]}
         shell: zsh {0}
+        run: |
+          if scripts/uitest.sh > uitest.log 2>&1; then
+            grep -E "Test Case|Executed" uitest.log
+          else
+            grep -E "Test Case|error:|Executed|Testing failed" -A3 uitest.log | tail -40
+            echo "---"; tail -25 uitest.log
+            exit 1
+          fi
