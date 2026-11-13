@@ -2,6 +2,8 @@ import Foundation
 
 /// The Photoshop-style blend modes Glimmer supports (W3C compositing formulas).
 public enum BlendMode: String, Codable, CaseIterable, Sendable {
+    /// Groups only: children blend straight into what's below.
+    case passThrough = "pass-through"
     case normal
     case darken, multiply, colorBurn = "color-burn", linearBurn = "linear-burn"
     case lighten, screen, colorDodge = "color-dodge", linearDodge = "linear-dodge"
@@ -12,7 +14,7 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
     /// Stable index used by the blend shader. Must match `blendColor` in Tiles.metal.
     public var shaderIndex: Int32 {
         switch self {
-        case .normal: 0
+        case .normal, .passThrough: 0
         case .multiply: 1
         case .screen: 2
         case .overlay: 3
@@ -35,6 +37,7 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
+        case .passThrough: "Pass Through"
         case .normal: "Normal"
         case .darken: "Darken"
         case .multiply: "Multiply"
@@ -56,7 +59,7 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
         }
     }
 
-    /// Menu groups, in Photoshop order.
+    /// Menu groups, in Photoshop order (without Pass Through).
     public static let menuGroups: [[BlendMode]] = [
         [.normal],
         [.darken, .multiply, .colorBurn, .linearBurn],
@@ -65,19 +68,40 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
         [.difference, .exclusion],
         [.hue, .saturation, .color, .luminosity],
     ]
+
+    /// All modes the W3C formulas cover (everything except Pass Through).
+    public static let pixelModes: [BlendMode] = allCases.filter { $0 != .passThrough }
 }
 
 public enum LayerContent: Sendable {
     case raster(TileGrid)
+    case adjustment(Adjustment)
+    case group(LayerGroup)
+    case fill(Fill)
+    case smart(SmartObject)
+
+    public var kindName: String {
+        switch self {
+        case .raster: "raster"
+        case .adjustment: "adjustment"
+        case .group: "group"
+        case .fill: "fill"
+        case .smart: "smart"
+        }
+    }
 }
 
 public struct Layer: Identifiable, Sendable {
     public var id: UUID
     public var name: String
     public var isVisible: Bool
-    /// 0...1
+    /// 0...1, applies to the layer and its effects.
     public var opacity: Double
     public var blendMode: BlendMode
+    public var mask: LayerMask?
+    /// Clips to the nearest non-clipped sibling below.
+    public var isClipped: Bool
+    public var effects: LayerEffects
     public var content: LayerContent
 
     public init(
@@ -86,6 +110,9 @@ public struct Layer: Identifiable, Sendable {
         isVisible: Bool = true,
         opacity: Double = 1,
         blendMode: BlendMode = .normal,
+        mask: LayerMask? = nil,
+        isClipped: Bool = false,
+        effects: LayerEffects = LayerEffects(),
         content: LayerContent
     ) {
         self.id = id
@@ -93,16 +120,45 @@ public struct Layer: Identifiable, Sendable {
         self.isVisible = isVisible
         self.opacity = opacity
         self.blendMode = blendMode
+        self.mask = mask
+        self.isClipped = isClipped
+        self.effects = effects
         self.content = content
     }
 
+    /// Pixels of a raster layer (empty for other kinds). Setting converts the layer to raster.
     public var tiles: TileGrid {
         get {
-            switch content {
-            case .raster(let grid): grid
-            }
+            if case .raster(let grid) = content { return grid }
+            return TileGrid()
         }
         set { content = .raster(newValue) }
+    }
+
+    public var isGroup: Bool { if case .group = content { true } else { false } }
+    public var isRaster: Bool { if case .raster = content { true } else { false } }
+    public var isAdjustment: Bool { if case .adjustment = content { true } else { false } }
+
+    public var children: [Layer] {
+        if case .group(let g) = content { return g.children }
+        return []
+    }
+
+    /// This layer and all descendants, depth first.
+    public var subtree: [Layer] {
+        [self] + children.flatMap(\.subtree)
+    }
+
+    /// A deep copy with fresh ids.
+    public func duplicated(name: String? = nil) -> Layer {
+        var copy = self
+        copy.id = UUID()
+        if let name { copy.name = name }
+        if case .group(var g) = content {
+            g.children = g.children.map { $0.duplicated() }
+            copy.content = .group(g)
+        }
+        return copy
     }
 }
 
@@ -113,7 +169,7 @@ public struct DocumentState: Sendable {
     public var height: Int
     public var colorSpace: WorkingColorSpace
     public var blendSpace: BlendSpace
-    /// Bottom → top.
+    /// Root layers, bottom → top.
     public var layers: [Layer]
     public var activeLayerID: UUID?
 
@@ -136,14 +192,72 @@ public struct DocumentState: Sendable {
     public var size: SIMD2<Double> { SIMD2(Double(width), Double(height)) }
     public var bounds: PixelRect { PixelRect(x: 0, y: 0, width: width, height: height) }
 
-    public func index(of id: UUID?) -> Int? {
+    // MARK: Tree access
+
+    /// Index path from the root (`[2, 0]` = first child of the third root layer).
+    public typealias LayerPath = [Int]
+
+    public func path(of id: UUID?) -> LayerPath? {
         guard let id else { return nil }
-        return layers.firstIndex { $0.id == id }
+        func search(_ list: [Layer], _ prefix: LayerPath) -> LayerPath? {
+            for (i, layer) in list.enumerated() {
+                if layer.id == id { return prefix + [i] }
+                if let found = search(layer.children, prefix + [i]) { return found }
+            }
+            return nil
+        }
+        return search(layers, [])
     }
 
-    public var activeIndex: Int? { index(of: activeLayerID) }
+    public func layer(at path: LayerPath) -> Layer? {
+        var list = layers
+        var result: Layer?
+        for i in path {
+            guard list.indices.contains(i) else { return nil }
+            result = list[i]
+            list = list[i].children
+        }
+        return result
+    }
 
-    public var activeLayer: Layer? { activeIndex.map { layers[$0] } }
+    public func layer(id: UUID?) -> Layer? {
+        path(of: id).flatMap(layer(at:))
+    }
+
+    /// Siblings at the given parent path (`[]` = root).
+    public func children(of parent: LayerPath) -> [Layer] {
+        parent.isEmpty ? layers : (layer(at: parent)?.children ?? [])
+    }
+
+    mutating func modifyChildren(of parent: LayerPath, _ change: (inout [Layer]) -> Void) {
+        if parent.isEmpty {
+            change(&layers)
+            return
+        }
+        func walk(_ list: inout [Layer], _ rest: ArraySlice<Int>) {
+            guard let i = rest.first, list.indices.contains(i) else { return }
+            if rest.count == 1 {
+                if case .group(var g) = list[i].content {
+                    change(&g.children)
+                    list[i].content = .group(g)
+                }
+            } else if case .group(var g) = list[i].content {
+                walk(&g.children, rest.dropFirst())
+                list[i].content = .group(g)
+            }
+        }
+        walk(&layers, parent[...])
+    }
+
+    public var activeLayer: Layer? { layer(id: activeLayerID) }
+
+    /// Every layer in the tree, depth first.
+    public var allLayers: [Layer] { layers.flatMap(\.subtree) }
+
+    public mutating func updateLayer(_ id: UUID, _ change: (inout Layer) -> Void) {
+        guard let path = path(of: id) else { return }
+        modifyChildren(of: Array(path.dropLast())) { change(&$0[path.last!]) }
+    }
 
     // MARK: Factories
 
@@ -172,49 +286,120 @@ public struct DocumentState: Sendable {
 
     /// A name like "Layer 3" that isn't taken yet.
     public func nextLayerName(prefix: String = "Layer") -> String {
-        let taken = Set(layers.map(\.name))
-        var n = layers.count + 1
+        let taken = Set(allLayers.map(\.name))
+        var n = 1
         while taken.contains("\(prefix) \(n)") { n += 1 }
         return "\(prefix) \(n)"
     }
 
-    /// Inserts above the active layer (or on top) and activates it.
+    /// Inserts above the active layer, in the same group, and activates it.
     public mutating func insertLayerAboveActive(_ layer: Layer) {
-        let index = activeIndex.map { $0 + 1 } ?? layers.count
-        layers.insert(layer, at: index)
+        if let path = path(of: activeLayerID) {
+            modifyChildren(of: Array(path.dropLast())) { $0.insert(layer, at: path.last! + 1) }
+        } else {
+            layers.append(layer)
+        }
         activeLayerID = layer.id
     }
 
     @discardableResult
     public mutating func duplicateActiveLayer() -> Layer? {
-        guard let i = activeIndex else { return nil }
-        var copy = layers[i]
-        copy.id = UUID()
-        copy.name = layers[i].name + " copy"
-        layers.insert(copy, at: i + 1)
+        guard let path = path(of: activeLayerID), let original = layer(at: path) else { return nil }
+        let copy = original.duplicated(name: original.name + " copy")
+        modifyChildren(of: Array(path.dropLast())) { $0.insert(copy, at: path.last! + 1) }
         activeLayerID = copy.id
         return copy
     }
 
     public mutating func deleteActiveLayer() {
-        guard let i = activeIndex else { return }
-        layers.remove(at: i)
-        activeLayerID = layers.isEmpty ? nil : layers[max(0, i - 1)].id
+        guard let path = path(of: activeLayerID) else { return }
+        let parent = Array(path.dropLast())
+        let i = path.last!
+        modifyChildren(of: parent) { $0.remove(at: i) }
+        let siblings = children(of: parent)
+        if !siblings.isEmpty {
+            activeLayerID = siblings[max(0, i - 1)].id
+        } else if !parent.isEmpty {
+            activeLayerID = layer(at: parent)?.id
+        } else {
+            activeLayerID = nil
+        }
     }
 
-    /// Moves the active layer by `delta` positions (positive = up). Returns false if it can't move.
+    /// Moves the active layer by `delta` positions among its siblings (positive = up).
     @discardableResult
     public mutating func moveActiveLayer(by delta: Int) -> Bool {
-        guard let i = activeIndex else { return false }
-        let target = min(max(i + delta, 0), layers.count - 1)
+        guard let path = path(of: activeLayerID) else { return false }
+        let parent = Array(path.dropLast())
+        let i = path.last!
+        let count = children(of: parent).count
+        let target = min(max(i + delta, 0), count - 1)
         guard target != i else { return false }
-        let layer = layers.remove(at: i)
-        layers.insert(layer, at: target)
+        modifyChildren(of: parent) { list in
+            let layer = list.remove(at: i)
+            list.insert(layer, at: target)
+        }
         return true
     }
 
-    public mutating func updateLayer(_ id: UUID, _ change: (inout Layer) -> Void) {
-        guard let i = index(of: id) else { return }
-        change(&layers[i])
+    /// Removes a layer (and its subtree) and returns it.
+    @discardableResult
+    public mutating func removeLayer(_ id: UUID) -> Layer? {
+        guard let path = path(of: id), let layer = layer(at: path) else { return nil }
+        modifyChildren(of: Array(path.dropLast())) { $0.remove(at: path.last!) }
+        return layer
+    }
+
+    /// Moves `id` so it sits directly above `target` in target's parent, or into
+    /// the bottom of the root when `target` is nil.
+    public mutating func moveLayer(_ id: UUID, above target: UUID?) {
+        guard id != target else { return }
+        if let target, let moving = layer(id: id), moving.subtree.contains(where: { $0.id == target }) {
+            return  // can't move a group into itself
+        }
+        guard let moving = removeLayer(id) else { return }
+        if let target, let tp = path(of: target) {
+            modifyChildren(of: Array(tp.dropLast())) { $0.insert(moving, at: tp.last! + 1) }
+        } else {
+            layers.insert(moving, at: 0)
+        }
+    }
+
+    /// Moves `id` to the top of `group`'s children.
+    public mutating func moveLayer(_ id: UUID, intoTopOf group: UUID) {
+        guard id != group, let moving = layer(id: id),
+              !moving.subtree.contains(where: { $0.id == group }) else { return }
+        removeLayer(id)
+        guard let gp = path(of: group) else { return }
+        modifyChildren(of: gp) { $0.append(moving) }
+    }
+
+    /// Wraps the active layer in a new group. Returns the group's id.
+    @discardableResult
+    public mutating func groupActiveLayer(name: String) -> UUID? {
+        guard let path = path(of: activeLayerID), let layer = layer(at: path) else { return nil }
+        let group = Layer(name: name, blendMode: .passThrough, content: .group(LayerGroup(children: [layer])))
+        modifyChildren(of: Array(path.dropLast())) { $0[path.last!] = group }
+        activeLayerID = group.id
+        return group.id
+    }
+
+    /// Replaces the active group with its children.
+    public mutating func ungroupActiveLayer() {
+        guard let path = path(of: activeLayerID), let group = layer(at: path), group.isGroup else { return }
+        let kids = group.children
+        modifyChildren(of: Array(path.dropLast())) { $0.replaceSubrange(path.last!...path.last!, with: kids) }
+        activeLayerID = kids.last?.id
+    }
+
+    /// The layer a clipped layer at `path` clips to (nearest non-clipped sibling below).
+    public func clipBase(for path: LayerPath) -> Layer? {
+        let siblings = children(of: Array(path.dropLast()))
+        var i = path.last! - 1
+        while i >= 0 {
+            if !siblings[i].isClipped { return siblings[i] }
+            i -= 1
+        }
+        return nil
     }
 }

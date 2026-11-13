@@ -38,6 +38,9 @@ struct DocumentView: View {
             .sheet(isPresented: $session.isExportSheetPresented) {
                 ExportSheet(session: session)
             }
+            .sheet(isPresented: $session.isLayerStylePresented) {
+                LayerStyleSheet(session: session)
+            }
             .alert("Glimmer", isPresented: Binding(
                 get: { session.errorMessage != nil },
                 set: { if !$0 { session.errorMessage = nil } }

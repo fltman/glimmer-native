@@ -84,7 +84,7 @@ public struct PixelRect: Equatable, Hashable, Sendable {
         return result
     }
 
-    static func floorDiv(_ a: Int, _ b: Int) -> Int {
+    public static func floorDiv(_ a: Int, _ b: Int) -> Int {
         a >= 0 ? a / b : -((-a + b - 1) / b)
     }
 }

@@ -22,9 +22,23 @@ public enum BlendSpace: String, Codable, Sendable, CaseIterable {
     case gamma
 }
 
-/// Serialized form of a layer's properties (pixels live in `layers/<id>.tiles`).
-public struct LayerRecord: Codable, Equatable, Sendable {
-    public enum Kind: String, Codable, Sendable { case raster }
+/// Serialized form of a layer. Pixels live in separate tile files:
+/// `layers/<id>.tiles` (raster), `<id>.mask.tiles`, `<id>.smart.tiles`.
+public struct LayerRecord: Codable, Sendable {
+    public enum Kind: String, Codable, Sendable { case raster, adjustment, group, fill, smart }
+
+    public struct MaskRecord: Codable, Sendable {
+        public var defaultValue: Float
+        public var enabled: Bool
+        public var density: Double
+        public var feather: Double
+    }
+
+    public struct SmartRecord: Codable, Sendable {
+        public var width: Int
+        public var height: Int
+        public var transform: AffineTransform
+    }
 
     public var id: UUID
     public var name: String
@@ -32,10 +46,19 @@ public struct LayerRecord: Codable, Equatable, Sendable {
     public var visible: Bool
     public var opacity: Double
     public var blendMode: BlendMode
+    public var clipped: Bool?
+    public var mask: MaskRecord?
+    public var effects: LayerEffects?
+    public var adjustment: Adjustment?
+    public var fill: Fill?
+    public var smart: SmartRecord?
+    public var expanded: Bool?
+    /// Groups only, bottom → top.
+    public var children: [LayerRecord]?
 }
 
 /// Top-level description of a document, stored as `manifest.json` in the package.
-public struct DocumentManifest: Codable, Equatable, Sendable {
+public struct DocumentManifest: Codable, Sendable {
     public static let currentFormatVersion = 1
     public static let maxDimension = 32_768
 

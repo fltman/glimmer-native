@@ -3,6 +3,7 @@ import GlimmerCore
 import SwiftUI
 import UniformTypeIdentifiers
 
+
 /// Creates new documents and opens files.
 ///
 /// Images are never opened *as* documents: autosave would overwrite the
@@ -34,8 +35,17 @@ final class DocumentOpener {
         newDocumentWindow = window
     }
 
+    /// SwiftUI's action for opening a new document from an instance (captured
+    /// from the environment by `GlimmerCommands`).
+    var newDocumentAction: NewDocumentAction?
+
     /// Opens a new untitled document window with `state`.
     func createDocument(_ state: DocumentState) {
+        if let newDocumentAction {
+            newDocumentAction(GlimmerDocument(state: state))
+            return
+        }
+        // Fallback: queue the state for `makeDocument`.
         pending.append(state)
         NSDocumentController.shared.newDocument(nil)
     }
@@ -53,6 +63,8 @@ final class DocumentOpener {
                 NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
                     if let error { NSApp.presentError(error) }
                 }
+            } else if url.pathExtension.lowercased() == "aips" {
+                openAips(url)
             } else {
                 openImage(url)
             }
@@ -73,10 +85,22 @@ final class DocumentOpener {
         }
     }
 
-    /// File › Open…: `.glimmer` documents and images.
+    /// Projects from Glimmer for the web open as new, untitled documents.
+    private func openAips(_ url: URL) {
+        let access = url.startAccessingSecurityScopedResource()
+        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        do {
+            createDocument(try AipsImporter.importProject(Data(contentsOf: url)))
+            NSDocumentController.shared.noteNewRecentDocumentURL(url)
+        } catch {
+            NSApp.presentError(error)
+        }
+    }
+
+    /// File › Open…: `.glimmer` documents, images and web projects.
     func showOpenPanel() {
         let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.glimmerDocument, .image]
+        panel.allowedContentTypes = [.glimmerDocument, .image, .aipsProject]
         panel.allowsMultipleSelection = true
         panel.begin { response in
             guard response == .OK else { return }
@@ -88,7 +112,26 @@ final class DocumentOpener {
 
 /// Routes Finder/Dock opens and File › Open… through `DocumentOpener`.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var didFinishLaunching = false
+    private var deferredURLs: [URL] = []
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        didFinishLaunching = true
+        guard !deferredURLs.isEmpty else { return }
+        let urls = deferredURLs
+        deferredURLs = []
+        // Let window restoration finish first: restored untitled documents also go
+        // through `makeDocument` and would otherwise pick up the queued state.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            MainActor.assumeIsolated { DocumentOpener.shared.open(urls) }
+        }
+    }
+
     func application(_ application: NSApplication, open urls: [URL]) {
+        guard didFinishLaunching else {
+            deferredURLs += urls
+            return
+        }
         MainActor.assumeIsolated { DocumentOpener.shared.open(urls) }
     }
 

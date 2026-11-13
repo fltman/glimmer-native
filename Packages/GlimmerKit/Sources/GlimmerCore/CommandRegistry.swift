@@ -81,6 +81,29 @@ extension CommandID {
     public static let sendLayerBackward: CommandID = "layer.backward"
     public static let bringLayerToFront: CommandID = "layer.front"
     public static let sendLayerToBack: CommandID = "layer.back"
+    public static let newGroup: CommandID = "layer.newGroup"
+    public static let groupLayers: CommandID = "layer.group"
+    public static let ungroupLayers: CommandID = "layer.ungroup"
+    public static let toggleClipping: CommandID = "layer.clip"
+    public static let addMaskRevealAll: CommandID = "layer.mask.revealAll"
+    public static let addMaskHideAll: CommandID = "layer.mask.hideAll"
+    public static let toggleMask: CommandID = "layer.mask.toggle"
+    public static let deleteMask: CommandID = "layer.mask.delete"
+    public static let convertToSmartObject: CommandID = "layer.smart.convert"
+    public static let rasterizeLayer: CommandID = "layer.rasterize"
+    public static let layerStyle: CommandID = "layer.style"
+    public static let toggleGammaBlending: CommandID = "image.gammaBlending"
+
+    public static func newAdjustment(_ kind: AdjustmentKind) -> CommandID { CommandID(rawValue: "layer.adjustment.\(kind.rawValue)") }
+    public static let newSolidFill: CommandID = "layer.fill.solid"
+    public static let newGradientFill: CommandID = "layer.fill.gradient"
+    public static let newPatternFill: CommandID = "layer.fill.pattern"
+
+    /// The adjustment kind for a `newAdjustment` id.
+    public var adjustmentKind: AdjustmentKind? {
+        guard rawValue.hasPrefix("layer.adjustment.") else { return nil }
+        return AdjustmentKind(rawValue: String(rawValue.dropFirst("layer.adjustment.".count)))
+    }
 }
 
 public struct CommandRegistry: Sendable {
@@ -140,5 +163,27 @@ public struct CommandRegistry: Sendable {
                           shortcut: KeyShortcut("]", [.command, .shift]), keywords: ["arrange", "top"]),
         CommandDescriptor(.sendLayerToBack, "Send to Back", category: .layer,
                           shortcut: KeyShortcut("[", [.command, .shift]), keywords: ["arrange", "bottom"]),
-    ])
+        CommandDescriptor(.newGroup, "New Group", category: .layer, keywords: ["folder"]),
+        CommandDescriptor(.groupLayers, "Group Layer", category: .layer,
+                          shortcut: KeyShortcut("g"), keywords: ["folder"]),
+        CommandDescriptor(.ungroupLayers, "Ungroup", category: .layer,
+                          shortcut: KeyShortcut("g", [.command, .shift])),
+        CommandDescriptor(.toggleClipping, "Create/Release Clipping Mask", category: .layer,
+                          shortcut: KeyShortcut("g", [.command, .option]), keywords: ["clip"]),
+        CommandDescriptor(.addMaskRevealAll, "Add Layer Mask (Reveal All)", category: .layer, keywords: ["mask"]),
+        CommandDescriptor(.addMaskHideAll, "Add Layer Mask (Hide All)", category: .layer, keywords: ["mask"]),
+        CommandDescriptor(.toggleMask, "Enable/Disable Layer Mask", category: .layer, keywords: ["mask"]),
+        CommandDescriptor(.deleteMask, "Delete Layer Mask", category: .layer, keywords: ["mask"]),
+        CommandDescriptor(.convertToSmartObject, "Convert to Smart Object", category: .layer, keywords: ["smart"]),
+        CommandDescriptor(.rasterizeLayer, "Rasterize Layer", category: .layer, keywords: ["flatten", "merge group"]),
+        CommandDescriptor(.layerStyle, "Layer Style…", category: .layer,
+                          keywords: ["effects", "fx", "shadow", "stroke", "glow", "overlay"]),
+        CommandDescriptor(.newSolidFill, "Solid Color…", category: .layer, keywords: ["fill"]),
+        CommandDescriptor(.newGradientFill, "Gradient…", category: .layer, keywords: ["fill"]),
+        CommandDescriptor(.newPatternFill, "Pattern…", category: .layer, keywords: ["fill"]),
+        CommandDescriptor(.toggleGammaBlending, "Blend Colors in Gamma Space", category: .image,
+                          keywords: ["photoshop", "linear", "color space"]),
+    ] + AdjustmentKind.allCases.map {
+        CommandDescriptor(.newAdjustment($0), $0.title, category: .image, keywords: ["adjustment", "layer"])
+    })
 }

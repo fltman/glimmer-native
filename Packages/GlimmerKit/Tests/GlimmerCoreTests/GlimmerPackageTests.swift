@@ -166,15 +166,15 @@ func assertSamePixels(_ a: TileGrid, _ b: TileGrid) {
         var state = DocumentState.new(width: 100, height: 100, background: .white)
         let bg = state.layers[0].id
         state.insertLayerAboveActive(Layer(name: state.nextLayerName(), content: .raster(TileGrid())))
-        #expect(state.layers.count == 2 && state.layers[1].name == "Layer 2")
+        #expect(state.layers.count == 2 && state.layers[1].name == "Layer 1")
         #expect(state.activeLayerID == state.layers[1].id)
 
         state.duplicateActiveLayer()
-        #expect(state.layers.count == 3 && state.layers[2].name == "Layer 2 copy")
+        #expect(state.layers.count == 3 && state.layers[2].name == "Layer 1 copy")
 
         let moved = state.moveActiveLayer(by: -2)
         #expect(moved)
-        #expect(state.layers[0].name == "Layer 2 copy")
+        #expect(state.layers[0].name == "Layer 1 copy")
         let movedAgain = state.moveActiveLayer(by: -1)
         #expect(!movedAgain)
 

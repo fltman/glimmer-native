@@ -8,9 +8,14 @@ struct GlimmerApp: App {
         DocumentGroup { document in
             DocumentView(document: document)
         } makeDocument: { _, _ in
-            // When a file is being opened, the reader replaces this state.
-            GlimmerDocument(state: DocumentOpener.shared.takePendingState()
-                ?? .new(width: 1920, height: 1080, background: .white))
+            // Also called when a file is opened or a window restored; the reader then
+            // replaces this state (and a queued state is handed on, see `queuedState`).
+            if let queued = DocumentOpener.shared.takePendingState() {
+                let document = GlimmerDocument(state: queued)
+                document.queuedState = queued
+                return document
+            }
+            return GlimmerDocument()
         }
         .commands {
             CommandGroup(replacing: .newItem) {

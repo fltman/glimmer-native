@@ -1,56 +1,136 @@
 import GlimmerCore
 import SwiftUI
+import UniformTypeIdentifiers
+
+/// A row in the flattened, top-down layer tree.
+struct LayerRowItem: Identifiable {
+    let layer: Layer
+    let depth: Int
+    var id: UUID { layer.id }
+}
 
 struct LayersPanel: View {
     @Bindable var session: EditorSession
 
-    private var layersTopDown: [Layer] { session.state.layers.reversed() }
+    /// Top-down rows, descending into expanded groups.
+    private var rows: [LayerRowItem] {
+        func walk(_ layers: [Layer], depth: Int) -> [LayerRowItem] {
+            layers.reversed().flatMap { layer -> [LayerRowItem] in
+                var out = [LayerRowItem(layer: layer, depth: depth)]
+                if case .group(let g) = layer.content, g.isExpanded {
+                    out += walk(g.children, depth: depth + 1)
+                }
+                return out
+            }
+        }
+        return walk(session.state.layers, depth: 0)
+    }
 
     var body: some View {
         VStack(spacing: 0) {
+            if let layer = session.activeLayer, PropertiesPanel.hasProperties(layer) {
+                ScrollView {
+                    PropertiesPanel(session: session, layer: layer)
+                        .padding(10)
+                }
+                .frame(maxHeight: 340)
+                .fixedSize(horizontal: false, vertical: true)
+                Divider()
+            }
             LayerPropertiesBar(session: session)
                 .padding(10)
             Divider()
-            List(selection: Binding(
-                get: { session.state.activeLayerID },
-                set: { session.setActiveLayer($0) }
-            )) {
-                ForEach(layersTopDown) { layer in
-                    LayerRow(layer: layer, thumbnail: session.thumbnails[layer.id], session: session)
-                        .tag(layer.id)
-                        .contextMenu {
-                            Button("Duplicate Layer") {
-                                session.setActiveLayer(layer.id)
-                                session.perform(.duplicateLayer)
-                            }
-                            Button("Delete Layer", role: .destructive) {
-                                session.setActiveLayer(layer.id)
-                                session.perform(.deleteLayer)
-                            }
-                        }
-                }
-                .onMove { session.moveLayers(fromDisplayed: $0, toDisplayed: $1) }
-            }
-            .listStyle(.sidebar)
-            .overlay {
-                if session.state.layers.isEmpty {
-                    ContentUnavailableView("No Layers", systemImage: "square.3.layers.3d.slash",
-                                           description: Text("Add a layer or drop an image on the canvas."))
-                }
-            }
+            layerList
             Divider()
             footer
         }
         .navigationTitle("Layers")
     }
 
+    private var layerList: some View {
+        let rows = rows
+        return List(selection: Binding(
+            get: { session.state.activeLayerID },
+            set: { session.setActiveLayer($0) }
+        )) {
+            ForEach(rows) { row in
+                LayerRow(item: row, session: session)
+                    .tag(row.id)
+                    .contextMenu { contextMenu(for: row.layer) }
+                    .dropDestination(for: String.self) { ids, _ in
+                        guard let id = ids.first.flatMap(UUID.init(uuidString:)), row.layer.isGroup else { return false }
+                        session.moveLayer(id, intoGroup: row.id)
+                        return true
+                    }
+            }
+            .onMove { source, destination in
+                guard let from = source.first else { return }
+                let moving = rows[from].id
+                // Rows are top-down: landing before row d means sitting directly above it.
+                let target = destination < rows.count ? rows[destination].id : nil
+                if target != moving { session.moveLayer(moving, above: target) }
+            }
+        }
+        .listStyle(.sidebar)
+        .overlay {
+            if session.state.layers.isEmpty {
+                ContentUnavailableView("No Layers", systemImage: "square.3.layers.3d.slash",
+                                       description: Text("Add a layer or drop an image on the canvas."))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func contextMenu(for layer: Layer) -> some View {
+        Button("Duplicate Layer") { activate(layer); session.perform(.duplicateLayer) }
+        Button(layer.isGroup ? "Merge Group" : "Rasterize Layer") { activate(layer); session.perform(.rasterizeLayer) }
+            .disabled(layer.isRaster || layer.isAdjustment)
+        Button("Convert to Smart Object") { activate(layer); session.perform(.convertToSmartObject) }
+            .disabled(!layer.isRaster)
+        Divider()
+        Button(layer.isClipped ? "Release Clipping Mask" : "Create Clipping Mask") {
+            activate(layer); session.perform(.toggleClipping)
+        }
+        if layer.mask == nil {
+            Button("Add Layer Mask") { activate(layer); session.perform(.addMaskRevealAll) }
+        } else {
+            Button(layer.mask?.isEnabled == true ? "Disable Layer Mask" : "Enable Layer Mask") {
+                activate(layer); session.perform(.toggleMask)
+            }
+            Button("Delete Layer Mask") { activate(layer); session.perform(.deleteMask) }
+        }
+        Button("Layer Style…") { activate(layer); session.perform(.layerStyle) }
+        Divider()
+        Button("Delete Layer", role: .destructive) { activate(layer); session.perform(.deleteLayer) }
+    }
+
+    private func activate(_ layer: Layer) {
+        session.setActiveLayer(layer.id)
+    }
+
     private var footer: some View {
         HStack(spacing: 2) {
             footerButton("plus", "New Layer", .newLayer)
-            footerButton("plus.square.on.square", "Duplicate Layer", .duplicateLayer)
+            footerButton("folder.badge.plus", "New Group", .newGroup)
+            Menu {
+                ForEach(AdjustmentKind.allCases, id: \.self) { kind in
+                    Button(kind.title, systemImage: kind.symbolName) { session.perform(.newAdjustment(kind)) }
+                }
+                Divider()
+                Button("Solid Color Fill") { session.perform(.newSolidFill) }
+                Button("Gradient Fill") { session.perform(.newGradientFill) }
+                Button("Pattern Fill") { session.perform(.newPatternFill) }
+            } label: {
+                Image(systemName: "circle.lefthalf.filled")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .frame(width: 30)
+            .help("New Adjustment or Fill Layer")
+            footerButton("rectangle.dashed.badge.record", "Add Layer Mask", .addMaskRevealAll)
+            footerButton("fx", "Layer Style", .layerStyle)
             Spacer()
-            footerButton("chevron.up", "Bring Forward", .bringLayerForward)
-            footerButton("chevron.down", "Send Backward", .sendLayerBackward)
+            footerButton("plus.square.on.square", "Duplicate Layer", .duplicateLayer)
             footerButton("trash", "Delete Layer", .deleteLayer)
         }
         .padding(.horizontal, 8)
@@ -75,12 +155,16 @@ private struct LayerPropertiesBar: View {
     @Bindable var session: EditorSession
 
     var body: some View {
-        let layer = session.state.activeLayer
+        let layer = session.activeLayer
         VStack(alignment: .leading, spacing: 8) {
             Picker("Blend Mode", selection: Binding(
                 get: { layer?.blendMode ?? .normal },
                 set: { session.setBlendMode($0) }
             )) {
+                if layer?.isGroup == true {
+                    Text(GlimmerCore.BlendMode.passThrough.title).tag(GlimmerCore.BlendMode.passThrough)
+                    Divider()
+                }
                 ForEach(Array(GlimmerCore.BlendMode.menuGroups.enumerated()), id: \.offset) { index, group in
                     if index > 0 { Divider() }
                     ForEach(group, id: \.self) { mode in Text(mode.title).tag(mode) }
@@ -94,11 +178,11 @@ private struct LayerPropertiesBar: View {
                 Slider(
                     value: Binding(
                         get: { (layer?.opacity ?? 1) * 100 },
-                        set: { session.setOpacity($0 / 100, editing: true) }
+                        set: { session.setOpacity($0 / 100) }
                     ),
                     in: 0...100,
                     onEditingChanged: { editing in
-                        if !editing { session.endOpacityEdit() }
+                        if !editing { session.commitLiveEdit() }
                     }
                 )
                 Text("\(Int(((layer?.opacity ?? 1) * 100).rounded())) %")
@@ -112,16 +196,17 @@ private struct LayerPropertiesBar: View {
 }
 
 private struct LayerRow: View {
-    let layer: Layer
-    let thumbnail: CGImage?
+    let item: LayerRowItem
     let session: EditorSession
 
     @State private var isRenaming = false
     @State private var draftName = ""
     @FocusState private var nameFocused: Bool
 
+    private var layer: Layer { item.layer }
+
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Button {
                 session.setVisibility(layer.id, !layer.isVisible)
             } label: {
@@ -133,7 +218,38 @@ private struct LayerRow: View {
             .help(layer.isVisible ? "Hide layer" : "Show layer")
             .accessibilityLabel(layer.isVisible ? "Hide \(layer.name)" : "Show \(layer.name)")
 
-            Thumbnail(image: thumbnail)
+            Color.clear.frame(width: CGFloat(item.depth) * 14, height: 1)
+
+            if case .group(let g) = layer.content {
+                Button {
+                    session.setExpanded(layer.id, !g.isExpanded)
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .rotationEffect(.degrees(g.isExpanded ? 90 : 0))
+                        .font(.caption.weight(.semibold))
+                        .frame(width: 12)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(g.isExpanded ? "Collapse \(layer.name)" : "Expand \(layer.name)")
+            }
+            if layer.isClipped {
+                Image(systemName: "arrow.turn.left.down")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .help("Clipped to the layer below")
+            }
+
+            LayerIcon(layer: layer, thumbnail: session.thumbnails[layer.id])
+            if let mask = layer.mask {
+                Thumbnail(image: session.maskThumbnails[layer.id], checker: false)
+                    .opacity(mask.isEnabled ? 1 : 0.35)
+                    .overlay {
+                        if !mask.isEnabled {
+                            Image(systemName: "xmark").foregroundStyle(.red).font(.caption.bold())
+                        }
+                    }
+                    .help(mask.isEnabled ? "Layer mask" : "Layer mask (disabled)")
+            }
 
             VStack(alignment: .leading, spacing: 1) {
                 if isRenaming {
@@ -148,16 +264,21 @@ private struct LayerRow: View {
                         .lineLimit(1)
                         .onTapGesture(count: 2, perform: startRename)
                 }
-                if layer.blendMode != .normal || layer.opacity < 1 {
+                if !detail.isEmpty {
                     Text(detail)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
             .opacity(layer.isVisible ? 1 : 0.5)
             Spacer(minLength: 0)
+            if layer.effects.hasEnabled {
+                Text("fx").font(.caption.italic().bold()).foregroundStyle(.secondary)
+            }
         }
         .padding(.vertical, 2)
+        .draggable(layer.id.uuidString)
         .contextMenu {
             Button("Rename…", action: startRename)
         }
@@ -165,7 +286,7 @@ private struct LayerRow: View {
 
     private var detail: String {
         var parts: [String] = []
-        if layer.blendMode != .normal { parts.append(layer.blendMode.title) }
+        if layer.blendMode != .normal && layer.blendMode != .passThrough { parts.append(layer.blendMode.title) }
         if layer.opacity < 1 { parts.append("\(Int((layer.opacity * 100).rounded())) %") }
         return parts.joined(separator: " · ")
     }
@@ -183,12 +304,64 @@ private struct LayerRow: View {
     }
 }
 
-private struct Thumbnail: View {
+/// Thumbnail for pixel layers, a symbol for everything else.
+private struct LayerIcon: View {
+    let layer: Layer
+    let thumbnail: CGImage?
+
+    var body: some View {
+        switch layer.content {
+        case .raster:
+            Thumbnail(image: thumbnail)
+        case .smart:
+            Thumbnail(image: thumbnail)
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: "doc.badge.gearshape")
+                        .font(.system(size: 9))
+                        .padding(1)
+                        .background(.background, in: .rect(cornerRadius: 2))
+                }
+                .help("Smart object")
+        case .group:
+            symbol("folder")
+        case .adjustment(let a):
+            symbol(a.kind.symbolName)
+        case .fill(let fill):
+            switch fill {
+            case .solid(let c):
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color(.sRGB, red: c.r, green: c.g, blue: c.b))
+                    .frame(width: 40, height: 30)
+                    .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(.separator))
+            case .gradient(let g):
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(LinearGradient(stops: g.stops.map {
+                        .init(color: Color(.sRGB, red: $0.color.r, green: $0.color.g, blue: $0.color.b, opacity: $0.opacity),
+                              location: $0.position)
+                    }, startPoint: .leading, endPoint: .trailing))
+                    .frame(width: 40, height: 30)
+                    .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(.separator))
+            case .pattern:
+                symbol("square.grid.3x3")
+            }
+        }
+    }
+
+    private func symbol(_ name: String) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 15))
+            .foregroundStyle(.secondary)
+            .frame(width: 40, height: 30)
+    }
+}
+
+struct Thumbnail: View {
     let image: CGImage?
+    var checker = true
 
     var body: some View {
         ZStack {
-            Checkerboard()
+            if checker { Checkerboard() } else { Color.black }
             if let image {
                 Image(decorative: image, scale: 2)
                     .resizable()

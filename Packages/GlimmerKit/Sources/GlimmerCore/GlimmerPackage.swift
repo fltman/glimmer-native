@@ -38,15 +38,53 @@ public enum GlimmerPackage {
 
     // MARK: Write
 
-    /// - Parameter cache: reuses encoded layer files whose tiles haven't changed.
+    /// - Parameter cache: reuses encoded tile files whose tiles haven't changed.
     public static func fileWrapper(for state: DocumentState, cache: EncodedLayerCache? = nil) throws -> FileWrapper {
+        var tileFiles: [String: FileWrapper] = [:]
+        func addTiles(_ grid: TileGrid, name: String) throws {
+            let data = try cache?.data(for: grid) ?? TileCodec.encode(grid)
+            let file = FileWrapper(regularFileWithContents: data)
+            file.preferredFilename = name
+            tileFiles[name] = file
+        }
+
+        func record(_ layer: Layer) throws -> LayerRecord {
+            let id = layer.id.uuidString
+            var r = LayerRecord(id: layer.id, name: layer.name, kind: .raster, visible: layer.isVisible,
+                                opacity: layer.opacity, blendMode: layer.blendMode,
+                                clipped: layer.isClipped ? true : nil,
+                                effects: layer.effects.hasEnabled || layer.effects != LayerEffects() ? layer.effects : nil)
+            if let mask = layer.mask {
+                r.mask = .init(defaultValue: mask.defaultValue, enabled: mask.isEnabled,
+                               density: mask.density, feather: mask.feather)
+                try addTiles(mask.tiles, name: "\(id).mask.tiles")
+            }
+            switch layer.content {
+            case .raster(let grid):
+                r.kind = .raster
+                try addTiles(grid, name: "\(id).tiles")
+            case .adjustment(let adjustment):
+                r.kind = .adjustment
+                r.adjustment = adjustment
+            case .fill(let fill):
+                r.kind = .fill
+                r.fill = fill
+            case .smart(let smart):
+                r.kind = .smart
+                r.smart = .init(width: smart.width, height: smart.height, transform: smart.transform)
+                try addTiles(smart.source, name: "\(id).smart.tiles")
+            case .group(let group):
+                r.kind = .group
+                r.expanded = group.isExpanded
+                r.children = try group.children.map(record)
+            }
+            return r
+        }
+
         let manifest = DocumentManifest(
             width: state.width, height: state.height,
             colorSpace: state.colorSpace, blendSpace: state.blendSpace,
-            layers: state.layers.map {
-                LayerRecord(id: $0.id, name: $0.name, kind: .raster, visible: $0.isVisible,
-                            opacity: $0.opacity, blendMode: $0.blendMode)
-            },
+            layers: try state.layers.map(record),
             activeLayerID: state.activeLayerID
         )
         let encoder = JSONEncoder()
@@ -54,17 +92,8 @@ public enum GlimmerPackage {
         let manifestFile = FileWrapper(regularFileWithContents: try encoder.encode(manifest))
         manifestFile.preferredFilename = manifestFilename
 
-        var layerFiles: [String: FileWrapper] = [:]
-        for layer in state.layers {
-            let data = try cache?.data(for: layer.tiles) ?? TileCodec.encode(layer.tiles)
-            let name = "\(layer.id.uuidString).tiles"
-            let file = FileWrapper(regularFileWithContents: data)
-            file.preferredFilename = name
-            layerFiles[name] = file
-        }
-        let layersDir = FileWrapper(directoryWithFileWrappers: layerFiles)
+        let layersDir = FileWrapper(directoryWithFileWrappers: tileFiles)
         layersDir.preferredFilename = layersDirectory
-
         return FileWrapper(directoryWithFileWrappers: [
             manifestFilename: manifestFile,
             layersDirectory: layersDir,
@@ -79,26 +108,50 @@ public enum GlimmerPackage {
             throw GlimmerPackageError.missingManifest
         }
         let manifest = try decodeManifest(data)
-        let layerFiles = wrapper.fileWrappers?[layersDirectory]?.fileWrappers ?? [:]
+        let files = wrapper.fileWrappers?[layersDirectory]?.fileWrappers ?? [:]
 
-        let layers = try manifest.layers.map { record -> Layer in
-            let name = "\(record.id.uuidString).tiles"
-            let tiles: TileGrid
-            if let data = layerFiles[name]?.regularFileContents {
-                tiles = try TileCodec.decode(data)
-            } else {
+        func tiles(_ name: String, for record: LayerRecord) throws -> TileGrid {
+            guard let data = files[name]?.regularFileContents else {
                 throw GlimmerPackageError.corruptLayer("missing pixels for “\(record.name)”")
             }
-            return Layer(id: record.id, name: record.name, isVisible: record.visible,
-                         opacity: min(max(record.opacity, 0), 1), blendMode: record.blendMode,
-                         content: .raster(tiles))
+            return try TileCodec.decode(data)
         }
-        return DocumentState(
+
+        func layer(_ r: LayerRecord) throws -> Layer {
+            let id = r.id.uuidString
+            let content: LayerContent
+            switch r.kind {
+            case .raster:
+                content = .raster(try tiles("\(id).tiles", for: r))
+            case .adjustment:
+                guard let a = r.adjustment else { throw GlimmerPackageError.corruptLayer("adjustment “\(r.name)”") }
+                content = .adjustment(a)
+            case .fill:
+                guard let f = r.fill else { throw GlimmerPackageError.corruptLayer("fill “\(r.name)”") }
+                content = .fill(f)
+            case .smart:
+                guard let s = r.smart else { throw GlimmerPackageError.corruptLayer("smart object “\(r.name)”") }
+                content = .smart(SmartObject(source: try tiles("\(id).smart.tiles", for: r),
+                                             width: s.width, height: s.height, transform: s.transform))
+            case .group:
+                content = .group(LayerGroup(children: try (r.children ?? []).map(layer), isExpanded: r.expanded ?? true))
+            }
+            var mask: LayerMask?
+            if let m = r.mask {
+                mask = LayerMask(tiles: try tiles("\(id).mask.tiles", for: r), defaultValue: m.defaultValue,
+                                 isEnabled: m.enabled, density: min(max(m.density, 0), 1), feather: max(0, m.feather))
+            }
+            return Layer(id: r.id, name: r.name, isVisible: r.visible, opacity: min(max(r.opacity, 0), 1),
+                         blendMode: r.blendMode, mask: mask, isClipped: r.clipped ?? false,
+                         effects: r.effects ?? LayerEffects(), content: content)
+        }
+
+        let layers = try manifest.layers.map(layer)
+        var state = DocumentState(
             width: manifest.width, height: manifest.height,
-            colorSpace: manifest.colorSpace, blendSpace: manifest.blendSpace,
-            layers: layers,
-            activeLayerID: layers.contains { $0.id == manifest.activeLayerID } ? manifest.activeLayerID : nil
-        )
+            colorSpace: manifest.colorSpace, blendSpace: manifest.blendSpace, layers: layers)
+        if state.path(of: manifest.activeLayerID) != nil { state.activeLayerID = manifest.activeLayerID }
+        return state
     }
 
     static func decodeManifest(_ data: Data) throws -> DocumentManifest {

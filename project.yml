@@ -65,6 +65,19 @@ targets:
             LSHandlerRank: Alternate
             LSItemContentTypes:
               - public.image
+          - CFBundleTypeName: Glimmer for the Web Project
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - com.brattoo.glimmer.aips
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.brattoo.glimmer.aips
+            UTTypeDescription: Glimmer for the Web Project
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - aips
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: com.brattoo.glimmer.document
             UTTypeDescription: Glimmer Document

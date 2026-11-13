@@ -25,15 +25,17 @@ final class EditorSession {
 
     var showLayersPanel = true
     var isExportSheetPresented = false
+    var isLayerStylePresented = false
     var exportOptions = ExportOptions()
     var isExporting = false
     var errorMessage: String?
 
     private(set) var thumbnails: [UUID: CGImage] = [:]
+    private(set) var maskThumbnails: [UUID: CGImage] = [:]
 
-    @ObservationIgnored private let metal = MetalContext.shared
+    @ObservationIgnored let metal = MetalContext.shared
     @ObservationIgnored private lazy var thumbnailRenderer = metal.flatMap { try? ThumbnailRenderer(context: $0) }
-    @ObservationIgnored private var thumbnailKeys: [UUID: Int] = [:]
+    @ObservationIgnored private var thumbnailKeys: [String: Int] = [:]
     @ObservationIgnored private var thumbnailTask: Task<Void, Never>?
     @ObservationIgnored private var move: (layer: UUID, start: SIMD2<Double>)?
 
@@ -45,6 +47,7 @@ final class EditorSession {
     }
 
     var state: DocumentState { document.state }
+    var activeLayer: Layer? { state.activeLayer }
 
     // MARK: Observation
 
@@ -65,7 +68,7 @@ final class EditorSession {
         canvas.requestRender()
         thumbnailTask?.cancel()
         thumbnailTask = Task {
-            try? await Task.sleep(for: .milliseconds(120))
+            try? await Task.sleep(for: .milliseconds(150))
             guard !Task.isCancelled else { return }
             refreshThumbnails()
         }
@@ -74,26 +77,53 @@ final class EditorSession {
     private func refreshThumbnails() {
         guard let renderer = thumbnailRenderer else { return }
         var next: [UUID: CGImage] = [:]
-        var keys: [UUID: Int] = [:]
-        for layer in state.layers {
-            var hasher = Hasher()
-            hasher.combine(layer.tiles.contentSignature)
-            hasher.combine(state.bounds)
-            let key = hasher.finalize()
-            if thumbnailKeys[layer.id] == key, let existing = thumbnails[layer.id] {
-                next[layer.id] = existing
-            } else if let image = renderer.thumbnail(of: layer.tiles, documentBounds: state.bounds, maxPixels: 96) {
-                next[layer.id] = image
+        var nextMasks: [UUID: CGImage] = [:]
+        var keys: [String: Int] = [:]
+        let bounds = state.bounds
+
+        func cached(_ key: String, _ signature: Int, _ old: CGImage?, _ make: () -> CGImage?) -> CGImage? {
+            var h = Hasher()
+            h.combine(signature)
+            h.combine(bounds)
+            let k = h.finalize()
+            keys[key] = k
+            if thumbnailKeys[key] == k, let old { return old }
+            return make()
+        }
+
+        for layer in state.allLayers {
+            let id = layer.id
+            switch layer.content {
+            case .raster(let grid):
+                next[id] = cached("\(id)", grid.contentSignature, thumbnails[id]) {
+                    renderer.thumbnail(of: grid, documentBounds: bounds, maxPixels: 96)
+                }
+            case .smart(let smart):
+                let src = PixelRect(x: 0, y: 0, width: smart.width, height: smart.height)
+                next[id] = cached("\(id)", smart.source.contentSignature, thumbnails[id]) {
+                    renderer.thumbnail(of: smart.source, documentBounds: src, maxPixels: 96)
+                }
+            default:
+                break
             }
-            keys[layer.id] = key
+            if let mask = layer.mask {
+                var h = Hasher()
+                h.combine(mask.tiles.contentSignature)
+                h.combine(mask.defaultValue)
+                nextMasks[id] = cached("\(id).mask", h.finalize(), maskThumbnails[id]) {
+                    renderer.thumbnail(of: mask.tiles, documentBounds: bounds, maxPixels: 96, background: mask.defaultValue)
+                }
+            }
         }
         thumbnailKeys = keys
         thumbnails = next
+        maskThumbnails = nextMasks
     }
 
     // MARK: Editing helpers
 
     private func edit(_ name: String, _ change: (inout DocumentState) throws -> Void) {
+        commitLiveEdit()
         do {
             try document.edit(name, undoManager: undoManager, change)
         } catch {
@@ -105,17 +135,76 @@ final class EditorSession {
         errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
     }
 
+    // MARK: Live edits (sliders, colour wells)
+
+    @ObservationIgnored private var liveEdit: (name: String, before: DocumentState)?
+    @ObservationIgnored private var liveEditCommit: Task<Void, Never>?
+
+    /// Applies a change immediately and records one undo step once the control
+    /// goes quiet (or `commitLiveEdit()` is called, e.g. when a drag ends).
+    func live(_ name: String, _ change: (inout DocumentState) -> Void) {
+        if liveEdit == nil || liveEdit?.name != name {
+            commitLiveEdit()
+            liveEdit = (name, state)
+        }
+        change(&document.state)
+        liveEditCommit?.cancel()
+        liveEditCommit = Task {
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+            commitLiveEdit()
+        }
+    }
+
+    func commitLiveEdit() {
+        liveEditCommit?.cancel()
+        liveEditCommit = nil
+        guard let edit = liveEdit else { return }
+        liveEdit = nil
+        document.commitInteractiveEdit(edit.name, undoManager: undoManager, before: edit.before)
+    }
+
+    /// Discards an in-progress live edit (e.g. Cancel in a dialog).
+    func revertLiveEdit(to snapshot: DocumentState) {
+        liveEditCommit?.cancel()
+        liveEdit = nil
+        document.state = snapshot
+    }
+
+    /// Live change to the active layer.
+    func liveLayer(_ name: String, _ change: @escaping (inout Layer) -> Void) {
+        guard let id = state.activeLayerID else { return }
+        live(name) { $0.updateLayer(id, change) }
+    }
+
     // MARK: Commands
 
     func canPerform(_ id: CommandID) -> Bool {
-        let index = state.activeIndex
+        let path = state.path(of: state.activeLayerID)
+        let layer = state.activeLayer
+        if id.adjustmentKind != nil { return true }
         switch id {
-        case .duplicateLayer, .deleteLayer:
-            return index != nil
+        case .duplicateLayer, .deleteLayer, .groupLayers, .layerStyle:
+            return layer != nil
         case .bringLayerForward, .bringLayerToFront:
-            return index.map { $0 < state.layers.count - 1 } ?? false
+            guard let path else { return false }
+            return path.last! < state.children(of: Array(path.dropLast())).count - 1
         case .sendLayerBackward, .sendLayerToBack:
-            return index.map { $0 > 0 } ?? false
+            return (path?.last ?? 0) > 0
+        case .ungroupLayers:
+            return layer?.isGroup == true
+        case .toggleClipping:
+            guard let path else { return false }
+            return layer?.isClipped == true || path.last! > 0
+        case .addMaskRevealAll, .addMaskHideAll:
+            return layer != nil && layer?.mask == nil
+        case .toggleMask, .deleteMask:
+            return layer?.mask != nil
+        case .convertToSmartObject:
+            return layer?.isRaster == true && !(layer?.tiles.isEmpty ?? true)
+        case .rasterizeLayer:
+            guard let layer else { return false }
+            return !layer.isRaster && !layer.isAdjustment
         case .export:
             return !isExporting
         case .zoomIn, .zoomOut, .fitToWindow, .actualSize, .rotateViewLeft, .rotateViewRight, .resetViewRotation:
@@ -125,11 +214,35 @@ final class EditorSession {
         }
     }
 
+    func isChecked(_ id: CommandID) -> Bool {
+        switch id {
+        case .toggleGammaBlending: state.blendSpace == .gamma
+        case .toggleClipping: activeLayer?.isClipped == true
+        case .toggleMask: activeLayer?.mask?.isEnabled == false
+        default: false
+        }
+    }
+
     func perform(_ id: CommandID) {
         guard canPerform(id) else { return }
+        if let kind = id.adjustmentKind {
+            addLayer(Layer(name: kind.title, content: .adjustment(Adjustment(kind))), actionName: "New \(kind.title)")
+            return
+        }
         switch id {
         case .newLayer:
-            edit("New Layer") { $0.insertLayerAboveActive(Layer(name: $0.nextLayerName(), content: .raster(TileGrid()))) }
+            addLayer(Layer(name: state.nextLayerName(), content: .raster(TileGrid())), actionName: "New Layer")
+        case .newGroup:
+            addLayer(Layer(name: state.nextLayerName(prefix: "Group"), blendMode: .passThrough,
+                           content: .group(LayerGroup())), actionName: "New Group")
+        case .newSolidFill:
+            addLayer(Layer(name: "Color Fill", content: .fill(.solid(SRGBColor(0.2, 0.45, 0.9)))), actionName: "New Fill Layer")
+        case .newGradientFill:
+            let w = Double(state.width), h = Double(state.height)
+            addLayer(Layer(name: "Gradient Fill", content: .fill(.gradient(
+                GradientFill(start: SIMD2(0, h / 2), end: SIMD2(w, h / 2))))), actionName: "New Fill Layer")
+        case .newPatternFill:
+            addLayer(Layer(name: "Pattern Fill", content: .fill(.pattern(PatternFill()))), actionName: "New Fill Layer")
         case .duplicateLayer:
             edit("Duplicate Layer") { $0.duplicateActiveLayer() }
         case .deleteLayer:
@@ -139,9 +252,34 @@ final class EditorSession {
         case .sendLayerBackward:
             edit("Send Backward") { $0.moveActiveLayer(by: -1) }
         case .bringLayerToFront:
-            edit("Bring to Front") { $0.moveActiveLayer(by: $0.layers.count) }
+            edit("Bring to Front") { $0.moveActiveLayer(by: Int.max / 2) }
         case .sendLayerToBack:
-            edit("Send to Back") { $0.moveActiveLayer(by: -$0.layers.count) }
+            edit("Send to Back") { $0.moveActiveLayer(by: -Int.max / 2) }
+        case .groupLayers:
+            edit("Group Layer") { $0.groupActiveLayer(name: $0.nextLayerName(prefix: "Group")) }
+        case .ungroupLayers:
+            edit("Ungroup") { $0.ungroupActiveLayer() }
+        case .toggleClipping:
+            let clipped = activeLayer?.isClipped == true
+            editActive(clipped ? "Release Clipping Mask" : "Create Clipping Mask") { $0.isClipped = !clipped }
+        case .addMaskRevealAll:
+            editActive("Add Layer Mask") { $0.mask = .revealAll }
+        case .addMaskHideAll:
+            editActive("Add Layer Mask") { $0.mask = .hideAll }
+        case .toggleMask:
+            let enabled = activeLayer?.mask?.isEnabled == true
+            editActive(enabled ? "Disable Layer Mask" : "Enable Layer Mask") { $0.mask?.isEnabled = !enabled }
+        case .deleteMask:
+            editActive("Delete Layer Mask") { $0.mask = nil }
+        case .convertToSmartObject:
+            convertToSmartObject()
+        case .rasterizeLayer:
+            rasterizeActiveLayer()
+        case .layerStyle:
+            isLayerStylePresented = true
+        case .toggleGammaBlending:
+            let gamma = state.blendSpace == .gamma
+            edit(gamma ? "Blend in Linear Light" : "Blend in Gamma Space") { $0.blendSpace = gamma ? .linear : .gamma }
         case .toggleLayersPanel:
             showLayersPanel.toggle()
         case .placeImage:
@@ -153,10 +291,57 @@ final class EditorSession {
         }
     }
 
+    private func addLayer(_ layer: Layer, actionName: String) {
+        edit(actionName) { $0.insertLayerAboveActive(layer) }
+    }
+
+    private func editActive(_ name: String, _ change: @escaping (inout Layer) -> Void) {
+        guard let id = state.activeLayerID else { return }
+        edit(name) { $0.updateLayer(id, change) }
+    }
+
+    // MARK: Smart objects
+
+    private func convertToSmartObject() {
+        guard let layer = activeLayer, case .raster(let grid) = layer.content,
+              let bounds = grid.tileBounds, let metal else { return }
+        do {
+            let source = try TileOperations.translate(grid, by: SIMD2(-bounds.x, -bounds.y), context: metal)
+            let smart = SmartObject(source: source, width: bounds.width, height: bounds.height,
+                                    transform: AffineTransform(tx: Double(bounds.x), ty: Double(bounds.y)))
+            editActive("Convert to Smart Object") { $0.content = .smart(smart) }
+        } catch {
+            report(error)
+        }
+    }
+
+    private func rasterizeActiveLayer() {
+        guard let layer = activeLayer, let metal else { return }
+        do {
+            let bounds = rasterizeBounds(of: layer) ?? state.bounds
+            let tiles = try DocumentCompositor.rasterize(layer, bounds: bounds, blendSpace: state.blendSpace, context: metal)
+            editActive(layer.isGroup ? "Merge Group" : "Rasterize Layer") {
+                $0.content = .raster(tiles)
+                if $0.blendMode == .passThrough { $0.blendMode = .normal }
+            }
+        } catch {
+            report(error)
+        }
+    }
+
+    /// The area worth rasterizing: the document, plus content hanging outside it.
+    private func rasterizeBounds(of layer: Layer) -> PixelRect? {
+        switch layer.content {
+        case .smart(let s): return s.bounds.intersection(PixelRect(x: -8192, y: -8192, width: 16384 + state.width, height: 16384 + state.height))
+        default: return state.bounds
+        }
+    }
+
     // MARK: Layer panel actions
 
     func setActiveLayer(_ id: UUID?) {
         guard let id, id != state.activeLayerID else { return }
+        commitLiveEdit()
         // Selection is not an undoable edit.
         document.state.activeLayerID = id
     }
@@ -165,50 +350,46 @@ final class EditorSession {
         edit(visible ? "Show Layer" : "Hide Layer") { $0.updateLayer(id) { $0.isVisible = visible } }
     }
 
+    func setExpanded(_ id: UUID, _ expanded: Bool) {
+        // Disclosure state is saved with the document but isn't an undoable edit.
+        document.state.updateLayer(id) { layer in
+            if case .group(var g) = layer.content {
+                g.isExpanded = expanded
+                layer.content = .group(g)
+            }
+        }
+    }
+
     func rename(_ id: UUID, to name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, state.layers.first(where: { $0.id == id })?.name != trimmed else { return }
+        guard !trimmed.isEmpty, state.layer(id: id)?.name != trimmed else { return }
         edit("Rename Layer") { $0.updateLayer(id) { $0.name = trimmed } }
     }
 
     func setBlendMode(_ mode: GlimmerCore.BlendMode) {
-        guard let id = state.activeLayerID, state.activeLayer?.blendMode != mode else { return }
+        guard let id = state.activeLayerID, activeLayer?.blendMode != mode else { return }
         edit("Change Blend Mode") { $0.updateLayer(id) { $0.blendMode = mode } }
     }
 
-    @ObservationIgnored private var opacityEditStart: DocumentState?
-
     /// Live opacity change during a slider drag; one undo step on release.
-    func setOpacity(_ value: Double, editing: Bool) {
-        guard let id = state.activeLayerID else { return }
-        if editing, opacityEditStart == nil { opacityEditStart = state }
-        document.state.updateLayer(id) { $0.opacity = min(max(value, 0), 1) }
-        if !editing {
-            let before = opacityEditStart ?? state
-            opacityEditStart = nil
-            document.commitInteractiveEdit("Change Opacity", undoManager: undoManager, before: before)
-        }
+    func setOpacity(_ value: Double) {
+        liveLayer("Change Opacity") { $0.opacity = min(max(value, 0), 1) }
     }
 
-    func endOpacityEdit() {
-        guard let before = opacityEditStart else { return }
-        opacityEditStart = nil
-        document.commitInteractiveEdit("Change Opacity", undoManager: undoManager, before: before)
+    /// Moves `id` so it appears directly above the row `target` (nil = bottom of the stack).
+    func moveLayer(_ id: UUID, above target: UUID?) {
+        edit("Reorder Layers") { $0.moveLayer(id, above: target) }
     }
 
-    /// Reorders using indices into the top-down list shown in the Layers panel.
-    func moveLayers(fromDisplayed source: IndexSet, toDisplayed destination: Int) {
-        edit("Reorder Layers") { state in
-            var topDown = Array(state.layers.reversed())
-            topDown.move(fromOffsets: source, toOffset: destination)
-            state.layers = topDown.reversed()
-        }
+    func moveLayer(_ id: UUID, intoGroup group: UUID) {
+        edit("Move Into Group") { $0.moveLayer(id, intoTopOf: group) }
     }
 
     // MARK: Move tool
 
     func beginMove(at point: SIMD2<Double>) {
-        guard let layer = state.activeLayer, !layer.tiles.isEmpty else { return }
+        guard let layer = activeLayer, !layer.isAdjustment else { return }
+        commitLiveEdit()
         move = (layer.id, point)
     }
 
@@ -232,11 +413,10 @@ final class EditorSession {
     }
 
     private func commitTranslation(of id: UUID, by offset: SIMD2<Int>, actionName: String) {
-        guard offset != .zero, let metal,
-              let layer = state.layers.first(where: { $0.id == id }) else { return }
+        guard offset != .zero, let metal, let layer = state.layer(id: id) else { return }
         do {
-            let moved = try TileOperations.translate(layer.tiles, by: offset, context: metal)
-            edit(actionName) { $0.updateLayer(id) { $0.tiles = moved } }
+            let moved = try TileOperations.translate(layer, by: offset, context: metal)
+            edit(actionName) { $0.updateLayer(id) { $0 = moved } }
         } catch {
             report(error)
         }

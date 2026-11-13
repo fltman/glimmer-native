@@ -66,7 +66,7 @@ enum Reference {
 
     static func blend(_ b: SIMD3<Float>, _ s: SIMD3<Float>, _ mode: BlendMode) -> SIMD3<Float> {
         switch mode {
-        case .normal: s
+        case .normal, .passThrough: s
         case .multiply: b * s
         case .screen: b + s - b * s
         case .overlay: each(b, s) { hardLight($1, $0) }
@@ -109,7 +109,7 @@ enum Reference {
         (SIMD3(0.9, 0.1, 0.4), SIMD3(0.25, 0.6, 0.95)),
     ]
 
-    @Test(arguments: BlendMode.allCases)
+    @Test(arguments: BlendMode.pixelModes)
     func matchesReference(mode: BlendMode) throws {
         for (cb, cs) in Self.cases {
             let ab: Float = 0.8, a: Float = 0.6, opacity: Float = 0.75
@@ -134,7 +134,7 @@ enum Reference {
         #expect(abs(got.x - 0.25) < 0.001 && abs(got.w - 1) < 0.001)
 
         // A fully transparent source leaves the backdrop untouched in every mode.
-        for mode in BlendMode.allCases {
+        for mode in BlendMode.pixelModes {
             let s = DocumentState(width: 256, height: 256, layers: [
                 solidLayer(SIMD4(0.3, 0.2, 0.1, 1)), solidLayer(SIMD4(0.9, 0.9, 0.9, 1), opacity: 0, mode: mode),
             ])
@@ -345,7 +345,7 @@ enum Reference {
         for i in 0..<20 {
             var grid = TileGrid()
             for (n, c) in bounds.tileCoords.enumerated() { grid[c] = tiles[(n + i) % 4] }
-            layers.append(Layer(name: "L\(i)", blendMode: BlendMode.allCases[i % 18], content: .raster(grid)))
+            layers.append(Layer(name: "L\(i)", blendMode: BlendMode.pixelModes[i % 18], content: .raster(grid)))
         }
         let state = DocumentState(width: size, height: size, layers: layers)
         let compositor = try DocumentCompositor(context: ctx)

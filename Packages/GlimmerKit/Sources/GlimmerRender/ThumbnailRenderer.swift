@@ -14,7 +14,8 @@ public final class ThumbnailRenderer {
     }
 
     /// A preview of `grid`, clipped to `documentBounds`, at most `maxPixels` on its long side.
-    public func thumbnail(of grid: TileGrid, documentBounds: PixelRect, maxPixels: Int) -> CGImage? {
+    public func thumbnail(of grid: TileGrid, documentBounds: PixelRect, maxPixels: Int,
+                          background: Float = 0) -> CGImage? {
         guard !documentBounds.isEmpty, maxPixels > 0 else { return nil }
         let scale = Double(maxPixels) / Double(max(documentBounds.width, documentBounds.height))
         let w = max(1, Int((Double(documentBounds.width) * scale).rounded()))
@@ -30,7 +31,8 @@ public final class ThumbnailRenderer {
         let pass = MTLRenderPassDescriptor()
         pass.colorAttachments[0].texture = target
         pass.colorAttachments[0].loadAction = .clear
-        pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        let bg = Double(background)
+        pass.colorAttachments[0].clearColor = MTLClearColor(red: bg, green: bg, blue: bg, alpha: bg)
         pass.colorAttachments[0].storeAction = .store
         guard let encoder = cb.makeRenderCommandEncoder(descriptor: pass) else { return nil }
         encoder.setRenderPipelineState(pipelines.thumbnail)
@@ -46,8 +48,7 @@ public final class ThumbnailRenderer {
                                     Float(Double(r.width) * scale), Float(Double(r.height) * scale))
             let uv = SIMD4<Float>(Float(u0), Float(v0),
                                   Float(u0 + Double(r.width) / s), Float(v0 + Double(r.height) / s))
-            pipelines.draw(tile, rect: rect, uvRect: uv, targetSize: size,
-                           source: SourceUniforms(), encoder: encoder)
+            pipelines.drawTile(tile, rect: rect, uvRect: uv, targetSize: size, encoder: encoder)
         }
         encoder.endEncoding()
         cb.commit()

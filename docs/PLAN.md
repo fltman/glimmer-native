@@ -267,7 +267,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - Move-verktyget (flytta lager).
 - **Tester:** golden-image-tester för varje blend mode, mot analytiska förväntade värden från W3C-formlerna. Rundtur spara→öppna→bit-exakt. Prestandabudget: 8k×8k med 20 lager panoreras i 120 fps på M5.
 
-### Fas 2 — Komplett lagerträd · L
+### Fas 2 — Komplett lagerträd · L ✅ (2026-11-13)
 - Grupper (isolerade och pass-through), masker (måla, slå av/på, density, feather) och clipping med korrekt kedjesemantik.
 - De 14 justeringslagren med inspektorer. Curves med spline, Levels per kanal och histogram, Gradient Map-editor.
 - Layer styles med live-preview.
@@ -334,6 +334,10 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - **Bilder öppnas aldrig som dokument.** En öppnad JPEG skrevs över av autosave med ett `.glimmer`-paket. Nu blir bilder nya, namnlösa dokument (`DocumentOpener`); `GlimmerDocument` läser bara `.glimmer`.
 - **`makeDocument` anropas även när en fil öppnas** och kan inte skilja det från "ny" på macOS. Därför blockerar den aldrig; dialogen New Document köar ett tillstånd som `makeDocument` hämtar.
 - **Mätt prestanda (M5):** 8k × 8k × 20 lager compositas på 0,15 s, och en omkontroll utan ändringar tar 8 ms.
+- **Fas 2:** compositorn renderar trädet rekursivt per tile (isolerade grupper i eget pass, pass-through via backup och mix) med programmable blending. Clipping klipper mot kedjans bas. Masker ligger i dokumentkoordinater och följer med lagret. Effekter, smart objects och fjädrade masker behöver grannpixlar, så de renderas per lager över en sammanfogad region (MPS-blur och avståndstransform) och cachas.
+- **Justeringar** använder en schema-plus-parameter-modell (`Adjustment`) i stället för typade structs per typ. Samma schema driver UI, shader-packning och `.aips`-import, och kommer att driva agentens verktyg.
+- **Nya dokument skapas via SwiftUI:s `newDocument(_:)`** med en färdig instans. Kön genom `makeDocument` kolliderade med fönsteråterställning vid kallstart.
+- **Kvar från fas 2:** histogram i Levels-editorn, transform-UI för smart objects (fas 6) och maskmålning (fas 5).
 - **Kvar till fas 9:** minnesbudget för undo-historiken (idag obegränsad) och composite-cache för stora dokument vid utzoomning (idag full upplösning per tile).
 
 ## 4. Teststrategi

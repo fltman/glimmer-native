@@ -16,6 +16,11 @@ final class GlimmerDocument: Document {
 
     @ObservationIgnored let encodedLayers = EncodedLayerCache()
 
+    /// A state handed over by `DocumentOpener`. If SwiftUI turns out to be
+    /// restoring or opening a file with this instance (`apply` gets called),
+    /// the state is passed on to a fresh document instead of being lost.
+    @ObservationIgnored var queuedState: DocumentState?
+
     init(state: DocumentState = .new(width: 1920, height: 1080, background: .white)) {
         self.state = state
     }
@@ -31,6 +36,10 @@ final class GlimmerDocument: Document {
     @MainActor
     func apply(snapshot: sending DocumentState, previous: sending DocumentState?) async throws {
         state = snapshot
+        if let handedOver = queuedState {
+            queuedState = nil
+            DocumentOpener.shared.createDocument(handedOver)
+        }
     }
 
     func writer(configuration: sending WriteConfiguration) -> sending FileWrapperDocumentWriter<DocumentState> {
