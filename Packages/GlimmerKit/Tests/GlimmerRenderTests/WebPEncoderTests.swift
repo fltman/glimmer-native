@@ -267,7 +267,6 @@ struct WebPPhotoTests {
             let data = try WebPEncoder.encodeLossy(rgba: px, width: w, height: h, quality: Double(q) / 100)
             let seconds = Date().timeIntervalSince(start)
             print("ours q\(q): \(data.count / 1024) kB, PSNR \(String(format: "%.2f", psnr(try decodeRGBA(data).pixels))), \(String(format: "%.1f", seconds)) s")
-            try data.write(to: URL(fileURLWithPath: path + ".q\(q).webp"))
         }
     }
 }

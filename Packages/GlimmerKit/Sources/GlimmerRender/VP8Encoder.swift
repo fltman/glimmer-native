@@ -2,11 +2,12 @@ import Foundation
 
 /// A lossy WebP (VP8 key frame) encoder, following RFC 6386.
 ///
-/// Kept deliberately simple: every macroblock uses 16 × 16 luma prediction
-/// (DC, vertical, horizontal or TrueMotion, whichever fits best), coefficient
-/// probabilities fitted to the image, one token partition and the decoder's
-/// loop filter. That is a valid stream every WebP decoder reads; it is somewhat
-/// larger than libwebp's output at the same quality.
+/// Each macroblock's luma is predicted either as one 16 × 16 block (DC,
+/// vertical, horizontal, TrueMotion) or as sixteen 4 × 4 blocks (ten modes),
+/// whichever costs less in error plus estimated bits. Coefficient
+/// probabilities are fitted to the image in a second pass. One token partition,
+/// no segmentation; the decoder's loop filter is switched on. Output is about
+/// the size of libwebp's at the same quality.
 enum VP8Encoder {
     /// Encodes straight RGBA8 pixels (alpha is ignored here) as a VP8 frame.
     /// `quality` is 0…1.
@@ -511,6 +512,151 @@ enum VP8Encoder {
             return true
         }
 
+
+        // MARK: 4 × 4 prediction (RFC 6386 §12.3)
+
+        /// Fills `pred` (16 values) for sub-mode `mode`. `top` is the top-left pixel
+        /// followed by the eight pixels above and above-right; `left` the four to the left.
+        @inline(__always)
+        private static func predict4(_ mode: Int, top e: UnsafePointer<Int32>, left l: UnsafePointer<Int32>,
+                                     into p: UnsafeMutablePointer<Int32>) {
+            @inline(__always) func avg3(_ a: Int32, _ b: Int32, _ c: Int32) -> Int32 { (a + 2 * b + c + 2) >> 2 }
+            @inline(__always) func avg2(_ a: Int32, _ b: Int32) -> Int32 { (a + b + 1) >> 1 }
+            @inline(__always) func set(_ x: Int, _ y: Int, _ v: Int32) { p[y * 4 + x] = v }
+            let X = e[0], A = e[1], B = e[2], C = e[3], D = e[4], E = e[5], F = e[6], G = e[7], H = e[8]
+            let I = l[0], J = l[1], K = l[2], L = l[3]
+            switch mode {
+            case 0:  // DC
+                let dc = (4 + A + B + C + D + I + J + K + L) >> 3
+                for i in 0..<16 { p[i] = dc }
+            case 1:  // TrueMotion
+                for y in 0..<4 { for x in 0..<4 { p[y * 4 + x] = min(max(e[1 + x] + l[y] - X, 0), 255) } }
+            case 2:  // vertical
+                let v = (avg3(X, A, B), avg3(A, B, C), avg3(B, C, D), avg3(C, D, E))
+                for y in 0..<4 { p[y * 4] = v.0; p[y * 4 + 1] = v.1; p[y * 4 + 2] = v.2; p[y * 4 + 3] = v.3 }
+            case 3:  // horizontal
+                let rows = (avg3(X, I, J), avg3(I, J, K), avg3(J, K, L), avg3(K, L, L))
+                for x in 0..<4 { p[x] = rows.0; p[4 + x] = rows.1; p[8 + x] = rows.2; p[12 + x] = rows.3 }
+            case 4:  // down-right
+                set(0, 3, avg3(J, K, L))
+                let a = avg3(I, J, K); set(1, 3, a); set(0, 2, a)
+                let b = avg3(X, I, J); set(2, 3, b); set(1, 2, b); set(0, 1, b)
+                let c = avg3(A, X, I); set(3, 3, c); set(2, 2, c); set(1, 1, c); set(0, 0, c)
+                let d = avg3(B, A, X); set(3, 2, d); set(2, 1, d); set(1, 0, d)
+                let f = avg3(C, B, A); set(3, 1, f); set(2, 0, f)
+                set(3, 0, avg3(D, C, B))
+            case 5:  // vertical-right
+                let a = avg2(X, A); set(0, 0, a); set(1, 2, a)
+                let b = avg2(A, B); set(1, 0, b); set(2, 2, b)
+                let c = avg2(B, C); set(2, 0, c); set(3, 2, c)
+                set(3, 0, avg2(C, D))
+                set(0, 3, avg3(K, J, I))
+                set(0, 2, avg3(J, I, X))
+                let d = avg3(I, X, A); set(0, 1, d); set(1, 3, d)
+                let f = avg3(X, A, B); set(1, 1, f); set(2, 3, f)
+                let g = avg3(A, B, C); set(2, 1, g); set(3, 3, g)
+                set(3, 1, avg3(B, C, D))
+            case 6:  // down-left
+                set(0, 0, avg3(A, B, C))
+                let a = avg3(B, C, D); set(1, 0, a); set(0, 1, a)
+                let b = avg3(C, D, E); set(2, 0, b); set(1, 1, b); set(0, 2, b)
+                let c = avg3(D, E, F); set(3, 0, c); set(2, 1, c); set(1, 2, c); set(0, 3, c)
+                let d = avg3(E, F, G); set(3, 1, d); set(2, 2, d); set(1, 3, d)
+                let f = avg3(F, G, H); set(3, 2, f); set(2, 3, f)
+                set(3, 3, avg3(G, H, H))
+            case 7:  // vertical-left
+                set(0, 0, avg2(A, B))
+                let a = avg2(B, C); set(1, 0, a); set(0, 2, a)
+                let b = avg2(C, D); set(2, 0, b); set(1, 2, b)
+                let c = avg2(D, E); set(3, 0, c); set(2, 2, c)
+                set(0, 1, avg3(A, B, C))
+                let d = avg3(B, C, D); set(1, 1, d); set(0, 3, d)
+                let f = avg3(C, D, E); set(2, 1, f); set(1, 3, f)
+                let g = avg3(D, E, F); set(3, 1, g); set(2, 3, g)
+                set(3, 2, avg3(E, F, G))
+                set(3, 3, avg3(F, G, H))
+            case 8:  // horizontal-down
+                let a = avg2(I, X); set(0, 0, a); set(2, 1, a)
+                let b = avg2(J, I); set(0, 1, b); set(2, 2, b)
+                let c = avg2(K, J); set(0, 2, c); set(2, 3, c)
+                set(0, 3, avg2(L, K))
+                set(3, 0, avg3(A, B, C))
+                set(2, 0, avg3(X, A, B))
+                let d = avg3(I, X, A); set(1, 0, d); set(3, 1, d)
+                let f = avg3(J, I, X); set(1, 1, f); set(3, 2, f)
+                let g = avg3(K, J, I); set(1, 2, g); set(3, 3, g)
+                set(1, 3, avg3(L, K, J))
+            default:  // 9: horizontal-up
+                set(0, 0, avg2(I, J))
+                let a = avg2(J, K); set(2, 0, a); set(0, 1, a)
+                let b = avg2(K, L); set(2, 1, b); set(0, 2, b)
+                set(1, 0, avg3(I, J, K))
+                let c = avg3(J, K, L); set(3, 0, c); set(1, 1, c)
+                let d = avg3(K, L, L); set(3, 1, d); set(1, 2, d)
+                set(3, 2, L); set(2, 2, L); set(0, 3, L); set(1, 3, L); set(2, 3, L); set(3, 3, L)
+            }
+        }
+
+        /// The bits (as (bit, probability index 0…8) pairs) that code a 4 × 4 mode.
+        @inline(__always)
+        private static func subModeBits(_ mode: Int, _ body: (Bool, Int) -> Void) {
+            body(mode != 0, 0)
+            guard mode != 0 else { return }
+            body(mode != 1, 1)
+            guard mode != 1 else { return }
+            body(mode != 2, 2)
+            guard mode != 2 else { return }
+            if mode < 6 {
+                body(false, 3)
+                body(mode != 3, 4)
+                if mode != 3 { body(mode != 4, 5) }
+            } else {
+                body(true, 3)
+                body(mode != 6, 6)
+                if mode != 6 {
+                    body(mode != 7, 7)
+                    if mode != 7 { body(mode != 8, 8) }
+                }
+            }
+        }
+
+        /// log2-cost table for an 8-bit probability, in bits.
+        private static let bitCost: [Float] = (0...256).map { $0 == 0 ? 8 : -log2(Float($0) / 256) }
+
+        /// Bits needed to announce `mode` given the modes above and to the left.
+        @inline(__always)
+        private static func subModeCost(_ mode: Int, above: Int, left: Int) -> Float {
+            var bits: Float = 0
+            let base = (above * 10 + left) * 9
+            subModeBits(mode) { bit, i in
+                let p = Int(VP8Tables.subModeProbabilities[base + i])
+                bits += bitCost[bit ? 256 - p : p]
+            }
+            return bits
+        }
+
+        /// A rough bit count for a block's quantized levels (raster order), good
+        /// enough to compare 16 × 16 against 4 × 4 coding.
+        @inline(__always)
+        private static func estimatedBits(_ levels: UnsafePointer<Int32>, first: Int) -> Float {
+            var last = -1
+            let zigzag = VP8Tables.zigzag
+            for n in stride(from: 15, through: first, by: -1) where levels[zigzag[n]] != 0 { last = n; break }
+            guard last >= 0 else { return 0.6 }
+            var bits: Float = 1.2
+            for n in first...last {
+                let v = abs(levels[zigzag[n]])
+                switch v {
+                case 0: bits += 1.1
+                case 1: bits += 3.2
+                case 2: bits += 5
+                case 3, 4: bits += 6.3
+                default: bits += 6.5 + 2 * log2(Float(v))
+                }
+            }
+            return bits
+        }
+
         // MARK: Encoding
 
         mutating func encode() -> Data {
@@ -519,6 +665,16 @@ enum VP8Encoder {
             var lumaModes = [Mode](repeating: .dc, count: count)
             var chromaModes = lumaModes
             var skipped = [Bool](repeating: false, count: count)
+            // Luma is coded either as one 16 × 16 prediction or as sixteen 4 × 4 ones.
+            var usesSubModes = [Bool](repeating: false, count: count)
+            let gridWidth = mbWidth * 4
+            var subModes = [UInt8](repeating: 0, count: gridWidth * mbHeight * 4)
+            var recon16 = [UInt8](repeating: 0, count: 256)
+            var levels4 = [Int32](repeating: 0, count: 16 * 16)
+            var modes4 = [UInt8](repeating: 0, count: 16)
+            var pred4 = [Int32](repeating: 0, count: 16), edgeTop = [Int32](repeating: 0, count: 9), edgeLeft = [Int32](repeating: 0, count: 4)
+            // Rate–distortion weight: squared error against estimated bits.
+            let lambda = Float(y1.1 * y1.1) * 3 / 128
 
             // Non-zero flags of the neighbouring blocks: 4 Y, 2 U, 2 V and the Y2 block.
             var topNZ = [[Bool]](repeating: [Bool](repeating: false, count: 9), count: mbWidth)
@@ -558,17 +714,100 @@ enum VP8Encoder {
                     // Reconstruct exactly as the decoder will.
                     for k in 0..<16 { dequantY2[k] = y2Levels[k] * (k == 0 ? y2.0 : y2.1) }
                     let reconDC = VP8Encoder.inverseWHT(dequantY2)
+                    var cost16 = lambda * 2  // the mode itself
+                    y2Levels.withUnsafeBufferPointer { cost16 += lambda * Self.estimatedBits($0.baseAddress!, first: 0) }
                     for b in 0..<16 {
                         let bx = (b & 3) * 4, by = (b >> 2) * 4
                         coeff[0] = reconDC[b]
                         for k in 1..<16 { coeff[k] = levels[b * 16 + k] * y1.1 }
                         Self.inverseTransform(&coeff, &residual)
+                        levels.withUnsafeBufferPointer { cost16 += lambda * Self.estimatedBits($0.baseAddress! + b * 16, first: 1) }
                         for j in 0..<4 {
                             let row = (y0 + by + j) * y.width + x0 + bx
                             for i in 0..<4 {
-                                y.recon[row + i] = UInt8(min(max(pred16[(by + j) * 16 + bx + i] + residual[j * 4 + i], 0), 255))
+                                let value = min(max(pred16[(by + j) * 16 + bx + i] + residual[j * 4 + i], 0), 255)
+                                recon16[(by + j) * 16 + bx + i] = UInt8(value)
+                                let error = Float(Int32(y.source[row + i]) - value)
+                                cost16 += error * error
                             }
                         }
+                    }
+
+                    // The 4 × 4 alternative, reconstructed in place block by block (each
+                    // block predicts from the ones before it). Edge macroblocks keep 16 × 16.
+                    var cost4 = Float.infinity
+                    if mx > 0 && my > 0 {
+                        cost4 = lambda * 1
+                        let w = y.width
+                        for b in 0..<16 {
+                            let bx = b & 3, by = b >> 2
+                            let px = x0 + bx * 4, py = y0 + by * 4
+                            // Neighbouring pixels: top-left, eight above (the last four from above-right), four left.
+                            edgeTop[0] = Int32(y.recon[(py - 1) * w + px - 1])
+                            for i in 0..<4 { edgeTop[1 + i] = Int32(y.recon[(py - 1) * w + px + i]) }
+                            if bx < 3 {
+                                // Above-right inside the macroblock (or its top neighbour): already reconstructed.
+                                for i in 0..<4 { edgeTop[5 + i] = Int32(y.recon[(py - 1) * w + px + 4 + i]) }
+                            } else if mx < mbWidth - 1 {
+                                // Right column: always the pixels above the next macroblock.
+                                for i in 0..<4 { edgeTop[5 + i] = Int32(y.recon[(y0 - 1) * w + x0 + 16 + i]) }
+                            } else {
+                                let last = Int32(y.recon[(y0 - 1) * w + x0 + 15])
+                                for i in 0..<4 { edgeTop[5 + i] = last }
+                            }
+                            for j in 0..<4 { edgeLeft[j] = Int32(y.recon[(py + j) * w + px - 1]) }
+                            let gx = mx * 4 + bx, gy = my * 4 + by
+                            let above = Int(subModes[(gy - 1) * gridWidth + gx]), left = Int(subModes[gy * gridWidth + gx - 1])
+
+                            // Pick the mode by prediction error plus what announcing it costs.
+                            var bestMode = 0, bestScore = Float.infinity
+                            for mode in 0..<10 {
+                                edgeTop.withUnsafeBufferPointer { t in
+                                    edgeLeft.withUnsafeBufferPointer { l in
+                                        pred4.withUnsafeMutableBufferPointer { Self.predict4(mode, top: t.baseAddress!, left: l.baseAddress!, into: $0.baseAddress!) }
+                                    }
+                                }
+                                var sad: Int32 = 0
+                                for j in 0..<4 { for i in 0..<4 { sad += abs(Int32(y.source[(py + j) * w + px + i]) - pred4[j * 4 + i]) } }
+                                let score = Float(sad) + Float(y1.1) * 0.35 * Self.subModeCost(mode, above: above, left: left)
+                                if score < bestScore { bestScore = score; bestMode = mode }
+                            }
+                            modes4[b] = UInt8(bestMode)
+                            subModes[gy * gridWidth + gx] = UInt8(bestMode)
+                            cost4 += lambda * Self.subModeCost(bestMode, above: above, left: left)
+                            edgeTop.withUnsafeBufferPointer { t in
+                                edgeLeft.withUnsafeBufferPointer { l in
+                                    pred4.withUnsafeMutableBufferPointer { Self.predict4(bestMode, top: t.baseAddress!, left: l.baseAddress!, into: $0.baseAddress!) }
+                                }
+                            }
+                            for j in 0..<4 { for i in 0..<4 { diff[j * 4 + i] = Int32(y.source[(py + j) * w + px + i]) - pred4[j * 4 + i] } }
+                            Self.forwardTransform(&diff, &coeff)
+                            for k in 0..<16 {
+                                let step = k == 0 ? y1.0 : y1.1
+                                let level = Self.quantize(coeff[k], step)
+                                levels4[b * 16 + k] = level
+                                coeff[k] = level * step
+                            }
+                            levels4.withUnsafeBufferPointer { cost4 += lambda * Self.estimatedBits($0.baseAddress! + b * 16, first: 0) }
+                            Self.inverseTransform(&coeff, &residual)
+                            for j in 0..<4 {
+                                for i in 0..<4 {
+                                    let value = min(max(pred4[j * 4 + i] + residual[j * 4 + i], 0), 255)
+                                    y.recon[(py + j) * w + px + i] = UInt8(value)
+                                    let error = Float(Int32(y.source[(py + j) * w + px + i]) - value)
+                                    cost4 += error * error
+                                }
+                            }
+                        }
+                    }
+                    let subdivided = cost4 < cost16
+                    usesSubModes[index] = subdivided
+                    if !subdivided {
+                        for j in 0..<16 {
+                            for i in 0..<16 { y.recon[(y0 + j) * y.width + x0 + i] = recon16[j * 16 + i] }
+                        }
+                        // Neighbours see a 16 × 16 macroblock as sixteen blocks of the matching 4 × 4 mode.
+                        for b in 0..<16 { subModes[(my * 4 + (b >> 2)) * gridWidth + mx * 4 + (b & 3)] = UInt8(lumaMode.rawValue) }
                     }
 
                     // Chroma: one mode for both planes.
@@ -604,11 +843,13 @@ enum VP8Encoder {
                     }
 
                     // Tokens.
-                    let empty = !y2Levels.contains { $0 != 0 } && !levels.contains { $0 != 0 }
-                        && !chromaLevels.contains { $0 != 0 }
+                    let lumaEmpty = subdivided ? !levels4.contains { $0 != 0 }
+                        : (!y2Levels.contains { $0 != 0 } && !levels.contains { $0 != 0 })
+                    let empty = lumaEmpty && !chromaLevels.contains { $0 != 0 }
                     skipped[index] = empty
                     if empty {
-                        for k in 0..<9 { topNZ[mx][k] = false; leftNZ[k] = false }
+                        // A skipped 4 × 4 macroblock has no Y2 block, so that context stays as it was.
+                        for k in 0..<(subdivided ? 8 : 9) { topNZ[mx][k] = false; leftNZ[k] = false }
                         continue
                     }
                     func emit(_ block: [Int32], _ offset: Int, type: Int, first: Int, top: Int, left: Int) {
@@ -618,8 +859,12 @@ enum VP8Encoder {
                         topNZ[mx][top] = nz
                         leftNZ[left] = nz
                     }
-                    emit(y2Levels, 0, type: 1, first: 0, top: 8, left: 8)
-                    for b in 0..<16 { emit(levels, b * 16, type: 0, first: 1, top: b & 3, left: b >> 2) }
+                    if subdivided {
+                        for b in 0..<16 { emit(levels4, b * 16, type: 3, first: 0, top: b & 3, left: b >> 2) }
+                    } else {
+                        emit(y2Levels, 0, type: 1, first: 0, top: 8, left: 8)
+                        for b in 0..<16 { emit(levels, b * 16, type: 0, first: 1, top: b & 3, left: b >> 2) }
+                    }
                     for planeIndex in 0..<2 {
                         for b in 0..<4 {
                             emit(chromaLevels, (planeIndex * 4 + b) * 16, type: 2, first: 0,
@@ -656,14 +901,29 @@ enum VP8Encoder {
             header.putBits(Int(skipProbability), 8)
             for i in 0..<count {
                 header.put(skipped[i], skipProbability)
-                header.put(true, 145)  // 16 × 16 prediction
-                let mode = lumaModes[i]
-                if mode == .tm || mode == .horizontal {
-                    header.put(true, 156)
-                    header.put(mode == .tm, 128)
+                if usesSubModes[i] {
+                    header.put(false, 145)  // sixteen 4 × 4 predictions
+                    let mx = i % mbWidth, my = i / mbWidth
+                    for b in 0..<16 {
+                        let gx = mx * 4 + (b & 3), gy = my * 4 + (b >> 2)
+                        // Outside the frame counts as DC.
+                        let above = gy > 0 ? Int(subModes[(gy - 1) * gridWidth + gx]) : 0
+                        let left = gx > 0 ? Int(subModes[gy * gridWidth + gx - 1]) : 0
+                        let base = (above * 10 + left) * 9
+                        Self.subModeBits(Int(subModes[gy * gridWidth + gx])) { bit, k in
+                            header.put(bit, VP8Tables.subModeProbabilities[base + k])
+                        }
+                    }
                 } else {
-                    header.put(false, 156)
-                    header.put(mode == .vertical, 163)
+                    header.put(true, 145)  // 16 × 16 prediction
+                    let mode = lumaModes[i]
+                    if mode == .tm || mode == .horizontal {
+                        header.put(true, 156)
+                        header.put(mode == .tm, 128)
+                    } else {
+                        header.put(false, 156)
+                        header.put(mode == .vertical, 163)
+                    }
                 }
                 let chroma = chromaModes[i]
                 if chroma == .dc {

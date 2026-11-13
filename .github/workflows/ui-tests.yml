@@ -1,0 +1,15 @@
+name: UI tests
+# Started by hand only (Actions › UI tests › Run workflow, or `gh workflow run "UI tests"`):
+# these drive the real app with the mouse and keyboard on the self-hosted Mac for about a
+# minute, so nobody should be using it meanwhile.
+on:
+  workflow_dispatch:
+jobs:
+  ui:
+    runs-on: [self-hosted, macos-27]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: UI tests
+        run: scripts/uitest.sh 2>&1 | grep -E "Test Case|error:|Executed|TEST" ; exit ${pipestatus[1]}
+        shell: zsh {0}
