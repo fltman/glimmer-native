@@ -162,3 +162,44 @@ private func raster(_ name: String) -> Layer {
         #expect(f == of)
     }
 }
+
+@Suite struct TextAndPathTests {
+    @Test func textLayoutAndRender() {
+        let t = TextLayer(string: "Hello\nGlimmer", size: 40, origin: SIMD2(10, 20))
+        let b = t.bounds
+        #expect(b.x == 10 && b.y == 20 && b.width > 80 && b.height > 80)
+        let image = t.render()
+        #expect(image?.width == b.width)
+    }
+
+    @Test func pathFlatteningAndCGPath() {
+        var p = VectorPath(name: "p")
+        p.subpaths = [Subpath(anchors: [PathAnchor(SIMD2(0, 0)), PathAnchor(SIMD2(100, 0), handleIn: SIMD2(100, 50)),
+                                        PathAnchor(SIMD2(100, 100))], isClosed: true)]
+        let poly = p.polygons(steps: 10)[0]
+        #expect(poly.first == SIMD2(0, 0))
+        #expect(poly.count == 1 + 10 + 1 + 1)  // curve segment sampled, straight ones not
+        #expect(!p.cgPath.isEmpty)
+    }
+
+    @Test func affineDecomposeRoundTrips() {
+        let size = SIMD2(200.0, 100.0)
+        let t = AffineTransform.make(x: 30, y: 40, scaleX: 1.5, scaleY: 0.5, rotation: 0.4, sourceSize: size)
+        let d = t.decompose(sourceSize: size)
+        #expect(abs(d.x - 30) < 1e-9 && abs(d.y - 40) < 1e-9 && abs(d.scaleX - 1.5) < 1e-9 && abs(d.scaleY - 0.5) < 1e-9)
+        #expect(abs(d.rotation - 0.4) < 1e-9)
+    }
+
+    @Test func textAndPathsRoundTrip() throws {
+        var state = DocumentState(width: 100, height: 100, layers: [
+            Layer(name: "t", content: .text(TextLayer(string: "x", origin: SIMD2(1, 2)))),
+        ])
+        state.paths = [VectorPath(name: "Path 1", subpaths: [Subpath(anchors: [PathAnchor(SIMD2(1, 1))])])]
+        state.aids.guides = [Guide(axis: .vertical, position: 50)]
+        state.aids.grid.isVisible = true
+        let read = try GlimmerPackage.state(from: GlimmerPackage.fileWrapper(for: state))
+        guard case .text(let t) = read.layers[0].content else { Issue.record("text"); return }
+        #expect(t.string == "x")
+        #expect(read.paths == state.paths && read.aids == state.aids)
+    }
+}

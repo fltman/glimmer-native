@@ -96,6 +96,9 @@ public enum TileOperations {
         case .group(var group):
             group.children = try group.children.map { try translate($0, by: offset, context: context) }
             moved.content = .group(group)
+        case .text(var text):
+            text.origin += d
+            moved.content = .text(text)
         case .fill, .adjustment:
             break
         }

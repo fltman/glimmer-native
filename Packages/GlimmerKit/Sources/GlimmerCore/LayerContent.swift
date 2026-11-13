@@ -210,6 +210,16 @@ public struct AffineTransform: Codable, Hashable, Sendable {
         return AffineTransform(a: a, b: b, c: c, d: d, tx: tx, ty: ty)
     }
 
+    /// Inverse of `make`: the box position, scales and rotation for `sourceSize`.
+    public func decompose(sourceSize: SIMD2<Double>) -> (x: Double, y: Double, scaleX: Double, scaleY: Double, rotation: Double) {
+        let sx = (a * a + b * b).squareRoot()
+        let rotation = atan2(b, a)
+        let sy = sx > 1e-12 ? (a * d - b * c) / sx : 1
+        let centre = apply(sourceSize / 2)
+        let x = centre.x - sourceSize.x * sx / 2, y = centre.y - sourceSize.y * sy / 2
+        return (x, y, sx, sy, rotation)
+    }
+
     public func apply(_ p: SIMD2<Double>) -> SIMD2<Double> {
         SIMD2(a * p.x + c * p.y + tx, b * p.x + d * p.y + ty)
     }

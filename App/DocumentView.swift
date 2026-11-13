@@ -39,6 +39,7 @@ struct DocumentView: View {
                     .padding(8)
                     switch session.inspectorTab {
                     case .layers: LayersPanel(session: session)
+                    case .paths: PathsPanel(session: session)
                     case .ai: AIPanel(session: session, ai: session.ai)
                     }
                 }
@@ -177,6 +178,11 @@ extension ToolID {
         case .paintBucket: "Paint Bucket"
         case .gradient: "Gradient"
         case .eyedropper: "Eyedropper"
+        case .crop: "Crop"
+        case .freeTransform: "Free Transform"
+        case .type: "Type"
+        case .pen: "Pen"
+        case .shape: "Shape"
         default: rawValue.capitalized
         }
     }
@@ -196,6 +202,11 @@ extension ToolID {
         case .paintBucket: "drop.halffull"
         case .gradient: "square.bottomhalf.filled"
         case .eyedropper: "eyedropper"
+        case .crop: "crop"
+        case .freeTransform: "arrow.up.left.and.down.right.and.arrow.up.right.and.down.left"
+        case .type: "textformat"
+        case .pen: "pencil.tip.crop.circle"
+        case .shape: "square.on.circle"
         default: "questionmark"
         }
     }

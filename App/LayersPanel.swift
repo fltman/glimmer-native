@@ -357,6 +357,8 @@ private struct LayerIcon: View {
             case .pattern:
                 symbol("square.grid.3x3")
             }
+        case .text:
+            symbol("textformat")
         }
     }
 

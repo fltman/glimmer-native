@@ -15,13 +15,18 @@ struct GlimmerCommands: Commands {
             items(registry.descriptors(in: .file))
         }
         CommandGroup(before: .toolbar) {
-            items(registry.descriptors(in: .view))
+            items(registry.descriptors(in: .view).filter { ![.toggleRulers, .toggleGrid, .toggleSnap].contains($0.id) })
+            Divider()
+            toggle(.toggleRulers)
+            toggle(.toggleGrid)
+            toggle(.toggleSnap)
             Divider()
         }
         CommandMenu("Image") {
             Menu("Adjustments") {
                 items(AdjustmentKind.allCases.map { .newAdjustment($0) })
             }
+            items([.freeTransform, .crop])
             Divider()
             toggle(.toggleGammaBlending)
         }

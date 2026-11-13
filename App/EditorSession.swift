@@ -17,7 +17,15 @@ final class EditorSession {
     @ObservationIgnored weak var undoManager: UndoManager?
 
     var tool: ToolID = .move {
-        didSet { if oldValue == .magicSelect, tool != .magicSelect { ai?.resetMagicSelect() } }
+        didSet {
+            guard oldValue != tool else { return }
+            if oldValue == .magicSelect { ai?.resetMagicSelect() }
+            if oldValue == .freeTransform { commitTransform() }
+            if oldValue == .crop { cropSession = nil }
+            if oldValue == .pen { finishPathSegment() }
+            if tool == .freeTransform { beginTransform() }
+            if tool == .crop { beginCrop() }
+        }
     }
     /// Space held: the Hand tool takes over temporarily.
     var temporaryHand = false
@@ -28,6 +36,7 @@ final class EditorSession {
 
     enum InspectorTab: String, CaseIterable {
         case layers = "Layers"
+        case paths = "Paths"
         case ai = "AI"
     }
 
@@ -70,6 +79,19 @@ final class EditorSession {
     /// Pointer position over the canvas, for the brush cursor (view points).
     var hoverPoint: SIMD2<Double>?
     var selectionDialog: CommandID?
+
+    // Phase 6 tools
+    var transformSession: TransformSession?
+    var cropSession: CropSession?
+    var editingText: UUID?
+    var textDefaults: (fontName: String, size: Double, alignment: GlimmerCore.TextAlignment) = ("HelveticaNeue-Bold", 96, .left)
+    var activePathID: UUID?
+    @ObservationIgnored var penDrag: (Int, Int, Int)?
+    var penOpen = false
+    var shapeKind = ShapeKind.rectangle
+    var shapeLineWidth = 8.0
+    var shapeDrag: (start: SIMD2<Double>, end: SIMD2<Double>)?
+    var guideDrag: (id: UUID?, axis: Guide.Axis, position: Double)?
 
     @ObservationIgnored var stroke: (engine: StrokeEngine, sampler: StrokeSampler, layer: UUID, mask: Bool)?
     @ObservationIgnored var lastStrokePoint: SIMD2<Double>?
@@ -266,6 +288,8 @@ final class EditorSession {
             return state.selection != nil && (activeLayer?.isRaster ?? false)
         case .layerViaCopy:
             return activeLayer?.isRaster ?? false
+        case .freeTransform:
+            return activeLayer.map { $0.isRaster || { if case .smart = $0.content { true } else { false } }($0) } ?? false
         case .zoomIn, .zoomOut, .fitToWindow, .actualSize, .rotateViewLeft, .rotateViewRight, .resetViewRotation:
             return canvas.canPerform(id)
         default:
@@ -277,6 +301,9 @@ final class EditorSession {
         switch id {
         case .toggleGammaBlending: state.blendSpace == .gamma
         case .toggleClipping: activeLayer?.isClipped == true
+        case .toggleRulers: state.aids.rulersVisible
+        case .toggleGrid: state.aids.grid.isVisible
+        case .toggleSnap: state.aids.snap
         case .toggleMask: activeLayer?.mask?.isEnabled == false
         default: false
         }
@@ -366,6 +393,18 @@ final class EditorSession {
             clearSelectedPixels()
         case .layerViaCopy:
             layerViaCopy()
+        case .freeTransform:
+            tool = .freeTransform
+        case .crop:
+            tool = .crop
+        case .toggleRulers:
+            edit(state.aids.rulersVisible ? "Hide Rulers" : "Show Rulers") { $0.aids.rulersVisible.toggle() }
+        case .toggleGrid:
+            edit(state.aids.grid.isVisible ? "Hide Grid" : "Show Grid") { $0.aids.grid.isVisible.toggle() }
+        case .toggleSnap:
+            edit("Snap") { $0.aids.snap.toggle() }
+        case .clearGuides:
+            edit("Clear Guides") { $0.aids.guides = [] }
         case .aiRemoveBackground:
             ai.removeBackground()
         case .aiRemoveObject:
@@ -457,7 +496,7 @@ final class EditorSession {
         do {
             let source = try TileOperations.translate(grid, by: SIMD2(-bounds.x, -bounds.y), context: metal)
             let smart = SmartObject(source: source, width: bounds.width, height: bounds.height,
-                                    transform: AffineTransform(tx: Double(bounds.x), ty: Double(bounds.y)))
+                                    transform: GlimmerCore.AffineTransform(tx: Double(bounds.x), ty: Double(bounds.y)))
             editActive("Convert to Smart Object") { $0.content = .smart(smart) }
         } catch {
             report(error)

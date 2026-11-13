@@ -73,6 +73,9 @@ public enum GlimmerPackage {
                 r.kind = .smart
                 r.smart = .init(width: smart.width, height: smart.height, transform: smart.transform)
                 try addTiles(smart.source, name: "\(id).smart.tiles")
+            case .text(let text):
+                r.kind = .text
+                r.text = text
             case .group(let group):
                 r.kind = .group
                 r.expanded = group.isExpanded
@@ -81,12 +84,14 @@ public enum GlimmerPackage {
             return r
         }
 
-        let manifest = DocumentManifest(
+        var manifest = DocumentManifest(
             width: state.width, height: state.height,
             colorSpace: state.colorSpace, blendSpace: state.blendSpace,
             layers: try state.layers.map(record),
             activeLayerID: state.activeLayerID
         )
+        manifest.paths = state.paths.isEmpty ? nil : state.paths
+        manifest.aids = state.aids == ViewAids() ? nil : state.aids
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let manifestFile = FileWrapper(regularFileWithContents: try encoder.encode(manifest))
@@ -133,6 +138,9 @@ public enum GlimmerPackage {
                 guard let s = r.smart else { throw GlimmerPackageError.corruptLayer("smart object “\(r.name)”") }
                 content = .smart(SmartObject(source: try tiles("\(id).smart.tiles", for: r),
                                              width: s.width, height: s.height, transform: s.transform))
+            case .text:
+                guard let t = r.text else { throw GlimmerPackageError.corruptLayer("text “\(r.name)”") }
+                content = .text(t)
             case .group:
                 content = .group(LayerGroup(children: try (r.children ?? []).map(layer), isExpanded: r.expanded ?? true))
             }
@@ -151,6 +159,8 @@ public enum GlimmerPackage {
             width: manifest.width, height: manifest.height,
             colorSpace: manifest.colorSpace, blendSpace: manifest.blendSpace, layers: layers)
         if state.path(of: manifest.activeLayerID) != nil { state.activeLayerID = manifest.activeLayerID }
+        state.paths = manifest.paths ?? []
+        state.aids = manifest.aids ?? ViewAids()
         return state
     }
 

@@ -1,3 +1,4 @@
+import AppKit
 import GlimmerCore
 import GlimmerTools
 import SwiftUI
@@ -34,6 +35,23 @@ struct ToolOptionsBar: View {
                     Text("Click an object · ⌥-click to exclude · Return keeps · Esc cancels").foregroundStyle(.secondary)
                 case .eyedropper:
                     Text("Click to pick the foreground · ⌥-click for the background").foregroundStyle(.secondary)
+                case .freeTransform: transformOptions
+                case .crop: cropOptions
+                case .type: TextOptions(session: session)
+                case .pen:
+                    Text("Click for corners · drag for curves · ⌥ breaks handles · click the first point to close · Return ends")
+                        .foregroundStyle(.secondary)
+                case .shape:
+                    Picker("Shape", selection: $session.shapeKind) {
+                        ForEach(EditorSession.ShapeKind.allCases, id: \.self) { Text($0.title).tag($0) }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .frame(width: 200)
+                    if session.shapeKind == .line {
+                        slider("Width", $session.shapeLineWidth, 1...100, display: "\(Int(session.shapeLineWidth)) px")
+                    }
+                    Text("⇧ constrains").foregroundStyle(.secondary)
                 default: EmptyView()
                 }
             }
@@ -43,6 +61,52 @@ struct ToolOptionsBar: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
             .glassEffect(.regular, in: .capsule)
+        }
+    }
+
+    @ViewBuilder private var transformOptions: some View {
+        if let t = session.transformSession {
+            numberField("W", t.box.scaleX * 100, suffix: "%") { session.setTransform(scaleXPercent: $0) }
+            numberField("H", t.box.scaleY * 100, suffix: "%") { session.setTransform(scaleYPercent: $0) }
+            numberField("∠", t.box.rotation * 180 / .pi, suffix: "°") { session.setTransform(degrees: $0) }
+            Text("⇧ keeps proportions · drag outside to rotate").foregroundStyle(.secondary)
+            Button("Cancel") { session.cancelTransform(); session.tool = .move }
+            Button("Apply") { session.commitTransform(); session.tool = .move }
+                .keyboardShortcut(.defaultAction)
+        } else {
+            Text("Select a layer to transform").foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder private var cropOptions: some View {
+        Picker("Aspect", selection: Binding(get: { session.cropSession?.aspect ?? 0 },
+                                            set: { session.setCropAspect($0 == 0 ? nil : $0) })) {
+            Text("Free").tag(0.0)
+            Text("Original").tag(Double(session.state.width) / Double(max(session.state.height, 1)))
+            Text("1:1").tag(1.0)
+            Text("4:3").tag(4.0 / 3)
+            Text("3:2").tag(3.0 / 2)
+            Text("16:9").tag(16.0 / 9)
+            Text("4:5").tag(4.0 / 5)
+            Text("9:16").tag(9.0 / 16)
+        }
+        .frame(width: 140)
+        if let r = session.cropSession?.rect {
+            Text("\(Int(r.width.rounded())) × \(Int(r.height.rounded())) px").monospacedDigit().foregroundStyle(.secondary)
+        }
+        Button("Cancel") { session.cropSession = nil; session.tool = .move }
+        Button("Crop") { session.applyCrop(); session.tool = .move }
+            .keyboardShortcut(.defaultAction)
+    }
+
+    private func numberField(_ label: String, _ value: Double, suffix: String, set: @escaping (Double) -> Void) -> some View {
+        HStack(spacing: 3) {
+            Text(label).foregroundStyle(.secondary)
+            TextField(label, value: Binding(get: { (value * 10).rounded() / 10 }, set: set), format: .number.precision(.fractionLength(0...1)))
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 56)
+                .labelsHidden()
+            Text(suffix).foregroundStyle(.secondary)
         }
     }
 
@@ -137,5 +201,66 @@ struct SelectionModifySheet: View {
         }
         .padding(20)
         .frame(width: 320)
+    }
+}
+
+/// Font, size, alignment and colour for the Type tool. Edits the active text
+/// layer when there is one, otherwise the defaults for new text.
+private struct TextOptions: View {
+    @Bindable var session: EditorSession
+
+    private var current: TextLayer {
+        if let layer = session.activeLayer, case .text(let t) = layer.content { return t }
+        let d = session.textDefaults
+        return TextLayer(string: "", fontName: d.fontName, size: d.size, color: session.foreground, alignment: d.alignment, origin: .zero)
+    }
+
+    var body: some View {
+        let t = current
+        let family = NSFont(name: t.fontName, size: 12)?.familyName ?? "Helvetica Neue"
+        let members = NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []
+        Picker("Font", selection: Binding(get: { family }, set: { newFamily in
+            let first = (NSFontManager.shared.availableMembers(ofFontFamily: newFamily)?.first?.first as? String) ?? newFamily
+            apply { $0.fontName = first }
+        })) {
+            ForEach(NSFontManager.shared.availableFontFamilies, id: \.self) { Text($0).tag($0) }
+        }
+        .labelsHidden()
+        .frame(width: 160)
+        Picker("Style", selection: Binding(get: { t.fontName }, set: { name in apply { $0.fontName = name } })) {
+            ForEach(members.indices, id: \.self) { i in
+                let name = members[i].first as? String ?? ""
+                Text(members[i].count > 1 ? (members[i][1] as? String ?? name) : name).tag(name)
+            }
+        }
+        .labelsHidden()
+        .frame(width: 110)
+        HStack(spacing: 3) {
+            TextField("Size", value: Binding(get: { t.size }, set: { v in apply { $0.size = max(v, 1) } }), format: .number.precision(.fractionLength(0...1)))
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 50)
+            Text("pt").foregroundStyle(.secondary)
+        }
+        Picker("Align", selection: Binding(get: { t.alignment }, set: { a in apply { $0.alignment = a } })) {
+            Image(systemName: "text.alignleft").tag(GlimmerCore.TextAlignment.left)
+            Image(systemName: "text.aligncenter").tag(GlimmerCore.TextAlignment.center)
+            Image(systemName: "text.alignright").tag(GlimmerCore.TextAlignment.right)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .frame(width: 96)
+        ColorPicker("Color", selection: Binding<Color>(
+            get: { Color(.sRGB, red: t.color.r, green: t.color.g, blue: t.color.b) },
+            set: { c in
+                guard let rgb = NSColor(c).usingColorSpace(.sRGB) else { return }
+                apply { $0.color = SRGBColor(rgb.redComponent, rgb.greenComponent, rgb.blueComponent) }
+            }), supportsOpacity: false)
+            .labelsHidden()
+            .fixedSize()
+    }
+
+    private func apply(_ change: @escaping (inout TextLayer) -> Void) {
+        session.updateText(change)
+        session.commitLiveEdit()
     }
 }

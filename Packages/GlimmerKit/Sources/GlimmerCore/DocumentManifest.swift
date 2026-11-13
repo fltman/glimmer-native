@@ -25,7 +25,7 @@ public enum BlendSpace: String, Codable, Sendable, CaseIterable {
 /// Serialized form of a layer. Pixels live in separate tile files:
 /// `layers/<id>.tiles` (raster), `<id>.mask.tiles`, `<id>.smart.tiles`.
 public struct LayerRecord: Codable, Sendable {
-    public enum Kind: String, Codable, Sendable { case raster, adjustment, group, fill, smart }
+    public enum Kind: String, Codable, Sendable { case raster, adjustment, group, fill, smart, text }
 
     public struct MaskRecord: Codable, Sendable {
         public var defaultValue: Float
@@ -52,6 +52,7 @@ public struct LayerRecord: Codable, Sendable {
     public var adjustment: Adjustment?
     public var fill: Fill?
     public var smart: SmartRecord?
+    public var text: TextLayer?
     public var expanded: Bool?
     /// Groups only, bottom → top.
     public var children: [LayerRecord]?
@@ -70,6 +71,8 @@ public struct DocumentManifest: Codable, Sendable {
     /// Bottom → top.
     public var layers: [LayerRecord]
     public var activeLayerID: UUID?
+    public var paths: [VectorPath]?
+    public var aids: ViewAids?
 
     public init(
         width: Int,

@@ -96,9 +96,7 @@ public enum AipsImporter {
                                  scaleX: double(t["sx"], 1), scaleY: double(t["sy"], 1),
                                  rotation: double(t["rot"], 0), sourceSize: natural)))
         case "text":
-            let text = node["text"] as? [String: Any] ?? [:]
-            layer.content = .raster(try rasterizeText(text, origin: SIMD2(x, y)))
-            layer.name = name
+            layer.content = .text(textLayer(node["text"] as? [String: Any] ?? [:], origin: SIMD2(x, y)))
         case "adjustment":
             let type = AdjustmentKind(rawValue: node["adjustmentType"] as? String ?? "") ?? .brightnessContrast
             layer.content = .adjustment(adjustment(type, node["params"] as? [String: Any] ?? [:]))
@@ -253,7 +251,28 @@ public enum AipsImporter {
         return e
     }
 
-    // MARK: Text (rasterized for now)
+    // MARK: Text
+
+    /// Maps the web app's CSS text settings onto a Core Text layer. The web drew
+    /// with 0.25 em side and 0.3 em top padding inside the layer box.
+    static func textLayer(_ t: [String: Any], origin: SIMD2<Int>) -> TextLayer {
+        let size = max(1, double(t["fontSize"], 48))
+        let family = (t["fontFamily"] as? String ?? "")
+            .split(separator: ",").first.map { $0.trimmingCharacters(in: CharacterSet(charactersIn: " \"'")) } ?? ""
+        var font = CTFontCreateWithName((family.isEmpty ? "Helvetica" : family) as CFString, size, nil)
+        var traits: CTFontSymbolicTraits = []
+        if t["bold"] as? Bool == true { traits.insert(.traitBold) }
+        if t["italic"] as? Bool == true { traits.insert(.traitItalic) }
+        if !traits.isEmpty, let styled = CTFontCreateCopyWithSymbolicTraits(font, size, nil, traits, traits) { font = styled }
+        let c = t["color"] as? [String: Any] ?? [:]
+        let align = TextAlignment(rawValue: t["align"] as? String ?? "left") ?? .left
+        return TextLayer(string: t["text"] as? String ?? "", fontName: CTFontCopyPostScriptName(font) as String, size: size,
+                         color: SRGBColor(double(c["r"], 0), double(c["g"], 0), double(c["b"], 0)), alignment: align,
+                         lineHeight: max(0.1, double(t["lineHeight"], 1.2)),
+                         origin: SIMD2(Double(origin.x) + size * 0.25, Double(origin.y) + size * 0.1))
+    }
+
+    // MARK: Text (legacy raster path)
 
     private static func rasterizeText(_ t: [String: Any], origin: SIMD2<Int>) throws -> TileGrid {
         let string = t["text"] as? String ?? ""

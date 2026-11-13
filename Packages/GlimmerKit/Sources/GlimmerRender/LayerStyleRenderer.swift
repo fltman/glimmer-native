@@ -177,7 +177,7 @@ struct SmartUniforms {
 }
 
 /// Renders a smart object's source through its transform into document tiles.
-final class SmartObjectRenderer {
+public final class SmartObjectRenderer {
     private let pipelines: TilePipelines
     private var sources: [Int: MTLTexture] = [:]
 
@@ -185,7 +185,12 @@ final class SmartObjectRenderer {
         self.pipelines = pipelines
     }
 
-    func render(_ smart: SmartObject, limit: PixelRect) throws -> TileGrid {
+    /// For tools (free transform previews and commits).
+    public convenience init(context: MetalContext) throws {
+        self.init(pipelines: try context.tilePipelines())
+    }
+
+    public func render(_ smart: SmartObject, limit: PixelRect) throws -> TileGrid {
         let region = RegionOps.tileAligned(smart.bounds.intersection(limit))
         guard !region.isEmpty, smart.width > 0, smart.height > 0 else { return TileGrid() }
         guard let cb = pipelines.context.commandQueue.makeCommandBuffer() else { return TileGrid() }

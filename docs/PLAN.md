@@ -300,7 +300,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - Kopiera, klipp ut och klistra in med selektion, ⌘J och ⌫.
 - **Prestandabudget:** penseldrag med under en frames latens på 8k-lager.
 
-### Fas 6 — Transform, crop, text, paths, former · L
+### Fas 6 — Transform, crop, text, paths, former · L ✅
 - Free transform (skala, rotera, numeriska fält; skew och perspektiv som tillval) och crop med fungerande aspect-presets, rotate-crop och korrekt hantering av grupper.
 - Textlager via Core Text: alla vikter, tracking, kerning, radavstånd, fri text och textruta, warp och text på path. Redigering i `NSTextView`.
 - Pennverktyg med **redigerbara** ankarpunkter (webben kan inte redigera efter commit) och Paths-panel: selektion, fyll, stroke.
@@ -343,6 +343,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 - **Marching ants:** kanten hittas genom grannsampling med uv-derivator. `fwidth` på det samplade värdet missar kanter mellan 2×2-pixelblock.
 - **Fas 4:** on-device-modellerna är Apples egna Core ML-konverteringar på Hugging Face (`apple/coreml-sam2.1-tiny` och `apple/coreml-depth-anything-v2-small`). De laddas ner vid första användningen till Application Support, kompileras och kan tas bort under Inställningar › Models. Egen konvertering med coremltools behövdes inte. Upscale öppnar ett nytt dokument (Lanczos i 16-bit via MPS, med valfri AI-detaljpass i tiles med mjuka skarvar). Presets blir en grupp av justeringslager; deras filtersteg väntar på fas 7.
 - **Fas 5:** penseln stämplar dabs instansierat i "våta" täckningstexturer per tile, där flow bygger upp inom ett drag. Efter varje händelse räknas bara berörda tiles om från originalet, med opacitet som tak, markering och maskmål. Samma apply-pass driver sudd, maskmålning, färgburk, Clear, Copy och New Layer via Copy. Gradientverktyget skapar ett gradient-fill-lager (icke-destruktivt), maskat av markeringen. Pattern stamp och färgrutepanelen är inte gjorda; de kommer i fas 9.
+- **Fas 6:** Free transform (⌘T) arbetar på en box (position, skala, rotation runt centrum). Rasterlager förhandsvisas genom att källan renderas med `SmartObjectRenderer` till overrides; smarta objekt får sin transform skriven direkt. Commit, Esc och ett enda undo-steg. Crop flyttar alla lager, paths och guider men behåller pixlar utanför (icke-destruktivt). Den roterade crop-varianten är inte gjord. Textlager renderas med Core Text i compositorn och redigeras i en `NSTextView` ovanpå canvasen, med lagrets pixlar dolda under redigering. Paths lagras i dokumentet och har en Paths-flik (fyll, stroke med penseln, till selektion); ankare och handtag går att dra efter commit. Former blir färgfyllnadslager med formen som mask, så de går att färga om. Linjaler, guider (dras ut från linjalerna och tas bort genom att dras tillbaka), grid och snap sparas i dokumentet. **Lärdom:** AppKit sätter `geometryFlipped` på backing-lagret till en flippad vy, så overlay-sublager ska inte flippas manuellt. Det gamla lasso-overlayet var spegelvänt utan att det märktes. Skew och perspektiv, warp, text på path, rundad rektangel och vektorformlager är kvar som tillval.
 - **Kvar till fas 9:** minnesbudget för undo-historiken (idag obegränsad) och composite-cache för stora dokument vid utzoomning (idag full upplösning per tile).
 
 ## 4. Teststrategi

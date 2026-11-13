@@ -96,6 +96,7 @@ public final class DocumentCompositor {
     private var effectsCache: [UUID: (key: Int, value: LayerStyleRenderer.Rendered)] = [:]
     private var smartCache: [UUID: (key: Int, value: TileGrid)] = [:]
     private var featherCache: [UUID: (key: Int, value: TileGrid)] = [:]
+    private var textCache: [UUID: (key: Int, value: TileGrid)] = [:]
 
     public init(context: MetalContext) throws {
         self.context = context
@@ -158,6 +159,18 @@ public final class DocumentCompositor {
                         smartCache[layer.id] = (key, grid)
                     }
                     nodes.append(pixelsNode(layer, grid: grid, common: common, offset: o, overlay: overlay, limit: limit))
+                case .text(let text):
+                    let key = text.hashValue
+                    let grid: TileGrid
+                    if let override = overrides.pixels[layer.id] {
+                        grid = override
+                    } else if let hit = textCache[layer.id], hit.key == key {
+                        grid = hit.value
+                    } else {
+                        grid = Self.rasterize(text)
+                        textCache[layer.id] = (key, grid)
+                    }
+                    nodes.append(pixelsNode(layer, grid: grid, common: common, offset: o, overlay: overlay, limit: limit))
                 case .fill(let fill):
                     nodes.append(.fill(common, fill))
                 case .adjustment(let adjustment):
@@ -174,6 +187,7 @@ public final class DocumentCompositor {
         effectsCache = effectsCache.filter { seen.contains($0.key) }
         smartCache = smartCache.filter { seen.contains($0.key) }
         featherCache = featherCache.filter { seen.contains($0.key) }
+        textCache = textCache.filter { seen.contains($0.key) }
         return nodes
     }
 
@@ -496,6 +510,13 @@ public final class DocumentCompositor {
             }
         }
         encoder.endEncoding()
+    }
+
+    /// Text layers render through Core Text into tiles at their own position.
+    public static func rasterize(_ text: TextLayer) -> TileGrid {
+        guard let image = text.render() else { return TileGrid() }
+        let b = text.bounds
+        return (try? ImageImporter.tiles(from: image, origin: SIMD2(b.x, b.y))) ?? TileGrid()
     }
 
     static func gradientTable(_ stops: [GradientStop]) -> [SIMD4<Float>] {

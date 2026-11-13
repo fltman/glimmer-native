@@ -82,7 +82,8 @@ import Testing
         #expect(smart.transform.apply(SIMD2(0, 0)) == SIMD2(50, 60))
         #expect(smart.transform.apply(SIMD2(10, 10)) == SIMD2(70, 80))
 
-        #expect(!g.children[2].tiles.isEmpty)  // text rasterized
+        guard case .text(let text) = g.children[2].content else { Issue.record("text"); return }
+        #expect(text.string == "Hi" && text.size == 24 && text.fontName.contains("Bold"))
 
         guard case .adjustment(let exposure) = g.children[3].content else { Issue.record("exposure"); return }
         #expect(exposure.number("exposure") == 1)  // a number, not mistaken for a Bool

@@ -79,6 +79,7 @@ public enum LayerContent: Sendable {
     case group(LayerGroup)
     case fill(Fill)
     case smart(SmartObject)
+    case text(TextLayer)
 
     public var kindName: String {
         switch self {
@@ -87,6 +88,7 @@ public enum LayerContent: Sendable {
         case .group: "group"
         case .fill: "fill"
         case .smart: "smart"
+        case .text: "text"
         }
     }
 }
@@ -138,6 +140,7 @@ public struct Layer: Identifiable, Sendable {
     public var isGroup: Bool { if case .group = content { true } else { false } }
     public var isRaster: Bool { if case .raster = content { true } else { false } }
     public var isAdjustment: Bool { if case .adjustment = content { true } else { false } }
+    public var isText: Bool { if case .text = content { true } else { false } }
 
     public var children: [Layer] {
         if case .group(let g) = content { return g.children }
@@ -174,6 +177,10 @@ public struct DocumentState: Sendable {
     public var activeLayerID: UUID?
     /// The current pixel selection (nil = nothing selected). Not saved with the document.
     public var selection: Selection?
+    /// Pen-tool paths (saved).
+    public var paths: [VectorPath] = []
+    /// Guides, grid and rulers (saved).
+    public var aids = ViewAids()
 
     public init(
         width: Int,

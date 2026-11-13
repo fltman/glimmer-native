@@ -105,6 +105,12 @@ extension CommandID {
     public static let cut: CommandID = "edit.cut"
     public static let layerViaCopy: CommandID = "layer.viaCopy"
     public static let clearPixels: CommandID = "edit.clear"
+    public static let freeTransform: CommandID = "edit.transform"
+    public static let crop: CommandID = "image.crop"
+    public static let toggleRulers: CommandID = "view.rulers"
+    public static let toggleGrid: CommandID = "view.grid"
+    public static let toggleSnap: CommandID = "view.snap"
+    public static let clearGuides: CommandID = "view.clearGuides"
 
     public static let aiGenerate: CommandID = "ai.generate"
     public static let aiEditImage: CommandID = "ai.edit"
@@ -169,6 +175,10 @@ public struct CommandRegistry: Sendable {
                           keywords: ["rotate", "canvas"]),
         CommandDescriptor(.resetViewRotation, "Reset View Rotation", category: .view,
                           keywords: ["rotate", "straighten"]),
+        CommandDescriptor(.toggleRulers, "Rulers", category: .view, shortcut: KeyShortcut("r"), keywords: ["ruler", "guides"]),
+        CommandDescriptor(.toggleGrid, "Grid", category: .view, shortcut: KeyShortcut("'"), keywords: ["grid"]),
+        CommandDescriptor(.toggleSnap, "Snap", category: .view, shortcut: KeyShortcut(";", [.command, .shift]), keywords: ["snap"]),
+        CommandDescriptor(.clearGuides, "Clear Guides", category: .view, keywords: ["guides", "remove"]),
         CommandDescriptor(.toggleLayersPanel, "Show/Hide Layers", category: .view,
                           shortcut: KeyShortcut("l", [.command, .option]), keywords: ["panel", "inspector"]),
 
@@ -243,6 +253,9 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.aiPresets, "Presets…", category: .ai, keywords: ["look", "grade", "filter", "style"]),
         CommandDescriptor(.aiLensBlur, "Lens Blur…", category: .ai, keywords: ["depth", "bokeh", "background blur", "portrait"]),
 
+        CommandDescriptor(.freeTransform, "Free Transform", category: .image, shortcut: KeyShortcut("t"),
+                          keywords: ["scale", "rotate", "resize layer"]),
+        CommandDescriptor(.crop, "Crop", category: .image, keywords: ["trim", "canvas size"]),
         CommandDescriptor(.toggleGammaBlending, "Blend Colors in Gamma Space", category: .image,
                           keywords: ["photoshop", "linear", "color space"]),
     ] + AdjustmentKind.allCases.map {
