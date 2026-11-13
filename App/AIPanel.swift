@@ -540,8 +540,12 @@ private struct UpscaleView: View {
     let ai: AIController
     let size: SIMD2<Int>
     @State private var scale = 2
+    @AppStorage("ai.upscaleNeural") private var neural = true
     @State private var enhance = false
     @State private var creativity = 0.3
+
+    /// Real-ESRGAN holds the result as float pixels; keep it to sizes that fit comfortably.
+    private static let neuralMaxSide = 16_384
 
     var body: some View {
         let out = SIMD2(size.x * scale, size.y * scale)
@@ -552,8 +556,16 @@ private struct UpscaleView: View {
                 Text("4×").tag(4)
             }
             .pickerStyle(.segmented)
+            Picker("Method", selection: $neural) {
+                Text("Real-ESRGAN (on this Mac)").tag(true)
+                Text("Lanczos").tag(false)
+            }
             Text("Result: \(out.x) × \(out.y) px, opened as a new document.")
                 .font(.caption).foregroundStyle(.secondary)
+            if neural && max(out.x, out.y) > Self.neuralMaxSide {
+                Text("Too large for Real-ESRGAN; use 2× or Lanczos.")
+                    .font(.caption).foregroundStyle(.orange)
+            }
             Toggle("Add AI detail", isOn: $enhance)
             if enhance {
                 ParameterSlider(label: "Creativity", value: creativity * 100, range: 0...100, step: 1,
@@ -562,8 +574,8 @@ private struct UpscaleView: View {
                     .font(.caption)
                     .foregroundStyle(tiles > 16 ? .orange : .secondary)
             }
-            Button("Upscale") { ai.upscale(scale: scale, enhance: enhance, creativity: creativity) }
-                .disabled(enhance && max(out.x, out.y) > 8192)
+            Button("Upscale") { ai.upscale(scale: scale, neural: neural, enhance: enhance, creativity: creativity) }
+                .disabled((enhance && max(out.x, out.y) > 8192) || (neural && max(out.x, out.y) > Self.neuralMaxSide))
         }
     }
 }

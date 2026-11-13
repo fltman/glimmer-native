@@ -214,7 +214,8 @@ extension AIController {
             guard s.state.selection != nil else { throw StepError("This step needs a selection.") }
             fill(mode: step.string("mode") == "remove" ? .remove : .fill, prompt: step.string("prompt") ?? "", reference: nil)
         case "upscale":
-            upscale(scale: (step.number("scale") ?? 2) >= 3 ? 4 : 2, enhance: false, creativity: 0)
+            let scale = (step.number("scale") ?? 2) >= 3 ? 4 : 2
+            upscale(scale: scale, neural: max(s.state.width, s.state.height) * scale <= 16_384, enhance: false, creativity: 0)
         case "fill":
             guard let color = parseHexColor(step.string("color")) else { throw StepError("Invalid colour.") }
             try ensurePixelLayer()

@@ -22,7 +22,12 @@ let package = Package(
         // Interactive tools (brush, selection, transform, ...).
         .target(name: "GlimmerTools", dependencies: ["GlimmerCore", "GlimmerRender"]),
         // OpenRouter client, AI pipelines, on-device models.
-        .target(name: "GlimmerAI", dependencies: ["GlimmerCore"]),
+        .target(
+            name: "GlimmerAI",
+            dependencies: ["GlimmerCore"],
+            // Real-ESRGAN realesr-general-x4v3 (BSD-3-Clause), converted by scripts/convert-models/realesrgan.py.
+            resources: [.copy("Resources/RealESRGAN.mlmodelc")]
+        ),
 
         .testTarget(name: "GlimmerCoreTests", dependencies: ["GlimmerCore"]),
         .testTarget(name: "GlimmerRenderTests", dependencies: ["GlimmerRender"]),

@@ -377,13 +377,15 @@ final class AIController {
         }
     }
 
-    /// Opens an upscaled copy as a new document (Lanczos on the GPU, optionally an AI detail pass).
-    func upscale(scale: Int, enhance: Bool, creativity: Double) {
+    /// Opens an upscaled copy as a new document: Lanczos on the GPU or
+    /// Real-ESRGAN on this Mac, optionally followed by an AI detail pass.
+    func upscale(scale: Int, neural: Bool = false, enhance: Bool, creativity: Double) {
         let state = session.state
         do {
             let metal = try metal
-            if !enhance {
-                run("Upscale \(scale)×", {
+            let title = neural ? "Upscale \(scale)× (Real-ESRGAN)" : "Upscale \(scale)×"
+            if !enhance && !neural {
+                run(title, {
                     (try DocumentEffects.upscale(state, scale: scale, context: metal), nil)
                 }, apply: { grid in
                     let layer = Layer(name: "Upscaled \(scale)×", content: .raster(grid))
@@ -392,10 +394,13 @@ final class AIController {
                 })
                 return
             }
-            let model = try imageModel()
+            let model = enhance ? try imageModel() : nil
             let source = try composite(state)
-            run("Upscale \(scale)× with AI detail", {
-                let base = source.resized(width: source.width * scale, height: source.height * scale)
+            run(enhance ? title + " with AI detail" : title, {
+                let base = neural
+                    ? try await RealESRGAN.upscale(source, scale: scale)
+                    : source.resized(width: source.width * scale, height: source.height * scale)
+                guard let model else { return (base, nil) }
                 let r = try await AIPipelines.enhance(base, creativity: creativity, model: model)
                 return (r.image, r.cost)
             }, apply: { image in
