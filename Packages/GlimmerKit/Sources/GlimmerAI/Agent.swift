@@ -156,14 +156,33 @@ public enum AgentPlanner {
                  .featherSelection, .growSelection, .shrinkSelection, .crop, .freeTransform].contains(d.id)
     }
 
+    private static func number(_ v: Double) -> String {
+        v == v.rounded() ? String(Int(v)) : String(format: "%.2g", v)
+    }
+
+    /// "brightness_contrast: brightness (-1…1, 0), contrast (-1…1, 0); …" from the schema.
+    static let adjustmentReference: String = AdjustmentKind.allCases.compactMap { kind -> String? in
+        var keys = kind.sliders.map { "\($0.key) (\(number($0.range.lowerBound))…\(number($0.range.upperBound)), \(number($0.defaultValue)))" }
+        keys += kind.toggles.map { "\($0.key) (true/false)" }
+        keys += kind.colors.map { "\($0.key) (#RRGGBB)" }
+        return keys.isEmpty ? nil : "\(kind.rawValue): " + keys.joined(separator: ", ")
+    }.joined(separator: "; ")
+
+    static let filterReference: String = FilterKind.allCases.map { kind in
+        let keys = kind.fields.map { f in
+            f.isToggle ? "\(f.key) (0/1)" : "\(f.key) (\(number(f.range.lowerBound))…\(number(f.range.upperBound)), \(number(f.defaultValue)))"
+        }
+        return "\(kind.rawValue): " + (keys.isEmpty ? "no settings" : keys.joined(separator: ", "))
+    }.joined(separator: "; ")
+
     public static let ops: [AgentOp] = [
         AgentOp("add_adjustment", "Add a non-destructive adjustment layer above the active layer (contrast, hue, black & white, curves …).", [
             AgentParam("type", "string", "Which adjustment.", options: AdjustmentKind.allCases.map(\.rawValue)),
-            AgentParam("params", "object", "Adjustment settings, e.g. {\"brightness\": 0.2, \"contrast\": 0.15} for brightness_contrast, {\"saturation\": -0.3} for hue_saturation, {\"exposure\": 0.5} for exposure. Send {} for sensible defaults."),
+            AgentParam("params", "object", "Settings by key; omitted keys keep their default, {} is neutral. Keys (range, default) per type — " + adjustmentReference + ". Moderate values look natural: exposure is in stops (±0.3–1), most −1…1 sliders are strong beyond ±0.4. For a colour cast use color_balance (positive B = bluer, positive R = redder) or photo_filter."),
         ]),
         AgentOp("apply_filter", "Apply a destructive pixel filter to the active pixel layer (inside the selection if there is one).", [
             AgentParam("type", "string", "Which filter.", options: FilterKind.allCases.map(\.rawValue)),
-            AgentParam("params", "object", "Filter settings, e.g. {\"radius\": 8} for gaussian_blur, {\"amount\": 0.5} for vignette, or {} for defaults."),
+            AgentParam("params", "object", "Settings by key; {} uses the defaults. Keys (range, default) per type — " + filterReference + "."),
         ]),
         AgentOp("add_layer_effect", "Add or update a layer style on the active layer.", [
             AgentParam("type", "string", "Which effect.", options: ["dropShadow", "innerShadow", "outerGlow", "stroke", "colorOverlay"]),
