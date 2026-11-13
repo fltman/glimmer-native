@@ -132,3 +132,35 @@ func value(_ grid: TileGrid, _ x: Int, _ y: Int, default d: Float = 0) -> SIMD4<
         #expect(value(cleared, 50, 50).w < 0.01 && value(cleared, 200, 50).w > 0.99)
     }
 }
+
+@Suite struct PenDynamicsTests {
+    @Test func tiltAndRotationShapeTheDab() {
+        var settings = BrushSettings()
+        settings.angle = 10
+        settings.roundness = 1
+        let flat = StrokeSampler.Sample(.zero, tilt: SIMD2(0, 0.8), rotation: 30)
+        // Off by default: the brush's own angle and roundness.
+        #expect(StrokeSampler.shape(settings, flat) == (10, 1))
+        settings.tiltAngle = true
+        settings.tiltRoundness = true
+        let (angle, roundness) = StrokeSampler.shape(settings, flat)
+        #expect(abs(angle - 90) < 1e-9)
+        #expect(abs(roundness - 0.36) < 1e-9)
+        settings.rotationAngle = true
+        #expect(abs(StrokeSampler.shape(settings, flat).angle - 120) < 1e-9)
+        // An upright pen keeps the brush angle.
+        #expect(StrokeSampler.shape(settings, .init(.zero, rotation: 0)).angle == 10)
+    }
+
+    @Test func tiltIsInterpolatedAlongTheStroke() {
+        var settings = BrushSettings()
+        settings.size = 10
+        settings.spacing = 0.5
+        settings.tiltRoundness = true
+        var sampler = StrokeSampler(settings: settings)
+        _ = sampler.begin(.init(.zero, tilt: .zero))
+        let dabs = sampler.move(to: .init(SIMD2(100, 0), tilt: SIMD2(1, 0)))
+        #expect(dabs.count > 10)
+        #expect(dabs.first!.roundness > dabs.last!.roundness)
+    }
+}
