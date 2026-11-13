@@ -227,6 +227,7 @@ private struct GeneralSettingsView: View {
     @AppStorage(Preferences.checkerSizeKey) private var checker = 8.0
     @AppStorage(Preferences.showOmnibarKey) private var showOmnibar = true
     @AppStorage(AIController.autoRunKey) private var autoRun = false
+    @AppStorage(AIController.onDeviceRoutingKey) private var routeOnDevice = true
 
     var body: some View {
         Form {
@@ -244,6 +245,13 @@ private struct GeneralSettingsView: View {
             Section("Assistant") {
                 Toggle("Run AI steps without asking", isOn: $autoRun)
                 Text("Plans that only use the editor's own tools always run straight away.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("Understand simple requests on this Mac", isOn: $routeOnDevice)
+                    .disabled(!OnDeviceRouter.isAvailable)
+                Text(OnDeviceRouter.isAvailable
+                     ? "Apple Intelligence runs one-command requests directly and sends only the rest to OpenRouter."
+                     : "Needs Apple Intelligence.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

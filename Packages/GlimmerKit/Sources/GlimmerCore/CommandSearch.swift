@@ -87,6 +87,21 @@ public enum CommandSearch {
 
     /// Whether the text reads as a request for the assistant rather than a
     /// command lookup: several words, or no convincing command match.
+    /// Options worth showing a language model for a free-text request: matches
+    /// for the whole text and for each word in it, best first.
+    public static func candidates(for request: String, in items: [PaletteItem], limit: Int = 15) -> [PaletteItem] {
+        let words = request.lowercased().split { !$0.isLetter && !$0.isNumber }.map(String.init).filter { $0.count >= 3 }
+        var best: [String: (item: PaletteItem, score: Double)] = [:]
+        for query in [request] + words {
+            for (item, score) in search(query, in: items, limit: 8) {
+                // Normalise by query length so short words don't dominate.
+                let s = score / Double(max(query.count, 1))
+                if s > (best[item.id]?.score ?? -.infinity) { best[item.id] = (item, s) }
+            }
+        }
+        return best.values.sorted { $0.score > $1.score }.prefix(limit).map(\.item)
+    }
+
     public static func looksLikeAssistantRequest(_ query: String, bestScore: Double?) -> Bool {
         let words = query.split(whereSeparator: \.isWhitespace)
         if words.count >= 4 { return true }

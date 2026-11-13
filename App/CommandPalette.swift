@@ -134,15 +134,27 @@ struct CommandPalette: View {
             session.inspectorTab = .ai
             session.ai.ask(q)
         case .item(let item):
-            switch item.action {
-            case .command(let id):
-                if session.canPerform(id) { session.perform(id) } else { NSSound.beep() }
-            case .tool(let raw):
-                if let t = ToolID(rawValue: raw) { session.tool = t }
-            case .preset(let id):
-                if let p = Preset.all.first(where: { $0.id == id }) { session.ai.applyPreset(p) }
-            }
+            if !session.runPaletteItem(item) { NSSound.beep() }
         }
+    }
+}
+
+extension EditorSession {
+    /// Runs a palette entry (command, tool or preset). Returns false when it isn't available now.
+    @discardableResult
+    func runPaletteItem(_ item: PaletteItem) -> Bool {
+        switch item.action {
+        case .command(let id):
+            guard canPerform(id) else { return false }
+            perform(id)
+        case .tool(let raw):
+            guard let t = ToolID(rawValue: raw) else { return false }
+            tool = t
+        case .preset(let id):
+            guard let p = Preset.all.first(where: { $0.id == id }) else { return false }
+            ai.applyPreset(p)
+        }
+        return true
     }
 }
 

@@ -28,4 +28,12 @@ import Testing
         #expect(!CommandSearch.looksLikeAssistantRequest("blur", bestScore: 20))
         #expect(CommandSearch.looksLikeAssistantRequest("remove person", bestScore: nil))
     }
+
+    @Test func candidatesComeFromWordsToo() {
+        // The whole sentence matches nothing; its words do.
+        #expect(CommandSearch.search("please soften the photo a bit", in: items).isEmpty)
+        let c = CommandSearch.candidates(for: "please soften the photo a bit", in: items)
+        #expect(c.first?.id == "a")
+        #expect(CommandSearch.candidates(for: "pick the brush", in: items).contains { $0.id == "d" })
+    }
 }

@@ -6,6 +6,13 @@ import GlimmerRender
 /// The assistant: plans with the text model, shows the plan, runs it step by step.
 extension AIController {
     static let autoRunKey = "ai.autoRunPlans"
+    static let onDeviceRoutingKey = "ai.routeOnDevice"
+
+    /// Try Apple's on-device model first: one-command requests and "make a
+    /// picture of …" don't need the paid planner.
+    var routesOnDevice: Bool {
+        OnDeviceRouter.isAvailable && (UserDefaults.standard.object(forKey: Self.onDeviceRoutingKey) as? Bool ?? true)
+    }
 
     /// Runs plans without asking first. Plans that only use the editor's own
     /// tools always run straight away; this setting covers plans with AI jobs.
@@ -41,6 +48,44 @@ extension AIController {
             return
         }
         #endif
+        if routesOnDevice {
+            isPlanning = true
+            planTask = Task { [weak self] in
+                guard let self else { return }
+                let candidates = CommandSearch.candidates(for: goal, in: CommandPalette.allItems).map {
+                    OnDeviceRouter.Candidate(id: $0.id, title: $0.title, subtitle: $0.subtitle)
+                }
+                let decision = (try? await OnDeviceRouter.route(goal, candidates: candidates)) ?? .assistant
+                if Task.isCancelled { self.isPlanning = false; return }
+                switch decision {
+                case .run(let id):
+                    if let item = CommandPalette.allItems.first(where: { $0.id == id }), self.session.runPaletteItem(item) {
+                        self.isPlanning = false
+                        self.messages.append(Message(fromUser: false, text: String(localized: "Done: \(String(localized: String.LocalizationValue(item.title))) (on this Mac, no AI cost).")))
+                        self.agentHistory.append((goal, "Ran \(item.title)."))
+                        return
+                    }
+                case .generate(let prompt):
+                    if self.hasAPIKey {
+                        self.isPlanning = false
+                        self.messages.append(Message(fromUser: false, text: String(localized: "Generating “\(prompt)” as a new layer.")))
+                        self.agentHistory.append((goal, "Generated a new layer: \(prompt)"))
+                        self.generate(prompt: prompt, negative: "", width: self.session.state.width, height: self.session.state.height)
+                        return
+                    }
+                case .assistant:
+                    break
+                }
+                self.isPlanning = false
+                self.planWithOpenRouter(goal)
+            }
+            return
+        }
+        planWithOpenRouter(goal)
+    }
+
+    /// Sends the goal to the text model for a plan.
+    private func planWithOpenRouter(_ goal: String) {
         guard let key = (try? Self.apiKey()) ?? nil else {
             messages.append(Message(fromUser: false, text: "Add your OpenRouter API key in Settings › AI to use the assistant."))
             return
