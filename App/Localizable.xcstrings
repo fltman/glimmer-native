@@ -152,6 +152,16 @@
         }
       }
     },
+    "A small copy of the image (1024 px) is sent with each request, so settings suit the photo. The check compares before and after.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En liten kopia av bilden (1024 px) skickas med varje förfrågan, så att inställningarna passar fotot. Kontrollen jämför före och efter."
+          }
+        }
+      }
+    },
     "AI": {
       "localizations": {
         "sv": {
@@ -178,6 +188,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "API-nyckel"
+          }
+        }
+      }
+    },
+    "Actions": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Åtgärder"
           }
         }
       }
@@ -334,6 +354,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lägg till din OpenRouter-nyckel"
+          }
+        }
+      }
+    },
+    "Add your OpenRouter key in Settings › AI": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till din OpenRouter-nyckel i Inställningar › AI"
+          }
+        }
+      }
+    },
+    "Adjusting the result.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Justerar resultatet."
           }
         }
       }
@@ -672,6 +712,12 @@
             "state": "new",
             "value": "Black %1$lld, gamma %2$@, white %3$lld"
           }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svart %1$lld, gamma %2$@, vitt %3$lld"
+          }
         }
       }
     },
@@ -993,6 +1039,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sök efter uppdateringar…"
+          }
+        }
+      }
+    },
+    "Check the result and adjust once": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrollera resultatet och justera en gång"
           }
         }
       }
@@ -1616,6 +1672,16 @@
         }
       }
     },
+    "Describe what to add here…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beskriv vad som ska läggas till här…"
+          }
+        }
+      }
+    },
     "Deselect": {
       "extractionState": "manual",
       "localizations": {
@@ -1623,6 +1689,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Avmarkera"
+          }
+        }
+      }
+    },
+    "Deselect (⌘D)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avmarkera (⌘D)"
           }
         }
       }
@@ -2204,6 +2280,16 @@
         }
       }
     },
+    "Feather the selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fjädra markeringen"
+          }
+        }
+      }
+    },
     "Feather…": {
       "extractionState": "manual",
       "localizations": {
@@ -2378,6 +2464,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plattar ut ett Glimmer-dokument (eller konverterar en bild) till PNG, JPEG, HEIC, TIFF eller WebP."
+          }
+        }
+      }
+    },
+    "Flip Horizontal": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vänd horisontellt"
+          }
+        }
+      }
+    },
+    "Flip Vertical": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vänd vertikalt"
           }
         }
       }
@@ -3112,6 +3220,16 @@
         }
       }
     },
+    "Invert the selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invertera markeringen"
+          }
+        }
+      }
+    },
     "JPEG": {},
     "Just ask": {
       "localizations": {
@@ -3119,6 +3237,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fråga bara"
+          }
+        }
+      }
+    },
+    "Keep these steps to run again from ⌘K or the Actions menu": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara stegen för att köra dem igen från ⌘K eller menyn Åtgärder"
           }
         }
       }
@@ -3293,6 +3421,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Linsoskärpa…"
+          }
+        }
+      }
+    },
+    "Let the assistant see the image": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Låt assistenten se bilden"
           }
         }
       }
@@ -4899,6 +5037,16 @@
         }
       }
     },
+    "Remove what's inside the selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort det som finns i markeringen"
+          }
+        }
+      }
+    },
     "Rename": {
       "localizations": {
         "sv": {
@@ -5053,6 +5201,39 @@
         }
       }
     },
+    "Rotate 180°": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotera 180°"
+          }
+        }
+      }
+    },
+    "Rotate 90° Clockwise": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotera 90° medurs"
+          }
+        }
+      }
+    },
+    "Rotate 90° Counterclockwise": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotera 90° moturs"
+          }
+        }
+      }
+    },
     "Rotate View Left 15°": {
       "extractionState": "manual",
       "localizations": {
@@ -5137,6 +5318,16 @@
         }
       }
     },
+    "Running the saved action.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör den sparade åtgärden."
+          }
+        }
+      }
+    },
     "Runs a Glimmer filter with its default settings on an image.": {
       "localizations": {
         "sv": {
@@ -5190,6 +5381,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spara"
+          }
+        }
+      }
+    },
+    "Save as Action": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara som åtgärd"
           }
         }
       }
@@ -5510,6 +5711,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Visa eller göm lagerpanelen (⌥⌘L)"
+          }
+        }
+      }
+    },
+    "Show the action bar at the selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa åtgärdsraden vid markeringen"
           }
         }
       }
@@ -6332,7 +6543,18 @@
       }
     },
     "WebP": {},
+    "WebP is lossless at 100 %. Lower settings round colours slightly for a smaller file.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WebP är förlustfritt vid 100 %. Lägre värden avrundar färgerna en aning för en mindre fil."
+          }
+        }
+      }
+    },
     "WebP is saved lossless.": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
