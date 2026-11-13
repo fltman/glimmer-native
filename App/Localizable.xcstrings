@@ -67,6 +67,36 @@
         }
       }
     },
+    "+ Group": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+ Grupp"
+          }
+        }
+      }
+    },
+    "+ Layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+ Lager"
+          }
+        }
+      }
+    },
+    "+ Mask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+ Mask"
+          }
+        }
+      }
+    },
     "125 %": {},
     "150 %": {},
     "16 bits per channel": {
@@ -1156,6 +1186,16 @@
         }
       }
     },
+    "Classic Layout": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klassisk layout"
+          }
+        }
+      }
+    },
     "Clean Up": {
       "extractionState": "manual",
       "localizations": {
@@ -1968,6 +2008,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skugga"
+          }
+        }
+      }
+    },
+    "Drop a file anywhere, paste from your clipboard, or open one — or just describe an image in the bar below and AI generates it.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Släpp en fil var som helst, klistra in från urklipp eller öppna en – eller beskriv en bild i raden nedanför så genererar AI den."
+          }
+        }
+      }
+    },
+    "Duplicate": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplicera"
           }
         }
       }
@@ -2965,6 +3025,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rutnät"
+          }
+        }
+      }
+    },
+    "Group": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppera"
           }
         }
       }
@@ -4379,6 +4449,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Öppna"
+          }
+        }
+      }
+    },
+    "Open Image": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna bild"
           }
         }
       }
@@ -6114,6 +6194,16 @@
         }
       }
     },
+    "Start Blank": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Börja tomt"
+          }
+        }
+      }
+    },
     "Stop": {
       "localizations": {
         "sv": {
@@ -7048,6 +7138,16 @@
       }
     },
     "⌘K": {},
+    "⌘K Commands": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⌘K Kommandon"
+          }
+        }
+      }
+    },
     "⌥-click sets a new source": {
       "localizations": {
         "sv": {

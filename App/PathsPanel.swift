@@ -39,6 +39,7 @@ struct PathsPanel: View {
                     }
                 }
                 .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
             }
             Divider()
             HStack(spacing: 12) {

@@ -36,8 +36,9 @@ struct GlimmerCommands: Commands {
             .disabled(!editingText && index >= history.count)
         }
         CommandGroup(before: .toolbar) {
-            items(registry.descriptors(in: .view).filter { ![.toggleRulers, .toggleGrid, .toggleSnap, .toggleNavigator].contains($0.id) })
+            items(registry.descriptors(in: .view).filter { ![.toggleRulers, .toggleGrid, .toggleSnap, .toggleNavigator, .toggleClassicLayout].contains($0.id) })
             Divider()
+            toggle(.toggleClassicLayout)
             toggle(.toggleNavigator)
             toggle(.toggleRulers)
             toggle(.toggleGrid)

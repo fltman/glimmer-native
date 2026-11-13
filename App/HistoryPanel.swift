@@ -16,6 +16,7 @@ struct HistoryPanel: View {
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
             .onChange(of: document.history.count) { proxy.scrollTo(document.history.count, anchor: .bottom) }
         }
         Text(document.stepsOnDisk > 0

@@ -72,6 +72,7 @@ struct LayersPanel: View {
             }
         }
         .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
         .overlay {
             if session.state.layers.isEmpty {
                 ContentUnavailableView("No Layers", systemImage: "square.3.layers.3d.slash",
@@ -108,42 +109,71 @@ struct LayersPanel: View {
         session.setActiveLayer(layer.id)
     }
 
+    /// Labelled buttons, as in the web app's layer panel.
     private var footer: some View {
-        HStack(spacing: 2) {
-            footerButton("plus", "New Layer", .newLayer)
-            footerButton("folder.badge.plus", "New Group", .newGroup)
-            Menu {
-                ForEach(AdjustmentKind.allCases, id: \.self) { kind in
-                    Button(LocalizedStringKey(kind.title), systemImage: kind.symbolName) { session.perform(.newAdjustment(kind)) }
-                }
-                Divider()
-                Button("Solid Color Fill") { session.perform(.newSolidFill) }
-                Button("Gradient Fill") { session.perform(.newGradientFill) }
-                Button("Pattern Fill") { session.perform(.newPatternFill) }
-            } label: {
-                Image(systemName: "circle.lefthalf.filled")
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                textButton("+ Layer", .newLayer, prominent: true)
+                textButton("Duplicate", .duplicateLayer)
+                footerButton("arrow.up", "Bring Forward", .bringLayerForward)
+                footerButton("arrow.down", "Send Backward", .sendLayerBackward)
+                textButton("Group", .groupLayers)
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .frame(width: 30)
-            .help("New Adjustment or Fill Layer")
-            footerButton("rectangle.dashed.badge.record", "Add Layer Mask", .addMaskRevealAll)
-            footerButton("fx", "Layer Style", .layerStyle)
-            Spacer()
-            footerButton("plus.square.on.square", "Duplicate Layer", .duplicateLayer)
-            footerButton("trash", "Delete Layer", .deleteLayer)
+            HStack(spacing: 6) {
+                textButton("+ Group", .newGroup)
+                textButton("+ Mask", .addMaskRevealAll)
+                Menu {
+                    ForEach(AdjustmentKind.allCases, id: \.self) { kind in
+                        Button(LocalizedStringKey(kind.title), systemImage: kind.symbolName) { session.perform(.newAdjustment(kind)) }
+                    }
+                    Divider()
+                    Button("Solid Color Fill") { session.perform(.newSolidFill) }
+                    Button("Gradient Fill") { session.perform(.newGradientFill) }
+                    Button("Pattern Fill") { session.perform(.newPatternFill) }
+                } label: {
+                    Image(systemName: "circle.lefthalf.filled")
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .frame(width: 30, height: 26)
+                .background(Theme.raised, in: .rect(cornerRadius: 6))
+                .help("New Adjustment or Fill Layer")
+                footerButton("fx", "Layer Style", .layerStyle)
+                Spacer()
+                textButton("Delete", .deleteLayer)
+            }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
+        .padding(10)
+    }
+
+    private func textButton(_ title: String, _ id: CommandID, prominent: Bool = false) -> some View {
+        Button {
+            session.perform(id)
+        } label: {
+            Text(LocalizedStringKey(title))
+                .font(.callout)
+                .padding(.horizontal, 9)
+                .frame(height: 26)
+                .background(prominent ? Theme.accent : Theme.raised, in: .rect(cornerRadius: 6))
+                .foregroundStyle(prominent ? Color.white : Theme.ink)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .disabled(!session.canPerform(id))
+        .opacity(session.canPerform(id) ? 1 : 0.45)
     }
 
     private func footerButton(_ symbol: String, _ title: String, _ id: CommandID) -> some View {
         Button {
             session.perform(id)
         } label: {
-            Image(systemName: symbol).frame(width: 26, height: 22)
+            Image(systemName: symbol)
+                .frame(width: 30, height: 26)
+                .background(Theme.raised, in: .rect(cornerRadius: 6))
+                .contentShape(.rect)
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.plain)
+        .opacity(session.canPerform(id) ? 1 : 0.45)
         .disabled(!session.canPerform(id))
         .help(Text(LocalizedStringKey(title)))
         .accessibilityLabel(Text(LocalizedStringKey(title)))

@@ -33,6 +33,7 @@ struct ChannelsPanel: View {
                 }
             }
             .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
             Text("Click a channel to view it in grey. Channel views don't change the image.")
                 .font(.caption)
                 .foregroundStyle(.secondary)

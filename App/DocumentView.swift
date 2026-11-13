@@ -49,8 +49,8 @@ struct DocumentView: View {
             .overlay(alignment: .topTrailing) {
                 VStack(alignment: .trailing, spacing: 10) {
                     ChromeBar(session: session)
-                    if session.showLayersPanel {
-                        SidePanel(session: session)
+                    if session.showLayersPanel && !session.classicLayout {
+                        SidePanel(session: session, docked: false)
                     }
                 }
                 .padding(.top, 10)
@@ -77,7 +77,16 @@ struct DocumentView: View {
                         .padding(.leading, session.showTools ? 104 : 14)
                 }
             }
+            .overlay {
+                if showsStartCard { StartCard(session: session) }
+            }
             .ignoresSafeArea(.container, edges: .top)
+            .safeAreaInset(edge: .trailing, spacing: 0) {
+                if session.classicLayout {
+                    SidePanel(session: session, docked: true).ignoresSafeArea(.container, edges: .top)
+                }
+            }
+            .background(Theme.background.ignoresSafeArea())
             .sheet(item: Binding(get: { session.selectionDialog.map(SelectionDialogItem.init) },
                                  set: { session.selectionDialog = $0?.id })) { item in
                 SelectionModifySheet(session: session, command: item.id)
@@ -101,6 +110,43 @@ struct DocumentView: View {
             .focusedSceneValue(\.editorSession, session)
             .onAppear { session.undoManager = undoManager }
             .onChange(of: undoManager) { _, manager in session.undoManager = manager }
+    }
+}
+
+extension DocumentView {
+    /// An untouched, empty document greets you like the web app does.
+    fileprivate var showsStartCard: Bool {
+        !session.startCardDismissed && session.document.history.isEmpty && session.state.textureTileIDs.isEmpty
+            && session.state.allLayers.count <= 1 && session.editingText == nil
+    }
+}
+
+/// Logo, a line of guidance and the two ways in.
+private struct StartCard: View {
+    let session: EditorSession
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image("GlimmerLogo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 220, height: 220)
+                .clipShape(.rect(cornerRadius: 12))
+                .accessibilityLabel("Glimmer")
+            Text("Drop a file anywhere, paste from your clipboard, or open one — or just describe an image in the bar below and AI generates it.")
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Theme.muted)
+                .frame(maxWidth: 380)
+            HStack(spacing: 12) {
+                Button("Open Image") { DocumentOpener.shared.showOpenPanel() }
+                    .buttonStyle(.borderedProminent)
+                Button("⌘K Commands") { session.isPaletteOpen = true }
+                Button("Start Blank") { session.startCardDismissed = true }
+            }
+            .controlSize(.large)
+        }
+        .padding(36)
+        .panelSurface(cornerRadius: 16)
     }
 }
 
@@ -131,6 +177,12 @@ private struct ChromeBar: View {
     }
 
     private func toggle(_ tab: EditorSession.InspectorTab) {
+        if session.classicLayout {
+            // The docked panel is always there; the chips just switch what it shows.
+            session.inspectorTab = tab
+            session.showLayersPanel = true
+            return
+        }
         let showing = session.showLayersPanel && (tab == .ai) == (session.inspectorTab == .ai)
         if showing {
             session.showLayersPanel = false
@@ -144,29 +196,36 @@ private struct ChromeBar: View {
 /// The floating panel under the chips: the assistant, or layers/paths/channels/history.
 private struct SidePanel: View {
     @Bindable var session: EditorSession
+    /// Docked (classic layout): full height at the window's right edge, with every tab.
+    let docked: Bool
 
-    private static let documentTabs: [EditorSession.InspectorTab] = [.layers, .paths, .channels, .history]
+    private var tabs: [EditorSession.InspectorTab] {
+        docked ? EditorSession.InspectorTab.allCases : [.layers, .paths, .channels, .history]
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack {
-                if session.inspectorTab == .ai {
+            HStack(spacing: 10) {
+                if session.inspectorTab == .ai && !docked {
                     Text("ASSISTANT & AI").font(.caption.weight(.semibold)).kerning(1).foregroundStyle(Theme.muted)
+                    Spacer(minLength: 8)
                 } else {
                     Picker("Panel", selection: $session.inspectorTab) {
-                        ForEach(Self.documentTabs, id: \.self) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
+                        ForEach(tabs, id: \.self) { Text(LocalizedStringKey($0.rawValue)).tag($0) }
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
                 }
-                Spacer(minLength: 8)
-                Button("Close", systemImage: "xmark") { session.showLayersPanel = false }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.plain)
-                    .foregroundStyle(Theme.muted)
+                if !docked {
+                    Button("Close", systemImage: "xmark") { session.showLayersPanel = false }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Theme.muted)
+                }
             }
             .padding(.horizontal, 12)
-            .frame(height: 42)
+            .frame(height: 44)
+            .padding(.top, docked ? 28 : 0)  // below the window buttons' row
             Divider().overlay(Theme.edge)
             Group {
                 switch session.inspectorTab {
@@ -180,8 +239,21 @@ private struct SidePanel: View {
             .frame(maxHeight: .infinity, alignment: .top)
         }
         .frame(width: 340)
-        .frame(maxHeight: 640)
-        .panelSurface(cornerRadius: 12)
+        .modifier(SidePanelChrome(docked: docked))
+    }
+}
+
+private struct SidePanelChrome: ViewModifier {
+    let docked: Bool
+
+    func body(content: Content) -> some View {
+        if docked {
+            content
+                .background(Theme.panel)
+                .overlay(alignment: .leading) { Rectangle().fill(Theme.edge).frame(width: 1) }
+        } else {
+            content.frame(maxHeight: 640).panelSurface(cornerRadius: 12)
+        }
     }
 }
 

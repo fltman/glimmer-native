@@ -136,6 +136,13 @@ final class EditorSession {
     /// The floating side panel (layers and friends, or the assistant) and the tool rail.
     var showLayersPanel = false
     var showTools = true
+    /// Classic layout docks the panel at the right edge and keeps it open (the web app's "Classic").
+    static let classicLayoutKey = "ui.classicLayout"
+    var classicLayout = UserDefaults.standard.bool(forKey: EditorSession.classicLayoutKey) {
+        didSet { UserDefaults.standard.set(classicLayout, forKey: Self.classicLayoutKey) }
+    }
+    /// The start card on an untouched blank document can be put away.
+    var startCardDismissed = CommandLine.arguments.contains("-uiTestingNewDocument")
     /// The window title (document name), shown in the chip at the top left.
     var documentName = "Untitled"
     var isExportSheetPresented = false
@@ -399,6 +406,7 @@ final class EditorSession {
         case .toggleGrid: state.aids.grid.isVisible
         case .toggleSnap: state.aids.snap
         case .toggleNavigator: showNavigator
+        case .toggleClassicLayout: classicLayout
         case .toggleMask: activeLayer?.mask?.isEnabled == false
         default: false
         }
@@ -417,6 +425,10 @@ final class EditorSession {
         switch id {
         case .commandPalette:
             isPaletteOpen.toggle()
+        case .toggleClassicLayout:
+            classicLayout.toggle()
+            // The canvas just changed width: fit the image to it again.
+            DispatchQueue.main.async { [weak self] in self?.canvas.perform(.fitToWindow) }
         case .toggleNavigator:
             showNavigator.toggle()
         case .repeatFilter:
