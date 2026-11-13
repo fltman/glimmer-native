@@ -498,6 +498,11 @@ final class EditorSession {
             layerViaCopy()
         case .freeTransform:
             tool = .freeTransform
+        case .flipHorizontal: flipCanvas(.horizontal)
+        case .flipVertical: flipCanvas(.vertical)
+        case .rotateRight: flipCanvas(.rotateRight)
+        case .rotateLeft: flipCanvas(.rotateLeft)
+        case .rotate180: flipCanvas(.rotate180)
         case .crop:
             tool = .crop
         case .toggleRulers:

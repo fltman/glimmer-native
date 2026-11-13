@@ -553,6 +553,31 @@ extension EditorSession {
         let cs = cos(phi), sn = sin(phi)
         let t = SIMD2(Double(w) / 2, Double(h) / 2) - SIMD2(cs * centre.x - sn * centre.y, sn * centre.x + cs * centre.y)
         let rot = GlimmerCore.AffineTransform(a: cs, b: sn, c: -sn, d: cs, tx: t.x, ty: t.y)
+        transformCanvas(rot, width: w, height: h, actionName: "Crop", metal: metal)
+    }
+
+    enum CanvasFlip { case horizontal, vertical, rotateRight, rotateLeft, rotate180 }
+
+    /// Flips or rotates the whole image (all layers, masks, paths).
+    func flipCanvas(_ kind: CanvasFlip) {
+        guard let metal else { return }
+        commitLiveEdit()
+        let w = Double(state.width), h = Double(state.height)
+        let (t, nw, nh, name): (GlimmerCore.AffineTransform, Int, Int, String) = switch kind {
+        case .horizontal: (.init(a: -1, d: 1, tx: w), state.width, state.height, "Flip Horizontal")
+        case .vertical: (.init(a: 1, d: -1, ty: h), state.width, state.height, "Flip Vertical")
+        // (x, y) → (h − y, x): a quarter turn clockwise on screen (y down).
+        case .rotateRight: (.init(a: 0, b: 1, c: -1, d: 0, tx: h), state.height, state.width, "Rotate 90° Clockwise")
+        case .rotateLeft: (.init(a: 0, b: -1, c: 1, d: 0, ty: w), state.height, state.width, "Rotate 90° Counterclockwise")
+        case .rotate180: (.init(a: -1, d: -1, tx: w, ty: h), state.width, state.height, "Rotate 180°")
+        }
+        transformCanvas(t, width: nw, height: nh, actionName: name, metal: metal)
+    }
+
+    /// Resamples every layer through `rot` into a canvas of `w` × `h`. Pixels
+    /// outside it are dropped; text layers are rasterized.
+    private func transformCanvas(_ rot: GlimmerCore.AffineTransform, width w: Int, height h: Int, actionName: String,
+                                 metal: MetalContext) {
         let limit = PixelRect(x: 0, y: 0, width: w, height: h)
         let docBounds = state.bounds
         do {
@@ -602,7 +627,7 @@ extension EditorSession {
                 return l
             }
             let layers = try state.layers.map(rotateLayer)
-            edit("Crop") { state in
+            edit(actionName) { state in
                 state.layers = layers
                 state.width = w
                 state.height = h

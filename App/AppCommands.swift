@@ -50,6 +50,8 @@ struct GlimmerCommands: Commands {
             }
             items([.freeTransform, .crop])
             Divider()
+            items([.rotateRight, .rotateLeft, .rotate180, .flipHorizontal, .flipVertical])
+            Divider()
             toggle(.toggleGammaBlending)
         }
         CommandMenu("Filter") {

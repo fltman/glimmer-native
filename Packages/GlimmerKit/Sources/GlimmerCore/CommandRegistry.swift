@@ -107,6 +107,11 @@ extension CommandID {
     public static let clearPixels: CommandID = "edit.clear"
     public static let freeTransform: CommandID = "edit.transform"
     public static let crop: CommandID = "image.crop"
+    public static let flipHorizontal: CommandID = "image.flipHorizontal"
+    public static let flipVertical: CommandID = "image.flipVertical"
+    public static let rotateRight: CommandID = "image.rotateRight"
+    public static let rotateLeft: CommandID = "image.rotateLeft"
+    public static let rotate180: CommandID = "image.rotate180"
     public static let toggleRulers: CommandID = "view.rulers"
     public static let toggleGrid: CommandID = "view.grid"
     public static let toggleSnap: CommandID = "view.snap"
@@ -272,6 +277,11 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.freeTransform, "Free Transform", category: .image, shortcut: KeyShortcut("t"),
                           keywords: ["scale", "rotate", "resize layer"]),
         CommandDescriptor(.crop, "Crop", category: .image, keywords: ["trim", "canvas size"]),
+        CommandDescriptor(.flipHorizontal, "Flip Horizontal", category: .image, keywords: ["mirror", "flip canvas", "reverse"]),
+        CommandDescriptor(.flipVertical, "Flip Vertical", category: .image, keywords: ["mirror", "flip canvas", "upside down"]),
+        CommandDescriptor(.rotateRight, "Rotate 90° Clockwise", category: .image, keywords: ["turn", "rotate image", "right"]),
+        CommandDescriptor(.rotateLeft, "Rotate 90° Counterclockwise", category: .image, keywords: ["turn", "rotate image", "left"]),
+        CommandDescriptor(.rotate180, "Rotate 180°", category: .image, keywords: ["turn", "rotate image", "upside down"]),
         CommandDescriptor(.toggleGammaBlending, "Blend Colors in Gamma Space", category: .image,
                           keywords: ["photoshop", "linear", "color space"]),
         CommandDescriptor(.repeatFilter, "Repeat Last Filter", category: .filter, shortcut: KeyShortcut("f", [.command, .control]),
