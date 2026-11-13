@@ -30,7 +30,7 @@ struct ExportSheet: View {
                     }
                 }
                 if format == .webp {
-                    Text("WebP is lossless at 100 %. Lower settings round colours slightly for a smaller file.")
+                    Text("WebP is lossless at 100 % and lossy below.")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }

@@ -378,7 +378,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **Real-ESRGAN:** vektoriserade kopior, 4K → 2× går från 26 s till 6 s. **WebP:** kvalitet under 100 % avrundar färgerna (20–40 % mindre fil). Appstart profilerad: inget att hämta.
   - **Kod och arbetssätt:** Phase6/Phase7-filerna uppdelade per funktion, CI (`.github/workflows/ci.yml`), `release.sh <version> --publish` höjer byggnumret (Sparkle jämför byggnummer), testar, taggar och publicerar.
   - **Ångra-historik till disk:** varje steg är en `UndoSnapshot`; när historiken överskrider minnesbudgeten skrivs de äldsta som paket i temp-katalogen (i bakgrunden) och läses in igen vid ångra. Markeringen ligger kvar i minnet. Filerna tas bort när steget släpps och vid nästa start.
-  - *Inte gjort:* förlustkomprimerad WebP (VP8).
+  - **Förlustkomprimerad WebP:** en egen VP8-kodare (`VP8Encoder.swift`, RFC 6386) med 16 × 16-prediktion (DC, V, H, TM), anpassade koefficientsannolikheter i två pass och alfa som förlustfri `ALPH`-chunk. Rekonstruktionen är bitexakt mot libwebps dekoder. På 4K-testfotot vid kvalitet 80: 653 kB mot cwebps 570 kB vid samma PSNR. Saknar 4 × 4-prediktion, som är det som skiljer i storlek. 100 % kvalitet ger fortfarande förlustfri VP8L.
 
 ## 4. Teststrategi
 

@@ -39,7 +39,7 @@ public struct ExportOptions: Equatable, Sendable {
         }
         public var supports16Bit: Bool { bitDepths.contains(.sixteen) }
         public var isLossy: Bool { self == .jpeg || self == .heic }
-        /// Shows the quality slider (WebP is lossless at 100 % and near-lossless below).
+        /// Shows the quality slider (WebP is lossless at 100 % and lossy below).
         public var hasQuality: Bool { isLossy || self == .webp }
     }
 
@@ -171,7 +171,7 @@ public enum ImageExporter {
         return data as Data
     }
 
-    /// Lossless WebP through `WebPEncoder`, with the ICC profile embedded for Display P3.
+    /// WebP through `WebPEncoder` (lossless or lossy by quality), with the ICC profile embedded for Display P3.
     static func encodeWebP(_ image: CGImage, options: ExportOptions) throws -> Data {
         var eight = options
         eight.bitDepth = .eight
@@ -192,9 +192,11 @@ public enum ImageExporter {
             for c in 0..<3 { px[i + c] = UInt8(min((Int(px[i + c]) * 255 + a / 2) / a, 255)) }
         }
         let icc = options.colorSpace == .displayP3 ? converted.colorSpace?.copyICCData() as Data? : nil
-        // 100 % is lossless; lower qualities drop 1–3 low bits per channel.
-        let bits = options.quality >= 0.995 ? 0 : (options.quality >= 0.75 ? 1 : (options.quality >= 0.5 ? 2 : 3))
-        return try WebPEncoder.encode(rgba: px, width: w, height: h, iccProfile: icc, nearLossless: bits)
+        // 100 % is lossless (VP8L); anything lower is lossy (VP8).
+        if options.quality >= 0.995 {
+            return try WebPEncoder.encode(rgba: px, width: w, height: h, iccProfile: icc)
+        }
+        return try WebPEncoder.encodeLossy(rgba: px, width: w, height: h, quality: options.quality, iccProfile: icc)
     }
 
     public static func export(_ state: DocumentState, options: ExportOptions, to url: URL,

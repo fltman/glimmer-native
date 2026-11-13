@@ -6573,12 +6573,12 @@
       }
     },
     "WebP": {},
-    "WebP is lossless at 100 %. Lower settings round colours slightly for a smaller file.": {
+    "WebP is lossless at 100 % and lossy below.": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "WebP är förlustfritt vid 100 %. Lägre värden avrundar färgerna en aning för en mindre fil."
+            "value": "WebP är förlustfritt vid 100 % och förlustkomprimerat därunder."
           }
         }
       }

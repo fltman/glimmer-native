@@ -95,6 +95,12 @@ public enum WebPEncoder {
         w.write(hasAlpha ? 1 : 0, 1)
         w.write(0, 3)
 
+        writeImageStream(&w, &argb, width: width, height: height)
+        return w.finish()
+    }
+
+    /// Everything after the VP8L header: transforms and the entropy-coded pixels.
+    static func writeImageStream(_ w: inout BitWriter, _ argb: inout [UInt32], width: Int, height: Int) {
         // Transforms, in the order the encoder applies them (the decoder undoes them in reverse).
         w.write(1, 1)
         w.write(2, 2)  // subtract green
@@ -110,7 +116,46 @@ public enum WebPEncoder {
 
         w.write(0, 1)  // no more transforms
         writeImage(&w, &argb, count: width * height, isLevel0: true)
-        return w.finish()
+    }
+
+    /// The alpha plane of a lossy WebP: an `ALPH` chunk payload holding a
+    /// header-less lossless stream with alpha in the green channel.
+    static func alphaChunk(_ alpha: [UInt8], width: Int, height: Int) -> Data {
+        var argb = alpha.map { 0xff00_0000 | (UInt32($0) << 8) }
+        var w = BitWriter()
+        writeImageStream(&w, &argb, width: width, height: height)
+        var data = Data([0x01])  // no pre-processing, no filter, lossless compression
+        data.append(w.finish())
+        return data
+    }
+
+    /// Lossy WebP: a VP8 frame, plus alpha and an ICC profile when present. `quality` is 0…1.
+    public static func encodeLossy(rgba: [UInt8], width: Int, height: Int, quality: Double,
+                                   iccProfile: Data? = nil) throws -> Data {
+        guard width <= maxDimension, height <= maxDimension, width > 0, height > 0 else {
+            throw Error.tooLarge(width: width, height: height)
+        }
+        precondition(rgba.count >= width * height * 4)
+        let frame = VP8Encoder.encode(rgba: rgba, width: width, height: height, quality: quality)
+        var alpha: [UInt8]?
+        for i in stride(from: 3, to: width * height * 4, by: 4) where rgba[i] != 255 {
+            alpha = stride(from: 3, to: width * height * 4, by: 4).map { rgba[$0] }
+            break
+        }
+        var body = Data("WEBP".utf8)
+        if alpha != nil || iccProfile != nil {
+            var vp8x = Data([UInt8((iccProfile != nil ? 0x20 : 0) | (alpha != nil ? 0x10 : 0)), 0, 0, 0])
+            vp8x.append(contentsOf: uint24(width - 1))
+            vp8x.append(contentsOf: uint24(height - 1))
+            body.append(chunk("VP8X", vp8x))
+            if let iccProfile { body.append(chunk("ICCP", iccProfile)) }
+            if let alpha { body.append(chunk("ALPH", alphaChunk(alpha, width: width, height: height))) }
+        }
+        body.append(chunk("VP8 ", frame))
+        var file = Data("RIFF".utf8)
+        file.append(contentsOf: uint32(body.count))
+        file.append(body)
+        return file
     }
 
     static func blocks(_ size: Int) -> Int { (size + (1 << predictorBits) - 1) >> predictorBits }

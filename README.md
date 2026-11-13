@@ -35,6 +35,10 @@ One-time setup:
 
 Glimmer adds Shortcuts actions that work on files without opening a window: Remove Background (on-device), Apply Glimmer Preset, Apply Glimmer Filter and Export Glimmer Document (PNG, JPEG, HEIC, TIFF or WebP).
 
+## WebP
+
+ImageIO can't write WebP, so Glimmer has its own encoders in `GlimmerRender`: lossless (VP8L) at 100 % quality and lossy (VP8 key frames) below. The constant tables in `VP8Tables.swift` come from the VP8 specification (RFC 6386).
+
 ## Third-party code
 
 Real-ESRGAN (BSD-3-Clause) and Sparkle (MIT); see `App/Credits.html`, shown in the About panel. `scripts/convert-models/realesrgan.py` rebuilds the bundled model from the official weights.
