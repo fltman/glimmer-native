@@ -88,6 +88,8 @@ for i in {1..90}; do
 done
 APP="$OUT/export/Glimmer.app"
 xcrun stapler validate "$APP"
+BUILT=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" -c "Print CFBundleVersion" "$APP/Contents/Info.plist" | tr '\n' ' ')
+[[ "$BUILT" == "$VERSION $BUILD " ]] || { echo "The app says version $BUILT, expected $VERSION $BUILD"; exit 1; }
 
 echo "▸ Building the DMG"
 STAGE="$OUT/dmg"
