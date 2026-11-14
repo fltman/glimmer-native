@@ -165,7 +165,12 @@ extension EditorSession {
         guard w >= 1, h >= 1 else { return }
         do {
             let offset = SIMD2(-x, -y)
-            let layers = try state.layers.map { try TileOperations.translate($0, by: offset, context: metal) }
+            var layers = try state.layers.map { try TileOperations.translate($0, by: offset, context: metal) }
+            if cropDeletesPixels {
+                layers = try trimmed(layers, to: PixelRect(x: 0, y: 0, width: w, height: h), ops: PixelOps(context: metal))
+            }
+            // Keep the zoom and centre the new canvas, as the web app does.
+            if w != state.width || h != state.height { canvas.keepZoomOnResize = true }
             let d = SIMD2(Double(-x), Double(-y))
             edit("Crop") { state in
                 state.layers = layers
@@ -189,9 +194,44 @@ extension EditorSession {
                     return g
                 }
             }
-            canvas.perform(.fitToWindow)
         } catch {
             report(error)
+        }
+    }
+
+    /// Pixel layers (and masks) without what lies outside `rect`.
+    private func trimmed(_ layers: [Layer], to rect: PixelRect, ops: PixelOps) throws -> [Layer] {
+        let keep = Selection.rectangle(CGRectLike(x0: Double(rect.x), y0: Double(rect.y), x1: Double(rect.maxX), y1: Double(rect.maxY)))
+        func trim(_ grid: TileGrid, clearPartial: Bool) throws -> TileGrid {
+            guard let tb = grid.tileBounds else { return grid }
+            var out = TileGrid()
+            var partial: [TileCoord] = []
+            for c in tb.intersection(rect).tileCoords {
+                guard let tile = grid[c] else { continue }
+                let r = c.rect
+                if r.x >= rect.x, r.y >= rect.y, r.maxX <= rect.maxX, r.maxY <= rect.maxY { out[c] = tile } else { partial.append(c) }
+            }
+            guard !partial.isEmpty else { return out }
+            if clearPartial {
+                let cut = try ops.run(.keepSelected, on: grid, selection: keep, coords: partial)
+                for c in partial { out[c] = cut[c] }
+            } else {
+                for c in partial { out[c] = grid[c] }
+            }
+            return out
+        }
+        return try layers.map { layer in
+            var l = layer
+            switch layer.content {
+            case .raster(let grid): l.content = .raster(try trim(grid, clearPartial: true))
+            case .group(var g):
+                g.children = try trimmed(g.children, to: rect, ops: ops)
+                l.content = .group(g)
+            default: break
+            }
+            // Mask tiles off the canvas go; partly covered ones stay (the pixels under them are gone anyway).
+            if var m = l.mask { m.tiles = try trim(m.tiles, clearPartial: false); l.mask = m }
+            return l
         }
     }
 

@@ -344,14 +344,20 @@ private struct ColorSwatches: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             ColorPicker("Background", selection: Binding(
-                get: { session.background.swiftUI },
-                set: { session.background = SRGBColor($0, in: environment) }), supportsOpacity: false)
+                get: { session.background.swiftUI.opacity(session.backgroundOpacity) },
+                set: {
+                    session.background = SRGBColor($0, in: environment)
+                    session.backgroundOpacity = Self.alpha(of: $0)
+                }), supportsOpacity: true)
                 .labelsHidden()
                 .frame(width: 40, height: 24)
                 .offset(x: 22, y: 18)
             ColorPicker("Foreground", selection: Binding(
-                get: { session.foreground.swiftUI },
-                set: { session.foreground = SRGBColor($0, in: environment) }), supportsOpacity: false)
+                get: { session.foreground.swiftUI.opacity(session.foregroundOpacity) },
+                set: {
+                    session.foreground = SRGBColor($0, in: environment)
+                    session.foregroundOpacity = Self.alpha(of: $0)
+                }), supportsOpacity: true)
                 .labelsHidden()
                 .frame(width: 40, height: 24)
         }
@@ -382,6 +388,10 @@ private struct ColorSwatches: View {
     }
 
     @State private var showSwatches = false
+
+    static func alpha(of color: Color) -> Double {
+        Double(NSColor(color).usingColorSpace(.sRGB)?.alphaComponent ?? 1)
+    }
 }
 
 /// A palette of colour swatches: click sets the foreground, ⌥-click the

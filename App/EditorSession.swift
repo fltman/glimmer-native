@@ -71,6 +71,9 @@ final class EditorSession {
     var brush = BrushSettings()
     var foreground = SRGBColor(0, 0, 0)
     var background = SRGBColor(1, 1, 1)
+    /// Alpha of the foreground and background colours (the colour wells' opacity).
+    var foregroundOpacity = 1.0
+    var backgroundOpacity = 1.0
     /// Paint into the active layer's mask instead of its pixels.
     var editingMask = false
     var wandTolerance = 32.0
@@ -104,8 +107,15 @@ final class EditorSession {
     var penOpen = false
     var shapeKind = ShapeKind.rectangle
     var shapeLineWidth = 8.0
+    /// Crop throws away pixels outside the new canvas (as in the web app and Photoshop).
+    static let cropDeletesKey = "crop.deletePixels"
+    var cropDeletesPixels = UserDefaults.standard.object(forKey: EditorSession.cropDeletesKey) as? Bool ?? true {
+        didSet { UserDefaults.standard.set(cropDeletesPixels, forKey: Self.cropDeletesKey) }
+    }
     var shapeCornerRadius = 32.0
     var shapeStrokeWidth = 0.0
+    /// Fill of new shapes; nil follows the foreground colour.
+    var shapeFillColor: SRGBColor?
     var shapeStrokeColor = SRGBColor(0, 0, 0)
     @ObservationIgnored var originalShapeState: DocumentState?
     var shapeDrag: (start: SIMD2<Double>, end: SIMD2<Double>)?
@@ -396,7 +406,7 @@ final class EditorSession {
         case .rasterizeLayer:
             guard let layer else { return false }
             return !layer.isRaster && !layer.isAdjustment
-        case .export:
+        case .export, .exportPNG:
             return !isExporting
         case .deselect, .invertSelection, .aiRemoveObject, .featherSelection, .growSelection, .shrinkSelection:
             return state.selection != nil
@@ -454,10 +464,11 @@ final class EditorSession {
             showNavigator.toggle()
         case .hideInterface:
             interfaceHidden.toggle()
-        case .fillForeground: fill(with: foreground, name: "Fill")
-        case .fillBackground: fill(with: background, name: "Fill")
+        case .fillForeground: fill(with: foreground, opacity: foregroundOpacity, name: "Fill")
+        case .fillBackground: fill(with: background, opacity: backgroundOpacity, name: "Fill")
         case .fillPattern: fillWithPattern()
         case .exportWebProject: exportWebProject()
+        case .exportPNG: export(options: ExportOptions(format: .png))
         case .newDocument: DocumentOpener.shared.showNewDocumentWindow()
         case .openDocument: DocumentOpener.shared.showOpenPanel()
         case .showLayers, .showPaths, .showChannels, .showHistory:

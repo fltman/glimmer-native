@@ -106,16 +106,26 @@ struct AdjustmentEditor: View {
                 Label(adjustment.kind.title, systemImage: adjustment.kind.symbolName).font(.headline)
                 Spacer()
                 Button("Reset") {
-                    update(Adjustment(adjustment.kind))
+                    if adjustment.kind == .curves, channel != .rgb || adjustment.curves.count > 1 {
+                        // Curves resets the channel on screen, as in the web app.
+                        var a = adjustment
+                        a.curves[channel] = nil
+                        update(a)
+                    } else {
+                        update(Adjustment(adjustment.kind))
+                    }
                     commit()
                 }
+                .help(adjustment.kind == .curves ? "Reset this channel's curve" : "Reset the adjustment")
                 .controlSize(.small)
             }
 
             switch adjustment.kind {
             case .curves:
                 channelPicker
-                CurvesEditor(points: adjustment.curve(channel), channel: channel) { points in
+                CurvesEditor(points: adjustment.curve(channel), channel: channel,
+                             others: CurveChannel.allCases.filter { $0 != channel && adjustment.curves[$0] != nil }
+                                .map { ($0, adjustment.curve($0)) }) { points in
                     var a = adjustment
                     a.curves[channel] = points
                     update(a)
@@ -212,7 +222,9 @@ struct LevelsHistogramView: View {
         levels.inBlack + pow(0.5, 1 / min(max(levels.gamma, 0.1), 9.99)) * (levels.inWhite - levels.inBlack)
     }
 
-    private var tint: Color {
+    private var tint: Color { Self.channelColor(channel) }
+
+    static func channelColor(_ channel: CurveChannel) -> Color {
         switch channel {
         case .rgb: .primary
         case .red: .red
@@ -311,12 +323,16 @@ struct LevelsHistogramView: View {
 struct CurvesEditor: View {
     let points: [CurvePoint]
     let channel: CurveChannel
+    /// The other channels' curves, drawn faintly behind this one.
+    var others: [(CurveChannel, [CurvePoint])] = []
     let update: ([CurvePoint]) -> Void
     let commit: () -> Void
 
     @State private var dragging: Int?
 
-    private var tint: Color {
+    private var tint: Color { Self.channelColor(channel) }
+
+    static func channelColor(_ channel: CurveChannel) -> Color {
         switch channel {
         case .rgb: .primary
         case .red: .red
@@ -342,6 +358,15 @@ struct CurvesEditor: View {
                 diagonal.move(to: CGPoint(x: 0, y: size.height)); diagonal.addLine(to: CGPoint(x: size.width, y: 0))
                 ctx.stroke(diagonal, with: .color(.secondary.opacity(0.3)), lineWidth: 0.5)
 
+                for (other, otherPoints) in others {
+                    var faint = Path()
+                    for i in 0...64 {
+                        let t = Double(i) / 64
+                        let p = CGPoint(x: size.width * t, y: size.height * (1 - CurveMath.evaluate(otherPoints, at: t)))
+                        i == 0 ? faint.move(to: p) : faint.addLine(to: p)
+                    }
+                    ctx.stroke(faint, with: .color(Self.channelColor(other).opacity(0.35)), lineWidth: 1)
+                }
                 var curve = Path()
                 for i in 0...128 {
                     let t = Double(i) / 128

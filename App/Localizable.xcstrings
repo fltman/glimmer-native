@@ -41,6 +41,16 @@
         }
       }
     },
+    "%lld points": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld punkter"
+          }
+        }
+      }
+    },
     "%lld pts": {
       "localizations": {
         "sv": {
@@ -1308,6 +1318,16 @@
         }
       }
     },
+    "Clear Points": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rensa punkter"
+          }
+        }
+      }
+    },
     "Click + to save the foreground colour.": {
       "localizations": {
         "sv": {
@@ -1348,6 +1368,16 @@
         }
       }
     },
+    "Click an object · ⌥-click to exclude": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka på ett objekt · ⌥-klicka för att utesluta"
+          }
+        }
+      }
+    },
     "Click an object · ⌥-click to exclude · Return keeps · Esc cancels": {
       "localizations": {
         "sv": {
@@ -1374,6 +1404,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Klicka för att lägga till punkter · dubbelklicka eller Retur för att stänga · Esc avbryter"
+          }
+        }
+      }
+    },
+    "Click to add · ⌥-click to exclude": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka för att lägga till · ⌥-klicka för att utesluta"
           }
         }
       }
@@ -1830,6 +1870,16 @@
         }
       }
     },
+    "Delete cropped pixels": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort beskurna pixlar"
+          }
+        }
+      }
+    },
     "Delete the path": {
       "localizations": {
         "sv": {
@@ -1930,6 +1980,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stäng av lagermask"
+          }
+        }
+      }
+    },
+    "Discard Path": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Släng banan"
           }
         }
       }
@@ -2477,6 +2537,16 @@
         }
       }
     },
+    "Export PNG…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera PNG…"
+          }
+        }
+      }
+    },
     "Export Web Project (.aips)…": {
       "localizations": {
         "sv": {
@@ -2612,12 +2682,42 @@
         }
       }
     },
+    "Fill color": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyllnadsfärg"
+          }
+        }
+      }
+    },
+    "Fill colour of new shapes": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyllnadsfärg för nya former"
+          }
+        }
+      }
+    },
     "Fill layers, shapes and smart filters are saved as pixels; the web app has no equivalent.": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Fyllningslager, former och smarta filter sparas som pixlar; webbappen har ingen motsvarighet."
+          }
+        }
+      }
+    },
+    "Fill new shapes with the foreground colour again": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll nya former med förgrundsfärgen igen"
           }
         }
       }
@@ -2899,6 +2999,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Förgrund till genomskinligt"
+          }
+        }
+      }
+    },
+    "Forget the points and put back the earlier selection (Esc)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glöm punkterna och återställ den tidigare markeringen (Esc)"
           }
         }
       }
@@ -4689,6 +4799,16 @@
         }
       }
     },
+    "Off keeps the pixels outside the crop, so you can move them back in later": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avstängt behåller pixlarna utanför beskärningen så att du kan flytta in dem igen senare"
+          }
+        }
+      }
+    },
     "Offset": {
       "extractionState": "manual",
       "localizations": {
@@ -5718,6 +5838,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Återställ färger"
+          }
+        }
+      }
+    },
+    "Reset the adjustment": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ justeringen"
+          }
+        }
+      }
+    },
+    "Reset this channel's curve": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ kanalens kurva"
           }
         }
       }
@@ -7337,6 +7477,16 @@
         }
       }
     },
+    "Use Foreground": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd förgrundsfärgen"
+          }
+        }
+      }
+    },
     "Use pen tilt": {
       "localizations": {
         "sv": {
@@ -7870,6 +8020,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "⇧ låser proportioner · U nästa form"
+          }
+        }
+      }
+    },
+    "⇧ keeps proportions · drag just outside a corner to rotate · click away to apply · ⌘-drag a corner to distort": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧ behåller proportionerna · dra strax utanför ett hörn för att rotera · klicka utanför för att verkställa · ⌘-dra ett hörn för att förvränga"
           }
         }
       }

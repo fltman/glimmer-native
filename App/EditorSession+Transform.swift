@@ -278,9 +278,12 @@ extension EditorSession {
             } else if t.contains(doc) {
                 t.quad = t.quad ?? (mode == .scaleRotate ? nil : quad)
                 t.handle = t.quad == nil ? .move(start: doc, box: t.box) : .moveQuad(start: doc, quad: quad)
-            } else if t.quad == nil {
+            } else if t.quad == nil, nearCorner(doc, t.corners) {
                 let v = doc - t.box.centre
                 t.handle = .rotate(startAngle: atan2(v.y, v.x), box: t.box)
+            } else {
+                applyTransformFromClick()
+                return
             }
             transformSession = t
             return
@@ -295,12 +298,26 @@ extension EditorSession {
             let local = t.box.toLocal(doc), h = t.box.size / 2
             if abs(local.x) <= h.x, abs(local.y) <= h.y {
                 t.handle = .move(start: doc, box: t.box)
-            } else {
+            } else if nearCorner(doc, t.box.corners) {
                 let v = doc - t.box.centre
                 t.handle = .rotate(startAngle: atan2(v.y, v.x), box: t.box)
+            } else {
+                applyTransformFromClick()
+                return
             }
         }
         transformSession = t
+    }
+
+    /// Rotation starts just outside a corner (about 32 points); a click farther away applies the transform.
+    private func nearCorner(_ doc: SIMD2<Double>, _ corners: [SIMD2<Double>]) -> Bool {
+        let reach = 32 / max(canvas.transform.scale, 0.001)
+        return corners.contains { simd_distance($0, doc) < reach }
+    }
+
+    private func applyTransformFromClick() {
+        commitTransform()
+        tool = .move
     }
 
     func transformDrag(to doc: SIMD2<Double>, shift: Bool) {

@@ -144,6 +144,7 @@ extension CommandID {
     public static let fillBackground: CommandID = "edit.fillBackground"
     public static let fillPattern: CommandID = "edit.fillPattern"
     public static let exportWebProject: CommandID = "file.exportWebProject"
+    public static let exportPNG: CommandID = "file.exportPNG"
     public static let newDocument: CommandID = "file.new"
     public static let openDocument: CommandID = "file.open"
     public static let showLayers: CommandID = "view.showLayers"
@@ -231,6 +232,7 @@ public struct CommandRegistry: Sendable {
                           shortcut: KeyShortcut("w", [.command, .option, .shift]),
                           keywords: ["png", "jpeg", "heic", "tiff", "save as"]),
 
+        CommandDescriptor(.exportPNG, "Export PNG…", category: .file, keywords: ["png", "save image", "quick export"]),
         CommandDescriptor(.newDocument, "New…", category: .file, shortcut: KeyShortcut("n"),
                           keywords: ["new document", "blank", "create"], isSystemProvided: true),
         CommandDescriptor(.openDocument, "Open…", category: .file, shortcut: KeyShortcut("o"),

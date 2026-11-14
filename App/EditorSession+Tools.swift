@@ -13,11 +13,14 @@ extension EditorSession {
 
     func swapColors() {
         swap(&foreground, &background)
+        swap(&foregroundOpacity, &backgroundOpacity)
     }
 
     func resetColors() {
         foreground = SRGBColor(0, 0, 0)
         background = SRGBColor(1, 1, 1)
+        foregroundOpacity = 1
+        backgroundOpacity = 1
     }
 
     private func luminance(_ c: SRGBColor) -> Float {
@@ -50,7 +53,8 @@ extension EditorSession {
             let target: StrokeEngine.Target = maskTarget ? .mask(defaultValue: layer.mask?.defaultValue ?? 1) : .pixels
             let value = luminance(erase ? background : foreground)
             let engine = try StrokeEngine(context: metal, tiles: tiles, target: target, erase: erase,
-                                          color: SIMD4(foreground.linear, 1), opacity: Float(brush.opacity),
+                                          color: SIMD4(foreground.linear, 1),
+                                          opacity: Float(brush.opacity * (erase || maskTarget ? 1 : foregroundOpacity)),
                                           maskTarget: value, selection: state.selection)
             var sampler = StrokeSampler(settings: brush)
             var dabs = sampler.begin(.init(point, pressure: pressure, tilt: tilt, rotation: rotation))
@@ -229,7 +233,7 @@ extension EditorSession {
             let coords = bounds.tileCoords
             let filled = try ops.run(.paint, on: layer.tiles, selection: nil, coords: coords,
                                      coverage: ops.coverage(from: region, coords: coords), fullCoverage: false,
-                                     color: SIMD4(foreground.linear, 1), opacity: Float(brush.opacity))
+                                     color: SIMD4(foreground.linear, 1), opacity: Float(brush.opacity * foregroundOpacity))
             let id = layer.id
             edit("Paint Bucket") { $0.updateLayer(id) { $0.tiles = filled } }
         } catch {
@@ -238,7 +242,7 @@ extension EditorSession {
     }
 
     /// Fills the selection (or the whole layer) with a colour, no tolerance involved.
-    func fill(with color: SRGBColor, name: String) {
+    func fill(with color: SRGBColor, opacity: Double = 1, name: String) {
         commitLiveEdit()
         guard let metal, let layer = activeLayer, layer.isRaster else {
             errorMessage = "Select a pixel layer to fill."
@@ -248,7 +252,7 @@ extension EditorSession {
             let area = state.selection.flatMap { $0.bounds(in: state.bounds) } ?? state.bounds
             let filled = try PixelOps(context: metal).run(.paint, on: layer.tiles, selection: state.selection,
                                                           coords: area.tileCoords, color: SIMD4(color.linear, 1),
-                                                          opacity: Float(brush.opacity))
+                                                          opacity: Float(brush.opacity * opacity))
             let id = layer.id
             edit(name) { $0.updateLayer(id) { $0.tiles = filled } }
         } catch {
@@ -303,8 +307,8 @@ extension EditorSession {
     var currentGradientStops: [GradientStop] {
         if let custom = gradientStops, custom.count >= 2 { return custom }
         return gradientToTransparent
-            ? [GradientStop(0, foreground), GradientStop(1, foreground, opacity: 0)]
-            : [GradientStop(0, foreground), GradientStop(1, background)]
+            ? [GradientStop(0, foreground, opacity: foregroundOpacity), GradientStop(1, foreground, opacity: 0)]
+            : [GradientStop(0, foreground, opacity: foregroundOpacity), GradientStop(1, background, opacity: backgroundOpacity)]
     }
 
     // MARK: Eyedropper

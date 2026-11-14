@@ -105,6 +105,22 @@ extension EditorSession {
         penOpen = false
     }
 
+    /// Esc while drawing: the unfinished subpath goes (and the path, if that was all of it).
+    func discardUnfinishedPath() {
+        guard penOpen, let path = activePath, let last = path.subpaths.last, !last.isClosed else {
+            finishPathSegment()
+            return
+        }
+        penOpen = false
+        let id = path.id
+        edit("Discard Path") { state in
+            guard let i = state.paths.firstIndex(where: { $0.id == id }) else { return }
+            state.paths[i].subpaths.removeLast()
+            if state.paths[i].subpaths.isEmpty { state.paths.remove(at: i) }
+        }
+        if !state.paths.contains(where: { $0.id == id }) { activePathID = nil }
+    }
+
     func updatePath(live: Bool = false, _ change: @escaping (inout VectorPath) -> Void) {
         guard let id = activePathID else { return }
         let apply: (inout DocumentState) -> Void = { state in

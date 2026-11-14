@@ -72,6 +72,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     private var drag: Drag?
     private var marqueeShiftFree = true
     private var paletteWasOpen = false
+    private var optionHeld = false
+    private let pathsLayer = CAShapeLayer()
+    private let angleLabel = CATextLayer()
     private var marqueeOptionFree = true
 
     init(session: EditorSession) {
@@ -125,9 +128,19 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         guideLayer.lineWidth = 1
         gridLayer.strokeColor = NSColor.gray.withAlphaComponent(0.45).cgColor
         gridLayer.lineWidth = 0.5
+        pathsLayer.fillColor = nil
+        pathsLayer.strokeColor = NSColor.systemBlue.withAlphaComponent(0.45).cgColor
+        pathsLayer.lineWidth = 1
+        angleLabel.fontSize = 11
+        angleLabel.alignmentMode = .center
+        angleLabel.foregroundColor = NSColor.white.cgColor
+        angleLabel.backgroundColor = NSColor.black.withAlphaComponent(0.7).cgColor
+        angleLabel.cornerRadius = 4
+        angleLabel.contentsScale = NSScreen.main?.backingScaleFactor ?? 2
+        angleLabel.isHidden = true
         minorGridLayer.strokeColor = NSColor.gray.withAlphaComponent(0.2).cgColor
         minorGridLayer.lineWidth = 0.5
-        for layer in [minorGridLayer, hintLayer, pointsPositive, pointsNegative, brushRing, chromeLines, chromeHandles, cropShade, guideLayer, gridLayer] {
+        for layer in [pathsLayer, minorGridLayer, hintLayer, pointsPositive, pointsNegative, brushRing, chromeLines, chromeHandles, cropShade, guideLayer, gridLayer] {
             layer.actions = ["path": NSNull()]
         }
         observeSession()
@@ -166,6 +179,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         layer.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
         layer.framebufferOnly = true
         layer.isOpaque = true
+        layer.addSublayer(pathsLayer)
+        layer.addSublayer(angleLabel)
         layer.addSublayer(minorGridLayer)
         layer.addSublayer(gridLayer)
         layer.addSublayer(guideLayer)
@@ -194,7 +209,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             _ = session.gradientDrag
             _ = session.hoverPoint
             _ = session.brush.size
-            _ = session.transformSession?.box
+            _ = session.transformSession
             _ = session.cropSession
             _ = session.activePathID
             _ = session.shapeDrag
@@ -471,6 +486,25 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         chromeLines.path = lines
         chromeHandles.path = handles
 
+        // Every saved path, faintly (the active one is drawn above with its handles).
+        let saved = CGMutablePath()
+        for path in session.state.paths where path.id != session.activePathID {
+            for poly in path.polygons() where poly.count > 1 { saved.addLines(between: poly.map(v)) }
+        }
+        pathsLayer.path = saved
+
+        // Live angle while rotating a transform.
+        if let ts = session.transformSession, case .rotate? = ts.handle {
+            let deg = ts.box.rotation * 180 / .pi
+            angleLabel.string = String(format: "%.1f°", deg)
+            // At the box centre: corners are often off screen.
+            let c = v(ts.box.centre)
+            angleLabel.frame = CGRect(x: c.x - 30, y: c.y - 9, width: 60, height: 18)
+            angleLabel.isHidden = false
+        } else {
+            angleLabel.isHidden = true
+        }
+
         // Guides and grid.
         let aids = session.state.aids
         let guides = CGMutablePath()
@@ -594,8 +628,26 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         layer?.isGeometryFlipped == true ? CGPoint(x: v.x, y: v.y) : CGPoint(x: v.x, y: bounds.height - v.y)
     }
 
+    override func flagsChanged(with event: NSEvent) {
+        let held = event.modifierFlags.contains(.option)
+        if held != optionHeld {
+            optionHeld = held
+            updateBrushRing()
+        }
+        super.flagsChanged(with: event)
+    }
+
     private func updateBrushRing() {
         let tool = session.effectiveTool
+        if optionHeld, tool == .cloneStamp || tool == .healingBrush, let hover = session.hoverPoint {
+            // ⌥ sets the source: a target instead of the brush outline.
+            let c = flipped(hover), path = CGMutablePath()
+            path.addEllipse(in: CGRect(x: c.x - 7, y: c.y - 7, width: 14, height: 14))
+            path.move(to: CGPoint(x: c.x - 12, y: c.y)); path.addLine(to: CGPoint(x: c.x + 12, y: c.y))
+            path.move(to: CGPoint(x: c.x, y: c.y - 12)); path.addLine(to: CGPoint(x: c.x, y: c.y + 12))
+            brushRing.path = path
+            return
+        }
         let paints = tool == .brush || tool == .eraser || EditorSession.retouchTools.contains(tool) || session.liquify != nil
         guard paints, let hover = session.hoverPoint else {
             brushRing.path = nil
@@ -675,7 +727,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             drag = .guide
             return
         }
-        if session.effectiveTool == .move, let g = hitGuide(at: p) {
+        if session.transformSession == nil, session.cropSession == nil, session.liquify == nil, session.editingText == nil,
+           session.effectiveTool != .hand, let g = hitGuide(at: p) {
             session.guideDrag = (g.id, g.axis, g.position)
             drag = .guide
             return
@@ -790,7 +843,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             session.liquifyDrag(to: controller.documentPoint(p), start: false, pressure: pressure(event))
         case .guide:
             guard let g = session.guideDrag else { break }
-            let d = controller.documentPoint(p)
+            let d = session.snapped(controller.documentPoint(p))
             session.guideDrag = (g.id, g.axis, g.axis == .vertical ? d.x : d.y)
         case .stroke:
             session.continueStroke(to: controller.documentPoint(p), pressure: pressure(event), tilt: tilt(event),
@@ -1011,7 +1064,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             return
         }
         if session.effectiveTool == .pen, isReturn || isEscape {
-            session.finishPathSegment()
+            isEscape ? session.discardUnfinishedPath() : session.finishPathSegment()
             if isEscape { session.activePathID = nil }
             return
         }

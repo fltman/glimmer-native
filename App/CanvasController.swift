@@ -14,6 +14,15 @@ final class CanvasController {
     var documentSize: SIMD2<Double> = SIMD2(1920, 1080) {
         didSet {
             guard documentSize != oldValue else { return }
+            if keepZoomOnResize, viewSize.x > 0 {
+                // Same zoom, new canvas centred (after a crop).
+                keepZoomOnResize = false
+                let scale = transform.scale
+                transform = .fitting(documentSize: documentSize, in: viewSize, rotation: transform.rotation)
+                transform.setScale(scale, around: viewSize / 2)
+                hasFitted = true
+                return
+            }
             hasFitted = false
             fitIfPossible()
         }
@@ -28,6 +37,8 @@ final class CanvasController {
 
     @ObservationIgnored var onNeedsRender: (() -> Void)?
     @ObservationIgnored private var hasFitted = false
+    /// The next document size change keeps the zoom instead of fitting the window.
+    @ObservationIgnored var keepZoomOnResize = false
     @ObservationIgnored private var gestureRawRotation: Double = 0
 
     /// Zoom relative to device pixels: 100 % shows one document pixel per screen pixel.

@@ -62,7 +62,16 @@ struct ToolOptionsBar: View {
                     featherOption
                     Text("⇧ add · ⌥ subtract · while dragging: ⇧ square, ⌥ from the centre").foregroundStyle(.secondary)
                 case .magicSelect:
-                    Text("Click an object · ⌥-click to exclude · Return keeps · Esc cancels").foregroundStyle(.secondary)
+                    if session.ai.magicPoints.isEmpty {
+                        Text("Click an object · ⌥-click to exclude").foregroundStyle(.secondary)
+                    } else {
+                        Text("\(session.ai.magicPoints.count) points").monospacedDigit().foregroundStyle(.secondary)
+                        Text("Click to add · ⌥-click to exclude").foregroundStyle(.secondary)
+                        Button("Clear Points") { session.ai.cancelMagicSelect() }
+                            .help("Forget the points and put back the earlier selection (Esc)")
+                        Button("Apply") { session.ai.resetMagicSelect() }
+                            .keyboardShortcut(.defaultAction)
+                    }
                 case .eyedropper:
                     Text("Click to pick the foreground · ⌥-click for the background").foregroundStyle(.secondary)
                 case .freeTransform: transformOptions
@@ -82,6 +91,19 @@ struct ToolOptionsBar: View {
                     }
                     if session.shapeKind == .line {
                         slider("Width", $session.shapeLineWidth, 1...100, display: "\(Int(session.shapeLineWidth)) px")
+                    }
+                    ColorPicker("Fill color", selection: Binding<Color>(
+                        get: { let c = session.shapeFillColor ?? session.foreground; return Color(.sRGB, red: c.r, green: c.g, blue: c.b) },
+                        set: { c in
+                            guard let rgb = NSColor(c).usingColorSpace(.sRGB) else { return }
+                            session.shapeFillColor = SRGBColor(rgb.redComponent, rgb.greenComponent, rgb.blueComponent)
+                        }), supportsOpacity: false)
+                        .labelsHidden()
+                        .fixedSize()
+                        .help("Fill colour of new shapes")
+                    if session.shapeFillColor != nil {
+                        Button("Use Foreground") { session.shapeFillColor = nil }
+                            .help("Fill new shapes with the foreground colour again")
                     }
                     slider("Stroke", $session.shapeStrokeWidth, 0...100,
                            display: session.shapeStrokeWidth < 1 ? String(localized: "Off") : "\(Int(session.shapeStrokeWidth)) px")
@@ -186,7 +208,7 @@ struct ToolOptionsBar: View {
                 numberField("W", t.box.scaleX * 100, suffix: "%") { session.setTransform(scaleXPercent: $0) }
                 numberField("H", t.box.scaleY * 100, suffix: "%") { session.setTransform(scaleYPercent: $0) }
                 numberField("∠", t.box.rotation * 180 / .pi, suffix: "°") { session.setTransform(degrees: $0) }
-                Text("⇧ keeps proportions · drag outside to rotate · ⌘-drag a corner to distort").foregroundStyle(.secondary)
+                Text("⇧ keeps proportions · drag just outside a corner to rotate · click away to apply · ⌘-drag a corner to distort").foregroundStyle(.secondary)
             } else {
                 Text(t.mode == .skew ? "Drag an edge to slant it" : t.mode == .perspective
                      ? "Drag a corner; its neighbour mirrors it" : "Drag corners freely").foregroundStyle(.secondary)
@@ -218,6 +240,8 @@ struct ToolOptionsBar: View {
         if let r = session.cropSession?.rect {
             Text("\(Int(r.width.rounded())) × \(Int(r.height.rounded())) px").monospacedDigit().foregroundStyle(.secondary)
         }
+        Toggle("Delete cropped pixels", isOn: $session.cropDeletesPixels)
+            .help("Off keeps the pixels outside the crop, so you can move them back in later")
         Button("Cancel") { session.cropSession = nil; session.tool = .move }
         Button("Crop") { session.applyCrop(); session.tool = .move }
             .keyboardShortcut(.defaultAction)
