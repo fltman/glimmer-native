@@ -255,6 +255,14 @@ extension AIController {
     // MARK: Saved actions
 
     /// Keeps a finished plan (and any corrections that followed it) as a reusable action.
+    /// Whether this plan is the quality check's follow-up to the plan before it. It is saved
+    /// together with that plan, not by itself.
+    func isCorrection(_ messageID: UUID) -> Bool {
+        guard let index = messages.firstIndex(where: { $0.id == messageID }), index > 0 else { return false }
+        let previous = messages[index - 1]
+        return !previous.fromUser && previous.plan != nil
+    }
+
     func saveAction(from messageID: UUID) {
         guard let index = messages.firstIndex(where: { $0.id == messageID }), let plan = messages[index].plan else { return }
         var steps = plan.steps

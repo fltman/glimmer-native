@@ -275,7 +275,7 @@ private struct PlanView: View {
                     Spacer()
                     Button("Stop") { ai.cancelPlan(messageID) }.controlSize(.small)
                 }
-            case .finished?:
+            case .finished? where !ai.isCorrection(messageID):
                 HStack {
                     Spacer()
                     Button("Save as Action", systemImage: "bookmark") { ai.saveAction(from: messageID) }
