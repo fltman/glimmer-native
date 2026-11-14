@@ -554,8 +554,19 @@ fragment float4 present_fragment(QuadOut in [[stage_in]], texture2d<float> tile 
     constexpr sampler minifying(mag_filter::nearest, min_filter::linear, mip_filter::linear,
                                 address::clamp_to_edge);
     float4 c = tile.sample(minifying, in.uv);
-    // Channels panel: show one colour channel as grey (1 R, 2 G, 3 B).
-    if (channel >= 1 && channel <= 3) return float4(float3(c[channel - 1]), c.a);
+    // Channels panel: `channel` is a bit mask of what to show (1 R, 2 G, 4 B, 8 alpha).
+    if (channel != 15) {
+        float3 m = float3(channel & 1, (channel >> 1) & 1, (channel >> 2) & 1);
+        bool alpha = (channel & 8) != 0;
+        float3 rgb = c.a > 0.0001 ? c.rgb / c.a : float3(0.0);
+        float count = m.x + m.y + m.z;
+        // No colour channel: alpha as grey (or nothing). One: that channel as grey.
+        if (count < 0.5) return float4(float3(alpha ? c.a : 0.0), 1.0);
+        if (count < 1.5) return float4(float3(dot(rgb, m)), 1.0);
+        // Two or three: only those colours; without alpha the image is opaque.
+        float a = alpha ? c.a : 1.0;
+        return float4(rgb * m * a, a);
+    }
     return c;
 }
 

@@ -57,7 +57,12 @@ final class EditorSession {
         var current: SIMD2<Double>
         var ellipse: Bool
         var operation: Selection.Operation
-        var rect: CGRectLike { CGRectLike(x0: start.x, y0: start.y, x1: current.x, y1: current.y) }
+        /// ⌥ while dragging: the press point is the centre.
+        var fromCentre = false
+        var rect: CGRectLike {
+            fromCentre ? CGRectLike(x0: 2 * start.x - current.x, y0: 2 * start.y - current.y, x1: current.x, y1: current.y)
+                       : CGRectLike(x0: start.x, y0: start.y, x1: current.x, y1: current.y)
+        }
     }
     var marquee: Marquee?
 
@@ -73,6 +78,13 @@ final class EditorSession {
     var sampleAllLayers = true
     var gradientStyle = GradientStyle.linear
     var gradientToTransparent = false
+    var gradientReverse = false
+    /// Custom stops for the Gradient tool; nil = foreground to background.
+    var gradientStops: [GradientStop]?
+    /// Feather applied to selections as the marquee, lasso and wand make them (pixels).
+    var selectionFeather = 0.0
+    /// Tab hides every panel for a clean view of the image.
+    var interfaceHidden = false
     /// Lasso being drawn (document points) and whether it's polygonal.
     var lasso: [SIMD2<Double>]?
     var lassoOperation = Selection.Operation.replace
@@ -93,6 +105,8 @@ final class EditorSession {
     var shapeKind = ShapeKind.rectangle
     var shapeLineWidth = 8.0
     var shapeCornerRadius = 32.0
+    var shapeStrokeWidth = 0.0
+    var shapeStrokeColor = SRGBColor(0, 0, 0)
     @ObservationIgnored var originalShapeState: DocumentState?
     var shapeDrag: (start: SIMD2<Double>, end: SIMD2<Double>)?
     var guideDrag: (id: UUID?, axis: Guide.Axis, position: Double)?
@@ -119,7 +133,8 @@ final class EditorSession {
     var liquifyMode = LiquifyEngine.Mode.forward
     var liquifySize = 150.0
     var liquifyPressure = 0.5
-    var viewChannel = 0
+    /// Which channels the canvas shows: bits 1 red, 2 green, 4 blue, 8 alpha (15 = the normal view).
+    var channelMask = 15
     var isPaletteOpen = false
     var showNavigator = false {
         didSet { if showNavigator { scheduleNavigatorRefresh(delay: 0) } }
@@ -158,7 +173,7 @@ final class EditorSession {
     @ObservationIgnored private lazy var thumbnailRenderer = metal.flatMap { try? ThumbnailRenderer(context: $0) }
     @ObservationIgnored private var thumbnailKeys: [String: Int] = [:]
     @ObservationIgnored private var thumbnailTask: Task<Void, Never>?
-    @ObservationIgnored private var move: (layer: UUID, start: SIMD2<Double>)?
+    @ObservationIgnored private var move: (layer: UUID, start: SIMD2<Double>, bounds: PixelRect?)?
 
     init(document: GlimmerDocument) {
         self.document = document
@@ -387,6 +402,8 @@ final class EditorSession {
             return state.selection != nil
         case .copy, .cut, .clearPixels:
             return state.selection != nil && (activeLayer?.isRaster ?? false)
+        case .fillForeground, .fillBackground, .fillPattern:
+            return activeLayer?.isRaster ?? false
         case .layerViaCopy:
             return activeLayer?.isRaster ?? false
         case .freeTransform:
@@ -407,6 +424,7 @@ final class EditorSession {
         case .toggleSnap: state.aids.snap
         case .toggleNavigator: showNavigator
         case .toggleClassicLayout: classicLayout
+        case .hideInterface: interfaceHidden
         case .toggleMask: activeLayer?.mask?.isEnabled == false
         default: false
         }
@@ -431,6 +449,12 @@ final class EditorSession {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in self?.canvas.perform(.fitToWindow) }
         case .toggleNavigator:
             showNavigator.toggle()
+        case .hideInterface:
+            interfaceHidden.toggle()
+        case .fillForeground: fill(with: foreground, name: "Fill")
+        case .fillBackground: fill(with: background, name: "Fill")
+        case .fillPattern: fillWithPattern()
+        case .exportWebProject: exportWebProject()
         case .repeatFilter:
             if let f = lastFilter { applyFilter(f) }
         case .liquify:
@@ -594,13 +618,7 @@ final class EditorSession {
             return
         }
         let shape = m.ellipse ? Selection.ellipse(in: r) : Selection.rectangle(r)
-        edit(m.ellipse ? "Elliptical Marquee" : "Rectangular Marquee") { state in
-            if let current = state.selection, m.operation != .replace {
-                state.selection = current.combined(with: shape, m.operation)
-            } else {
-                state.selection = m.operation == .subtract ? nil : shape
-            }
-        }
+        applySelection(shape, operation: m.operation, name: m.ellipse ? "Elliptical Marquee" : "Rectangular Marquee")
     }
 
     func addLayer(_ layer: Layer, actionName: String) {
@@ -702,12 +720,27 @@ final class EditorSession {
     func beginMove(at point: SIMD2<Double>) {
         guard let layer = activeLayer, !layer.isAdjustment else { return }
         commitLiveEdit()
-        move = (layer.id, point)
+        move = (layer.id, point, state.aids.snap ? snapBounds(of: layer) : nil)
+    }
+
+    /// What the Move tool snaps: the layer's visible extent.
+    private func snapBounds(of layer: Layer) -> PixelRect? {
+        switch layer.content {
+        case .raster(let grid): return grid.tileBounds.flatMap { contentBounds(of: grid, within: $0) }
+        case .text(let t): return t.bounds
+        case .smart(let s): return s.bounds
+        default:
+            guard let r = layer.vectorMask?.controlBounds else { return nil }
+            return PixelRect(x: Int(r.minX.rounded()), y: Int(r.minY.rounded()), width: Int(r.width.rounded()), height: Int(r.height.rounded()))
+        }
     }
 
     func updateMove(to point: SIMD2<Double>) {
         guard let move else { return }
-        let d = point - move.start
+        var d = point - move.start
+        if let b = move.bounds {
+            d += snapOffset(forBoxAt: SIMD2(Double(b.x), Double(b.y)) + d, size: SIMD2(Double(b.width), Double(b.height)))
+        }
         overrides = LayerOverrides(offsets: [move.layer: SIMD2(Int(d.x.rounded()), Int(d.y.rounded()))])
     }
 
@@ -732,6 +765,11 @@ final class EditorSession {
         } catch {
             report(error)
         }
+    }
+
+    /// A new document nobody has drawn in or changed.
+    var isUntouchedBlank: Bool {
+        document.history.isEmpty && state.textureTileIDs.isEmpty && state.allLayers.count <= 1
     }
 
     // MARK: Placing images
@@ -764,6 +802,20 @@ final class EditorSession {
 
     /// Adds `image` as a new layer centred on the document.
     func place(_ image: CGImage, name: String) throws {
+        if isUntouchedBlank {
+            // Nothing here yet: the image becomes the document, at its own size.
+            let tiles = try ImageImporter.tiles(from: image, origin: .zero)
+            let layer = Layer(name: name, content: .raster(tiles))
+            edit("Open Image") {
+                $0.width = image.width
+                $0.height = image.height
+                $0.layers = [layer]
+                $0.activeLayerID = layer.id
+                $0.selection = nil
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in self?.canvas.perform(.fitToWindow) }
+            return
+        }
         let origin = SIMD2((state.width - image.width) / 2, (state.height - image.height) / 2)
         let tiles = try ImageImporter.tiles(from: image, origin: origin)
         edit("Place Image") { $0.insertLayerAboveActive(Layer(name: name, content: .raster(tiles))) }
@@ -793,6 +845,33 @@ final class EditorSession {
     }
 
     // MARK: Export
+
+    /// Saves the document as a project for Glimmer for the web.
+    func exportWebProject() {
+        guard let metal else { return }
+        commitLiveEdit()
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.aipsProject]
+        panel.nameFieldStringValue = "\(documentName).aips"
+        panel.canCreateDirectories = true
+        panel.message = "Fill layers, shapes and smart filters are saved as pixels; the web app has no equivalent."
+        let snapshot = state
+        panel.begin { [weak self] response in
+            guard response == .OK, let url = panel.url else { return }
+            Task { @MainActor in
+                guard let self else { return }
+                self.isExporting = true
+                defer { self.isExporting = false }
+                do {
+                    try await Task.detached(priority: .userInitiated) {
+                        try AipsExporter.exportProject(snapshot, context: metal).write(to: url, options: .atomic)
+                    }.value
+                } catch {
+                    self.report(error)
+                }
+            }
+        }
+    }
 
     func export(options: ExportOptions) {
         guard let metal else { return }

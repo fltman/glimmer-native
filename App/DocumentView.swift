@@ -16,46 +16,52 @@ struct DocumentView: View {
     var body: some View {
         CanvasView(session: session)
             .overlay(alignment: .leading) {
-                if session.showTools {
+                if session.showTools, !session.interfaceHidden {
                     ToolPalette(session: session)
                         .padding(.leading, 12)
                 }
             }
             .overlay(alignment: .topLeading) {
-                TitleChip(session: session)
-                    .padding(.leading, 84)  // clear of the window buttons
-                    .padding(.top, 10)
+                if !session.interfaceHidden {
+                    TitleChip(session: session)
+                        .padding(.leading, 84)  // clear of the window buttons
+                        .padding(.top, 10)
+                }
             }
             .overlay(alignment: .top) {
-                ToolOptionsBar(session: session)
-                    .padding(.top, 48)
+                if !session.interfaceHidden {
+                    ToolOptionsBar(session: session)
+                        .padding(.top, 48)
+                }
             }
             .overlay(alignment: .bottomTrailing) {
-                if session.showNavigator {
+                if session.showNavigator, !session.interfaceHidden {
                     NavigatorView(session: session, canvas: session.canvas).padding(12)
                 }
             }
             .overlay {
-                if showSelectionBar {
+                if showSelectionBar, !session.interfaceHidden {
                     GeometryReader { geo in SelectionBar(session: session, viewSize: geo.size) }
                 }
             }
             .overlay(alignment: .bottom) {
-                if showOmnibar, session.liquify == nil, session.transformSession == nil, session.cropSession == nil,
+                if showOmnibar, !session.interfaceHidden, session.liquify == nil, session.transformSession == nil, session.cropSession == nil,
                    !session.isPaletteOpen {
                     Omnibar(session: session).padding(.bottom, 16)
                 }
             }
             .overlay(alignment: .topTrailing) {
-                VStack(alignment: .trailing, spacing: 10) {
-                    ChromeBar(session: session)
-                    if session.showLayersPanel && !session.classicLayout {
-                        SidePanel(session: session, docked: false)
+                if !session.interfaceHidden {
+                    VStack(alignment: .trailing, spacing: 10) {
+                        ChromeBar(session: session)
+                        if session.showLayersPanel && !session.classicLayout {
+                            SidePanel(session: session, docked: false)
+                        }
                     }
+                    .padding(.top, 10)
+                    .padding(.trailing, 12)
+                    .padding(.bottom, 12)
                 }
-                .padding(.top, 10)
-                .padding(.trailing, 12)
-                .padding(.bottom, 12)
             }
             .overlay(alignment: .top) {
                 if session.isPaletteOpen {
@@ -82,7 +88,7 @@ struct DocumentView: View {
             }
             .ignoresSafeArea(.container, edges: .top)
             .safeAreaInset(edge: .trailing, spacing: 0) {
-                if session.classicLayout {
+                if session.classicLayout, !session.interfaceHidden {
                     SidePanel(session: session, docked: true).ignoresSafeArea(.container, edges: .top)
                 }
             }

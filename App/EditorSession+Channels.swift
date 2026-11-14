@@ -8,7 +8,7 @@ import simd
 extension EditorSession {
     // MARK: Channels
 
-    /// Loads a channel (0 = RGB luminosity, 1-3 = R, G, B) of the composite as a selection.
+    /// Loads a channel (0 = RGB luminosity, 1-3 = R, G, B, 4 = alpha) of the composite as a selection.
     func loadChannelAsSelection(_ channel: Int) {
         commitLiveEdit()
         guard let metal else { return }
@@ -24,7 +24,7 @@ extension EditorSession {
                 case 3: b
                 default: 0.299 * r + 0.587 * g + 0.114 * b
                 }
-                mask[i] = v * a
+                mask[i] = channel == 4 ? a : v * a
             }
             let selection = Selection.from(mask: mask, rect: PixelRect(x: 0, y: 0, width: rgba.width, height: rgba.height))
             edit("Load Channel") { $0.selection = selection }

@@ -26,17 +26,32 @@ extension EditorSession {
     /// Snaps a document point to guides, the grid and the document edges (within a few screen pixels).
     func snapped(_ p: SIMD2<Double>) -> SIMD2<Double> {
         guard state.aids.snap else { return p }
+        return SIMD2(p.x + (snapDelta([p.x], vertical: true) ?? 0), p.y + (snapDelta([p.y], vertical: false) ?? 0))
+    }
+
+    /// How far to shift a box so one of its edges or its centre lands on a snap line.
+    func snapOffset(forBoxAt origin: SIMD2<Double>, size: SIMD2<Double>) -> SIMD2<Double> {
+        guard state.aids.snap else { return .zero }
+        return SIMD2(snapDelta([origin.x, origin.x + size.x / 2, origin.x + size.x], vertical: true) ?? 0,
+                     snapDelta([origin.y, origin.y + size.y / 2, origin.y + size.y], vertical: false) ?? 0)
+    }
+
+    /// The smallest shift that puts one of `values` on a snap line (canvas edges and
+    /// centre, guides, the grid), if any is within reach.
+    private func snapDelta(_ values: [Double], vertical: Bool) -> Double? {
         let tol = 6 / max(canvas.transform.scale, 0.001)
-        var xs = [0.0, Double(state.width)], ys = [0.0, Double(state.height)]
-        for g in state.aids.guides { if g.axis == .vertical { xs.append(g.position) } else { ys.append(g.position) } }
-        if state.aids.grid.isVisible {
-            let s = state.aids.grid.spacing
-            xs.append((p.x / s).rounded() * s)
-            ys.append((p.y / s).rounded() * s)
+        let extent = Double(vertical ? state.width : state.height)
+        var lines = [0.0, extent, extent / 2]
+        for g in state.aids.guides where (g.axis == .vertical) == vertical { lines.append(g.position) }
+        var best: Double?
+        for v in values {
+            var candidates = lines
+            if state.aids.grid.isVisible {
+                let s = state.aids.grid.spacing
+                if s > 0.5 { candidates.append((v / s).rounded() * s) }
+            }
+            for line in candidates where abs(line - v) < min(tol, abs(best ?? .infinity)) { best = line - v }
         }
-        var out = p
-        if let x = xs.min(by: { abs($0 - p.x) < abs($1 - p.x) }), abs(x - p.x) < tol { out.x = x }
-        if let y = ys.min(by: { abs($0 - p.y) < abs($1 - p.y) }), abs(y - p.y) < tol { out.y = y }
-        return out
+        return best
     }
 }

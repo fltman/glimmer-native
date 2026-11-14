@@ -22,10 +22,27 @@ struct ToolOptionsBar: View {
                     .foregroundStyle(Theme.muted)
                 switch tool {
                 case .brush, .eraser: brushOptions
-                case .magicWand: wandOptions(showSampleAll: true)
+                case .magicWand:
+                    wandOptions(showSampleAll: true)
+                    featherOption
                 case .paintBucket:
                     wandOptions(showSampleAll: true)
                     slider("Opacity", $session.brush.opacity, 0...1, percent: true)
+                    Menu("Fill") {
+                        Button(session.state.selection == nil ? "Whole Layer with Foreground" : "Selection with Foreground") {
+                            session.perform(.fillForeground)
+                        }
+                        Button(session.state.selection == nil ? "Whole Layer with Pattern" : "Selection with Pattern") {
+                            session.perform(.fillPattern)
+                        }
+                        Divider()
+                        Picker("Pattern", selection: $session.patternKind) {
+                            ForEach(PatternKind.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
+                        }
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .help("Fill without tolerance (⌥⌫ fills with the foreground colour)")
                 case .gradient:
                     Picker("Style", selection: $session.gradientStyle) {
                         ForEach(GradientStyle.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
@@ -33,12 +50,17 @@ struct ToolOptionsBar: View {
                     .pickerStyle(.segmented)
                     .frame(width: 140)
                     .labelsHidden()
-                    Toggle("To transparent", isOn: $session.gradientToTransparent)
+                    GradientToolOptions(session: session)
                 case .polygonLasso:
+                    featherOption
                     Text("Click to add points · double-click or Return to close · Esc cancels")
                         .foregroundStyle(.secondary)
-                case .lasso, .rectangleMarquee, .ellipseMarquee:
+                case .lasso:
+                    featherOption
                     Text("⇧ add · ⌥ subtract · ⇧⌥ intersect").foregroundStyle(.secondary)
+                case .rectangleMarquee, .ellipseMarquee:
+                    featherOption
+                    Text("⇧ add · ⌥ subtract · while dragging: ⇧ square, ⌥ from the centre").foregroundStyle(.secondary)
                 case .magicSelect:
                     Text("Click an object · ⌥-click to exclude · Return keeps · Esc cancels").foregroundStyle(.secondary)
                 case .eyedropper:
@@ -61,7 +83,19 @@ struct ToolOptionsBar: View {
                     if session.shapeKind == .line {
                         slider("Width", $session.shapeLineWidth, 1...100, display: "\(Int(session.shapeLineWidth)) px")
                     }
-                    Text("⇧ constrains").foregroundStyle(.secondary)
+                    slider("Stroke", $session.shapeStrokeWidth, 0...100,
+                           display: session.shapeStrokeWidth < 1 ? String(localized: "Off") : "\(Int(session.shapeStrokeWidth)) px")
+                    if session.shapeStrokeWidth >= 1 {
+                        ColorPicker("Stroke color", selection: Binding<Color>(
+                            get: { let c = session.shapeStrokeColor; return Color(.sRGB, red: c.r, green: c.g, blue: c.b) },
+                            set: { c in
+                                guard let rgb = NSColor(c).usingColorSpace(.sRGB) else { return }
+                                session.shapeStrokeColor = SRGBColor(rgb.redComponent, rgb.greenComponent, rgb.blueComponent)
+                            }), supportsOpacity: false)
+                            .labelsHidden()
+                            .fixedSize()
+                    }
+                    Text("⇧ constrains · U next shape").foregroundStyle(.secondary)
                 case .cloneStamp, .healingBrush:
                     retouchBrushOptions
                     Toggle("Aligned", isOn: $session.cloneAligned)
@@ -110,6 +144,11 @@ struct ToolOptionsBar: View {
         .padding(.horizontal, 12)
     }
 
+    /// Softens selections as they are made.
+    private var featherOption: some View {
+        slider("Feather", $session.selectionFeather, 0...32, display: "\(Int(session.selectionFeather)) px")
+    }
+
     @ViewBuilder private var retouchBrushOptions: some View {
         slider("Size", Binding(get: { log2(session.brush.size) }, set: { session.brush.size = pow(2, $0).rounded() }),
                0...11, display: "\(Int(session.brush.size)) px")
@@ -129,6 +168,8 @@ struct ToolOptionsBar: View {
         slider("Size", Binding(get: { log2(session.liquifySize) }, set: { session.liquifySize = pow(2, $0).rounded() }),
                3...11, display: "\(Int(session.liquifySize)) px")
         slider("Pressure", $session.liquifyPressure, 0.01...1, percent: true)
+        Button("Restore All") { session.restoreAllLiquify() }
+            .help("Undo every liquify change on this layer")
         Button("Cancel") { session.cancelLiquify() }
         Button("Apply") { session.commitLiquify() }
             .keyboardShortcut(.defaultAction)
@@ -198,38 +239,13 @@ struct ToolOptionsBar: View {
     }
 
     @ViewBuilder private var brushOptions: some View {
-        Menu("Presets") {
-            ForEach(BrushSettings.presets, id: \.0) { name, preset in
-                Button(name) { session.brush = preset }
-            }
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        BrushPresetsMenu(session: session)
         slider("Size", Binding(get: { log2(session.brush.size) }, set: { session.brush.size = pow(2, $0).rounded() }),
                0...11, display: "\(Int(session.brush.size)) px")
         slider("Hardness", $session.brush.hardness, 0...1, percent: true)
         slider("Opacity", $session.brush.opacity, 0...1, percent: true)
         slider("Flow", $session.brush.flow, 0.01...1, percent: true)
-        Menu("Dynamics") {
-            Toggle("Pressure → Size", isOn: $session.brush.pressureSize)
-            Toggle("Pressure → Flow", isOn: $session.brush.pressureOpacity)
-            Toggle("Tilt → Angle", isOn: $session.brush.tiltAngle)
-            Toggle("Tilt → Roundness", isOn: $session.brush.tiltRoundness)
-            Toggle("Rotation → Angle", isOn: $session.brush.rotationAngle)
-            Toggle("Textured", isOn: $session.brush.textured)
-            Divider()
-            Picker("Spacing", selection: $session.brush.spacing) {
-                ForEach([0.05, 0.1, 0.25, 0.5, 1.0], id: \.self) { Text("\(Int($0 * 100)) %").tag($0) }
-            }
-            Picker("Roundness", selection: $session.brush.roundness) {
-                ForEach([1.0, 0.75, 0.5, 0.25], id: \.self) { Text("\(Int($0 * 100)) %").tag($0) }
-            }
-            Picker("Scatter", selection: $session.brush.scatter) {
-                ForEach([0.0, 0.25, 0.5, 1.0], id: \.self) { Text("\(Int($0 * 100)) %").tag($0) }
-            }
-        }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        BrushDynamicsButton(session: session)
         if session.activeLayer?.mask != nil {
             Toggle("Paint mask", isOn: $session.editingMask)
         }
@@ -343,6 +359,21 @@ private struct TextOptions: View {
             }), supportsOpacity: false)
             .labelsHidden()
             .fixedSize()
+        if let layer = session.activeLayer, case .text(let text) = layer.content,
+           !session.state.paths.isEmpty || text.onPath != nil {
+            if text.onPath != nil, text.onPathID == nil {
+                // On a path that no longer exists (or from an older document).
+                Button("Take Off Path") { session.setTextPath(nil) }
+            }
+            if !session.state.paths.isEmpty {
+                Picker("On path", selection: Binding(get: { text.onPathID }, set: { session.setTextPath($0) })) {
+                    Text("No Path").tag(UUID?.none)
+                    ForEach(session.state.paths) { Text($0.name).tag(UUID?.some($0.id)) }
+                }
+                .fixedSize()
+                .help("Run this text along a path, or take it off again")
+            }
+        }
         if let layer = session.activeLayer, case .text(let text) = layer.content, text.onPath == nil {
             Button("Warp", systemImage: "textformat.size.larger") { showWarp.toggle() }
                 .help("Warp Text")
@@ -461,5 +492,186 @@ struct FilterSheet: View {
     private func format(_ v: Double, _ field: FilterField) -> String {
         let text = field.range.upperBound <= 5 ? String(format: "%.2f", v) : String(format: "%.0f", v)
         return field.unit.isEmpty ? text : "\(text) \(field.unit)"
+    }
+}
+
+/// Built-in and saved brushes.
+private struct BrushPresetsMenu: View {
+    @Bindable var session: EditorSession
+    @State private var store = BrushPresetStore.shared
+    @State private var isNaming = false
+    @State private var name = ""
+
+    var body: some View {
+        Menu("Presets") {
+            ForEach(BrushSettings.presets, id: \.0) { name, preset in
+                Button(LocalizedStringKey(name)) { session.brush = preset }
+            }
+            if !store.presets.isEmpty {
+                Divider()
+                ForEach(store.presets) { preset in
+                    Button(preset.name) { session.brush = preset.settings }
+                }
+            }
+            Divider()
+            Button("Save Current Brush…") {
+                name = ""
+                isNaming = true
+            }
+            if !store.presets.isEmpty {
+                Menu("Delete") {
+                    ForEach(store.presets) { preset in
+                        Button(preset.name, role: .destructive) { store.remove(preset.id) }
+                    }
+                }
+            }
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .popover(isPresented: $isNaming, arrowEdge: .bottom) {
+            HStack {
+                TextField("Brush name", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 180)
+                    .onSubmit(save)
+                Button("Save", action: save)
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+            .padding(12)
+        }
+    }
+
+    private func save() {
+        let trimmed = name.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return }
+        store.save(session.brush, as: trimmed)
+        isNaming = false
+    }
+}
+
+/// Your own brushes, kept in the app's preferences.
+@MainActor
+@Observable
+final class BrushPresetStore {
+    struct Preset: Codable, Identifiable {
+        var id = UUID()
+        var name: String
+        var settings: BrushSettings
+    }
+
+    static let shared = BrushPresetStore()
+    private static let key = "brush.userPresets"
+
+    private(set) var presets: [Preset] = []
+
+    private init() {
+        if let data = UserDefaults.standard.data(forKey: Self.key),
+           let saved = try? JSONDecoder().decode([Preset].self, from: data) {
+            presets = saved
+        }
+    }
+
+    /// Saves the brush; a preset with the same name is replaced.
+    func save(_ settings: BrushSettings, as name: String) {
+        presets.removeAll { $0.name == name }
+        presets.append(Preset(name: name, settings: settings))
+        persist()
+    }
+
+    func remove(_ id: UUID) {
+        presets.removeAll { $0.id == id }
+        persist()
+    }
+
+    private func persist() {
+        UserDefaults.standard.set(try? JSONEncoder().encode(presets), forKey: Self.key)
+    }
+}
+
+/// Shape and dynamics of the brush tip, with continuous controls as in the web app.
+private struct BrushDynamicsButton: View {
+    @Bindable var session: EditorSession
+    @State private var isShown = false
+
+    var body: some View {
+        Button("Dynamics") { isShown.toggle() }
+            .popover(isPresented: $isShown, arrowEdge: .bottom) {
+                Form {
+                    Section("Tip") {
+                        row("Spacing", $session.brush.spacing, 0.01...2) { "\(Int(($0 * 100).rounded())) %" }
+                        row("Roundness", $session.brush.roundness, 0.05...1) { "\(Int(($0 * 100).rounded())) %" }
+                        row("Angle", $session.brush.angle, -180...180) { "\(Int($0.rounded()))°" }
+                        row("Scatter", $session.brush.scatter, 0...1) { "\(Int(($0 * 100).rounded())) %" }
+                        row("Size Jitter", $session.brush.sizeJitter, 0...1) { "\(Int(($0 * 100).rounded())) %" }
+                        Toggle("Textured", isOn: $session.brush.textured)
+                    }
+                    Section("Pen") {
+                        Toggle("Pressure → Size", isOn: $session.brush.pressureSize)
+                        Toggle("Pressure → Flow", isOn: $session.brush.pressureOpacity)
+                        Toggle("Tilt → Angle", isOn: $session.brush.tiltAngle)
+                        Toggle("Tilt → Roundness", isOn: $session.brush.tiltRoundness)
+                        Toggle("Rotation → Angle", isOn: $session.brush.rotationAngle)
+                    }
+                }
+                .formStyle(.grouped)
+                .frame(width: 340)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+    }
+
+    private func row(_ label: String, _ value: Binding<Double>, _ range: ClosedRange<Double>,
+                     _ format: @escaping (Double) -> String) -> some View {
+        LabeledContent(LocalizedStringKey(label)) {
+            HStack {
+                Slider(value: value, in: range)
+                Text(format(value.wrappedValue))
+                    .monospacedDigit()
+                    .frame(width: 48, alignment: .trailing)
+            }
+        }
+    }
+}
+
+/// What the Gradient tool draws: the two colours, a preset ramp or your own stops.
+private struct GradientToolOptions: View {
+    @Bindable var session: EditorSession
+    @State private var isEditing = false
+
+    private static let presets: [(String, [GradientStop])] = [
+        ("Black to White", [GradientStop(0, SRGBColor(0, 0, 0)), GradientStop(1, SRGBColor(1, 1, 1))]),
+        ("Sunset", [GradientStop(0, SRGBColor(0.16, 0.07, 0.36)), GradientStop(0.5, SRGBColor(0.91, 0.29, 0.37)),
+                    GradientStop(1, SRGBColor(1, 0.8, 0.4))]),
+        ("Ocean", [GradientStop(0, SRGBColor(0.02, 0.1, 0.3)), GradientStop(0.6, SRGBColor(0.05, 0.55, 0.75)),
+                   GradientStop(1, SRGBColor(0.7, 0.95, 0.9))]),
+        ("Spectrum", [GradientStop(0, SRGBColor(1, 0, 0)), GradientStop(0.2, SRGBColor(1, 1, 0)), GradientStop(0.4, SRGBColor(0, 1, 0)),
+                      GradientStop(0.6, SRGBColor(0, 1, 1)), GradientStop(0.8, SRGBColor(0, 0, 1)), GradientStop(1, SRGBColor(1, 0, 1))]),
+    ]
+
+    var body: some View {
+        Menu(title) {
+            Button("Foreground to Background") { session.gradientStops = nil; session.gradientToTransparent = false }
+            Button("Foreground to Transparent") { session.gradientStops = nil; session.gradientToTransparent = true }
+            Divider()
+            ForEach(Self.presets, id: \.0) { name, stops in
+                Button(LocalizedStringKey(name)) { session.gradientStops = stops }
+            }
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        Button("Edit Stops") {
+            if session.gradientStops == nil { session.gradientStops = session.currentGradientStops }
+            isEditing = true
+        }
+        .popover(isPresented: $isEditing, arrowEdge: .bottom) {
+            GradientStopsEditor(stops: session.currentGradientStops) { session.gradientStops = $0 } commit: {}
+                .padding(14)
+                .frame(width: 320)
+        }
+        Toggle("Reverse", isOn: $session.gradientReverse)
+    }
+
+    private var title: LocalizedStringKey {
+        if session.gradientStops != nil { return "Custom" }
+        return session.gradientToTransparent ? "Foreground to Transparent" : "Foreground to Background"
     }
 }

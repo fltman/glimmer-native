@@ -69,6 +69,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     private let pointsPositive = CAShapeLayer()
     private let pointsNegative = CAShapeLayer()
     private var drag: Drag?
+    private var marqueeShiftFree = true
+    private var paletteWasOpen = false
+    private var marqueeOptionFree = true
 
     init(session: EditorSession) {
         self.session = session
@@ -197,10 +200,18 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             _ = session.cloneSource
             _ = session.liquify
             _ = session.liquifySize
-            _ = session.viewChannel
+            _ = session.channelMask
+            _ = session.isPaletteOpen
         } onChange: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
+                // When the palette closes its text field is gone: take the keyboard back, so
+                // single-key shortcuts work without first clicking the canvas.
+                if self.paletteWasOpen, !self.session.isPaletteOpen, self.session.editingText == nil,
+                   !(self.window?.firstResponder is NSText) {
+                    self.window?.makeFirstResponder(self)
+                }
+                self.paletteWasOpen = self.session.isPaletteOpen
                 self.setNeedsRender()
                 self.updateMarqueeOverlay()
                 self.window?.invalidateCursorRects(for: self)
@@ -379,7 +390,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             checkerSize: Preferences.checkerSize
         )
         renderer.encode(frame, tiles: tiles, tile: compositor.texture(at:), selection: state.selection,
-                        time: CACurrentMediaTime(), channel: session.viewChannel, into: commandBuffer, target: drawable.texture)
+                        time: CACurrentMediaTime(), channelMask: session.channelMask, into: commandBuffer, target: drawable.texture)
         commandBuffer.present(drawable)
         commandBuffer.commit()
         if more { setNeedsRender() }
@@ -660,6 +671,10 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             drag = .move
         case .rectangleMarquee, .ellipseMarquee:
             session.beginMarquee(at: controller.documentPoint(p), modifiers: event.modifierFlags)
+            // ⇧ and ⌥ held at the press choose add/subtract; once released they are free
+            // to mean "square" and "from the centre" for the rest of the drag.
+            marqueeShiftFree = !event.modifierFlags.contains(.shift)
+            marqueeOptionFree = !event.modifierFlags.contains(.option)
             drag = .marquee
         case .magicSelect:
             // Click adds a point on the object; ⌥-click marks what to leave out.
@@ -723,7 +738,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case .transform:
             session.transformDrag(to: controller.documentPoint(p), shift: event.modifierFlags.contains(.shift))
         case .crop:
-            session.cropDrag(to: session.snapped(controller.documentPoint(p)))
+            session.cropDrag(to: session.snapped(controller.documentPoint(p)), fromCentre: event.modifierFlags.contains(.option))
         case .pen:
             session.penDragged(to: controller.documentPoint(p), breakSymmetry: event.modifierFlags.contains(.option))
         case .shape:
@@ -767,12 +782,18 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             session.sampleColor(at: controller.documentPoint(p), intoBackground: event.modifierFlags.contains(.option))
         case .marquee:
             var d = controller.documentPoint(p)
-            if event.modifierFlags.contains(.shift), let m = session.marquee, m.operation == .replace {
+            let shift = event.modifierFlags.contains(.shift), option = event.modifierFlags.contains(.option)
+            if !shift { marqueeShiftFree = true }
+            if !option { marqueeOptionFree = true }
+            if shift, marqueeShiftFree, let m = session.marquee {
                 // Shift constrains to a square / circle.
                 let v = d - m.start
                 let side = max(abs(v.x), abs(v.y))
                 d = m.start + SIMD2(v.x < 0 ? -side : side, v.y < 0 ? -side : side)
+            } else {
+                d = session.snapped(d)
             }
+            session.marquee?.fromCentre = option && marqueeOptionFree
             session.updateMarquee(to: d)
         case nil:
             break
@@ -884,6 +905,14 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
 
     override func keyDown(with event: NSEvent) {
         let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if event.keyCode == 48, mods.isDisjoint(with: [.command, .control, .option]) {  // Tab
+            session.perform(.hideInterface)
+            return
+        }
+        if event.keyCode == 51, mods.contains(.option) || mods.contains(.command) {  // ⌥⌫ / ⌘⌫ fill
+            session.perform(mods.contains(.option) ? .fillForeground : .fillBackground)
+            return
+        }
         if event.keyCode == 49 {  // space
             if !event.isARepeat { session.temporaryHand = true }
             return
@@ -904,6 +933,15 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
                 return
             }
             switch key {
+            case "o":
+                // O is Dodge, ⇧O is Burn.
+                session.tool = mods.contains(.shift) ? .burn : .dodge
+                return
+            case "u" where session.tool == .shape:
+                // U again steps through the shapes.
+                let kinds = EditorSession.ShapeKind.allCases
+                session.shapeKind = kinds[(kinds.firstIndex(of: session.shapeKind)! + 1) % kinds.count]
+                return
             case "x": session.swapColors(); return
             case "d": session.resetColors(); return
             case "[": session.adjustBrushSize(by: 0.9); return

@@ -79,6 +79,13 @@ extension EditorSession {
         overrides = .none
     }
 
+    func restoreAllLiquify() {
+        guard let l = liquify else { return }
+        l.engine.reset()
+        l.last = nil
+        overrides = .none
+    }
+
     func cancelLiquify() {
         liquify = nil
         overrides = .none

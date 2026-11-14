@@ -39,6 +39,10 @@ One-time setup:
 
 Glimmer adds Shortcuts actions that work on files without opening a window: Remove Background (on-device), Apply Glimmer Preset, Apply Glimmer Filter, Run Glimmer Action (an action saved from the assistant, for editing many photos the same way) and Export Glimmer Document (PNG, JPEG, HEIC, TIFF or WebP).
 
+## Projects from Glimmer for the web
+
+File › Open reads `.aips` projects from the web app, with layers, masks, effects, editable text, paths, guides and the grid. File › Export Web Project (.aips)… writes one. The web app has no fill layers, shapes, smart filters or perspective transforms, so those layers are written as pixels.
+
 ## WebP
 
 ImageIO can't write WebP, so Glimmer has its own encoders in `GlimmerRender`: lossless (VP8L) at 100 % quality and lossy (VP8 key frames) below. The constant tables in `VP8Tables.swift` come from the VP8 specification (RFC 6386).

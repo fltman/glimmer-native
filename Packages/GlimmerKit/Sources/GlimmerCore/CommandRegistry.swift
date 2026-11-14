@@ -139,6 +139,11 @@ extension CommandID {
     public static let toggleNavigator: CommandID = "view.navigator"
     public static let toggleClassicLayout: CommandID = "view.classicLayout"
     public static let repeatFilter: CommandID = "filter.repeat"
+    public static let hideInterface: CommandID = "view.hideInterface"
+    public static let fillForeground: CommandID = "edit.fillForeground"
+    public static let fillBackground: CommandID = "edit.fillBackground"
+    public static let fillPattern: CommandID = "edit.fillPattern"
+    public static let exportWebProject: CommandID = "file.exportWebProject"
 
     /// The filter for a `filter(_:)` id.
     public var filterKind: FilterKind? {
@@ -201,6 +206,8 @@ public struct CommandRegistry: Sendable {
                           keywords: ["search", "omnibar", "find command", "ask"]),
         CommandDescriptor(.toggleClassicLayout, "Classic Layout", category: .view,
                           keywords: ["docked", "panels", "sidebar", "omni"]),
+        CommandDescriptor(.hideInterface, "Hide Interface", category: .view,
+                          keywords: ["tab", "full screen", "panels", "chrome", "clean"]),
         CommandDescriptor(.toggleNavigator, "Navigator", category: .view, shortcut: KeyShortcut("n", [.command, .option]),
                           keywords: ["minimap", "overview", "zoom"]),
         CommandDescriptor(.toggleLayersPanel, "Show/Hide Layers", category: .view,
@@ -211,6 +218,9 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.export, "Export…", category: .file,
                           shortcut: KeyShortcut("w", [.command, .option, .shift]),
                           keywords: ["png", "jpeg", "heic", "tiff", "save as"]),
+
+        CommandDescriptor(.exportWebProject, "Export Web Project (.aips)…", category: .file,
+                          keywords: ["aips", "glimmer web", "save project", "browser"]),
 
         CommandDescriptor(.newLayer, "New Layer", category: .layer,
                           shortcut: KeyShortcut("n", [.command, .shift]), keywords: ["add"]),
@@ -255,6 +265,12 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.cut, "Cut", category: .edit, shortcut: KeyShortcut("x"), isSystemProvided: true),
         CommandDescriptor(.clearPixels, "Clear", category: .edit, keywords: ["delete pixels", "erase selection"],
                           isSystemProvided: true),
+        CommandDescriptor(.fillForeground, "Fill with Foreground Color", category: .edit,
+                          keywords: ["fill selection", "paint bucket", "flood"]),
+        CommandDescriptor(.fillBackground, "Fill with Background Color", category: .edit,
+                          keywords: ["fill selection"]),
+        CommandDescriptor(.fillPattern, "Fill with Pattern", category: .edit,
+                          keywords: ["fill selection", "texture", "tile"]),
         CommandDescriptor(.layerViaCopy, "New Layer via Copy", category: .layer,
                           shortcut: KeyShortcut("j"), keywords: ["copy selection to layer"]),
 

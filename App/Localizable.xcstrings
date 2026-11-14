@@ -499,6 +499,16 @@
         }
       }
     },
+    "Alpha": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alfa"
+          }
+        }
+      }
+    },
     "Amount": {
       "extractionState": "manual",
       "localizations": {
@@ -822,6 +832,16 @@
         }
       }
     },
+    "Black to White": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svart till vitt"
+          }
+        }
+      }
+    },
     "Blend Colors in Gamma Space": {
       "extractionState": "manual",
       "localizations": {
@@ -982,6 +1002,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Penseldrag"
+          }
+        }
+      }
+    },
+    "Brush name": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Penselns namn"
           }
         }
       }
@@ -1264,6 +1294,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Klicka på + för att spara förgrundsfärgen."
+          }
+        }
+      }
+    },
+    "Click a channel to see it alone, in grey. The eyes combine channels. Channel views don't change the image.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka på en kanal för att se den ensam, i grått. Ögonen kombinerar kanaler. Kanalvisningen ändrar inte bilden."
           }
         }
       }
@@ -2115,6 +2155,16 @@
         }
       }
     },
+    "Edit Stops": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera stopp"
+          }
+        }
+      }
+    },
     "Edit Text": {
       "extractionState": "manual",
       "localizations": {
@@ -2294,6 +2344,16 @@
         }
       }
     },
+    "Estimating depth": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beräknar djup"
+          }
+        }
+      }
+    },
     "Evenly": {
       "localizations": {
         "sv": {
@@ -2393,6 +2453,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Exportera bild"
+          }
+        }
+      }
+    },
+    "Export Web Project (.aips)…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera webbprojekt (.aips)…"
           }
         }
       }
@@ -2522,12 +2592,62 @@
         }
       }
     },
+    "Fill layers, shapes and smart filters are saved as pixels; the web app has no equivalent.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyllningslager, former och smarta filter sparas som pixlar; webbappen har ingen motsvarighet."
+          }
+        }
+      }
+    },
     "Fill the path with the foreground colour on the active layer": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Fyll banan med förgrundsfärgen på det aktiva lagret"
+          }
+        }
+      }
+    },
+    "Fill with Background Color": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll med bakgrundsfärg"
+          }
+        }
+      }
+    },
+    "Fill with Foreground Color": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll med förgrundsfärg"
+          }
+        }
+      }
+    },
+    "Fill with Pattern": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll med mönster"
+          }
+        }
+      }
+    },
+    "Fill without tolerance (⌥⌫ fills with the foreground colour)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll utan tolerans (⌥⌫ fyller med förgrundsfärgen)"
           }
         }
       }
@@ -2739,6 +2859,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Förgrunds- och bakgrundsfärg (X byter, D återställer)"
+          }
+        }
+      }
+    },
+    "Foreground to Background": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förgrund till bakgrund"
+          }
+        }
+      }
+    },
+    "Foreground to Transparent": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förgrund till genomskinligt"
           }
         }
       }
@@ -3239,6 +3379,16 @@
         }
       }
     },
+    "Hide Interface": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göm gränssnittet"
+          }
+        }
+      }
+    },
     "Hide Smart Filter": {
       "extractionState": "manual",
       "localizations": {
@@ -3256,6 +3406,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Göm lager"
+          }
+        }
+      }
+    },
+    "Hide this channel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Göm kanalen"
           }
         }
       }
@@ -3844,12 +4004,32 @@
         }
       }
     },
+    "Load luminosity as selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs in luminansen som markering"
+          }
+        }
+      }
+    },
     "Load the path as a selection": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Läs in banan som markering"
+          }
+        }
+      }
+    },
+    "Load this channel as selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs in kanalen som markering"
           }
         }
       }
@@ -4375,6 +4555,16 @@
         }
       }
     },
+    "No Path": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen bana"
+          }
+        }
+      }
+    },
     "No Paths": {
       "localizations": {
         "sv": {
@@ -4439,6 +4629,26 @@
         }
       }
     },
+    "Ocean": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hav"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Av"
+          }
+        }
+      }
+    },
     "Offset": {
       "extractionState": "manual",
       "localizations": {
@@ -4478,6 +4688,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "På den här Macen"
+          }
+        }
+      }
+    },
+    "On path": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På bana"
           }
         }
       }
@@ -4549,6 +4769,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "OpenRouter-kostnad för det här fönstrets jobb"
+          }
+        }
+      }
+    },
+    "Optional: what to remove, or what should be behind it": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valfritt: vad som ska bort, eller vad som ska finnas bakom"
           }
         }
       }
@@ -5005,6 +5235,16 @@
         }
       }
     },
+    "Preview Lens Blur": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förhandsvisa linsoskärpa"
+          }
+        }
+      }
+    },
     "Pucker": {
       "extractionState": "manual",
       "localizations": {
@@ -5287,6 +5527,16 @@
         }
       }
     },
+    "Remove Text from Path": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort text från bana"
+          }
+        }
+      }
+    },
     "Remove stop": {
       "localizations": {
         "sv": {
@@ -5398,6 +5648,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Återställ vyrotation"
+          }
+        }
+      }
+    },
+    "Restore All": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ allt"
           }
         }
       }
@@ -5526,6 +5786,26 @@
         }
       }
     },
+    "Rotate the view 15° left": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotera vyn 15° åt vänster"
+          }
+        }
+      }
+    },
+    "Rotate the view 15° right": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rotera vyn 15° åt höger"
+          }
+        }
+      }
+    },
     "Rotation → Angle": {
       "localizations": {
         "sv": {
@@ -5618,6 +5898,16 @@
         }
       }
     },
+    "Run this text along a path, or take it off again": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg texten längs en bana, eller ta bort den därifrån"
+          }
+        }
+      }
+    },
     "Running the saved action.": {
       "localizations": {
         "sv": {
@@ -5691,6 +5981,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spara"
+          }
+        }
+      }
+    },
+    "Save Current Brush…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara den här penseln…"
           }
         }
       }
@@ -5880,6 +6180,26 @@
         }
       }
     },
+    "Selection with Foreground": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markeringen med förgrundsfärg"
+          }
+        }
+      }
+    },
+    "Selection with Pattern": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markeringen med mönster"
+          }
+        }
+      }
+    },
     "Selects the main subject. Runs on this Mac, free.": {
       "localizations": {
         "sv": {
@@ -5994,6 +6314,16 @@
         }
       }
     },
+    "Show All Channels": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa alla kanaler"
+          }
+        }
+      }
+    },
     "Show Smart Filter": {
       "extractionState": "manual",
       "localizations": {
@@ -6001,6 +6331,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Visa smart filter"
+          }
+        }
+      }
+    },
+    "Show depth map": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa djupkartan"
           }
         }
       }
@@ -6055,6 +6395,16 @@
         }
       }
     },
+    "Show this channel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa kanalen"
+          }
+        }
+      }
+    },
     "Show/Hide Layers": {
       "extractionState": "manual",
       "localizations": {
@@ -6066,12 +6416,32 @@
         }
       }
     },
+    "Shows the blur on the canvas while you adjust it": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visar oskärpan på bilden medan du justerar"
+          }
+        }
+      }
+    },
     "Size": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Storlek"
+          }
+        }
+      }
+    },
+    "Size Jitter": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storleksvariation"
           }
         }
       }
@@ -6223,6 +6593,16 @@
         }
       }
     },
+    "Spectrum": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spektrum"
+          }
+        }
+      }
+    },
     "Spread": {
       "extractionState": "manual",
       "localizations": {
@@ -6318,6 +6698,16 @@
         }
       }
     },
+    "Stroke color": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Konturfärg"
+          }
+        }
+      }
+    },
     "Stroke the path with the current brush": {
       "localizations": {
         "sv": {
@@ -6381,6 +6771,16 @@
         }
       }
     },
+    "Sunset": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Solnedgång"
+          }
+        }
+      }
+    },
     "Swap Reveal All and Hide All for unpainted areas": {
       "localizations": {
         "sv": {
@@ -6412,6 +6812,16 @@
         }
       }
     },
+    "Take Off Path": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort från banan"
+          }
+        }
+      }
+    },
     "Test Key": {
       "localizations": {
         "sv": {
@@ -6439,6 +6849,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Textmodell"
+          }
+        }
+      }
+    },
+    "Text on Path": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text på bana"
           }
         }
       }
@@ -6501,6 +6921,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lutning → rundhet"
+          }
+        }
+      }
+    },
+    "Tip": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spets"
           }
         }
       }
@@ -6584,6 +7014,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Genomskinliga ytor plattas ut mot vitt."
+          }
+        }
+      }
+    },
+    "Try": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prova"
           }
         }
       }
@@ -6689,6 +7129,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ångrahistorik"
+          }
+        }
+      }
+    },
+    "Undo every liquify change on this layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort alla förvrängningar på det här lagret"
           }
         }
       }
@@ -6839,6 +7289,16 @@
         }
       }
     },
+    "View rotation in degrees": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vyns rotation i grader"
+          }
+        }
+      }
+    },
     "Vignette": {
       "localizations": {
         "sv": {
@@ -6966,6 +7426,36 @@
         }
       }
     },
+    "White is near, black is far": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vitt är nära, svart är långt bort"
+          }
+        }
+      }
+    },
+    "Whole Layer with Foreground": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hela lagret med förgrundsfärg"
+          }
+        }
+      }
+    },
+    "Whole Layer with Pattern": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hela lagret med mönster"
+          }
+        }
+      }
+    },
     "Width": {
       "localizations": {
         "sv": {
@@ -7030,12 +7520,62 @@
         }
       }
     },
+    "a cute robot mascot": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en söt robotmaskot"
+          }
+        }
+      }
+    },
+    "a neon city street at night": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en neonupplyst stadsgata på natten"
+          }
+        }
+      }
+    },
+    "a sunset over mountains": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en solnedgång över berg"
+          }
+        }
+      }
+    },
+    "a watercolor forest cabin": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "en skogsstuga i akvarell"
+          }
+        }
+      }
+    },
     "active layer %@": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "aktivt lager %@"
+          }
+        }
+      }
+    },
+    "add curves": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "lägg till kurvor"
           }
         }
       }
@@ -7101,6 +7641,16 @@
         }
       }
     },
+    "make it warmer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "gör den varmare"
+          }
+        }
+      }
+    },
     "pixels": {
       "localizations": {
         "sv": {
@@ -7112,6 +7662,26 @@
       }
     },
     "pt": {},
+    "relight": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ljussätt om"
+          }
+        }
+      }
+    },
+    "remove background": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ta bort bakgrunden"
+          }
+        }
+      }
+    },
     "sRGB": {},
     "sk-or-v1-…": {},
     "tool %@": {
@@ -7120,6 +7690,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "verktyg %@"
+          }
+        }
+      }
+    },
+    "vintage look": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "vintagekänsla"
+          }
+        }
+      }
+    },
+    "…or drop an image here": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "…eller släpp en bild här"
           }
         }
       }
@@ -7144,6 +7734,16 @@
         }
       }
     },
+    "⇧ add · ⌥ subtract · while dragging: ⇧ square, ⌥ from the centre": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧ lägg till · ⌥ dra ifrån · under dragning: ⇧ kvadrat, ⌥ från mitten"
+          }
+        }
+      }
+    },
     "⇧ add · ⌥ subtract · ⇧⌥ intersect": {
       "localizations": {
         "sv": {
@@ -7160,6 +7760,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "⇧ låser proportioner"
+          }
+        }
+      }
+    },
+    "⇧ constrains · U next shape": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧ låser proportioner · U nästa form"
           }
         }
       }

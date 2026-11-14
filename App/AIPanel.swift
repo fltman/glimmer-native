@@ -395,6 +395,11 @@ private struct FillView: View {
                 }
                 .controlSize(.small)
             }
+            if mode == .remove {
+                TextField("Optional: what to remove, or what should be behind it", text: $prompt, axis: .vertical)
+                    .lineLimit(1...3)
+                    .textFieldStyle(.roundedBorder)
+            }
             Button(mode == .remove ? "Remove Object" : "Fill Selection") {
                 ai.fill(mode: mode, prompt: prompt, reference: mode == .fill ? reference : nil)
             }
@@ -485,8 +490,22 @@ private struct ColorMatchView: View {
                     if response == .OK, let url = panel.url { ai.matchColor(reference: url, strength: strength) }
                 }
             }
+            Text("…or drop an image here")
+                .font(.caption)
+                .foregroundStyle(isTargeted ? Theme.accent : Theme.muted)
         }
+        .padding(isTargeted ? 6 : 0)
+        .overlay {
+            if isTargeted { RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.accent, style: StrokeStyle(lineWidth: 1.5, dash: [5])) }
+        }
+        .dropDestination(for: URL.self) { urls, _ in
+            guard let url = urls.first(where: { UTType(filenameExtension: $0.pathExtension)?.conforms(to: .image) == true }) else { return false }
+            ai.matchColor(reference: url, strength: strength)
+            return true
+        } isTargeted: { isTargeted = $0 }
     }
+
+    @State private var isTargeted = false
 }
 
 private struct JobsView: View {
@@ -704,8 +723,35 @@ private struct LensBlurView: View {
                             format: { String(format: "%.1f %%", $0 / 10) }, set: { p.amount = $0 / 1000 }, commit: {})
             ParameterSlider(label: "Bokeh", value: p.bokeh * 100, range: 0...100, step: 1,
                             format: { "\(Int($0)) %" }, set: { p.bokeh = $0 / 100 }, commit: {})
-            Button("Apply Lens Blur") { ai.lensBlur(p) }
+            if ai.isLensBlurLive {
+                Toggle("Show depth map", isOn: $showDepth)
+                    .help("White is near, black is far")
+                HStack {
+                    Button("Cancel") { finish(apply: false) }
+                        .keyboardShortcut(.cancelAction)
+                    Button("Apply") { finish(apply: true) }
+                        .keyboardShortcut(.defaultAction)
+                        .buttonStyle(.borderedProminent)
+                }
+            } else {
+                HStack {
+                    Button("Preview Lens Blur") { ai.beginLensBlur(p) }
+                        .disabled(ai.isPreparingLensBlur)
+                    if ai.isPreparingLensBlur { ProgressView().controlSize(.small) }
+                }
+                .help("Shows the blur on the canvas while you adjust it")
+            }
         }
+        .onChange(of: p) { _, new in ai.updateLensBlur(new, showDepth: showDepth) }
+        .onChange(of: showDepth) { _, show in ai.updateLensBlur(p, showDepth: show) }
+        .onDisappear { if ai.isLensBlurLive { finish(apply: false) } }
+    }
+
+    @State private var showDepth = false
+
+    private func finish(apply: Bool) {
+        ai.endLensBlur(apply: apply, parameters: p)
+        showDepth = false
     }
 }
 

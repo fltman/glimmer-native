@@ -65,7 +65,15 @@ extension EditorSession {
                                                                 isClosed: true)])
         }
         // A shape is a solid fill layer with a vector mask: recolourable, editable with the pen, scalable.
-        let layer = Layer(name: shapeKind.title, mask: path.asSelection.asMask, vectorMask: path, content: .fill(.solid(foreground)))
+        var layer = Layer(name: shapeKind.title, mask: path.asSelection.asMask, vectorMask: path, content: .fill(.solid(foreground)))
+        if shapeStrokeWidth >= 1 {
+            // The outline is a layer style, so its colour and width stay editable.
+            var stroke = StrokeEffect()
+            stroke.color = shapeStrokeColor
+            stroke.width = shapeStrokeWidth
+            stroke.position = .center
+            layer.effects.stroke = stroke
+        }
         edit(String(localized: "New \(String(localized: String.LocalizationValue(shapeKind.title)))")) { $0.insertLayerAboveActive(layer) }
     }
 }

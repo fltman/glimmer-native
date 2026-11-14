@@ -30,6 +30,8 @@ public struct TextLayer: Codable, Hashable, Sendable {
     /// Text on a path: the baseline follows this polyline (document pixels).
     /// Alignment places the text at the start, middle or end of the path.
     public var onPath: [SIMD2<Double>]?
+    /// The document path `onPath` was taken from; the text follows that path when it is edited.
+    public var onPathID: UUID?
     /// Envelope warp (Photoshop's Warp Text). Ignored for text on a path.
     public var warp: TextWarp?
 

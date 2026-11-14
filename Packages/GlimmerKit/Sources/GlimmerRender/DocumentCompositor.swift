@@ -54,12 +54,23 @@ indirect enum RenderNode {
         var below: [EffectGrid]
         var above: [EffectGrid]
         var overlay: ColorOverlayEffect?
+        /// Only the effects of another node (a fill layer's styles): never the base of a clipping group.
+        var effectsOnly = false
     }
 
     case pixels(Pixels)
     case fill(Common, Fill)
     case adjustment(Common, Adjustment)
     case group(Common, [RenderNode])
+
+    /// The style grids of a pixels node.
+    var effects: LayerStyleRenderer.Rendered {
+        guard case .pixels(let p) = self else { return LayerStyleRenderer.Rendered() }
+        var r = LayerStyleRenderer.Rendered()
+        r.below = p.below
+        r.above = p.above
+        return r
+    }
 
     var common: Common {
         switch self {
@@ -187,7 +198,22 @@ public final class DocumentCompositor {
                     }
                     nodes.append(pixelsNode(layer, grid: grid, common: common, offset: o, overlay: overlay, limit: limit))
                 case .fill(let fill):
+                    // A masked fill (a shape) has an outline, so layer styles apply: they are rendered from
+                    // the mask's shape and drawn around the fill.
+                    var styles = LayerStyleRenderer.Rendered()
+                    if layer.effects.hasSpatialEffects, let m = common.mask, m.defaultValue < 0.5, let area = m.tiles.tileBounds {
+                        let opaque = TileGrid.solid(SIMD4(1, 1, 1, 1), covering: area)
+                        styles = pixelsNode(layer, grid: opaque, common: common, offset: o, overlay: nil, limit: limit).effects
+                    }
+                    if !styles.below.isEmpty {
+                        nodes.append(.pixels(RenderNode.Pixels(common: common, grid: TileGrid(), offset: o, below: styles.below,
+                                                               above: [], overlay: nil, effectsOnly: true)))
+                    }
                     nodes.append(.fill(common, fill))
+                    if !styles.above.isEmpty {
+                        nodes.append(.pixels(RenderNode.Pixels(common: common, grid: TileGrid(), offset: o, below: [],
+                                                               above: styles.above, overlay: nil, effectsOnly: true)))
+                    }
                 case .adjustment(let adjustment):
                     nodes.append(.adjustment(common, adjustment))
                 case .group(let group):
@@ -470,7 +496,7 @@ public final class DocumentCompositor {
                     pipelines.drawQuad(encoder, rect: rect(lc))
                 }
                 drawEffects(p.above)
-                if !c.isClipped {
+                if !c.isClipped, !p.effectsOnly {
                     let alpha = p.offset == .zero
                         ? (p.grid[coord].map(pipelines.texture(for:)) ?? pipelines.clear) : pipelines.white
                     base = ClipSource(alpha: alpha, mask: maskTexture(c, at: coord), density: c.mask?.density ?? 0)

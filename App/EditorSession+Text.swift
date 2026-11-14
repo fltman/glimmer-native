@@ -42,6 +42,7 @@ extension EditorSession {
         var text = TextLayer(string: "", fontName: textDefaults.fontName, size: textDefaults.size, color: foreground,
                              alignment: textDefaults.alignment, origin: line[0] - SIMD2(0, textDefaults.size * 0.9))
         text.onPath = line
+        text.onPathID = pathID
         let layer = Layer(name: "Text", content: .text(text))
         edit("New Text Layer") { $0.insertLayerAboveActive(layer) }
         tool = .type
@@ -77,6 +78,23 @@ extension EditorSession {
                           alignment: textDefaults.alignment, origin: .zero)
         change(&d)
         textDefaults = (d.fontName, d.size, d.alignment)
+    }
+
+    /// Puts the active text layer on a path (its first subpath), or back on a straight line.
+    func setTextPath(_ pathID: UUID?) {
+        guard let layer = activeLayer, case .text(var t) = layer.content else { return }
+        if let pathID {
+            guard let line = state.paths.first(where: { $0.id == pathID })?.polygons().first, line.count > 1 else { return }
+            t.onPath = line
+            t.onPathID = pathID
+        } else {
+            // Stay where the text was: its box starts at the beginning of the old baseline.
+            if let first = t.onPath?.first { t.origin = first - SIMD2(0, t.size * 0.9) }
+            t.onPath = nil
+            t.onPathID = nil
+        }
+        let id = layer.id
+        edit(pathID == nil ? "Remove Text from Path" : "Text on Path") { $0.updateLayer(id) { $0.content = .text(t) } }
     }
 
     /// Live-updates the active text layer's warp (nil removes it).

@@ -234,6 +234,29 @@ struct Omnibar: View {
     var body: some View {
         let rows = focused ? Palette.rows(for: query, session: session, limit: 5, recentsWhenEmpty: false) : []
         VStack(spacing: 8) {
+            if focused, query.isEmpty {
+                // As in the web app: things to generate on an empty canvas, otherwise things to do to the image.
+                let blank = session.isUntouchedBlank
+                HStack(spacing: 6) {
+                    Text("Try").foregroundStyle(Theme.muted)
+                    ForEach(blank ? Self.generateSuggestions : Self.editSuggestions, id: \.self) { suggestion in
+                        Button(LocalizedStringKey(suggestion)) {
+                            finish()
+                            Palette.ask(blank ? "generate \(String(localized: String.LocalizationValue(suggestion)))"
+                                              : String(localized: String.LocalizationValue(suggestion)), session: session)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 10)
+                        .frame(height: 22)
+                        .overlay { Capsule().strokeBorder(Theme.edge) }
+                        .contentShape(.capsule)
+                    }
+                }
+                .font(.caption)
+                .padding(.horizontal, 12)
+                .frame(height: 38)
+                .panelSurface(cornerRadius: 12)
+            }
             if !rows.isEmpty {
                 VStack(spacing: 2) {
                     ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
@@ -275,6 +298,10 @@ struct Omnibar: View {
         }
         .frame(width: 720)
     }
+
+    private static let generateSuggestions = ["a sunset over mountains", "a cute robot mascot", "a watercolor forest cabin",
+                                              "a neon city street at night"]
+    private static let editSuggestions = ["make it warmer", "add curves", "relight", "remove background", "vintage look"]
 
     private func run(_ row: PaletteRow) {
         finish()

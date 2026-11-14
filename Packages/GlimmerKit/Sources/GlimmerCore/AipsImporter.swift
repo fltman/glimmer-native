@@ -23,7 +23,7 @@ public enum AipsImportError: Error, LocalizedError {
 /// Imports projects from Glimmer for the web (`web/src/engine/serialize.ts`):
 /// a JSON file with a flat node list, PNG data URLs for pixels and base64 R8 masks.
 ///
-/// Text layers are rasterized until Glimmer has editable text (phase 6).
+/// Layers, masks, effects, editable text, vector paths, guides and the grid come across.
 public enum AipsImporter {
     public static func importProject(_ data: Data) throws -> DocumentState {
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -60,6 +60,45 @@ public enum AipsImporter {
         if let active = root["activeLayerId"] as? String, let id = newIDs[active] {
             state.activeLayerID = id
         }
+
+        // Vector paths, and the text layers that run along them.
+        var pathIDs: [String: UUID] = [:]
+        for p in (root["paths"] as? [[String: Any]]) ?? [] {
+            let subpaths = ((p["subpaths"] as? [[String: Any]]) ?? []).map { sub in
+                Subpath(anchors: ((sub["anchors"] as? [[String: Any]]) ?? []).map { a in
+                    let point = SIMD2(double(a["x"], 0), double(a["y"], 0))
+                    return PathAnchor(point, handleIn: SIMD2(double(a["inX"], point.x), double(a["inY"], point.y)),
+                                      handleOut: SIMD2(double(a["outX"], point.x), double(a["outY"], point.y)))
+                }, isClosed: sub["closed"] as? Bool ?? false)
+            }
+            let path = VectorPath(name: p["name"] as? String ?? "Path", subpaths: subpaths)
+            if let id = p["id"] as? String { pathIDs[id] = path.id }
+            state.paths.append(path)
+        }
+        for node in nodes where node["kind"] as? String == "text" {
+            guard let old = node["id"] as? String, let layerID = newIDs[old],
+                  let pathRef = (node["text"] as? [String: Any])?["pathId"] as? String, let pathID = pathIDs[pathRef],
+                  let line = state.paths.first(where: { $0.id == pathID })?.polygons().first, line.count > 1 else { continue }
+            state.updateLayer(layerID) { l in
+                if case .text(var t) = l.content {
+                    t.onPath = line
+                    t.onPathID = pathID
+                    l.content = .text(t)
+                }
+            }
+        }
+
+        // Guides, grid, rulers and snapping.
+        for g in (root["guides"] as? [[String: Any]]) ?? [] {
+            state.aids.guides.append(Guide(axis: g["axis"] as? String == "v" ? .vertical : .horizontal, position: double(g["pos"], 0)))
+        }
+        if let grid = root["grid"] as? [String: Any] {
+            state.aids.grid.isVisible = grid["visible"] as? Bool ?? false
+            state.aids.grid.spacing = max(1, double(grid["size"], state.aids.grid.spacing))
+            state.aids.grid.subdivisions = max(1, int(grid["subdivisions"] ?? state.aids.grid.subdivisions))
+        }
+        if let rulers = root["rulersVisible"] as? Bool { state.aids.rulersVisible = rulers }
+        if let snap = root["snapEnabled"] as? Bool { state.aids.snap = snap }
         return state
     }
 

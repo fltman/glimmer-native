@@ -171,6 +171,11 @@ extension EditorSession {
     }
 
     func applySelection(_ shape: Selection, operation: Selection.Operation, name: String) {
+        var shape = shape
+        if selectionFeather > 0, let metal,
+           let soft = try? SelectionOps.apply(.feather(selectionFeather), to: shape, limit: state.bounds, context: metal) {
+            shape = soft
+        }
         edit(name) { state in
             if let current = state.selection, operation != .replace {
                 state.selection = current.combined(with: shape, operation)
@@ -232,6 +237,52 @@ extension EditorSession {
         }
     }
 
+    /// Fills the selection (or the whole layer) with a colour, no tolerance involved.
+    func fill(with color: SRGBColor, name: String) {
+        commitLiveEdit()
+        guard let metal, let layer = activeLayer, layer.isRaster else {
+            errorMessage = "Select a pixel layer to fill."
+            return
+        }
+        do {
+            let area = state.selection.flatMap { $0.bounds(in: state.bounds) } ?? state.bounds
+            let filled = try PixelOps(context: metal).run(.paint, on: layer.tiles, selection: state.selection,
+                                                          coords: area.tileCoords, color: SIMD4(color.linear, 1),
+                                                          opacity: Float(brush.opacity))
+            let id = layer.id
+            edit(name) { $0.updateLayer(id) { $0.tiles = filled } }
+        } catch {
+            report(error)
+        }
+    }
+
+    /// Paints the current pattern into the selection (or the whole layer).
+    func fillWithPattern() {
+        commitLiveEdit()
+        guard let metal, let layer = activeLayer, layer.isRaster else {
+            errorMessage = "Select a pixel layer to fill."
+            return
+        }
+        do {
+            let pattern = Layer(name: "Pattern", mask: state.selection?.asMask,
+                                content: .fill(.pattern(PatternFill(kind: patternKind, scale: patternScale,
+                                                                    foreground: foreground, background: background))))
+            let pixels = Layer(name: "Pixels", content: .raster(layer.tiles))
+            let both = Layer(name: "Fill", content: .group(LayerGroup(children: [pixels, pattern])))
+            // Keep pixels hanging outside the canvas: rasterize over their extent too.
+            var area = state.bounds
+            if let t = layer.tiles.tileBounds {
+                let x0 = min(area.x, t.x), y0 = min(area.y, t.y)
+                area = PixelRect(x: x0, y: y0, width: max(area.maxX, t.maxX) - x0, height: max(area.maxY, t.maxY) - y0)
+            }
+            let filled = try DocumentCompositor.rasterize(both, bounds: area, blendSpace: state.blendSpace, context: metal)
+            let id = layer.id
+            edit("Pattern Fill") { $0.updateLayer(id) { $0.tiles = filled } }
+        } catch {
+            report(error)
+        }
+    }
+
     // MARK: Gradient tool
 
     /// Creates a gradient fill layer from the drag (foreground → background or
@@ -240,14 +291,20 @@ extension EditorSession {
         guard let drag = gradientDrag else { return }
         gradientDrag = nil
         guard simd_distance(drag.start, drag.end) > 2 else { return }
-        let stops = gradientToTransparent
-            ? [GradientStop(0, foreground), GradientStop(1, foreground, opacity: 0)]
-            : [GradientStop(0, foreground), GradientStop(1, background)]
-        let fill = GradientFill(stops: stops, style: gradientStyle, start: drag.start, end: drag.end)
+        let fill = GradientFill(stops: currentGradientStops, style: gradientStyle, start: drag.start, end: drag.end,
+                                reverse: gradientReverse)
         let mask = state.selection?.asMask
         edit("Gradient") {
             $0.insertLayerAboveActive(Layer(name: "Gradient", mask: mask, content: .fill(.gradient(fill))))
         }
+    }
+
+    /// The stops the Gradient tool draws with.
+    var currentGradientStops: [GradientStop] {
+        if let custom = gradientStops, custom.count >= 2 { return custom }
+        return gradientToTransparent
+            ? [GradientStop(0, foreground), GradientStop(1, foreground, opacity: 0)]
+            : [GradientStop(0, foreground), GradientStop(1, background)]
     }
 
     // MARK: Eyedropper

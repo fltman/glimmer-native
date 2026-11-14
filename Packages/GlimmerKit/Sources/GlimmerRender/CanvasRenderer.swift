@@ -139,7 +139,7 @@ public final class CanvasRenderer: @unchecked Sendable {
         tile: (TileCoord) -> MTLTexture? = { _ in nil },
         selection: Selection? = nil,
         time: Double = 0,
-        channel: Int = 0,
+        channelMask: Int = 15,
         into commandBuffer: MTLCommandBuffer,
         target: MTLTexture
     ) {
@@ -167,7 +167,7 @@ public final class CanvasRenderer: @unchecked Sendable {
             let s = Float(TileGeometry.size)
 
             encoder.setRenderPipelineState(present)
-            var channelIndex = Int32(channel)
+            var channelIndex = Int32(channelMask)
             encoder.setFragmentBytes(&channelIndex, length: 4, index: 0)
             for coord in coords {
                 guard let texture = tile(coord) else { continue }

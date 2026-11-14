@@ -387,6 +387,21 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 
 - **Gränssnitt efter webbversionen (2026-11-14):** mörkt tema med webbens färger (`Theme.swift`: bakgrund #0c0d11, panel #16171c, accent #6d7dff), dold titelrad och arbetsytan kant i kant. Sidopanelen (`.inspector`) är ersatt av en flytande panel under knappraden uppe till höger (AI, Tools, Layers, Export, ⌘K). Namn, storlek och zoom visas i en bricka uppe till vänster. Omnibaren är en riktig textrad: ↩ kör bästa träff, ⌘↩ frågar assistenten, träffar visas ovanför. Paletten och omnibaren delar logik i `Palette`. Tomma dokument visar ett startkort med logotypen. "Classic Layout" (Visa-menyn) dockar panelen vid högerkanten med alla flikar, som webbens klassiska läge; lagerpanelen har webbens textknappar.
 
+- **Paritetsgenomgång mot webben (2026-11-14):** en ny genomgång av webbens kod hittade sex funktioner utan motsvarighet och ett antal med färre val. Allt är byggt:
+  - **Webbprojekt:** `AipsExporter` (GlimmerRender) skriver `.aips`, och importen läser nu även paths, guider, grid och text på path. Fyllningslager, former, smarta filter och perspektivtransformer skrivs som pixlar eftersom webben saknar dem. Rundresan export → import är testad; filen är inte provad i själva webbappen.
+  - **Text på path** bär nu pathens id (`TextLayer.onPathID`) och följer pathen när den redigeras. Väljaren "On path" binder eller lossar en befintlig text.
+  - **Markering:** feather när markeringen görs, ⇧/⌥ under dragning (kvadrat, från mitten) när de släppts efter nedtrycket, snap för markeringsramen. Crop har ⌥ från mitten.
+  - **Snap** mot canvasens mitt, och flyttverktyget snappar lagrets kanter och mitt (`snapOffset(forBoxAt:size:)`).
+  - **Fyllning:** ⌥⌫ och ⌘⌫ fyller markeringen eller lagret med förgrund respektive bakgrund; "Fill with Pattern" målar mönstret destruktivt.
+  - **Former** får kontur som lagerstil. **Lärdom:** lagerstilar ritades aldrig på fyllningslager; kompositorn renderar dem nu från maskens form (`effectsOnly`-noder runt fyllningen).
+  - **Pensel:** egna förinställningar (`BrushPresetStore`, UserDefaults) och reglage för spacing, rundhet, vinkel, spridning och storleksvariation.
+  - **Gradientverktyget** ritar med egna stopp, färdiga ramper och Reverse.
+  - **Kanaler:** `channelMask` (bitar R, G, B, alfa) ersätter enkanalsvisningen; ögonen kombinerar kanaler och alfa kan visas och läsas in som markering.
+  - **Lens Blur** förhandsvisas live i ett lager utanför ångra-historiken tills Apply, med visning av djupkartan.
+  - **Övrigt:** Tab gömmer gränssnittet, vinkelfält för vyrotation i navigatorn, Liquify "Restore All", förslagschips i omnibaren, valfri prompt i Remove-läget, släpp referensbild på Match Color, ⇧O för Burn, U växlar form, och en bild som placeras i ett orört tomt dokument blir dokumentet.
+  - **Lärdom:** när ⌘K-paletten stängdes hamnade tangentbordet ingenstans, så verktygstangenterna fungerade inte förrän man klickat i bilden. Canvasen tar nu tillbaka fokus.
+  - **Lärdom (test):** macOS 27 sparar fönsteråterställning i `~/Library/Daemon Containers/…/Saved Application State/<UUID>.savedState`, inte i appens container. Efter många `pkill` öppnade appen 37 gamla fönster.
+
 ## 4. Teststrategi
 
 - **GlimmerCore:** modell, COW-tiles, undo/redo-invarianter, serialisering (rundtur och versionsmigrering) och `.aips`-import mot riktiga filer från webbappen.

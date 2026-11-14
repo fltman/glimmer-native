@@ -112,12 +112,13 @@ public enum AIPipelines {
     public static func inpaintInstruction(mode: InpaintMode, prompt: String) -> String {
         let base = maskPreamble + " Do not recompose, crop, rotate or resize. Keep the framing, "
             + "perspective, lighting, colors and exposure of the unmasked area identical."
+        let p = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         if mode == .remove {
             return base + " Task: REMOVE whatever object occupies the white region and "
                 + "plausibly reconstruct the background that would be behind it, matching "
                 + "surrounding texture, lighting and color."
+                + (p.isEmpty ? "" : " The user describes what to remove or how to fill in: \(p).")
         }
-        let p = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         return base + " Task: replace ONLY the white region with: \(p.isEmpty ? "content that blends seamlessly with the surroundings" : p)."
     }
 

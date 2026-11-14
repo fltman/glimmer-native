@@ -79,7 +79,7 @@ extension EditorSession {
                 SIMD2(r.maxX, r.maxY), SIMD2(mx, r.maxY), SIMD2(r.minX, r.maxY), SIMD2(r.minX, my)]
     }
 
-    func cropDrag(to docPoint: SIMD2<Double>) {
+    func cropDrag(to docPoint: SIMD2<Double>, fromCentre: Bool = false) {
         guard var c = cropSession, let handle = c.dragging else { return }
         let doc = c.local(docPoint)
         var r = c.rect
@@ -89,13 +89,23 @@ extension EditorSession {
             r = CGRectLike(x0: r.minX + d.x, y0: r.minY + d.y, x1: r.maxX + d.x, y1: r.maxY + d.y)
             c.anchor = doc
         case 9:
-            r = CGRectLike(x0: c.anchor.x, y0: c.anchor.y, x1: doc.x, y1: doc.y)
+            r = fromCentre
+                ? CGRectLike(x0: 2 * c.anchor.x - doc.x, y0: 2 * c.anchor.y - doc.y, x1: doc.x, y1: doc.y)
+                : CGRectLike(x0: c.anchor.x, y0: c.anchor.y, x1: doc.x, y1: doc.y)
         default:
             var x0 = r.minX, y0 = r.minY, x1 = r.maxX, y1 = r.maxY
             if [0, 6, 7].contains(handle) { x0 = doc.x }
             if [2, 3, 4].contains(handle) { x1 = doc.x }
             if [0, 1, 2].contains(handle) { y0 = doc.y }
             if [4, 5, 6].contains(handle) { y1 = doc.y }
+            if fromCentre {
+                // ⌥: the opposite edge mirrors the dragged one around the centre.
+                let cx = (r.minX + r.maxX) / 2, cy = (r.minY + r.maxY) / 2
+                if [0, 6, 7].contains(handle) { x1 = 2 * cx - x0 }
+                if [2, 3, 4].contains(handle) { x0 = 2 * cx - x1 }
+                if [0, 1, 2].contains(handle) { y1 = 2 * cy - y0 }
+                if [4, 5, 6].contains(handle) { y0 = 2 * cy - y1 }
+            }
             r = CGRectLike(x0: x0, y0: y0, x1: x1, y1: y1)
         }
         if let aspect = c.aspect, handle != 8, r.width > 0 {

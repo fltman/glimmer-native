@@ -514,6 +514,97 @@ final class AIController {
         }
     }
 
+    // MARK: Live lens blur
+
+    /// A lens blur being tuned: the sliders re-render a preview layer until Apply or Cancel.
+    private(set) var lensBlurLive: (previewID: UUID, base: DocumentState, depth: [Float])?
+    private(set) var isPreparingLensBlur = false
+    @ObservationIgnored private var lensBlurTask: Task<Void, Never>?
+
+    var isLensBlurLive: Bool { lensBlurLive != nil }
+
+    /// Estimates depth (once per image), then shows the blur on the canvas.
+    func beginLensBlur(_ parameters: DocumentEffects.LensBlurParameters) {
+        guard lensBlurLive == nil, !isPreparingLensBlur else { return }
+        session.commitLiveEdit()
+        let state = session.state
+        do {
+            let metal = try metal
+            let image = try ImageExporter.flattenedSRGB(state, context: metal)
+            let key = documentKey(state)
+            let cached = depthCache?.key == key ? depthCache?.depth : nil
+            isPreparingLensBlur = true
+            run("Estimating depth", {
+                if let cached { return (cached, nil) }
+                return (try await DepthEstimator.depth(of: image).values.map { $0 / 255 }, nil)
+            }, apply: { [weak self] depth in
+                guard let self else { return }
+                self.isPreparingLensBlur = false
+                self.depthCache = (key, depth)
+                // The image changed while the depth was being estimated: start over rather than blur stale pixels.
+                guard self.documentKey(self.session.state) == key else { return }
+                let id = UUID()
+                self.lensBlurLive = (id, self.session.state, depth)
+                // A preview layer outside the undo history; Apply turns it into a real step.
+                self.session.document.state.layers.append(Layer(id: id, name: "Lens Blur", content: .raster(TileGrid())))
+                self.updateLensBlur(parameters, showDepth: false)
+            })
+        } catch {
+            isPreparingLensBlur = false
+            session.report(error)
+        }
+    }
+
+    /// Re-renders the preview for new settings, or shows the depth map instead.
+    func updateLensBlur(_ parameters: DocumentEffects.LensBlurParameters, showDepth: Bool) {
+        guard let live = lensBlurLive, let metal = try? metal else { return }
+        lensBlurTask?.cancel()
+        lensBlurTask = Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(60))
+            guard !Task.isCancelled else { return }
+            let grid = await Task.detached(priority: .userInitiated) { () -> TileGrid? in
+                if showDepth { return Self.depthTiles(live.depth, width: live.base.width, height: live.base.height) }
+                return try? DocumentEffects.lensBlur(live.base, depth: live.depth, parameters: parameters, context: metal)
+            }.value
+            guard !Task.isCancelled, let self, let grid, self.lensBlurLive?.previewID == live.previewID else { return }
+            self.session.document.state.updateLayer(live.previewID) { $0.content = .raster(grid) }
+        }
+    }
+
+    /// The depth map as a grey image: white is near, black is far.
+    private nonisolated static func depthTiles(_ depth: [Float], width: Int, height: Int) -> TileGrid? {
+        guard depth.count == width * height else { return nil }
+        var rgba = [UInt8](repeating: 255, count: width * height * 4)
+        for i in 0..<(width * height) {
+            let v = UInt8(min(max(depth[i], 0), 1) * 255)
+            rgba[i * 4] = v; rgba[i * 4 + 1] = v; rgba[i * 4 + 2] = v
+        }
+        guard let provider = CGDataProvider(data: Data(rgba) as CFData),
+              let image = CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: width * 4,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
+                                  provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent) else { return nil }
+        return try? ImageImporter.tiles(from: image, origin: .zero)
+    }
+
+    /// Keeps the blur as a new layer (one undo step) or throws the preview away.
+    func endLensBlur(apply: Bool, parameters: DocumentEffects.LensBlurParameters) {
+        guard let live = lensBlurLive else { return }
+        lensBlurTask?.cancel()
+        lensBlurLive = nil
+        _ = session.document.state.removeLayer(live.previewID)
+        guard apply, let metal = try? metal else { return }
+        // Render with the final settings: the preview may have been a step behind, or showing depth.
+        run("Lens blur", {
+            (try DocumentEffects.lensBlur(live.base, depth: live.depth, parameters: parameters, context: metal), nil)
+        }, apply: { [weak self] grid in
+            guard let self else { return }
+            self.session.document.edit("Lens Blur", undoManager: self.session.undoManager) {
+                $0.insertLayerAboveActive(Layer(name: "Lens Blur", content: .raster(grid)))
+            }
+        })
+    }
+
     // MARK: Magic Select
 
     @ObservationIgnored private let selector = MagicSelector()

@@ -35,9 +35,14 @@ struct GlimmerCommands: Commands {
             .keyboardShortcut("z", modifiers: [.command, .shift])
             .disabled(!editingText && index >= history.count)
         }
-        CommandGroup(before: .toolbar) {
-            items(registry.descriptors(in: .view).filter { ![.toggleRulers, .toggleGrid, .toggleSnap, .toggleNavigator, .toggleClassicLayout].contains($0.id) })
+        CommandGroup(after: .pasteboard) {
             Divider()
+            items([.fillForeground, .fillBackground, .fillPattern])
+        }
+        CommandGroup(before: .toolbar) {
+            items(registry.descriptors(in: .view).filter { ![.toggleRulers, .toggleGrid, .toggleSnap, .toggleNavigator, .toggleClassicLayout, .hideInterface].contains($0.id) })
+            Divider()
+            toggle(.hideInterface)
             toggle(.toggleClassicLayout)
             toggle(.toggleNavigator)
             toggle(.toggleRulers)

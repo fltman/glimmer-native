@@ -74,6 +74,21 @@ public final class LiquifyEngine {
         cb.commit()
     }
 
+    /// Throws away every change (Restore All).
+    public func reset() {
+        guard let cb = context.commandQueue.makeCommandBuffer() else { return }
+        for t in [field, scratch] {
+            let pass = MTLRenderPassDescriptor()
+            pass.colorAttachments[0].texture = t
+            pass.colorAttachments[0].loadAction = .clear
+            pass.colorAttachments[0].clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+            pass.colorAttachments[0].storeAction = .store
+            cb.makeRenderCommandEncoder(descriptor: pass)?.endEncoding()
+        }
+        cb.commit()
+        isIdentity = true
+    }
+
     /// One brush dab (document coordinates).
     public func dab(_ mode: Mode, at centre: SIMD2<Double>, delta: SIMD2<Double>, radius: Double, strength: Double) {
         guard let cb = context.commandQueue.makeCommandBuffer() else { return }

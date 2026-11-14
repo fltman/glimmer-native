@@ -45,6 +45,25 @@ struct NavigatorView: View {
             }
             .buttonStyle(.borderless)
             .controlSize(.small)
+            HStack(spacing: 6) {
+                Button { canvas.perform(.rotateViewLeft) } label: { Image(systemName: "rotate.left") }
+                    .help("Rotate the view 15° left")
+                TextField("Angle", value: Binding(get: { (canvas.rotationDegrees * 10).rounded() / 10 },
+                                                  set: { canvas.rotationDegrees = min(max($0, -360), 360) }),
+                          format: .number.precision(.fractionLength(0...1)))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 56)
+                    .multilineTextAlignment(.trailing)
+                    .accessibilityLabel("View rotation in degrees")
+                Text(verbatim: "°").foregroundStyle(.secondary)
+                Button { canvas.perform(.rotateViewRight) } label: { Image(systemName: "rotate.right") }
+                    .help("Rotate the view 15° right")
+                Spacer()
+                Button("Reset") { canvas.perform(.resetViewRotation) }
+                    .disabled(!canvas.canPerform(.resetViewRotation))
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.small)
         }
         .padding(10)
         .frame(width: 240)

@@ -5,6 +5,21 @@ import GlimmerTools
 import SwiftUI
 import simd
 
+extension DocumentState {
+    /// Text bound to a path follows it: refresh the baseline of every text layer on `id`.
+    mutating func syncText(toPath id: UUID) {
+        guard let line = paths.first(where: { $0.id == id })?.polygons().first, line.count > 1 else { return }
+        for layer in allLayers {
+            guard case .text(let t) = layer.content, t.onPathID == id, t.onPath != line else { continue }
+            updateLayer(layer.id) { l in
+                var bound = t
+                bound.onPath = line
+                l.content = .text(bound)
+            }
+        }
+    }
+}
+
 extension EditorSession {
     // MARK: Pen tool and paths
 
@@ -95,6 +110,7 @@ extension EditorSession {
         let apply: (inout DocumentState) -> Void = { state in
             if let i = state.paths.firstIndex(where: { $0.id == id }) {
                 change(&state.paths[i])
+                state.syncText(toPath: id)
             } else if let layer = state.allLayers.first(where: { $0.vectorMask?.id == id }) {
                 // Shape layer: edit the vector mask and re-rasterize the mask from it.
                 state.updateLayer(layer.id) { l in
@@ -169,7 +185,15 @@ extension EditorSession {
     }
 
     func deletePath(_ id: UUID) {
-        edit("Delete Path") { $0.paths.removeAll { $0.id == id } }
+        edit("Delete Path") { state in
+            state.paths.removeAll { $0.id == id }
+            // Text on the deleted path keeps its shape but is no longer bound to anything.
+            for layer in state.allLayers {
+                guard case .text(var t) = layer.content, t.onPathID == id else { continue }
+                t.onPathID = nil
+                state.updateLayer(layer.id) { $0.content = .text(t) }
+            }
+        }
         if activePathID == id { activePathID = nil }
     }
 

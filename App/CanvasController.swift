@@ -75,6 +75,12 @@ final class CanvasController {
         transform.setRotation(ViewTransform.snappedRotation(gestureRawRotation), around: anchor)
     }
 
+    /// View rotation in degrees, clockwise positive.
+    var rotationDegrees: Double {
+        get { transform.rotation * 180 / .pi }
+        set { transform.setRotation(newValue * .pi / 180, around: viewCenter) }
+    }
+
     func toggleFitAndActualSize(around anchor: SIMD2<Double>) {
         if abs(zoom - 1) < 0.001 {
             fitToWindow()
