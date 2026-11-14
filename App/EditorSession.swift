@@ -392,7 +392,7 @@ final class EditorSession {
         case .toggleMask, .deleteMask:
             return layer?.mask != nil
         case .convertToSmartObject:
-            return layer?.isRaster == true && !(layer?.tiles.isEmpty ?? true)
+            return (layer?.isRaster == true && !(layer?.tiles.isEmpty ?? true)) || layer?.isText == true
         case .rasterizeLayer:
             guard let layer else { return false }
             return !layer.isRaster && !layer.isAdjustment
@@ -400,14 +400,17 @@ final class EditorSession {
             return !isExporting
         case .deselect, .invertSelection, .aiRemoveObject, .featherSelection, .growSelection, .shrinkSelection:
             return state.selection != nil
-        case .copy, .cut, .clearPixels:
+        case .copy, .cut:
+            // Without a selection they take the whole layer.
+            return activeLayer?.isRaster ?? false
+        case .clearPixels:
             return state.selection != nil && (activeLayer?.isRaster ?? false)
         case .fillForeground, .fillBackground, .fillPattern:
             return activeLayer?.isRaster ?? false
         case .layerViaCopy:
             return activeLayer?.isRaster ?? false
         case .freeTransform:
-            return activeLayer.map { $0.isRaster || $0.vectorMask != nil || { if case .smart = $0.content { true } else { false } }($0) } ?? false
+            return activeLayer.map { $0.isRaster || $0.isText || $0.vectorMask != nil || { if case .smart = $0.content { true } else { false } }($0) } ?? false
         case .zoomIn, .zoomOut, .fitToWindow, .actualSize, .rotateViewLeft, .rotateViewRight, .resetViewRotation:
             return canvas.canPerform(id)
         default:
@@ -455,6 +458,11 @@ final class EditorSession {
         case .fillBackground: fill(with: background, name: "Fill")
         case .fillPattern: fillWithPattern()
         case .exportWebProject: exportWebProject()
+        case .newDocument: DocumentOpener.shared.showNewDocumentWindow()
+        case .openDocument: DocumentOpener.shared.showOpenPanel()
+        case .showLayers, .showPaths, .showChannels, .showHistory:
+            showLayersPanel = true
+            inspectorTab = id == .showLayers ? .layers : id == .showPaths ? .paths : id == .showChannels ? .channels : .history
         case .repeatFilter:
             if let f = lastFilter { applyFilter(f) }
         case .liquify:
@@ -633,8 +641,15 @@ final class EditorSession {
     // MARK: Smart objects
 
     private func convertToSmartObject() {
-        guard let layer = activeLayer, case .raster(let grid) = layer.content,
-              let bounds = grid.tileBounds, let metal else { return }
+        guard let layer = activeLayer, let metal else { return }
+        // Text becomes a smart object of its rendered pixels (no longer editable as text).
+        let grid: TileGrid
+        switch layer.content {
+        case .raster(let tiles): grid = tiles
+        case .text(let text): grid = DocumentCompositor.rasterize(text)
+        default: return
+        }
+        guard let bounds = grid.tileBounds else { return }
         do {
             let source = try TileOperations.translate(grid, by: SIMD2(-bounds.x, -bounds.y), context: metal)
             let smart = SmartObject(source: source, width: bounds.width, height: bounds.height,

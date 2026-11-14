@@ -614,6 +614,7 @@ final class AIController {
     func magicSelect(at point: SIMD2<Double>, positive: Bool) {
         let state = session.state
         guard state.bounds.intersection(PixelRect(x: Int(point.x), y: Int(point.y), width: 1, height: 1)).width > 0 else { return }
+        if magicPoints.isEmpty { selectionBeforeMagic = state.selection }
         magicPoints.append(MagicSelector.Point(point, positive: positive))
         let points = magicPoints
         do {
@@ -639,7 +640,17 @@ final class AIController {
 
     func resetMagicSelect() {
         magicPoints = []
+        selectionBeforeMagic = nil
     }
+
+    /// Esc: forget the points and put back the selection that was there before Magic Select.
+    func cancelMagicSelect() {
+        let before = selectionBeforeMagic
+        resetMagicSelect()
+        session.document.edit("Cancel Magic Select", undoManager: session.undoManager) { $0.selection = before }
+    }
+
+    @ObservationIgnored private var selectionBeforeMagic: Selection?
 
     // MARK: Assistant (see AIController+Agent.swift)
 }

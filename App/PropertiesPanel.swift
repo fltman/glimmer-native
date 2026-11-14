@@ -383,7 +383,8 @@ struct CurvesEditor: View {
         }
         guard let i = dragging, pts.indices.contains(i) else { return }
         let isEndpoint = i == 0 || i == pts.count - 1
-        if !isEndpoint, value.y < -0.15 || value.y > 1.15 {
+        let x = location.x / size.width
+        if !isEndpoint, value.y < -0.15 || value.y > 1.15 || x < -0.15 || x > 1.15 {
             pts.remove(at: i)
             dragging = nil
             update(pts)

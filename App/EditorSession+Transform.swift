@@ -136,7 +136,10 @@ extension EditorSession {
         commitLiveEdit()
         guard let metal, let layer = activeLayer else { return }
         do {
-            switch layer.content {
+            // Text transforms as its rendered pixels; applying turns it into a pixel layer (undo brings the text back).
+            var content = layer.content
+            if case .text(let text) = content { content = .raster(DocumentCompositor.rasterize(text)) }
+            switch content {
             case .raster(let grid):
                 guard let bounds = grid.tileBounds.flatMap({ contentBounds(of: grid, within: $0) }) else { return }
                 let source = try TileOperations.translate(grid, by: SIMD2(-bounds.x, -bounds.y), context: metal)

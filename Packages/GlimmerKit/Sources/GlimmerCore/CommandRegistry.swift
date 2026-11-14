@@ -144,6 +144,12 @@ extension CommandID {
     public static let fillBackground: CommandID = "edit.fillBackground"
     public static let fillPattern: CommandID = "edit.fillPattern"
     public static let exportWebProject: CommandID = "file.exportWebProject"
+    public static let newDocument: CommandID = "file.new"
+    public static let openDocument: CommandID = "file.open"
+    public static let showLayers: CommandID = "view.showLayers"
+    public static let showPaths: CommandID = "view.showPaths"
+    public static let showChannels: CommandID = "view.showChannels"
+    public static let showHistory: CommandID = "view.showHistory"
 
     /// The filter for a `filter(_:)` id.
     public var filterKind: FilterKind? {
@@ -206,6 +212,12 @@ public struct CommandRegistry: Sendable {
                           keywords: ["search", "omnibar", "find command", "ask"]),
         CommandDescriptor(.toggleClassicLayout, "Classic Layout", category: .view,
                           keywords: ["docked", "panels", "sidebar", "omni"]),
+        CommandDescriptor(.showLayers, "Layers Panel", category: .view, keywords: ["show layers", "panel"], isSystemProvided: true),
+        CommandDescriptor(.showPaths, "Paths Panel", category: .view, keywords: ["show paths", "pen", "panel"], isSystemProvided: true),
+        CommandDescriptor(.showChannels, "Channels Panel", category: .view, keywords: ["show channels", "rgb", "alpha", "panel"],
+                          isSystemProvided: true),
+        CommandDescriptor(.showHistory, "History Panel", category: .view, keywords: ["show history", "undo", "panel"],
+                          isSystemProvided: true),
         CommandDescriptor(.hideInterface, "Hide Interface", category: .view,
                           keywords: ["tab", "full screen", "panels", "chrome", "clean"]),
         CommandDescriptor(.toggleNavigator, "Navigator", category: .view, shortcut: KeyShortcut("n", [.command, .option]),
@@ -219,6 +231,10 @@ public struct CommandRegistry: Sendable {
                           shortcut: KeyShortcut("w", [.command, .option, .shift]),
                           keywords: ["png", "jpeg", "heic", "tiff", "save as"]),
 
+        CommandDescriptor(.newDocument, "New…", category: .file, shortcut: KeyShortcut("n"),
+                          keywords: ["new document", "blank", "create"], isSystemProvided: true),
+        CommandDescriptor(.openDocument, "Open…", category: .file, shortcut: KeyShortcut("o"),
+                          keywords: ["open image", "open project", "file"], isSystemProvided: true),
         CommandDescriptor(.exportWebProject, "Export Web Project (.aips)…", category: .file,
                           keywords: ["aips", "glimmer web", "save project", "browser"]),
 

@@ -8,14 +8,19 @@ import simd
 extension EditorSession {
     // MARK: Text
 
-    /// Type tool click: edit the text layer under the pointer, or start a new one.
-    func typeClick(at doc: SIMD2<Double>) {
-        commitLiveEdit()
-        if let hit = state.allLayers.reversed().first(where: { layer in
+    /// The topmost visible text layer under a document point.
+    func textLayer(at doc: SIMD2<Double>) -> Layer? {
+        state.allLayers.reversed().first { layer in
             guard layer.isVisible, case .text(let t) = layer.content else { return false }
             let b = t.bounds
             return doc.x >= Double(b.x) && doc.x <= Double(b.maxX) && doc.y >= Double(b.y) && doc.y <= Double(b.maxY)
-        }) {
+        }
+    }
+
+    /// Type tool click: edit the text layer under the pointer, or start a new one.
+    func typeClick(at doc: SIMD2<Double>) {
+        commitLiveEdit()
+        if let hit = textLayer(at: doc) {
             setActiveLayer(hit.id)
             editingText = hit.id
             return

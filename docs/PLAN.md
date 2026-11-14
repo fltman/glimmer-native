@@ -402,6 +402,9 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **Lärdom:** när ⌘K-paletten stängdes hamnade tangentbordet ingenstans, så verktygstangenterna fungerade inte förrän man klickat i bilden. Canvasen tar nu tillbaka fokus.
   - **Lärdom (test):** macOS 27 sparar fönsteråterställning i `~/Library/Daemon Containers/…/Saved Application State/<UUID>.savedState`, inte i appens container. Efter många `pkill` öppnade appen 37 gamla fönster.
 
+- **Andra paritetsgenomgången (2026-11-14):** de delar av webben som bara stickprovats lästes i sin helhet (motorfilen, lagerpanelen, textredigering, färgväljare, kurvor). Byggt: Free Transform på text (blir pixlar vid Apply), dubbelklick på text med flyttverktyget, Liquify som håller sig inom markeringen, knappar för att byta och återställa färger, crop-gester (ny ruta i en helbildscrop, klick återställer, ⇧ låser proportioner), kopiera och klipp ut hela lagret utan markering, text till smart objekt, pennans tryck i Liquify, hjälplinjer mellan gridlinjerna (och snap mot dem), guider som släpps utanför bilden tas bort, Esc i Magic Select återställer den tidigare markeringen, ⌘Y och ⌘=, samt paletten hittar panelerna, New och Open.
+  - **Medvetet kvar:** klick långt utanför transformrutan roterar (webben verkställer), guider flyttas bara med flyttverktyget, förgrundsfärgen har ingen alfa, Magic Select har ingen separat kandidatvisning med Apply, bara den aktiva pathen ritas, kurveditorn visar inte de andra kanalerna, och crop behåller pixlar utanför (webben tar bort dem).
+
 ## 4. Teststrategi
 
 - **GlimmerCore:** modell, COW-tiles, undo/redo-invarianter, serialisering (rundtur och versionsmigrering) och `.aips`-import mot riktiga filer från webbappen.

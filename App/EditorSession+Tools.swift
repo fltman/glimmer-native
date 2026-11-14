@@ -351,8 +351,10 @@ extension EditorSession {
 
     /// The active layer's pixels inside the selection.
     private func selectedPixels() throws -> TileGrid? {
-        guard let metal, let layer = activeLayer, layer.isRaster, let selection = state.selection,
-              let bounds = selection.bounds(in: state.bounds) else { return nil }
+        guard let metal, let layer = activeLayer, layer.isRaster else { return nil }
+        // No selection: the whole layer.
+        guard let selection = state.selection else { return layer.tiles }
+        guard let bounds = selection.bounds(in: state.bounds) else { return nil }
         let ops = try PixelOps(context: metal)
         let coords = bounds.tileCoords.filter { layer.tiles[$0] != nil }
         var kept = TileGrid()
@@ -363,7 +365,9 @@ extension EditorSession {
 
     func copySelection(cut: Bool) {
         do {
-            guard let grid = try selectedPixels(), let metal, let bounds = state.selection?.bounds(in: state.bounds) else { return }
+            guard let grid = try selectedPixels(), let metal,
+                  let bounds = state.selection.map({ $0.bounds(in: state.bounds) }) ?? grid.tileBounds?.intersection(state.bounds),
+                  !bounds.isEmpty else { return }
             // System pasteboard: a PNG of the copied area.
             let single = DocumentState(width: state.width, height: state.height, layers: [Layer(name: "copy", content: .raster(grid))])
             let pb = NSPasteboard.general
@@ -374,7 +378,13 @@ extension EditorSession {
                 pb.setData(data, forType: .png)
             }
             clipboard = (grid, pb.changeCount)
-            if cut { clearSelectedPixels(actionName: "Cut") }
+            if cut {
+                if state.selection != nil {
+                    clearSelectedPixels(actionName: "Cut")
+                } else if let id = activeLayer?.id {
+                    edit("Cut") { $0.updateLayer(id) { $0.tiles = TileGrid() } }
+                }
+            }
         } catch {
             report(error)
         }

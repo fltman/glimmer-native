@@ -1068,6 +1068,16 @@
         }
       }
     },
+    "Cancel Magic Select": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avbryt magisk markering"
+          }
+        }
+      }
+    },
     "Canvas": {
       "localizations": {
         "sv": {
@@ -1149,6 +1159,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kanaler"
+          }
+        }
+      }
+    },
+    "Channels Panel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanalpanelen"
           }
         }
       }
@@ -3452,6 +3472,16 @@
         }
       }
     },
+    "History Panel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historikpanelen"
+          }
+        }
+      }
+    },
     "History memory": {
       "localizations": {
         "sv": {
@@ -3768,6 +3798,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lager"
+          }
+        }
+      }
+    },
+    "Layers Panel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagerpanelen"
           }
         }
       }
@@ -4773,6 +4813,16 @@
         }
       }
     },
+    "Open…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna…"
+          }
+        }
+      }
+    },
     "Optional: what to remove, or what should be behind it": {
       "localizations": {
         "sv": {
@@ -4897,6 +4947,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Banor"
+          }
+        }
+      }
+    },
+    "Paths Panel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Banpanelen"
           }
         }
       }
@@ -5648,6 +5708,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Återställ vyrotation"
+          }
+        }
+      }
+    },
+    "Reset colours": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ färger"
+          }
+        }
+      }
+    },
+    "Reset to black and white (D)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ till svart och vitt (D)"
           }
         }
       }
@@ -6787,6 +6867,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Byt mellan Visa allt och Dölj allt för omålade ytor"
+          }
+        }
+      }
+    },
+    "Swap colours": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt färger"
+          }
+        }
+      }
+    },
+    "Swap foreground and background (X)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt förgrund och bakgrund (X)"
           }
         }
       }

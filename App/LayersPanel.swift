@@ -87,7 +87,7 @@ struct LayersPanel: View {
         Button(layer.isGroup ? "Merge Group" : "Rasterize Layer") { activate(layer); session.perform(.rasterizeLayer) }
             .disabled(layer.isRaster || layer.isAdjustment)
         Button("Convert to Smart Object") { activate(layer); session.perform(.convertToSmartObject) }
-            .disabled(!layer.isRaster)
+            .disabled(!layer.isRaster && !layer.isText)
         Divider()
         Button(layer.isClipped ? "Release Clipping Mask" : "Create Clipping Mask") {
             activate(layer); session.perform(.toggleClipping)

@@ -357,6 +357,17 @@ private struct ColorSwatches: View {
         }
         .frame(width: 66, height: 44, alignment: .topLeading)
         .help("Foreground and background colours (X swaps, D resets)")
+        HStack(spacing: 2) {
+            Button { session.swapColors() } label: { Image(systemName: "arrow.left.arrow.right").frame(width: 30, height: 20) }
+                .help("Swap foreground and background (X)")
+                .accessibilityLabel("Swap colours")
+            Button { session.resetColors() } label: { Image(systemName: "circle.lefthalf.filled").frame(width: 30, height: 20) }
+                .help("Reset to black and white (D)")
+                .accessibilityLabel("Reset colours")
+        }
+        .buttonStyle(.plain)
+        .font(.caption)
+        .foregroundStyle(Theme.muted)
         Button {
             showSwatches.toggle()
         } label: {

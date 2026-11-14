@@ -19,6 +19,8 @@ extension EditorSession {
         var pivot: SIMD2<Double> = .zero
         /// Box size before straightening (the auto-fit scales from this).
         var baseSize: SIMD2<Double>?
+        /// width / height when the drag began (⇧ keeps it).
+        var dragAspect = 1.0
 
         func local(_ doc: SIMD2<Double>) -> SIMD2<Double> { rotate(doc - pivot, by: -angle) + pivot }
         func world(_ local: SIMD2<Double>) -> SIMD2<Double> { rotate(local - pivot, by: angle) + pivot }
@@ -60,9 +62,13 @@ extension EditorSession {
         let tol = viewTolerance / max(canvas.transform.scale, 0.001)
         let r = c.rect
         let handles = cropHandles(r)
+        c.dragAspect = r.height > 0 ? r.width / r.height : 1
+        // A crop that still covers the whole image has nothing to move: dragging inside draws a new box.
+        let isWholeImage = c.angle == 0 && r.minX <= 0.5 && r.minY <= 0.5
+            && r.maxX >= Double(state.width) - 0.5 && r.maxY >= Double(state.height) - 0.5
         if let i = handles.firstIndex(where: { simd_distance($0, doc) < tol }) {
             c.dragging = i
-        } else if doc.x > r.minX, doc.x < r.maxX, doc.y > r.minY, doc.y < r.maxY {
+        } else if !isWholeImage, doc.x > r.minX, doc.x < r.maxX, doc.y > r.minY, doc.y < r.maxY {
             c.dragging = 8
             c.anchor = doc
         } else {
@@ -79,7 +85,20 @@ extension EditorSession {
                 SIMD2(r.maxX, r.maxY), SIMD2(mx, r.maxY), SIMD2(r.minX, r.maxY), SIMD2(r.minX, my)]
     }
 
-    func cropDrag(to docPoint: SIMD2<Double>, fromCentre: Bool = false) {
+    /// Ends a crop drag. A click or a tiny new box puts the crop back on the whole image.
+    func cropMouseUp() {
+        guard var c = cropSession else { return }
+        let tiny = 8 / max(canvas.transform.scale, 0.001)
+        if c.dragging == 9, c.rect.width < tiny || c.rect.height < tiny {
+            c.rect = CGRectLike(x0: 0, y0: 0, x1: Double(state.width), y1: Double(state.height))
+            c.angle = 0
+            c.baseSize = nil
+        }
+        c.dragging = nil
+        cropSession = c
+    }
+
+    func cropDrag(to docPoint: SIMD2<Double>, fromCentre: Bool = false, constrain: Bool = false) {
         guard var c = cropSession, let handle = c.dragging else { return }
         let doc = c.local(docPoint)
         var r = c.rect
@@ -108,7 +127,8 @@ extension EditorSession {
             }
             r = CGRectLike(x0: x0, y0: y0, x1: x1, y1: y1)
         }
-        if let aspect = c.aspect, handle != 8, r.width > 0 {
+        // ⇧: a square for a new box, the starting proportions when resizing.
+        if let aspect = c.aspect ?? (constrain ? (handle == 9 ? 1 : c.dragAspect) : nil), handle != 8, r.width > 0 {
             // Keep the ratio by adjusting the height around the dragged edge.
             let h = r.width / aspect
             r = [0, 1, 2].contains(handle) || (handle == 9 && doc.y < c.anchor.y)

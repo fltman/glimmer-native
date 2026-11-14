@@ -49,6 +49,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     private let cropShade = CAShapeLayer()
     private let guideLayer = CAShapeLayer()
     private let gridLayer = CAShapeLayer()
+    private let minorGridLayer = CAShapeLayer()
     private var textEditor: NSTextView?
     private var editorLayerID: UUID?
     private lazy var rulers: RulerView = {
@@ -124,7 +125,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         guideLayer.lineWidth = 1
         gridLayer.strokeColor = NSColor.gray.withAlphaComponent(0.45).cgColor
         gridLayer.lineWidth = 0.5
-        for layer in [hintLayer, pointsPositive, pointsNegative, brushRing, chromeLines, chromeHandles, cropShade, guideLayer, gridLayer] {
+        minorGridLayer.strokeColor = NSColor.gray.withAlphaComponent(0.2).cgColor
+        minorGridLayer.lineWidth = 0.5
+        for layer in [minorGridLayer, hintLayer, pointsPositive, pointsNegative, brushRing, chromeLines, chromeHandles, cropShade, guideLayer, gridLayer] {
             layer.actions = ["path": NSNull()]
         }
         observeSession()
@@ -163,6 +166,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         layer.colorspace = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)
         layer.framebufferOnly = true
         layer.isOpaque = true
+        layer.addSublayer(minorGridLayer)
         layer.addSublayer(gridLayer)
         layer.addSublayer(guideLayer)
         layer.addSublayer(cropShade)
@@ -496,6 +500,22 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             while y <= h { grid.move(to: v(SIMD2(0, y))); grid.addLine(to: v(SIMD2(w, y))); y += s }
         }
         gridLayer.path = grid
+        // Fainter lines between the main ones, when there is room for them.
+        let minor = CGMutablePath()
+        let step = aids.grid.spacing / Double(max(aids.grid.subdivisions, 1))
+        if aids.grid.isVisible, aids.grid.subdivisions > 1, step * t.scale >= 6 {
+            let w = Double(session.state.width), h = Double(session.state.height)
+            var i = 1
+            while Double(i) * step <= max(w, h) {
+                let p = Double(i) * step
+                if i % aids.grid.subdivisions != 0 {
+                    if p <= w { minor.move(to: v(SIMD2(p, 0))); minor.addLine(to: v(SIMD2(p, h))) }
+                    if p <= h { minor.move(to: v(SIMD2(0, p))); minor.addLine(to: v(SIMD2(w, p))) }
+                }
+                i += 1
+            }
+        }
+        minorGridLayer.path = minor
     }
 
     // MARK: Text editing
@@ -661,13 +681,20 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             return
         }
         if session.liquify != nil {
-            session.liquifyDrag(to: controller.documentPoint(p), start: true)
+            session.liquifyDrag(to: controller.documentPoint(p), start: true, pressure: pressure(event))
             drag = .liquify
             return
         }
         switch session.effectiveTool {
         case .move:
-            session.beginMove(at: controller.documentPoint(p))
+            let d = controller.documentPoint(p)
+            if event.clickCount == 2, session.textLayer(at: d) != nil {
+                // Double-click on text edits it.
+                session.tool = .type
+                session.typeClick(at: d)
+                return
+            }
+            session.beginMove(at: d)
             drag = .move
         case .rectangleMarquee, .ellipseMarquee:
             session.beginMarquee(at: controller.documentPoint(p), modifiers: event.modifierFlags)
@@ -710,8 +737,11 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             session.cropMouseDown(at: session.snapped(controller.documentPoint(p)), viewTolerance: 8)
             drag = .crop
         case .type:
-            if session.editingText != nil {
+            if let editing = session.editingText {
                 endTextEditing()
+                // Clicking another text layer goes straight into it.
+                let d = controller.documentPoint(p)
+                if let other = session.textLayer(at: d), other.id != editing { session.typeClick(at: d) }
             } else {
                 session.typeClick(at: controller.documentPoint(p))
             }
@@ -738,7 +768,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case .transform:
             session.transformDrag(to: controller.documentPoint(p), shift: event.modifierFlags.contains(.shift))
         case .crop:
-            session.cropDrag(to: session.snapped(controller.documentPoint(p)), fromCentre: event.modifierFlags.contains(.option))
+            session.cropDrag(to: session.snapped(controller.documentPoint(p)), fromCentre: event.modifierFlags.contains(.option),
+                             constrain: event.modifierFlags.contains(.shift))
         case .pen:
             session.penDragged(to: controller.documentPoint(p), breakSymmetry: event.modifierFlags.contains(.option))
         case .shape:
@@ -756,7 +787,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             }
             session.shapeDrag = (s0.start, d)
         case .liquify:
-            session.liquifyDrag(to: controller.documentPoint(p), start: false)
+            session.liquifyDrag(to: controller.documentPoint(p), start: false, pressure: pressure(event))
         case .guide:
             guard let g = session.guideDrag else { break }
             let d = controller.documentPoint(p)
@@ -809,14 +840,16 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         case .gradient: session.finishGradient()
         case .transform: session.transformMouseUp()
         case .liquify: session.liquifyMouseUp()
-        case .crop: session.cropSession?.dragging = nil
+        case .crop: session.cropMouseUp()
         case .pen: session.penMouseUp()
         case .shape: session.finishShape()
         case .guide:
             if let g = session.guideDrag {
                 session.guideDrag = nil
                 let p = location(of: event)
+                let extent = Double(g.axis == .vertical ? session.state.width : session.state.height)
                 let outside = p.x < 18 || p.y < 18 || p.x > bounds.width || p.y > bounds.height
+                    || g.position < 0 || g.position > extent
                 if let id = g.id {
                     outside ? session.removeGuide(id) : session.moveGuide(id, to: g.position.rounded(), live: false)
                 } else if !outside {
@@ -909,6 +942,10 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             session.perform(.hideInterface)
             return
         }
+        if mods == .command, let key = event.charactersIgnoringModifiers {
+            if key == "y" { NSApp.sendAction(Selector(("redo:")), to: nil, from: nil); return }  // second Redo, as in the web app
+            if key == "=" { session.perform(.zoomIn); return }  // ⌘= without Shift
+        }
         if event.keyCode == 51, mods.contains(.option) || mods.contains(.command) {  // ⌥⌫ / ⌘⌫ fill
             session.perform(mods.contains(.option) ? .fillForeground : .fillBackground)
             return
@@ -955,8 +992,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         }
         if event.keyCode == 53 || event.keyCode == 36, session.effectiveTool == .magicSelect, !session.ai.magicPoints.isEmpty {
             // Return keeps the Magic Select result, Esc discards it.
-            if event.keyCode == 53 { session.perform(.deselect) }
-            session.ai.resetMagicSelect()
+            if event.keyCode == 53 { session.ai.cancelMagicSelect() } else { session.ai.resetMagicSelect() }
             return
         }
         let isReturn = event.keyCode == 36 || event.keyCode == 76, isEscape = event.keyCode == 53

@@ -18,9 +18,12 @@ enum PaletteRow: Identifiable {
 /// What the palette and the omnibar share: the searchable items, the rows for
 /// a query, and running a row.
 enum Palette {
+    /// Commands the menus already have elsewhere (or don't need) but the palette should find.
+    static let paletteOnly: Set<CommandID> = [.newDocument, .openDocument, .showLayers, .showPaths, .showChannels, .showHistory]
+
     @MainActor static let allItems: [PaletteItem] = {
         let registry = CommandRegistry.standard
-        var items = registry.descriptors.filter { !$0.isSystemProvided && $0.id != .commandPalette }.map { d in
+        var items = registry.descriptors.filter { (!$0.isSystemProvided || Palette.paletteOnly.contains($0.id)) && $0.id != .commandPalette }.map { d in
             PaletteItem(id: d.id.rawValue, title: d.title, subtitle: d.id.adjustmentKind != nil ? "Adjustment"
                             : d.id.filterKind.map { "Filter › \($0.group)" } ?? d.category.rawValue.capitalized,
                         keywords: d.keywords, action: .command(d.id))

@@ -47,7 +47,8 @@ extension EditorSession {
         for v in values {
             var candidates = lines
             if state.aids.grid.isVisible {
-                let s = state.aids.grid.spacing
+                // Snap to the finer lines too.
+                let s = state.aids.grid.spacing / Double(max(state.aids.grid.subdivisions, 1))
                 if s > 0.5 { candidates.append((v / s).rounded() * s) }
             }
             for line in candidates where abs(line - v) < min(tol, abs(best ?? .infinity)) { best = line - v }
