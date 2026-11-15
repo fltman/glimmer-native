@@ -1,7 +1,11 @@
 #!/bin/zsh
 # Builds a notarized, stapled Glimmer.dmg signed with Developer ID, plus a Sparkle appcast.
 #
-#   scripts/release.sh [<version>] [--publish | --dry-run]
+#   scripts/release.sh [<version>] [--publish | --notarize-only | --dry-run]
+#
+# --notarize-only is a full release rehearsal: it builds, signs, notarizes and staples
+# exactly like a release, builds the DMG and the appcast, and runs Gatekeeper's checks,
+# but commits, tags, pushes and uploads nothing. Everything stays in build/release.
 #
 # --dry-run builds, signs with Developer ID and makes the DMG and a local appcast, but
 # skips notarization, uploading and pushing (for rehearsals; the app is not notarized,
@@ -14,6 +18,10 @@
 # v<version>, pushes, and creates the GitHub release with the DMG and appcast.
 #
 # Notarization goes through Xcode, using the account in Xcode › Settings › Accounts.
+# Xcode notarizes the app, not the DMG around it, and Gatekeeper rejects an unnotarized
+# DMG ("source=Unnotarized Developer ID"). NOTARY_PROFILE=<name> also notarizes and
+# staples the DMG with notarytool; create the profile once with
+# `xcrun notarytool store-credentials <name>` (Apple ID, team V783A2L763, app-specific password).
 # The Sparkle EdDSA key must already be in your login keychain (Sparkle's generate_keys); the
 # script stops if it isn't, because a new key would break updates for existing users.
 # CREATE_SPARKLE_KEY=1 creates one, for the very first release only.
@@ -23,23 +31,27 @@ cd "$(dirname "$0")/.."
 
 PUBLISH=0
 DRY_RUN=0
+NOTARIZE_ONLY=0
 NEW_VERSION=""
 for arg in "$@"; do
   case "$arg" in
     --publish) PUBLISH=1 ;;
     --dry-run) DRY_RUN=1 ;;
+    --notarize-only) NOTARIZE_ONLY=1 ;;
     [0-9]*.[0-9]*) NEW_VERSION="$arg" ;;
     *) echo "Unknown argument: $arg"; exit 1 ;;
   esac
 done
 
-if [[ $PUBLISH == 1 && $DRY_RUN == 1 ]]; then echo "--publish and --dry-run don't go together."; exit 1; fi
+if (( PUBLISH + DRY_RUN + NOTARIZE_ONLY > 1 )); then echo "Choose one of --publish, --notarize-only and --dry-run."; exit 1; fi
 if [[ $PUBLISH == 1 && -n "$(git status --porcelain)" ]]; then
   echo "Commit or stash your changes before publishing."; exit 1
 fi
 if [[ -n "$NEW_VERSION" ]]; then
   BUILD=$(awk '/CURRENT_PROJECT_VERSION/ {gsub(/"/,"",$2); print $2; exit}' project.yml)
   sed -i '' -E "s/(MARKETING_VERSION: )\"[^\"]*\"/\\1\"$NEW_VERSION\"/; s/(CURRENT_PROJECT_VERSION: )\"[^\"]*\"/\\1\"$((BUILD + 1))\"/" project.yml
+  # The agent guide on the site names the version (SiteExportTests checks it).
+  echo "▸ Agent guide for $NEW_VERSION"; scripts/export-agents-guide.sh
 fi
 
 OUT=build/release
@@ -139,6 +151,13 @@ ln -s /Applications "$STAGE/Applications"
 DMG="$OUT/Glimmer-$VERSION.dmg"
 hdiutil create -volname "Glimmer $VERSION" -srcfolder "$STAGE" -ov -format ULFO "$DMG" >/dev/null
 codesign --sign "Developer ID Application: Brattoo AB (V783A2L763)" --timestamp "$DMG"
+if [[ $DRY_RUN != 1 && -n "${NOTARY_PROFILE:-}" ]]; then
+  echo "▸ Notarizing the DMG (notarytool, profile $NOTARY_PROFILE)"
+  xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
+  xcrun stapler staple "$DMG"
+elif [[ $DRY_RUN != 1 ]]; then
+  echo "  (DMG not notarized: set NOTARY_PROFILE, or Gatekeeper rejects the DMG itself; the app inside is notarized)"
+fi
 
 if [[ "${SKIP_SPARKLE:-0}" == 1 ]]; then echo "✔ $DMG (no appcast)"; exit 0; fi
 echo "▸ Sparkle appcast"
@@ -155,8 +174,8 @@ fi
 echo "▸ Appcast: $OUT/updates/appcast.xml (host it at $(/usr/libexec/PlistBuddy -c 'Print SUFeedURL' "$APP/Contents/Info.plist"))"
 
 if [[ $PUBLISH == 1 ]]; then
-  if [[ -n "$(git status --porcelain project.yml)" ]]; then
-    git commit -qm "Release $VERSION" project.yml
+  if [[ -n "$(git status --porcelain project.yml site/agents.md)" ]]; then
+    git commit -qm "Release $VERSION" project.yml site/agents.md
   fi
   git tag "v$VERSION"
   git push -q origin HEAD "v$VERSION"
@@ -167,5 +186,9 @@ echo "✔ $DMG"
 if [[ $DRY_RUN == 1 ]]; then
   echo "  Dry run: not notarized (Gatekeeper will reject it on other Macs), nothing uploaded or pushed."
 else
-  spctl --assess --type execute -v "$APP"
+  echo "▸ Gatekeeper"
+  spctl --assess --type execute -vvv "$APP"
+  spctl --assess --type install -vvv "$DMG" || true
+  if [[ -n "${NOTARY_PROFILE:-}" ]]; then xcrun stapler validate "$DMG"; fi
+  if [[ $NOTARIZE_ONLY == 1 ]]; then echo "  Notarize-only: nothing committed, tagged, pushed or uploaded; the appcast is local."; fi
 fi
