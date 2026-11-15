@@ -21,9 +21,16 @@ APP="${GLIMMER_TEST_APP:-$PWD/build/DerivedData/Build/Products/Debug/Glimmer.app
 (( $# > 0 )) || { echo "Usage: $0 <command> [args…]"; exit 1; }
 
 # Re-run this script under the shared lock; everything below runs only while it's held.
-LOCKER=/Users/andersbj/Projekt/the-apps/tools/with-gui-lock.sh
+# The series' shared tools: THE_APPS_TOOLS, or the-apps/tools beside this repository, or in ~/Projekt.
+TOOLS="${THE_APPS_TOOLS:-}"
+if [[ -z "$TOOLS" ]]; then
+  for candidate in "$PWD/../the-apps/tools" "$HOME/Projekt/the-apps/tools"; do
+    if [[ -x "$candidate/with-gui-lock.sh" ]]; then TOOLS="$candidate"; break; fi
+  done
+fi
+LOCKER="$TOOLS/with-gui-lock.sh"
 if [[ "${GLIMMER_HOLDS_GUI_LOCK:-}" != 1 ]]; then
-  [[ -x "$LOCKER" ]] || { echo "Missing $LOCKER"; exit 1; }
+  [[ -n "$TOOLS" && -x "$LOCKER" ]] || { echo "Can't find with-gui-lock.sh: set THE_APPS_TOOLS to the-apps/tools."; exit 1; }
   exec "$LOCKER" glimmer --wait "${GLIMMER_LOCK_WAIT:-600}" -- env GLIMMER_HOLDS_GUI_LOCK=1 "$0" "$@"
 fi
 [[ "$(cat /tmp/gui-test.lock/owner 2>/dev/null)" == glimmer ]] || { echo "Not holding the GUI lock; not starting."; exit 75; }
