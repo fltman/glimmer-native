@@ -63,6 +63,7 @@ Curves maps every input tone to an output tone. The horizontal axis is the input
 - **Click** on the graph to add a point and drag it.
 - **Drag** a point to move it. Points can't pass their neighbors.
 - **Drag a point off the graph** to remove it. The two end points can be moved but not removed.
+- **With the keyboard:** click the graph (or Tab to it with Full Keyboard Access). A ring marks one point. The arrow keys move it by one level of 0–255, ⇧ with an arrow by ten, and ⌥← ⌥→ mark the previous or next point. The end points move only up and down.
 
 Use the channel picker (**RGB**, **Red**, **Green**, **Blue**) to choose which curve you edit. Channels you have already changed are drawn faintly behind the current curve, each in its own color. The Red, Green and Blue curves are applied first, then the RGB curve.
 

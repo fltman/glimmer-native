@@ -75,7 +75,7 @@ A clipped layer shows a small bent arrow before its thumbnail. A group has a dis
 
 Click a row to make that layer the active layer. Most commands work on the active layer.
 
-To rename a layer, double-click its name, or Control-click the row and choose **Rename…**. Press Return to keep the new name or Esc to cancel.
+To rename a layer, double-click its name, press Return when the Layers panel has the keyboard, or Control-click the row and choose **Rename…**. Press Return to keep the new name or Esc to cancel.
 
 ### The row menu
 
@@ -146,7 +146,7 @@ The **+ Mask** button in the Layers panel works like Reveal All. A layer can hav
 
 ### Painting a mask
 
-Click the mask thumbnail in the layer row. A colored frame around it shows that you are now working on the mask. Then paint with the Brush (B):
+Click the mask thumbnail in the layer row, or choose **Layer › Layer Mask › Edit Layer Mask** (⌘\\). A colored frame around it shows that you are now working on the mask. Then paint with the Brush (B):
 
 - Paint with black to hide.
 - Paint with white to show.
@@ -154,7 +154,7 @@ Click the mask thumbnail in the layer row. A colored frame around it shows that 
 
 The mask takes the brightness of the foreground color. With the Eraser (E), the mask takes the brightness of the background color instead. Press D to reset the colors to black and white and X to swap them.
 
-The Brush options also have a **Paint mask** switch when the layer has a mask. Click the layer thumbnail to go back to painting pixels.
+The Brush options also have a **Paint mask** switch when the layer has a mask. Click the layer thumbnail, or press ⌘\\ again, to go back to painting pixels.
 
 ### Mask properties
 

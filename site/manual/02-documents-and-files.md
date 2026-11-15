@@ -39,6 +39,8 @@ Glimmer opens any image format that macOS itself can read, such as JPEG, PNG, HE
 
 An opened image becomes a new, untitled document with the image as its only layer. The layer takes the file's name. Glimmer never writes back to the original file. When you save, you create a `.glimmer` document, and to get an image file again you export.
 
+The one exception is an image that Flimmer or Jämmer hands you to edit. Then **File › Save Back to** *name* (⌘S) writes it back into the same file, in the same format, when you choose to. Autosave still never touches the file. See [Editing an image for Flimmer](13-automation.md#editing-an-image-for-flimmer).
+
 When Glimmer reads an image, it:
 
 - turns the image upright according to its camera orientation;

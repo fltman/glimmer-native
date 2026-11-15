@@ -75,8 +75,10 @@ struct AgentSplashView: View {
             HStack {
                 Toggle("Show at launch", isOn: $showAtLaunch)
                 Spacer()
-                Button("Close") { dismiss() }
-                    .keyboardShortcut(.defaultAction)
+                Button { dismiss() } label: {
+                    Text("Close").foregroundStyle(Self.ink)  // dark on neon, like Copy (white is 3.3 : 1)
+                }
+                .keyboardShortcut(.defaultAction)
             }
         }
         .padding(24)

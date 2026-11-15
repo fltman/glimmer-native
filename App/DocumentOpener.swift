@@ -150,8 +150,10 @@ final class DocumentOpener {
     /// for Finder and everything else (those images open as ordinary new documents).
     static func appleEventRequester() -> String? {
         #if DEBUG
-        // Tests hand files over from a script: `-linkAnyOpen YES`.
-        if UserDefaults.standard.bool(forKey: "linkAnyOpen") { return "Test" }
+        // Tests hand files over from a script: `-linkAnyOpen YES`, or `-linkAnyOpen Flimmer` to name the app.
+        if let any = UserDefaults.standard.string(forKey: "linkAnyOpen"), !["", "NO", "0", "false"].contains(any) {
+            return ["YES", "1", "true"].contains(any) ? "Test" : any
+        }
         #endif
         guard let event = NSAppleEventManager.shared().currentAppleEvent,
               let pid = event.attributeDescriptor(forKeyword: AEKeyword(keySenderPIDAttr))?.int32Value,

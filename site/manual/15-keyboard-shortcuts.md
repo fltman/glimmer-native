@@ -54,7 +54,8 @@ Pattern Stamp, Blur, Sharpen and Smudge have no key. Pick them in the tool palet
 | Esc | Deselect |
 | Arrow keys | With the Move tool: nudge the layer 1 pixel |
 | ⇧ Arrow keys | Nudge 10 pixels |
-| Tab | Hide or show the interface |
+| Tab | Hide or show the interface. With Full Keyboard Access on, Tab moves the focus to the next control instead (View › Hide Interface still hides it) |
+| / | Jump to the search bar at the bottom (the command palette when the bar is hidden) |
 | ↩ | Apply: Free Transform, Crop, Liquify, finish a lasso or a path segment, keep a Magic Select result |
 | Esc | Cancel: Free Transform, Crop, Liquify, a lasso; discard an unfinished path; discard Magic Select points |
 
@@ -64,7 +65,8 @@ Pattern Stamp, Blur, Sharpen and Smudge have no key. Pick them in the tool palet
 |---|---|
 | ⌘N | New… |
 | ⌘O | Open… |
-| ⌘S | Save |
+| ⌘S | Save. In a window editing an image from Flimmer or Jämmer: Save Back to the image |
+| ⇧⌘S | Duplicate. In a window editing an image from Flimmer or Jämmer: Save a Glimmer Copy… |
 | ⌘W | Close |
 | ⌥⌘P | Place Image… |
 | ⌥⇧⌘W | Export… |
@@ -96,6 +98,7 @@ Pattern Stamp, Blur, Sharpen and Smudge have no key. Pick them in the tool palet
 | ⌘G | Group Layer |
 | ⇧⌘G | Ungroup |
 | ⌥⌘G | Create or Release Clipping Mask |
+| ⌘\\ | Edit Layer Mask: paint on the active layer's mask instead of its pixels, press again to go back |
 | ⌘] | Bring Forward |
 | ⌘[ | Send Backward |
 | ⇧⌘] | Bring to Front |
@@ -141,9 +144,27 @@ Pattern Stamp, Blur, Sharpen and Smudge have no key. Pick them in the tool palet
 | ↑ ↓ in the omnibar or palette | Move through the results |
 | Esc in the omnibar | Close it and return to the canvas |
 
-## Agent Access window
+## Layers panel
+
+| Key | Action |
+|---|---|
+| ↑ ↓ | Select the layer above or below |
+| ↩ | Rename the selected layer (↩ again to keep the name, Esc to cancel) |
+
+## Curves
+
+Click the curve to give it the keyboard. The marked point has a ring around it.
+
+| Key | Action |
+|---|---|
+| ← → ↑ ↓ | Move the marked point by one level (of 0–255) |
+| ⇧ with an arrow | Move it by ten levels |
+| ⌥← ⌥→ | Mark the previous or next point |
+
+## Agent Access and Welcome windows
 
 | Shortcut | Command |
 |---|---|
-| ⇧⌘C | Copy the text for your agent |
-| ↩ | Close |
+| ⇧⌘C | Copy the text for your agent (Agent Access) |
+| ↩ | Close Agent Access, or create a New Document from Welcome |
+| Esc | Close the window |

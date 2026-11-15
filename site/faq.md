@@ -46,11 +46,19 @@ It opens the flattened image of a PSD, through macOS. Layers in PSD files are no
 
 ## Is my work saved automatically?
 
-Yes. Glimmer documents use macOS autosave and versions, so you can close a document without losing work and go back to earlier versions with **File › Revert To**.
+Yes. Glimmer documents use macOS autosave and versions, so you can close a document without losing work and go back to earlier versions with **File › Revert To**. Autosave keeps your Glimmer document, never the image you opened: an image file only changes when you export over it, or when you save back an image that Flimmer handed you to edit.
 
 ## Can AI agents control Glimmer?
 
 Yes. Glimmer runs a small web server on your Mac, reachable only from your Mac, at `http://127.0.0.1:9001` (or the first free port from 9101 to 9119). An agent such as Claude can fetch the guide at `/glimmer` and then open, edit and export images in your open windows. Copy the line under **Help › Agent Access** and paste it to your agent. See the [Agent guide](agents.html) for the details. State-changing requests need a special header, requests from web pages are refused, and paid steps are refused unless the agent asks for them explicitly.
+
+## Does Glimmer work with Flimmer and Jämmer?
+
+Yes. The three apps can ask each other for things on your Mac. Glimmer's assistant can use Jämmer's and Flimmer's operations, for example to draw the waveform of an episode in Jämmer as a cover image, or to add an echo in Jämmer. Flimmer can hand Glimmer a picture to edit and pick up the result when you press ⌘S, and can ask Glimmer for cover art in podcast sizes (3000 × 3000 or 1400 × 1400 pixels). Glimmer shows "Requested by Flimmer" when a sibling changes something, and never opens another app unless you click to open it. Everything stays on your Mac, and nothing that costs money happens without your say. See [Automation](manual/13-automation.md).
+
+## Can I use Glimmer with VoiceOver or only the keyboard?
+
+Yes. Tools, layers, sliders and the assistant are read by name and value, layers have VoiceOver actions (hide, rename, edit mask), and every command can be run from the menus or the command palette (⌘K). With keyboard navigation turned on in System Settings, Tab moves between the canvas and the panels, / jumps to the search bar, and Curves takes the arrow keys. See [Accessibility](manual/17-accessibility.md).
 
 ## Does Glimmer work with Shortcuts?
 

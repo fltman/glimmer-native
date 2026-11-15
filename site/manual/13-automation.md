@@ -126,9 +126,15 @@ Each request with editing steps is one undo step, named **Agent Edit**.
 
 Glimmer's sibling apps, Flimmer and Jämmer, use the same API. Their assistants can ask Glimmer for the same editing steps an agent can use, open an image as a new document, and get the result back. When a sibling changes a document, Glimmer shows **Requested by Flimmer** (or Jämmer) over the canvas for a few seconds, so you know where the change came from. You can undo it like any other edit. The siblings get no extra rights: they follow the same rules as any agent, and paid steps run only if you already confirmed the cost in the app that asked.
 
+### Cover art for podcasts
+
+An agent, or Flimmer when it asks Glimmer for an episode cover, can export the open image as podcast cover art: the middle square of the image at exactly 3000 × 3000 pixels (or 1400 × 1400), as JPEG or PNG, with no transparency, and under a file size you give. To meet the size limit Glimmer lowers only the JPEG quality, never the size; if 3000 pixels can't fit the limit and no size was asked for, it makes 1400. If the limit can't be met at all, the request fails and says how small the file can get. In the API this is the `podcast-cover` preset of the export request, described in the [Agent guide](../agents.html).
+
 ### Editing an image for Flimmer
 
 Flimmer can hand you a picture to edit in Glimmer, such as a frame or a title card, and pick up the result when you save. The image opens in a new Glimmer window, and the bar at the top says **For Flimmer – ⌘S saves back** next to the file name.
+
+![A Glimmer window editing frame-0412.jpg, with "For Flimmer – ⌘S saves back" next to the file name at the top](../screens/linked-editing.webp)
 
 - Edit as usual, with layers, adjustments and the assistant.
 - Press ⌘S, or choose **File › Save Back to** *name* (it takes the place of Save in this window), to write the image back into the same file, in the same format (PNG stays PNG, JPEG stays JPEG). The layers are flattened in the file; Glimmer keeps them in the window. Flimmer sees the change and updates its copy.
@@ -140,6 +146,8 @@ Images you open yourself, from the Finder or with **File › Open…**, open as 
 ### Asking Jämmer and Flimmer
 
 Glimmer's assistant can ask its sibling apps for things too. When you ask the assistant something, Glimmer looks for Jämmer and Flimmer on your Mac. Every free operation a running sibling offers becomes something the assistant can use, alongside Glimmer's own steps. You don't set anything up. If a sibling isn't open, the assistant simply doesn't see its operations.
+
+![A podcast cover in Glimmer: a mountain lake photo with "Episode 7" at the top and white waveform bars from Jämmer along the bottom, each on its own layer](../screens/waveform-cover.webp)
 
 - **A waveform for a cover.** Ask, for example, "make a waveform of the sound in Jämmer for the cover". Glimmer fetches the waveform of the document in Jämmer and draws it as a new shape layer: bars (the default) or one smooth outline, in the foreground colour, across the middle, top or bottom of the image. It's a solid colour layer with the waveform as its vector mask, so you can recolour it, move it, add a stroke or a shadow, and edit the shape with the pen. The whole request is one undo step.
 - **Changes in the other app.** Ask for something in Jämmer, such as "add a short echo to the episode in Jämmer", and the assistant asks Jämmer to do it. The change happens in Jämmer's window, where you can undo it. Nothing changes in Glimmer.
