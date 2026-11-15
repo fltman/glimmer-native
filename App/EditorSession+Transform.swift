@@ -146,21 +146,25 @@ extension EditorSession {
         /// Text keeps its layout and gets the transform, so it stays editable; only a
         /// non-affine transform (distort, perspective) would turn it into pixels.
         case text(id: UUID, original: TextLayer)
+        /// A layer's pixel mask, which follows the transform so it stays in line with the
+        /// layer. `cover` is where the layer has content (for the quick preview).
+        case mask(id: UUID, original: LayerMask, cover: PixelRect)
     }
 
     /// Free Transform on a group (all its layers with content) or on one text layer: one box
     /// around their content; every pixel, text, shape and smart object layer is transformed with
-    /// it, as one undo step. Adjustment layers and plain fills have nothing to place. Pixel masks
-    /// would stay where they are, so a group with one inside is refused rather than transformed wrongly.
+    /// it, as one undo step. Adjustment layers and plain fills have nothing to place. Layer masks
+    /// (of any layer inside, adjustment layers and groups included) go through the same transform.
     func beginMemberTransform(id: UUID, layers: [Layer], metal: MetalContext) throws {
         var members: [GroupMember] = []
         var lo = SIMD2(Double.infinity, Double.infinity), hi = -lo
         func extend(_ a: SIMD2<Double>, _ b: SIMD2<Double>) { lo = simd_min(lo, a); hi = simd_max(hi, b) }
         var pending: [(UUID, TileGrid, PixelRect)] = []
         for layer in layers {
-            if layer.mask != nil, layer.vectorMask == nil, layers.count > 1 {
-                errorMessage = String(localized: "“\(layer.name)” in this group has a layer mask, which Free Transform can't move with it yet. Transform the layers one by one, or apply the mask first.")
-                return
+            if let mask = layer.mask, layer.vectorMask == nil, !mask.tiles.tiles.isEmpty {
+                var cover = state.bounds
+                if case .raster(let grid) = layer.content, let b = grid.tileBounds { cover = b }
+                members.append(.mask(id: layer.id, original: mask, cover: cover))
             }
             if case .text(let text) = layer.content {
                 let b = text.bounds
@@ -186,6 +190,10 @@ extension EditorSession {
                 continue
             }
         }
+        // The group's own mask follows too.
+        if let group = state.layer(id: id), group.isGroup, let mask = group.mask, group.vectorMask == nil, !mask.tiles.tiles.isEmpty {
+            members.append(.mask(id: id, original: mask, cover: state.bounds))
+        }
         guard lo.x < hi.x, lo.y < hi.y else {
             errorMessage = String(localized: "This group has nothing Free Transform can move.")
             return
@@ -208,6 +216,7 @@ extension EditorSession {
         let toGroup = GlimmerCore.AffineTransform(tx: -t.groupOrigin.x, ty: -t.groupOrigin.y)
         let docToDoc = t.transform.concatenating(toGroup)  // old document position → new
         var pixels: [UUID: TileGrid] = [:]
+        var masks: [UUID: TileGrid] = [:]
         let renderer = try SmartObjectRenderer(context: metal)
         let affine = docToDoc.isAffine
         for member in t.members {
@@ -244,9 +253,12 @@ extension EditorSession {
                     mask.feather = l.mask?.feather ?? 0
                     l.mask = mask
                 }
+            case .mask(let id, let original, let cover):
+                masks[id] = try MaskTransform.apply(original, transform: docToDoc, limit: RegionOps_public.expand(state.bounds, by: 512),
+                                                    exact: false, cover: cover, context: metal)
             }
         }
-        overrides = LayerOverrides(pixels: pixels)
+        overrides = LayerOverrides(pixels: pixels, masks: masks)
     }
 
     func beginTransform() {
@@ -259,6 +271,11 @@ extension EditorSession {
             }
             if layer.isText {
                 // Text keeps its layout and gets the transform: it stays editable.
+                try beginMemberTransform(id: layer.id, layers: [layer], metal: metal)
+                return
+            }
+            if let mask = layer.mask, layer.vectorMask == nil, !mask.tiles.tiles.isEmpty, case .raster = layer.content {
+                // A pixel layer with a layer mask: the mask goes through the transform too.
                 try beginMemberTransform(id: layer.id, layers: [layer], metal: metal)
                 return
             }
@@ -362,6 +379,18 @@ extension EditorSession {
             originalShapeState = nil
             for (id, grid) in overrides.pixels {
                 document.state.updateLayer(id) { $0.content = .raster(grid) }
+            }
+            // Masks: the exact version (a reveal-all mask stays white outside what moved).
+            let docToDoc = t.transform.concatenating(GlimmerCore.AffineTransform(tx: -t.groupOrigin.x, ty: -t.groupOrigin.y))
+            for member in t.members {
+                guard case .mask(let id, let original, _) = member, let metal else { continue }
+                do {
+                    let tiles = try MaskTransform.apply(original, transform: docToDoc,
+                                                        limit: RegionOps_public.expand(state.bounds, by: 512), context: metal)
+                    document.state.updateLayer(id) { $0.mask?.tiles = tiles }
+                } catch {
+                    report(error)
+                }
             }
             overrides = .none
             document.commitInteractiveEdit("Free Transform", undoManager: undoManager, before: before)

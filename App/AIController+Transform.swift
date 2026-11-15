@@ -3,7 +3,7 @@ import GlimmerAI
 import GlimmerCore
 
 /// The agent's `transform_layer` step: Free Transform without the mouse, with the same rules
-/// (text stays editable unless corners would rasterize it; groups with a pixel mask are refused).
+/// (text stays editable unless corners would rasterize it; layer masks follow the transform).
 extension AIController {
     func performTransformLayer(_ step: AgentStep) throws {
         let s = session
@@ -14,9 +14,6 @@ extension AIController {
             s.setActiveLayer(layer.id)
         }
         guard let layer = s.activeLayer else { throw StepError("There's no layer to transform.") }
-        if layer.isGroup, let masked = layer.subtree.dropFirst().first(where: { $0.mask != nil && $0.vectorMask == nil }) {
-            throw StepError("“\(masked.name)” in this group has a layer mask, which a transform can't move with it.", reason: "group_has_mask")
-        }
         var corners: [SIMD2<Double>]?
         if case .array(let list)? = step.params["corners"] {
             let points = list.compactMap { v -> SIMD2<Double>? in

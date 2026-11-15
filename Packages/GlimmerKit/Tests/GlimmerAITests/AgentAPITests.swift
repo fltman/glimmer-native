@@ -66,6 +66,7 @@ import Testing
         let plain = AgentAPI.APIError.stepFailedBody(step: 0, op: "crop", message: "No such layer.", reason: nil)
         #expect(plain["code"] as? String == "step_failed" && plain["reason"] == nil)
         #expect(AgentAPI.guide(port: 9001, appVersion: "1").contains("`error.reason` says which (`would_rasterize_text`"))
+        #expect(AgentAPI.guide(port: 9001, appVersion: "1").contains("`group_has_mask` is no longer returned"))
     }
 
     @Test func operationsAndGuideComeFromTheAssistantsList() {

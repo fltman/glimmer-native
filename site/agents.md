@@ -132,7 +132,7 @@ Errors are JSON: `{"error": {"code": "…", "message": "…"}}`. A failed step a
 | 404 | `not_found` | No such document, path or operation. |
 | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
 | 413 | `too_large` | Body over 256 MB. |
-| 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `group_has_mask`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`). |
+| 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
 | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`). |
 | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
