@@ -8,25 +8,30 @@
 # The command gets GLIMMER_PID, GLIMMER_PORT and GLIMMER_APP. GLIMMER_ARGS adds launch arguments.
 # The copy starts without restoring earlier windows, so the test sees only its own.
 # The copy runs without OPENROUTER_API_KEY
-# (no test spends money), and the script holds the shared GUI lock /tmp/gui-test.lock
-# while it runs. Build first with scripts/test.sh.
+# (no test spends money). It runs under the series' shared GUI lock through
+# the-apps/tools/with-gui-lock.sh, which takes the lock atomically, never runs without it
+# and releases only its own (exit 75: the lock wasn't free within GLIMMER_LOCK_WAIT seconds,
+# default 600). Build first with scripts/test.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 APP="$PWD/build/DerivedData/Build/Products/Debug/Glimmer.app"
 [[ -d "$APP" ]] || { echo "Build first: scripts/test.sh"; exit 1; }
 (( $# > 0 )) || { echo "Usage: $0 <command> [args…]"; exit 1; }
 
-if ! mkdir /tmp/gui-test.lock 2>/dev/null; then
-  echo "The GUI lock is held by: $(cat /tmp/gui-test.lock/owner 2>/dev/null || echo unknown)"; exit 1
+# Re-run this script under the shared lock; everything below runs only while it's held.
+LOCKER=/Users/andersbj/Projekt/the-apps/tools/with-gui-lock.sh
+if [[ "${GLIMMER_HOLDS_GUI_LOCK:-}" != 1 ]]; then
+  [[ -x "$LOCKER" ]] || { echo "Missing $LOCKER"; exit 1; }
+  exec "$LOCKER" glimmer --wait "${GLIMMER_LOCK_WAIT:-600}" -- env GLIMMER_HOLDS_GUI_LOCK=1 "$0" "$@"
 fi
-echo glimmer > /tmp/gui-test.lock/owner
+[[ "$(cat /tmp/gui-test.lock/owner 2>/dev/null)" == glimmer ]] || { echo "Not holding the GUI lock; not starting."; exit 75; }
+
 PID=""
-cleanup() {
+cleanup() {  # stops only this test copy; with-gui-lock.sh releases the lock
   if [[ -n "$PID" ]] && kill -0 "$PID" 2>/dev/null; then
     kill -TERM "$PID"
     for _ in {1..20}; do kill -0 "$PID" 2>/dev/null || break; sleep 0.25; done
   fi
-  rm -rf /tmp/gui-test.lock
 }
 trap cleanup EXIT INT TERM
 
