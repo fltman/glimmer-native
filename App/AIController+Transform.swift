@@ -44,6 +44,13 @@ extension AIController {
             s.updateTransformPreview()
         } else {
             s.setTransform(scaleXPercent: step.number("scaleX"), scaleYPercent: step.number("scaleY"), degrees: step.number("degrees"))
+            let move = SIMD2(step.number("moveX") ?? 0, step.number("moveY") ?? 0)
+            if move != .zero, var t = s.transformSession {
+                t.box.x += move.x
+                t.box.y += move.y
+                s.transformSession = t
+                s.updateTransformPreview()
+            }
             let skewX = (step.number("skewX") ?? 0) * .pi / 180, skewY = (step.number("skewY") ?? 0) * .pi / 180
             if skewX != 0 || skewY != 0, var t = s.transformSession {
                 // Skew moves opposite edges apart, about the box's centre (still affine).
@@ -60,6 +67,10 @@ extension AIController {
             throw StepError("\(rasterizing) text layer\(rasterizing == 1 ? "" : "s") would become pixels; pass allowRasterize: true to allow it.",
                             reason: "would_rasterize_text")
         }
+        let id = layer.id
         s.commitTransform(confirmed: true)
+        if let after = s.state.layer(id: id), let b = AgentRouter.layerBounds(after) {
+            stepInfo = ["bounds": ["x": b.x, "y": b.y, "width": b.width, "height": b.height]]
+        }
     }
 }

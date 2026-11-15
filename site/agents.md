@@ -51,18 +51,18 @@ Opening a document answers `201 Created`. To start from a blank canvas instead, 
 | GET | `/glimmer` | This guide (Markdown). |
 | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents and the running `jobs`. |
 | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `add_image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
-| GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`), and ⌘S writes it back. |
-| POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\|"black"\|"transparent", "name"}`). `name` names the document's window. Glimmer's untouched start document is replaced instead of leaving an empty window. |
+| GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; Glimmer's own empty start document, which the first image you open replaces (keeping its id), has `"startDocument": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`), and ⌘S writes it back. |
+| POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\|"black"\|"transparent", "name"}`). `name` names the document's window and, for an image, its layer. Glimmer's untouched start document is replaced instead of leaving an empty window. |
 | GET | `/api/v1/documents/{id}` | Size, layers (top first, each with `bounds` in document pixels when it has content), the active layer and whether there is a selection. |
 | GET | `/api/v1/documents/{id}/image` | The flattened image. Query: `format=png\|jpeg`, `maxSide=<px>`. |
 | POST | `/api/v1/documents/{id}/steps` | Run steps in order. Body: `{"steps": [{"op": "…", "params": {…}}], "allowPaid": false, "async": false}`. Answers 200 when done, or 202 with a job (see Long jobs). |
 | GET | `/api/v1/jobs` | Recent jobs (see Long jobs). |
 | GET | `/api/v1/jobs/{id}` | One job: status, progress and, when finished, the result. |
 | DELETE | `/api/v1/jobs/{id}` | Cancel a job that is still running. |
-| POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document, or JSON `{"fromDocument": "<id>"}` to use another open document's picture. Query: `name`, `fit=contain\|cover\|none`, `x`, `y`, `smartObject=true\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
-| POST | `/api/v1/documents/{id}/undo` | Undo the last step (a whole `steps` request counts as one). |
-| POST | `/api/v1/documents/{id}/redo` | Redo. |
-| POST | `/api/v1/documents/{id}/export` | The finished image as bytes. Body: `{"format": "png\|jpeg\|heic\|tiff\|webp", "quality": 0.9, "maxSide": 2048, "maxBytes": 500000}`; all optional (PNG by default). |
+| POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document, or JSON `{"fromDocument": "<id>"}` to use another open document's picture. Query: `name`; `fit` against the canvas (`contain`, the default: scaled down to fit inside it, never up; `cover`: scaled to cover it; `none`: its own size); `x`, `y`: where its top-left goes after fitting (default: centred); `smartObject=true\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
+| POST | `/api/v1/documents/{id}/undo` | Undo the last change (a whole `steps` request counts as one; the selection goes back too). Answers `{"undone": "<name of the change>", "document": …}`; a steps request is named `Agent Edit`. |
+| POST | `/api/v1/documents/{id}/redo` | Redo. Answers `{"redone": "<name>", "document": …}`. |
+| POST | `/api/v1/documents/{id}/export` | The finished image as bytes. Body: `{"format": "png\|jpeg\|heic\|tiff\|webp", "quality": 0.9, "maxSide": 2048, "maxBytes": 500000}`; all optional (PNG by default). `"preset": "podcast-cover"` with `"size": 3000\|1400` gives square cover art (see Export size limits). |
 
 Document ids are stable while the window is open. Use `GET /api/v1/documents` to find documents the user opened.
 
@@ -82,6 +82,7 @@ Which layer a step acts on:
 - New layers (adjustments, text, fills, `new_layer`) become the active layer.
 - Filters, `fill` and `remove_background` need a pixel layer. If the active layer isn't one, Glimmer uses the topmost visible pixel layer, so `add_adjustment` followed by `apply_filter` still filters the photo.
 - Use `select_layer` with a name or id from `GET /api/v1/documents/{id}` to pick a layer yourself.
+- A request with a paid step and no `allowPaid` is refused as a whole (402) before any step runs.
 
 A step may also return `info`, facts about what it did. `style_text` returns `{"matches": 2, "ranges": [{"from": 6, "length": 5}, …]}`, the ranges it actually styled.
 
@@ -119,7 +120,7 @@ Glimmer's siblings, Flimmer and Jämmer, call this API like any agent and add `X
 
 **Podcast covers:** `POST /api/v1/documents/{id}/export` with `{"preset": "podcast-cover", "maxBytes": 512000}` returns the centre square of the image at exactly 3000 × 3000 pixels, as an opaque JPEG (or `"format": "png"`). Only the quality goes down to meet `maxBytes`; when 3000 can't, it's 1400 × 1400, and `"size": 3000` or `1400` fixes the size. If the limit can't be met, the answer is `422 unprocessable` with `reason` `over_byte_limit`.
 
-`maxSide` scales the image so its longer side fits. `maxBytes` (JPEG, HEIC and WebP only; PNG and TIFF ignore it) lowers the quality until the file fits, and scales the image down too if even low quality is too big, so the limit is met.
+`maxSide` scales the image down so its longer side fits; it never enlarges. The podcast preset is the exception: it always gives its exact size, enlarging a smaller image. `quality` defaults to 0.9. `maxBytes` (JPEG, HEIC and WebP only; PNG and TIFF ignore it) lowers the quality until the file fits, and scales the image down too if even low quality is too big, so the limit is met.
 
 ## Errors
 
@@ -128,7 +129,7 @@ Errors are JSON: `{"error": {"code": "…", "message": "…"}}`. A failed step a
 | Status | Code | Meaning |
 |---|---|---|
 | 400 | `bad_request` | The body or a parameter is malformed. The message says which. |
-| 402 | `paid_not_allowed` | A step costs money and `allowPaid` wasn't `true` (or no OpenRouter key is saved in Glimmer). |
+| 402 | `paid_not_allowed` | A step costs money and `allowPaid` wasn't `true` (or no OpenRouter key is saved in Glimmer). The request is checked before anything runs: no step of it was run. |
 | 403 | `forbidden` | Missing `X-Glimmer-Agent: 1`, an `Origin` header, or a Host other than this Mac. |
 | 404 | `not_found` | No such document, path or operation. |
 | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
@@ -147,8 +148,8 @@ Add a non-destructive adjustment layer above the active layer (contrast, hue, bl
 
 | Param | Type | Description |
 |---|---|---|
-| `type` | string | Which adjustment. One of: `brightness_contrast`, `levels`, `curves`, `exposure`, `hue_saturation`, `vibrance`, `color_balance`, `black_white`, `photo_filter`, `channel_mixer`, `invert`, `posterize`, `threshold`, `gradient_map` |
-| `params` | object | Settings by key; omitted keys keep their default, {} is neutral. Keys (range, default) per type — brightness_contrast: brightness (-1…1, 0), contrast (-1…1, 0); exposure: exposure (-5…5, 0), offset (-0.5…0.5, 0), gamma (0.1…3, 1); hue_saturation: hue (-180…180, 0), saturation (-1…1, 0), lightness (-1…1, 0); vibrance: vibrance (-1…1, 0), saturation (-1…1, 0); color_balance: shadowsR (-1…1, 0), shadowsG (-1…1, 0), shadowsB (-1…1, 0), midtonesR (-1…1, 0), midtonesG (-1…1, 0), midtonesB (-1…1, 0), highlightsR (-1…1, 0), highlightsG (-1…1, 0), highlightsB (-1…1, 0), preserveLuminosity (true/false); black_white: red (-2…3, 0.4), yellow (-2…3, 0.6), green (-2…3, 0.4), cyan (-2…3, 0.6), blue (-2…3, 0.2), magenta (-2…3, 0.8); photo_filter: density (0…1, 0.25), preserveLuminosity (true/false), color (#RRGGBB); channel_mixer: rr (-2…2, 1), rg (-2…2, 0), rb (-2…2, 0), rc (-2…2, 0), gr (-2…2, 0), gg (-2…2, 1), gb (-2…2, 0), gc (-2…2, 0), br (-2…2, 0), bg (-2…2, 0), bb (-2…2, 1), bc (-2…2, 0), monochrome (true/false); posterize: levels (2…255, 4); threshold: level (0…1, 0.5). Moderate values look natural: exposure is in stops (±0.3–1), most −1…1 sliders are strong beyond ±0.4. For a colour cast use color_balance (positive B = bluer, positive R = redder) or photo_filter. |
+| `type` | string | Required. Which adjustment. One of: `brightness_contrast`, `levels`, `curves`, `exposure`, `hue_saturation`, `vibrance`, `color_balance`, `black_white`, `photo_filter`, `channel_mixer`, `invert`, `posterize`, `threshold`, `gradient_map` |
+| `params` | object | Required. Settings by key; omitted keys keep their default, {} is neutral. Keys (range, default) per type — brightness_contrast: brightness (-1…1, 0), contrast (-1…1, 0); exposure: exposure (-5…5, 0), offset (-0.5…0.5, 0), gamma (0.1…3, 1); hue_saturation: hue (-180…180, 0), saturation (-1…1, 0), lightness (-1…1, 0); vibrance: vibrance (-1…1, 0), saturation (-1…1, 0); color_balance: shadowsR (-1…1, 0), shadowsG (-1…1, 0), shadowsB (-1…1, 0), midtonesR (-1…1, 0), midtonesG (-1…1, 0), midtonesB (-1…1, 0), highlightsR (-1…1, 0), highlightsG (-1…1, 0), highlightsB (-1…1, 0), preserveLuminosity (true/false); black_white: red (-2…3, 0.4), yellow (-2…3, 0.6), green (-2…3, 0.4), cyan (-2…3, 0.6), blue (-2…3, 0.2), magenta (-2…3, 0.8); photo_filter: density (0…1, 0.25), preserveLuminosity (true/false), color (#RRGGBB); channel_mixer: rr (-2…2, 1), rg (-2…2, 0), rb (-2…2, 0), rc (-2…2, 0), gr (-2…2, 0), gg (-2…2, 1), gb (-2…2, 0), gc (-2…2, 0), br (-2…2, 0), bg (-2…2, 0), bb (-2…2, 1), bc (-2…2, 0), monochrome (true/false); posterize: levels (2…255, 4); threshold: level (0…1, 0.5). Moderate values look natural: exposure is in stops (±0.3–1), most −1…1 sliders are strong beyond ±0.4. For a colour cast use color_balance (positive B = bluer, positive R = redder) or photo_filter. |
 
 ### `apply_filter`
 
@@ -156,17 +157,17 @@ Apply a destructive pixel filter to the active pixel layer (inside the selection
 
 | Param | Type | Description |
 |---|---|---|
-| `type` | string | Which filter. One of: `gaussian_blur`, `lens_blur`, `motion_blur`, `sharpen`, `unsharp_mask`, `clarity`, `add_noise`, `pixelate`, `find_edges`, `emboss`, `oil_paint`, `halftone`, `vignette`, `chromatic_aberration` |
-| `params` | object | Settings by key; {} uses the defaults. Keys (range, default) per type — gaussian_blur: radius (0…100, 4); lens_blur: radius (0…60, 8), brightnessBoost (0…1, 0.3); motion_blur: angle (-180…180, 0), distance (0…200, 20); sharpen: amount (0…5, 1); unsharp_mask: amount (0…5, 0.8), radius (0.5…10, 2), threshold (0…1, 0); clarity: amount (-1…1, 0.4); add_noise: amount (0…1, 0.1), monochrome (0/1); pixelate: cell (2…200, 10); find_edges: no settings; emboss: angle (-180…180, 135), amount (0…5, 1); oil_paint: radius (1…10, 4), intensity (0…1, 1); halftone: cellSize (2…40, 8), angle (0…90, 45), monochrome (0/1); vignette: amount (0…1, 0.5), midpoint (0…1, 0.5), roundness (0…1, 0.5), feather (0.01…1, 0.5); chromatic_aberration: amount (0…40, 6), edgeOnly (0/1). |
+| `type` | string | Required. Which filter. One of: `gaussian_blur`, `lens_blur`, `motion_blur`, `sharpen`, `unsharp_mask`, `clarity`, `add_noise`, `pixelate`, `find_edges`, `emboss`, `oil_paint`, `halftone`, `vignette`, `chromatic_aberration` |
+| `params` | object | Required. Settings by key; {} uses the defaults. Keys (range, default) per type — gaussian_blur: radius (0…100, 4); lens_blur: radius (0…60, 8), brightnessBoost (0…1, 0.3); motion_blur: angle (-180…180, 0), distance (0…200, 20); sharpen: amount (0…5, 1); unsharp_mask: amount (0…5, 0.8), radius (0.5…10, 2), threshold (0…1, 0); clarity: amount (-1…1, 0.4); add_noise: amount (0…1, 0.1), monochrome (0/1); pixelate: cell (2…200, 10); find_edges: no settings; emboss: angle (-180…180, 135), amount (0…5, 1); oil_paint: radius (1…10, 4), intensity (0…1, 1); halftone: cellSize (2…40, 8), angle (0…90, 45), monochrome (0/1); vignette: amount (0…1, 0.5), midpoint (0…1, 0.5), roundness (0…1, 0.5), feather (0.01…1, 0.5); chromatic_aberration: amount (0…40, 6), edgeOnly (0/1). |
 
 ### `add_layer_effect`
 
-Add or update a layer style on the active layer.
+Add or update a layer style on the active layer. Only the keys you give change. Keys: dropShadow and innerShadow take color (#RRGGBB), opacity (0…1), angle (degrees), distance (px), size (px, the blur), spread (0…1); outerGlow takes color, opacity, size (px), spread (0…1); stroke takes color, opacity, width (px), position (outside, inside or center); colorOverlay takes color, opacity. All take blendMode (a blend mode id) and enabled (false turns the effect off). A new effect starts from: shadows black, opacity 0.75, angle 120, distance 10, size 10; glow pale yellow, opacity 0.75, size 10; stroke red, width 3, outside; overlay red, opacity 1.
 
 | Param | Type | Description |
 |---|---|---|
-| `type` | string | Which effect. One of: `dropShadow`, `innerShadow`, `outerGlow`, `stroke`, `colorOverlay` |
-| `params` | object | Patch, e.g. {"distance": 8, "opacity": 0.5, "size": 12} for dropShadow, {"width": 4, "color": "#ffffff"} for stroke, or {}. |
+| `type` | string | Required. Which effect. One of: `dropShadow`, `innerShadow`, `outerGlow`, `stroke`, `colorOverlay` |
+| `params` | object | Required. Patch, e.g. {"distance": 8, "opacity": 0.5, "size": 12} for dropShadow, {"width": 4, "color": "#ffffff"} for stroke, or {}. |
 
 ### `apply_preset`
 
@@ -174,18 +175,22 @@ Apply a finished photo look (adjustment group plus grain/vignette).
 
 | Param | Type | Description |
 |---|---|---|
-| `name` | string | Preset name. One of: `Cinematic Teal & Orange`, `Vintage Film`, `B&W Noir`, `HDR Pop`, `Golden Hour`, `Cool Cyberpunk`, `Matte Fade`, `Bleach Bypass`, `Cross Process`, `Dreamy Soft` |
+| `name` | string | Required. Preset name. One of: `Cinematic Teal & Orange`, `Vintage Film`, `B&W Noir`, `HDR Pop`, `Golden Hour`, `Cool Cyberpunk`, `Matte Fade`, `Bleach Bypass`, `Cross Process`, `Dreamy Soft` |
 
 ### `add_text`
 
-Add a text layer.
+Add a one-line text layer above the active layer (it doesn't wrap: a long text at a big size runs past the canvas, so check the bounds in the step's info and lower size if needed). Place it with position, or exactly with x and y; move it later with transform_layer (moveX, moveY). The step's info gives the new layer's id and bounds.
 
 | Param | Type | Description |
 |---|---|---|
-| `text` | string | The text. |
+| `text` | string | Required. The text. |
 | `color` | string | #RRGGBB colour (optional, default the foreground colour). |
 | `size` | number | Font size in pixels (optional; default ~8% of the image height). |
-| `position` | string | Where to place it. One of: `top`, `center`, `bottom` |
+| `bold` | boolean | Optional. true for bold text. |
+| `fontName` | string | Optional. PostScript font name, e.g. Georgia-Bold (default Helvetica Neue). |
+| `position` | string | Optional. Centred horizontally; top and bottom leave 8 % of the image height to the edge; center is the default. One of: `top`, `center`, `bottom` |
+| `x` | number | Optional. Left edge of the text in document pixels (instead of position). |
+| `y` | number | Optional. Top edge of the text in document pixels (instead of position). |
 
 ### `image_edit_composite` (paid)
 
@@ -193,7 +198,7 @@ Edit the WHOLE visible image with a natural-language instruction (content-aware:
 
 | Param | Type | Description |
 |---|---|---|
-| `instruction` | string | The change to make. |
+| `instruction` | string | Required. The change to make. |
 
 ### `generate_layer` (paid)
 
@@ -201,7 +206,7 @@ Generate a new image from a text prompt as a new layer.
 
 | Param | Type | Description |
 |---|---|---|
-| `prompt` | string | What to generate. |
+| `prompt` | string | Required. What to generate. |
 
 ### `auto_enhance`
 
@@ -245,8 +250,8 @@ Regenerate or erase the SELECTED region. Requires a selection.
 
 | Param | Type | Description |
 |---|---|---|
-| `prompt` | string | What to fill the selection with (may be empty for remove). |
-| `mode` | string | fill replaces with the prompt; remove erases an object. One of: `fill`, `remove` |
+| `prompt` | string | Required. What to fill the selection with (may be empty for remove). |
+| `mode` | string | Required. fill replaces with the prompt; remove erases an object. One of: `fill`, `remove` |
 
 ### `upscale`
 
@@ -254,7 +259,7 @@ Upscale the whole image.
 
 | Param | Type | Description |
 |---|---|---|
-| `scale` | number | 2 or 4 (on-device Real-ESRGAN, free). |
+| `scale` | number | Required. 2 or 4 (on-device Real-ESRGAN, free). |
 
 ### `fill`
 
@@ -262,7 +267,7 @@ Fill the selection (or the whole active layer) with a colour.
 
 | Param | Type | Description |
 |---|---|---|
-| `color` | string | #RRGGBB or #RRGGBBAA. |
+| `color` | string | Required. #RRGGBB or #RRGGBBAA. |
 
 ### `set_foreground`
 
@@ -270,7 +275,7 @@ Set the foreground (paint) colour.
 
 | Param | Type | Description |
 |---|---|---|
-| `color` | string | #RRGGBB. |
+| `color` | string | Required. #RRGGBB. |
 
 ### `select_all`
 
@@ -296,7 +301,7 @@ Soften the selection edge.
 
 | Param | Type | Description |
 |---|---|---|
-| `radius` | number | Pixels. |
+| `radius` | number | Required. Pixels. |
 
 ### `select_layer`
 
@@ -304,7 +309,7 @@ Make a layer the active one, so the following steps act on it. New layers become
 
 | Param | Type | Description |
 |---|---|---|
-| `name` | string | The layer's name (not case-sensitive; the topmost match wins) or its id. |
+| `name` | string | Required. The layer's name (not case-sensitive; the topmost match wins) or its id. |
 
 ### `new_layer`
 
@@ -316,7 +321,7 @@ Add an empty pixel layer.
 
 ### `transform_layer`
 
-Scale, rotate, skew or distort a layer or a group, like Free Transform. Text stays editable for scale, rotation and skew; corners (distort or perspective) would turn text into pixels and are refused unless allowRasterize is true. One undo step.
+Move, scale, rotate, skew or distort a layer or a group, like Free Transform. To only move a layer, give moveX and/or moveY. The step's info gives the layer's bounds afterwards. Text stays editable for scale, rotation and skew; corners (distort or perspective) would turn text into pixels and are refused unless allowRasterize is true. One undo step.
 
 | Param | Type | Description |
 |---|---|---|
@@ -324,14 +329,16 @@ Scale, rotate, skew or distort a layer or a group, like Free Transform. Text sta
 | `scaleX` | number | Optional. Width in percent of the current size (default 100). |
 | `scaleY` | number | Optional. Height in percent of the current size (default 100). |
 | `degrees` | number | Optional. Rotation about the centre, clockwise. |
+| `moveX` | number | Optional. Move right by this many document pixels (negative: left). |
+| `moveY` | number | Optional. Move down by this many document pixels (negative: up). |
 | `skewX` | number | Optional. Horizontal skew in degrees. |
 | `skewY` | number | Optional. Vertical skew in degrees. |
-| `corners` | points | Optional. Four corners in document pixels, top-left, top-right, bottom-right, bottom-left, for distort or perspective (replaces scale, rotation and skew). |
+| `corners` | points | Optional. Four corners in document pixels, top-left, top-right, bottom-right, bottom-left, for distort or perspective (replaces move, scale, rotation and skew). They say where the corners of the layer's bounds (as GET document reports them) end up. |
 | `allowRasterize` | boolean | Optional. Let corners turn text layers into pixels (default false). |
 
 ### `style_text`
 
-Give words in a text layer their own font, boldness, size or colour (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters. Stays editable text; one undo step. The step's info says which ranges changed.
+Give words in a text layer their own font, boldness, size or colour (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters; with neither, the whole text is styled. Stays editable text; one undo step. The step's info says which ranges changed.
 
 | Param | Type | Description |
 |---|---|---|
@@ -387,10 +394,10 @@ Select a rectangle or an ellipse. A box partly outside the canvas is clipped to 
 
 | Param | Type | Description |
 |---|---|---|
-| `x` | number | Left edge in document pixels. |
-| `y` | number | Top edge in document pixels. |
-| `width` | number | Width in pixels. |
-| `height` | number | Height in pixels. |
+| `x` | number | Required. Left edge in document pixels. |
+| `y` | number | Required. Top edge in document pixels. |
+| `width` | number | Required. Width in pixels. |
+| `height` | number | Required. Height in pixels. |
 | `shape` | string | Optional. rect (default) or ellipse (inscribed in the box). One of: `rect`, `ellipse` |
 | `mode` | string | Optional. How it combines with the selection there is (default replace). One of: `replace`, `add`, `subtract`, `intersect` |
 | `feather` | number | Optional. Soften the edge by this many pixels. |
@@ -427,14 +434,73 @@ Run an editor menu command.
 
 | Param | Type | Description |
 |---|---|---|
-| `id` | string | Command id. One of: `view.zoomIn`, `view.zoomOut`, `view.fit`, `view.actualSize`, `view.rotateLeft`, `view.rotateRight`, `view.resetRotation`, `view.rulers`, `view.grid`, `view.snap`, `view.clearGuides`, `view.palette`, `view.classicLayout`, `view.hideInterface`, `view.navigator`, `view.toggleLayers`, `layer.new`, `layer.duplicate`, `layer.delete`, `layer.forward`, `layer.backward`, `layer.front`, `layer.back`, `layer.newGroup`, `layer.group`, `layer.ungroup`, `layer.clip`, `layer.mask.revealAll`, `layer.mask.hideAll`, `layer.mask.toggle`, `layer.mask.delete`, `layer.mask.edit`, `layer.smart.convert`, `layer.rasterize`, `select.all`, `select.none`, `select.invert`, `select.subject`, `select.people`, `select.sky` … (see /api/v1/operations) |
+| `id` | string | Required. Command id. One of the ids in the table below. |
+
+| Command id | What it does |
+|---|---|
+| `view.zoomIn` | Zoom In |
+| `view.zoomOut` | Zoom Out |
+| `view.fit` | Fit on Screen |
+| `view.actualSize` | Actual Pixels (100%) |
+| `view.rotateLeft` | Rotate View Left 15° |
+| `view.rotateRight` | Rotate View Right 15° |
+| `view.resetRotation` | Reset View Rotation |
+| `view.rulers` | Rulers |
+| `view.grid` | Grid |
+| `view.snap` | Snap |
+| `view.clearGuides` | Clear Guides |
+| `view.palette` | Command Palette |
+| `view.classicLayout` | Classic Layout |
+| `view.hideInterface` | Hide Interface |
+| `view.navigator` | Navigator |
+| `view.toggleLayers` | Show/Hide Layers |
+| `layer.new` | New Layer |
+| `layer.duplicate` | Duplicate Layer |
+| `layer.delete` | Delete Layer |
+| `layer.forward` | Bring Forward |
+| `layer.backward` | Send Backward |
+| `layer.front` | Bring to Front |
+| `layer.back` | Send to Back |
+| `layer.newGroup` | New Group |
+| `layer.group` | Group Layer |
+| `layer.ungroup` | Ungroup |
+| `layer.clip` | Create/Release Clipping Mask |
+| `layer.mask.revealAll` | Add Layer Mask (Reveal All) |
+| `layer.mask.hideAll` | Add Layer Mask (Hide All) |
+| `layer.mask.toggle` | Enable/Disable Layer Mask |
+| `layer.mask.delete` | Delete Layer Mask |
+| `layer.mask.edit` | Edit Layer Mask |
+| `layer.smart.convert` | Convert to Smart Object |
+| `layer.rasterize` | Rasterize Layer |
+| `select.all` | All |
+| `select.none` | Deselect |
+| `select.invert` | Inverse |
+| `select.subject` | Subject |
+| `select.people` | People |
+| `select.sky` | Sky |
+| `layer.textToLayers` | Image Text to Layers |
+| `layer.viaCopy` | New Layer via Copy |
+| `image.autoEnhance` | Auto Enhance |
+| `image.autoColor` | Auto Color |
+| `image.autoStraighten` | Auto Straighten |
+| `image.straightenDocument` | Straighten Document |
+| `image.suggestCrop` | Suggest Crop |
+| `image.flipHorizontal` | Flip Horizontal |
+| `image.flipVertical` | Flip Vertical |
+| `image.rotateRight` | Rotate 90° Clockwise |
+| `image.rotateLeft` | Rotate 90° Counterclockwise |
+| `image.rotate180` | Rotate 180° |
+| `image.gammaBlending` | Blend Colors in Gamma Space |
 
 ## Good to know
 
 - Adjustment layers are non-destructive; filters change pixels. Prefer `add_adjustment` for tone and colour.
 - `auto_enhance` and `auto_color` add editable adjustment layers, worked out on the Mac.
 - After a step, `GET /api/v1/documents/{id}/image` shows you what the user sees.
-- To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers` (its bytes, or `fromDocument` if it is already open as a document). Place it with `transform_layer`, blend it with `set_layer`, cut it out with `remove_background`.
-- `resize_canvas` adds room around the image (`crop` can only take room away). `aspect` with `anchor` is the short way to a thumbnail shape with space for a title.
-        - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
+- To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers` (its bytes, or `fromDocument` if it is already open as a document). Either way works for any caller. Place it with `x` and `y` when you add it, or afterwards with `transform_layer` (`moveX`, `moveY`); blend it with `set_layer`, cut it out with `remove_background`.
+- `resize_canvas` adds room around the image (`crop` can only take room away). To get a shape such as 16:9: `crop` with `aspect` cuts the image down to it; `resize_canvas` with `aspect` and `anchor` adds room instead, for example beside a person for a title. Use `crop` when the image has more than you need, `resize_canvas` when it has too little.
+- `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
+- Removing an object from a photo has no free operation: `inpaint_selection` (paid) is the only one. Free steps can cut out a subject (`remove_background`), cover an area with a colour (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object).
+- A layer's `bounds` are where its visible content is, in document pixels, after its mask; they can reach outside the canvas when content hangs over the edge.
+- `maxSide` only ever makes an image smaller.
 - The user may be editing the same document. Read the document before you act on it, and keep requests small.

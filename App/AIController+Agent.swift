@@ -409,7 +409,7 @@ extension AIController {
             }
             applyPreset(preset)
         case "add_text":
-            addText(step)
+            try addText(step)
         case "image_edit_composite":
             editImage(instruction: step.string("instruction") ?? "")
         case "generate_layer":
@@ -510,20 +510,31 @@ extension AIController {
         session.edit("Fill") { $0.updateLayer(layer.id) { $0.tiles = tiles } }
     }
 
-    private func addText(_ step: AgentStep) {
+    private func addText(_ step: AgentStep) throws {
         let state = session.state
         let size = step.number("size") ?? max(Double(state.height) * 0.08, 12)
         var text = TextLayer(string: step.string("text") ?? "Text", size: size,
                              color: parseHexColor(step.string("color")) ?? session.foreground, alignment: .center, origin: .zero)
+        if let font = step.string("fontName")?.trimmingCharacters(in: .whitespaces), !font.isEmpty {
+            guard TextLayer.fontExists(font) else {
+                throw StepError("No font named “\(font)” is installed (use its PostScript name).", reason: "unknown_font")
+            }
+            text.fontName = font
+        }
+        if step.params["bold"]?.bool == true { text.setBold(true, in: NSRange(location: 0, length: (text.string as NSString).length)) }
         let layout = text.layoutSize
         let y: Double = switch step.string("position") {
         case "top": Double(state.height) * 0.08
         case "bottom": Double(state.height) * 0.92 - layout.height
         default: (Double(state.height) - layout.height) / 2
         }
-        text.origin = SIMD2((Double(state.width) - layout.width) / 2, y)
+        text.origin = SIMD2(step.number("x") ?? (Double(state.width) - layout.width) / 2, step.number("y") ?? y)
         let name = String(text.string.prefix(32))
-        session.addLayer(Layer(name: name, content: .text(text)), actionName: "Add Text")
+        let layer = Layer(name: name, content: .text(text))
+        session.addLayer(layer, actionName: "Add Text")
+        var info: [String: Any] = ["layer": layer.id.uuidString]
+        if let b = AgentRouter.layerBounds(layer) { info["bounds"] = ["x": b.x, "y": b.y, "width": b.width, "height": b.height] }
+        stepInfo = info
     }
 
     nonisolated static func adjustment(_ kind: AdjustmentKind, _ params: [String: JSONValue]) -> Adjustment {

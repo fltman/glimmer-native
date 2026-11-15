@@ -128,7 +128,7 @@ Glimmer's sibling apps, Flimmer and Jämmer, use the same API. Their assistants 
 
 ### Transforming layers
 
-An agent (or the assistant) can scale, rotate, skew or distort a layer or a group with the `transform_layer` step, the same as Free Transform. Text stays editable for scale, rotation and skew. Corners (distort or perspective) would turn text into pixels, so Glimmer refuses them unless the request explicitly allows it, the way it asks you first in the window. Layer masks follow the transform, as in the window. Each transform is one undo step.
+An agent (or the assistant) can move, scale, rotate, skew or distort a layer or a group with the `transform_layer` step, the same as Free Transform. Text stays editable for scale, rotation and skew. Corners (distort or perspective) would turn text into pixels, so Glimmer refuses them unless the request explicitly allows it, the way it asks you first in the window. Layer masks follow the transform, as in the window. Each transform is one undo step.
 
 ### Combining images, cropping and resizing
 

@@ -259,7 +259,7 @@ public enum AgentAPI {
             ]),
             op("image", "The flattened image as bytes.", "GET", "image",
                ["format": format.merging(["x-in": "query"]) { $1 }, "maxSide": maxSide.merging(["x-in": "query"]) { $1 }]),
-            op("add_image", "Add an image as a new layer in an open document, to combine two images. An assistant gives fromDocument: another open document, whose picture becomes the layer (open the second image as a document first). An app can instead send the image's bytes as the request body (PNG, JPEG, HEIC, TIFF or WebP; Content-Type image/… or application/octet-stream). The other options go in the query. The new layer lands above the active layer and becomes the active one. One undo step. Answers 201 with {layer: {id, name, bounds}}.", "POST", "layers", [
+            op("add_image", "Add an image as a new layer in an open document, to combine two images. Two ways to give the image, both open to any caller: send its bytes as the request body (PNG, JPEG, HEIC, TIFF or WebP; Content-Type image/… or application/octet-stream), or, when you have no bytes to send (an assistant calling this as a tool), give fromDocument: another open document, whose picture becomes the layer. The other options go in the query. The new layer lands above the active layer and becomes the active one. One undo step. Answers 201 with {layer: {id, name, bounds}}.", "POST", "layers", [
                 "fromDocument": ["type": "string", "description": "The id of another open document; its flattened picture becomes the new layer. Leave out when the body is image bytes."],
                 "name": ["type": "string", "x-in": "query", "description": "Optional. The layer's name (default: the source document's name, or Image)."],
                 "fit": ["type": "string", "enum": CanvasSteps.Fit.allCases.map(\.rawValue), "x-in": "query",
@@ -333,18 +333,18 @@ public enum AgentAPI {
         | GET | `/glimmer` | This guide (Markdown). |
         | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents and the running `jobs`. |
         | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `add_image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
-        | GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`), and ⌘S writes it back. |
-        | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\\|"black"\\|"transparent", "name"}`). `name` names the document's window. Glimmer's untouched start document is replaced instead of leaving an empty window. |
+        | GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; Glimmer's own empty start document, which the first image you open replaces (keeping its id), has `"startDocument": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`), and ⌘S writes it back. |
+        | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\\|"black"\\|"transparent", "name"}`). `name` names the document's window and, for an image, its layer. Glimmer's untouched start document is replaced instead of leaving an empty window. |
         | GET | `/api/v1/documents/{id}` | Size, layers (top first, each with `bounds` in document pixels when it has content), the active layer and whether there is a selection. |
         | GET | `/api/v1/documents/{id}/image` | The flattened image. Query: `format=png\\|jpeg`, `maxSide=<px>`. |
         | POST | `/api/v1/documents/{id}/steps` | Run steps in order. Body: `{"steps": [{"op": "…", "params": {…}}], "allowPaid": false, "async": false}`. Answers 200 when done, or 202 with a job (see Long jobs). |
         | GET | `/api/v1/jobs` | Recent jobs (see Long jobs). |
         | GET | `/api/v1/jobs/{id}` | One job: status, progress and, when finished, the result. |
         | DELETE | `/api/v1/jobs/{id}` | Cancel a job that is still running. |
-        | POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document, or JSON `{"fromDocument": "<id>"}` to use another open document's picture. Query: `name`, `fit=contain\\|cover\\|none`, `x`, `y`, `smartObject=true\\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
-        | POST | `/api/v1/documents/{id}/undo` | Undo the last step (a whole `steps` request counts as one). |
-        | POST | `/api/v1/documents/{id}/redo` | Redo. |
-        | POST | `/api/v1/documents/{id}/export` | The finished image as bytes. Body: `{"format": "png\\|jpeg\\|heic\\|tiff\\|webp", "quality": 0.9, "maxSide": 2048, "maxBytes": 500000}`; all optional (PNG by default). |
+        | POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document, or JSON `{"fromDocument": "<id>"}` to use another open document's picture. Query: `name`; `fit` against the canvas (`contain`, the default: scaled down to fit inside it, never up; `cover`: scaled to cover it; `none`: its own size); `x`, `y`: where its top-left goes after fitting (default: centred); `smartObject=true\\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
+        | POST | `/api/v1/documents/{id}/undo` | Undo the last change (a whole `steps` request counts as one; the selection goes back too). Answers `{"undone": "<name of the change>", "document": …}`; a steps request is named `Agent Edit`. |
+        | POST | `/api/v1/documents/{id}/redo` | Redo. Answers `{"redone": "<name>", "document": …}`. |
+        | POST | `/api/v1/documents/{id}/export` | The finished image as bytes. Body: `{"format": "png\\|jpeg\\|heic\\|tiff\\|webp", "quality": 0.9, "maxSide": 2048, "maxBytes": 500000}`; all optional (PNG by default). `"preset": "podcast-cover"` with `"size": 3000\\|1400` gives square cover art (see Export size limits). |
 
         Document ids are stable while the window is open. Use `GET /api/v1/documents` to find documents the user opened.
 
@@ -364,6 +364,7 @@ public enum AgentAPI {
         - New layers (adjustments, text, fills, `new_layer`) become the active layer.
         - Filters, `fill` and `remove_background` need a pixel layer. If the active layer isn't one, Glimmer uses the topmost visible pixel layer, so `add_adjustment` followed by `apply_filter` still filters the photo.
         - Use `select_layer` with a name or id from `GET /api/v1/documents/{id}` to pick a layer yourself.
+        - A request with a paid step and no `allowPaid` is refused as a whole (402) before any step runs.
 
         A step may also return `info`, facts about what it did. `style_text` returns `{"matches": 2, "ranges": [{"from": 6, "length": 5}, …]}`, the ranges it actually styled.
 
@@ -402,7 +403,7 @@ public enum AgentAPI {
 
         **Podcast covers:** `POST /api/v1/documents/{id}/export` with `{"preset": "podcast-cover", "maxBytes": 512000}` returns the centre square of the image at exactly 3000 × 3000 pixels, as an opaque JPEG (or `"format": "png"`). Only the quality goes down to meet `maxBytes`; when 3000 can't, it's 1400 × 1400, and `"size": 3000` or `1400` fixes the size. If the limit can't be met, the answer is `422 unprocessable` with `reason` `over_byte_limit`.
 
-        `maxSide` scales the image so its longer side fits. `maxBytes` (JPEG, HEIC and WebP only; PNG and TIFF ignore it) lowers the quality until the file fits, and scales the image down too if even low quality is too big, so the limit is met.
+        `maxSide` scales the image down so its longer side fits; it never enlarges. The podcast preset is the exception: it always gives its exact size, enlarging a smaller image. `quality` defaults to 0.9. `maxBytes` (JPEG, HEIC and WebP only; PNG and TIFF ignore it) lowers the quality until the file fits, and scales the image down too if even low quality is too big, so the limit is met.
 
         ## Errors
 
@@ -411,7 +412,7 @@ public enum AgentAPI {
         | Status | Code | Meaning |
         |---|---|---|
         | 400 | `bad_request` | The body or a parameter is malformed. The message says which. |
-        | 402 | `paid_not_allowed` | A step costs money and `allowPaid` wasn't `true` (or no OpenRouter key is saved in Glimmer). |
+        | 402 | `paid_not_allowed` | A step costs money and `allowPaid` wasn't `true` (or no OpenRouter key is saved in Glimmer). The request is checked before anything runs: no step of it was run. |
         | 403 | `forbidden` | Missing `\(agentHeader): 1`, an `Origin` header, or a Host other than this Mac. |
         | 404 | `not_found` | No such document, path or operation. |
         | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
@@ -434,12 +435,18 @@ public enum AgentAPI {
             s += "\n| Param | Type | Description |\n|---|---|---|\n"
             for p in op.params {
                 var description = p.description.replacingOccurrences(of: "|", with: "\\|")
+                if !description.localizedCaseInsensitiveContains("optional") { description = "Required. " + description }
                 if let options = p.options {
-                    let list = options.count > 40 ? options.prefix(40).joined(separator: "`, `") + "` … (see /api/v1/operations)"
-                        : options.joined(separator: "`, `") + "`"
-                    description += " One of: `" + list
+                    description += options.count > 40 ? " One of the ids in the table below."
+                        : " One of: `" + options.joined(separator: "`, `") + "`"
                 }
                 s += "| `\(p.name)` | \(p.type) | \(description) |\n"
+            }
+            if op.name == "run_command" {
+                s += "\n| Command id | What it does |\n|---|---|\n"
+                for d in AgentPlanner.runnableCommands {
+                    s += "| `\(d.id.rawValue)` | \(d.title.replacingOccurrences(of: "…", with: "")) |\n"
+                }
             }
         }
         s += """
@@ -449,8 +456,12 @@ public enum AgentAPI {
         - Adjustment layers are non-destructive; filters change pixels. Prefer `add_adjustment` for tone and colour.
         - `auto_enhance` and `auto_color` add editable adjustment layers, worked out on the Mac.
         - After a step, `GET /api/v1/documents/{id}/image` shows you what the user sees.
-        - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers` (its bytes, or `fromDocument` if it is already open as a document). Place it with `transform_layer`, blend it with `set_layer`, cut it out with `remove_background`.
-        - `resize_canvas` adds room around the image (`crop` can only take room away). `aspect` with `anchor` is the short way to a thumbnail shape with space for a title.\n        - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
+        - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers` (its bytes, or `fromDocument` if it is already open as a document). Either way works for any caller. Place it with `x` and `y` when you add it, or afterwards with `transform_layer` (`moveX`, `moveY`); blend it with `set_layer`, cut it out with `remove_background`.
+        - `resize_canvas` adds room around the image (`crop` can only take room away). To get a shape such as 16:9: `crop` with `aspect` cuts the image down to it; `resize_canvas` with `aspect` and `anchor` adds room instead, for example beside a person for a title. Use `crop` when the image has more than you need, `resize_canvas` when it has too little.
+        - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
+        - Removing an object from a photo has no free operation: `inpaint_selection` (paid) is the only one. Free steps can cut out a subject (`remove_background`), cover an area with a colour (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object).
+        - A layer's `bounds` are where its visible content is, in document pixels, after its mask; they can reach outside the canvas when content hangs over the edge.
+        - `maxSide` only ever makes an image smaller.
         - The user may be editing the same document. Read the document before you act on it, and keep requests small.
 
         """

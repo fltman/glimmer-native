@@ -209,18 +209,22 @@ public enum AgentPlanner {
             AgentParam("type", "string", "Which filter.", options: FilterKind.allCases.map(\.rawValue)),
             AgentParam("params", "object", "Settings by key; {} uses the defaults. Keys (range, default) per type — " + filterReference + "."),
         ]),
-        AgentOp("add_layer_effect", "Add or update a layer style on the active layer.", [
+        AgentOp("add_layer_effect", "Add or update a layer style on the active layer. Only the keys you give change. Keys: dropShadow and innerShadow take color (#RRGGBB), opacity (0…1), angle (degrees), distance (px), size (px, the blur), spread (0…1); outerGlow takes color, opacity, size (px), spread (0…1); stroke takes color, opacity, width (px), position (outside, inside or center); colorOverlay takes color, opacity. All take blendMode (a blend mode id) and enabled (false turns the effect off). A new effect starts from: shadows black, opacity 0.75, angle 120, distance 10, size 10; glow pale yellow, opacity 0.75, size 10; stroke red, width 3, outside; overlay red, opacity 1.", [
             AgentParam("type", "string", "Which effect.", options: ["dropShadow", "innerShadow", "outerGlow", "stroke", "colorOverlay"]),
             AgentParam("params", "object", "Patch, e.g. {\"distance\": 8, \"opacity\": 0.5, \"size\": 12} for dropShadow, {\"width\": 4, \"color\": \"#ffffff\"} for stroke, or {}."),
         ]),
         AgentOp("apply_preset", "Apply a finished photo look (adjustment group plus grain/vignette).", [
             AgentParam("name", "string", "Preset name.", options: Preset.all.map(\.name)),
         ]),
-        AgentOp("add_text", "Add a text layer.", [
+        AgentOp("add_text", "Add a one-line text layer above the active layer (it doesn't wrap: a long text at a big size runs past the canvas, so check the bounds in the step's info and lower size if needed). Place it with position, or exactly with x and y; move it later with transform_layer (moveX, moveY). The step's info gives the new layer's id and bounds.", [
             AgentParam("text", "string", "The text."),
             AgentParam("color", "string", "#RRGGBB colour (optional, default the foreground colour)."),
             AgentParam("size", "number", "Font size in pixels (optional; default ~8% of the image height)."),
-            AgentParam("position", "string", "Where to place it.", options: ["top", "center", "bottom"]),
+            AgentParam("bold", "boolean", "Optional. true for bold text."),
+            AgentParam("fontName", "string", "Optional. PostScript font name, e.g. Georgia-Bold (default Helvetica Neue)."),
+            AgentParam("position", "string", "Optional. Centred horizontally; top and bottom leave 8 % of the image height to the edge; center is the default.", options: ["top", "center", "bottom"]),
+            AgentParam("x", "number", "Optional. Left edge of the text in document pixels (instead of position)."),
+            AgentParam("y", "number", "Optional. Top edge of the text in document pixels (instead of position)."),
         ]),
         AgentOp("image_edit_composite", "Edit the WHOLE visible image with a natural-language instruction (content-aware: \"make it snowy\", \"change the car to red\"). The result lands as a new layer.", [
             AgentParam("instruction", "string", "The change to make."),
@@ -255,17 +259,19 @@ public enum AgentPlanner {
             AgentParam("name", "string", "The layer's name (not case-sensitive; the topmost match wins) or its id."),
         ]),
         AgentOp("new_layer", "Add an empty pixel layer.", [AgentParam("name", "string", "Optional layer name.")]),
-        AgentOp("transform_layer", "Scale, rotate, skew or distort a layer or a group, like Free Transform. Text stays editable for scale, rotation and skew; corners (distort or perspective) would turn text into pixels and are refused unless allowRasterize is true. One undo step.", [
+        AgentOp("transform_layer", "Move, scale, rotate, skew or distort a layer or a group, like Free Transform. To only move a layer, give moveX and/or moveY. The step's info gives the layer's bounds afterwards. Text stays editable for scale, rotation and skew; corners (distort or perspective) would turn text into pixels and are refused unless allowRasterize is true. One undo step.", [
             AgentParam("target", "string", "Optional. The layer's or group's name or id; default the active layer."),
             AgentParam("scaleX", "number", "Optional. Width in percent of the current size (default 100)."),
             AgentParam("scaleY", "number", "Optional. Height in percent of the current size (default 100)."),
             AgentParam("degrees", "number", "Optional. Rotation about the centre, clockwise."),
+            AgentParam("moveX", "number", "Optional. Move right by this many document pixels (negative: left)."),
+            AgentParam("moveY", "number", "Optional. Move down by this many document pixels (negative: up)."),
             AgentParam("skewX", "number", "Optional. Horizontal skew in degrees."),
             AgentParam("skewY", "number", "Optional. Vertical skew in degrees."),
-            AgentParam("corners", "points", "Optional. Four corners in document pixels, top-left, top-right, bottom-right, bottom-left, for distort or perspective (replaces scale, rotation and skew)."),
+            AgentParam("corners", "points", "Optional. Four corners in document pixels, top-left, top-right, bottom-right, bottom-left, for distort or perspective (replaces move, scale, rotation and skew). They say where the corners of the layer's bounds (as GET document reports them) end up."),
             AgentParam("allowRasterize", "boolean", "Optional. Let corners turn text layers into pixels (default false)."),
         ]),
-        AgentOp("style_text", "Give words in a text layer their own font, boldness, size or colour (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters. Stays editable text; one undo step. The step's info says which ranges changed.", [
+        AgentOp("style_text", "Give words in a text layer their own font, boldness, size or colour (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters; with neither, the whole text is styled. Stays editable text; one undo step. The step's info says which ranges changed.", [
             AgentParam("target", "string", "Optional. The text layer's name or id; default the active layer."),
             AgentParam("match", "string", "Optional. The word or phrase to style (exact text, or ignoring case if the exact text isn't there). Preferred over from/length."),
             AgentParam("occurrence", "string", "Optional. Which matches to style (default all).", options: ["all", "first"]),

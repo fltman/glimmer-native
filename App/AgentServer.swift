@@ -295,6 +295,7 @@ enum AgentRouter {
         return ["id": session.agentID, "name": session.explicitName ?? st.layers.first?.name ?? "Untitled", "width": st.width, "height": st.height,
                 "layerCount": st.allLayers.count, "hasSelection": st.selection != nil,
                 "frontmost": AgentRegistry.shared.front === session,
+                "startDocument": session.isUntouchedBlank && !session.madeByAPI,
                 "linkedFile": session.linkedImage.map { ["name": $0.fileName, "format": $0.format.rawValue, "requester": $0.requester] } as Any? ?? NSNull()]
     }
 
@@ -307,10 +308,22 @@ enum AgentRouter {
         return d
     }
 
+    /// The tight bounds of a pixel layer's visible content (tile bounds are up to a tile too
+    /// big on each side). Kept per layer until its pixels change.
+    private static var boundsCache: [UUID: (signature: Int, bounds: PixelRect?)] = [:]
+    private static func contentBounds(_ grid: TileGrid, id: UUID) -> PixelRect? {
+        let signature = grid.contentSignature.hashValue
+        if let hit = boundsCache[id], hit.signature == signature { return hit.bounds }
+        let bounds = grid.tileBounds.flatMap { Selection(tiles: grid.mapAlphaOnly()).bounds(in: $0) }
+        if boundsCache.count > 2000 { boundsCache.removeAll() }
+        boundsCache[id] = (signature, bounds)
+        return bounds
+    }
+
     /// Where a layer's content is, in document pixels (nil for adjustments and plain fills).
     static func layerBounds(_ layer: Layer) -> PixelRect? {
         switch layer.content {
-        case .raster(let grid): return grid.tileBounds
+        case .raster(let grid): return contentBounds(grid, id: layer.id)
         case .text(let t): return t.bounds
         case .smart(let s):
             let z = s.sourceSize
@@ -324,10 +337,17 @@ enum AgentRouter {
         }
     }
 
+    /// `layerBounds` cut down to what the layer's mask lets through.
+    static func visibleBounds(_ layer: Layer) -> PixelRect? {
+        guard let r = layerBounds(layer) else { return nil }
+        guard let m = layer.mask, m.isEnabled, m.defaultValue == 0, layer.vectorMask == nil else { return r }
+        return Selection(tiles: m.tiles).bounds(in: r) ?? r
+    }
+
     static func describe(_ layer: Layer) -> [String: Any] {
         var d: [String: Any] = ["id": layer.id.uuidString, "name": layer.name, "visible": layer.isVisible,
                                 "opacity": layer.opacity, "blendMode": layer.blendMode.rawValue, "hasMask": layer.mask != nil]
-        if let r = layerBounds(layer) { d["bounds"] = ["x": r.x, "y": r.y, "width": r.width, "height": r.height] }
+        if let r = visibleBounds(layer) { d["bounds"] = ["x": r.x, "y": r.y, "width": r.width, "height": r.height] }
         switch layer.content {
         case .raster: d["kind"] = "pixels"
         case .adjustment(let a): d["kind"] = "adjustment"; d["adjustment"] = a.kind.rawValue
@@ -419,8 +439,19 @@ enum AgentRouter {
             let image = try ImageImporter.image(from: data)
             let tiles = try ImageImporter.tiles(from: image)
             return DocumentState(width: image.width, height: image.height, layers: [Layer(name: name, content: .raster(tiles))])
+        } catch let error as ImageImportError {
+            throw APIError.badRequest(imageRefusal(error))
         } catch {
-            throw APIError.badRequest("Glimmer couldn't read the image (\(error.localizedDescription)). Send PNG, JPEG, HEIC, TIFF or WebP bytes.")
+            throw APIError.badRequest(imageRefusal(.unreadable))
+        }
+    }
+
+    /// Why an image wasn't opened, for an agent: what was wrong and what to send instead.
+    static func imageRefusal(_ error: ImageImportError) -> String {
+        switch error {
+        case .tooLarge: error.localizedDescription + " Send a smaller image."
+        case .damaged: error.localizedDescription + " Send the whole file."
+        case .unreadable: "Glimmer couldn't read this as an image. Send PNG, JPEG, HEIC, TIFF or WebP bytes."
         }
     }
 
@@ -559,8 +590,12 @@ enum AgentRouter {
             guard !r.body.isEmpty else { throw APIError.unprocessable("bad_image", "The image body is empty.") }
             do {
                 image = try ImageImporter.image(from: r.body)
+            } catch ImageImportError.tooLarge(let w, let h) {
+                throw APIError.unprocessable("too_large", imageRefusal(.tooLarge(w, h)))
+            } catch let error as ImageImportError {
+                throw APIError.unprocessable("bad_image", imageRefusal(error))
             } catch {
-                throw APIError.unprocessable("bad_image", "Glimmer couldn't read the image (\(error.localizedDescription)). Send PNG, JPEG, HEIC, TIFF or WebP bytes.")
+                throw APIError.unprocessable("bad_image", imageRefusal(.unreadable))
             }
         }
         guard image.width <= CanvasSteps.maxSide, image.height <= CanvasSteps.maxSide else {
@@ -602,10 +637,10 @@ enum AgentRouter {
             if let problem = CanvasSteps.malformed(decoded) { throw APIError.badRequest("Step \(i): \(problem)") }
             if AgentAPI.paidOps.contains(op) {
                 guard allowPaid else {
-                    throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) calls OpenRouter and costs money. Pass \"allowPaid\": true to allow it.")
+                    throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) calls OpenRouter and costs money. Pass \"allowPaid\": true to allow it. No step of this request was run.")
                 }
                 guard session.ai.hasAPIKey else {
-                    throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) needs an OpenRouter key, and none is saved in Glimmer › Settings.")
+                    throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) needs an OpenRouter key, and none is saved in Glimmer › Settings. No step of this request was run.")
                 }
             }
             steps.append(decoded)
@@ -660,11 +695,13 @@ enum AgentRouter {
         guard let undo = session.undoManager else { throw APIError.unprocessable("no_history", "The document has no undo history yet.") }
         if redo {
             guard undo.canRedo else { throw APIError.unprocessable("nothing_to_redo", "Nothing to redo.") }
+            let name = undo.redoActionName
             undo.redo()
-        } else {
-            guard undo.canUndo else { throw APIError.unprocessable("nothing_to_undo", "Nothing to undo.") }
-            undo.undo()
+            return .json(["redone": name, "document": detail(session)])
         }
-        return .json(["document": detail(session)])
+        guard undo.canUndo else { throw APIError.unprocessable("nothing_to_undo", "Nothing to undo.") }
+        let name = undo.undoActionName
+        undo.undo()
+        return .json(["undone": name, "document": detail(session)])
     }
 }

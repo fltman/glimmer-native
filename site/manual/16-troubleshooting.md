@@ -83,6 +83,14 @@ A job you cancel stops waiting for the result; OpenRouter may still bill a reque
 
 ## Files and export
 
+### "The image file is damaged or incomplete"
+
+The file starts like an image but is cut short or broken inside, often after an interrupted download or copy. Glimmer doesn't open half a picture. Get the file again from where it came from.
+
+### "The image is too large"
+
+Glimmer opens images up to 256 megapixels (for example 16,000 × 16,000) and 32,768 pixels a side. Make the image smaller in another app first.
+
 ### The exported file is bigger than the size limit
 
 **Limit file size** only applies to JPEG, HEIC and WebP. PNG and TIFF are lossless and ignore it. Choose a lossy format, or set **Limit longest side**.
