@@ -311,7 +311,7 @@ private struct TitleChip: View {
 
     private var content: some View {
         HStack(spacing: 8) {
-            Image(systemName: "sparkle").foregroundStyle(Theme.accent)
+            Image(systemName: "sparkle").foregroundStyle(Theme.accent).accessibilityHidden(true)
             Text(session.linkedImage?.fileName ?? session.documentName).fontWeight(.medium).lineLimit(1)
             Text(verbatim: "\(session.state.width)×\(session.state.height)").foregroundStyle(.secondary)
             Text(session.canvas.zoom, format: .percent.precision(.fractionLength(0)))
@@ -353,7 +353,10 @@ private struct ToolPalette: View {
                     Button {
                         session.tool = tool
                     } label: {
-                        Image(systemName: tool.symbolName)
+                        // A Label (shown as its icon) gives the button its name for VoiceOver;
+                        // an accessibilityLabel on the plain button didn't reach it.
+                        Label(LocalizedStringKey(tool.title), systemImage: tool.symbolName)
+                            .labelStyle(.iconOnly)
                             .font(.system(size: 14, weight: .medium))
                             .frame(width: 32, height: 30)
                             .foregroundStyle(session.tool == tool ? Color.accentColor : .primary)

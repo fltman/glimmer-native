@@ -289,8 +289,11 @@ struct ToolOptionsBar: View {
                         percent: Bool = false, display: String? = nil) -> some View {
         HStack(spacing: 6) {
             Text(LocalizedStringKey(label)).foregroundStyle(.secondary)
+            let shown = display ?? (percent ? "\(Int((value.wrappedValue * 100).rounded())) %" : String(format: "%.0f", value.wrappedValue))
             Slider(value: value, in: range).frame(width: 80)
-            Text(display ?? (percent ? "\(Int((value.wrappedValue * 100).rounded())) %" : String(format: "%.0f", value.wrappedValue)))
+                .accessibilityLabel(Text(LocalizedStringKey(label)))
+                .accessibilityValue(Text(verbatim: shown))
+            Text(shown)
                 .monospacedDigit()
                 .frame(width: 48, alignment: .leading)
         }
@@ -447,6 +450,8 @@ private struct WarpTextPanel: View {
             HStack {
                 Slider(value: Binding(get: { warp[keyPath: key] }, set: { warp[keyPath: key] = $0; push(commit: false) }),
                        in: -1...1) { editing in if !editing { session.commitLiveEdit() } }
+                    .accessibilityLabel(Text(LocalizedStringKey(label)))
+                    .accessibilityValue(Text(verbatim: "\(Int((warp[keyPath: key] * 100).rounded()))"))
                 Text("\(Int((warp[keyPath: key] * 100).rounded()))")
                     .monospacedDigit()
                     .frame(width: 36, alignment: .trailing)
@@ -486,6 +491,8 @@ struct FilterSheet: View {
                                 Slider(value: Binding(get: { settings.value(field.key) }, set: { settings.values[field.key] = $0 }),
                                        in: field.range)
                                     .frame(width: 200)
+                                    .accessibilityLabel(Text(LocalizedStringKey(field.label)))
+                                    .accessibilityValue(Text(verbatim: format(settings.value(field.key), field)))
                                 Text(format(settings.value(field.key), field))
                                     .monospacedDigit()
                                     .frame(width: 56, alignment: .trailing)
@@ -652,6 +659,8 @@ private struct BrushDynamicsButton: View {
         LabeledContent(LocalizedStringKey(label)) {
             HStack {
                 Slider(value: value, in: range)
+                    .accessibilityLabel(Text(LocalizedStringKey(label)))
+                    .accessibilityValue(Text(verbatim: format(value.wrappedValue)))
                 Text(format(value.wrappedValue))
                     .monospacedDigit()
                     .frame(width: 48, alignment: .trailing)

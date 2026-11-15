@@ -330,6 +330,7 @@ struct Omnibar: View {
             }
             HStack(spacing: 12) {
                 Image(systemName: "sparkles").font(.system(size: 16, weight: .medium)).foregroundStyle(Theme.accent)
+                    .accessibilityHidden(true)
                 TextField("Describe an edit, or type a command…", text: $query)
                     .textFieldStyle(.plain)
                     .font(.title3)

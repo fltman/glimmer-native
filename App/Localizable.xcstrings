@@ -925,6 +925,17 @@
         }
       }
     },
+    "Arrow keys move the marked point; Option-Left and Option-Right pick another.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piltangenterna flyttar den markerade punkten; Alternativ-vänster och Alternativ-höger väljer en annan."
+          }
+        }
+      }
+    },
     "Ask for an edit: “moody black & white with a vignette”": {
       "extractionState": "stale",
       "localizations": {
@@ -5886,6 +5897,17 @@
         }
       }
     },
+    "Next Point": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nästa punkt"
+          }
+        }
+      }
+    },
     "No Layers": {
       "localizations": {
         "sv": {
@@ -6776,6 +6798,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Förhandsvisa linsoskärpa"
+          }
+        }
+      }
+    },
+    "Previous Point": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föregående punkt"
           }
         }
       }

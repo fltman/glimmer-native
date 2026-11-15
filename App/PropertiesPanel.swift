@@ -64,6 +64,9 @@ struct ParameterSlider: View {
             Slider(value: Binding(get: { value }, set: { set(($0 / step).rounded() * step) }),
                    in: range, onEditingChanged: { if !$0 { commit() } })
                 .controlSize(.small)
+                // The name and number sit above the slider; VoiceOver gets them on it.
+                .accessibilityLabel(Text(LocalizedStringKey(label)))
+                .accessibilityValue(Text(verbatim: format(value)))
         }
     }
 }
@@ -329,6 +332,9 @@ struct CurvesEditor: View {
     let commit: () -> Void
 
     @State private var dragging: Int?
+    /// The point the keyboard moves (arrows; ⌥← ⌥→ pick another).
+    @State private var selected = 0
+    @FocusState private var focused: Bool
 
     private var tint: Color { Self.channelColor(channel) }
 
@@ -339,6 +345,26 @@ struct CurvesEditor: View {
         case .green: .green
         case .blue: .blue
         }
+    }
+
+    /// Moves the selected point by whole levels (0…255), keeping it between its neighbours.
+    private func nudge(dx: Double, dy: Double) {
+        var pts = points.sorted { $0.x < $1.x }
+        guard pts.indices.contains(selected) else { return }
+        let i = selected
+        let lo = i > 0 ? pts[i - 1].x + 0.01 : 0
+        let hi = i < pts.count - 1 ? pts[i + 1].x - 0.01 : 1
+        let isEndpoint = i == 0 || i == pts.count - 1
+        let x = isEndpoint ? pts[i].x : min(max(pts[i].x + dx / 255, lo), hi)
+        pts[i] = CurvePoint(x, min(max(pts[i].y + dy / 255, 0), 1))
+        update(pts)
+        commit()
+    }
+
+    private var pointsDescription: String {
+        points.sorted { $0.x < $1.x }.enumerated().map { i, p in
+            "\(i == selected ? "▸ " : "")\(Int((p.x * 255).rounded())) → \(Int((p.y * 255).rounded()))"
+        }.joined(separator: ", ")
     }
 
     var body: some View {
@@ -374,10 +400,14 @@ struct CurvesEditor: View {
                     i == 0 ? curve.move(to: p) : curve.addLine(to: p)
                 }
                 ctx.stroke(curve, with: .color(tint), lineWidth: 1.5)
-                for (i, p) in points.enumerated() {
+                for (i, p) in points.sorted(by: { $0.x < $1.x }).enumerated() {
                     let c = CGPoint(x: size.width * p.x, y: size.height * (1 - p.y))
                     let r: CGFloat = dragging == i ? 5 : 4
                     ctx.fill(Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: 2 * r, height: 2 * r)), with: .color(tint))
+                    if focused, i == selected {
+                        // The keyboard's point gets a ring.
+                        ctx.stroke(Path(ellipseIn: CGRect(x: c.x - 8, y: c.y - 8, width: 16, height: 16)), with: .color(.accentColor), lineWidth: 2)
+                    }
                 }
                 ctx.stroke(Path(rect), with: .color(.secondary.opacity(0.5)), lineWidth: 1)
             }
@@ -389,7 +419,31 @@ struct CurvesEditor: View {
                     commit()
                 })
         }
+        // Keyboard: arrows move the selected point by one level (⇧ by ten), ⌥← ⌥→ pick a point.
+        .focusable()
+        .focused($focused)
+        .onKeyPress(phases: [.down, .repeat]) { press in
+            let step: Double = press.modifiers.contains(.shift) ? 10 : 1
+            let count = points.count
+            switch press.key {
+            case .leftArrow where press.modifiers.contains(.option): selected = max(selected - 1, 0)
+            case .rightArrow where press.modifiers.contains(.option): selected = min(selected + 1, count - 1)
+            case .leftArrow: nudge(dx: -step, dy: 0)
+            case .rightArrow: nudge(dx: step, dy: 0)
+            case .upArrow: nudge(dx: 0, dy: step)
+            case .downArrow: nudge(dx: 0, dy: -step)
+            default: return .ignored
+            }
+            return .handled
+        }
         .accessibilityLabel("\(channel.title) curve")
+        .accessibilityValue(pointsDescription)
+        .accessibilityHint("Arrow keys move the marked point; Option-Left and Option-Right pick another.")
+        .accessibilityAdjustableAction { direction in
+            nudge(dx: 0, dy: direction == .increment ? 5 : -5)
+        }
+        .accessibilityAction(named: "Next Point") { selected = min(selected + 1, points.count - 1) }
+        .accessibilityAction(named: "Previous Point") { selected = max(selected - 1, 0) }
     }
 
     private func drag(at location: CGPoint, size: CGSize, start: CGPoint) {

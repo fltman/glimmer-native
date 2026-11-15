@@ -46,12 +46,15 @@ struct ChannelsPanel: View {
                         .accessibilityLabel(Text(isOn ? "Hide \(row.name)" : "Show \(row.name)"))
                         Image(systemName: row.id == 0 ? "circle.grid.cross" : "circle.fill")
                             .foregroundStyle(row.color)
+                            .accessibilityHidden(true)  // the name says which channel
                         Text(LocalizedStringKey(row.name))
                         Spacer()
                         Button {
                             session.loadChannelAsSelection(row.id)
                         } label: {
-                            Image(systemName: "selection.pin.in.out")
+                            Label(row.id == 0 ? "Load luminosity as selection" : "Load \(row.name) as selection",
+                                  systemImage: "selection.pin.in.out")
+                                .labelStyle(.iconOnly)
                         }
                         .buttonStyle(.borderless)
                         .help(row.id == 0 ? "Load luminosity as selection" : "Load this channel as selection")

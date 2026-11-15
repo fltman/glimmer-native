@@ -123,6 +123,7 @@ struct GlimmerCommands: Commands {
                 items([.addMaskRevealAll, .addMaskHideAll])
                 Divider()
                 toggle(.toggleMask)
+                toggle(.editMask)
                 items([.deleteMask])
             }
             Menu("Smart Objects") { items([.convertToSmartObject]) }

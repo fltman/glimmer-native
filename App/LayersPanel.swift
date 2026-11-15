@@ -137,7 +137,7 @@ struct LayersPanel: View {
                     Button("Gradient Fill") { session.perform(.newGradientFill) }
                     Button("Pattern Fill") { session.perform(.newPatternFill) }
                 } label: {
-                    Image(systemName: "circle.lefthalf.filled")
+                    Label("New Adjustment or Fill Layer", systemImage: "circle.lefthalf.filled").labelStyle(.iconOnly)
                 }
                 .menuStyle(.borderlessButton)
                 .menuIndicator(.hidden)
@@ -221,6 +221,8 @@ private struct LayerPropertiesBar: View {
                         if !editing { session.commitLiveEdit() }
                     }
                 )
+                .accessibilityLabel("Opacity")
+                .accessibilityValue("\(Int(((layer?.opacity ?? 1) * 100).rounded())) %")
                 Text("\(Int(((layer?.opacity ?? 1) * 100).rounded())) %")
                     .monospacedDigit()
                     .frame(width: 44, alignment: .trailing)
@@ -374,9 +376,12 @@ private struct LayerRow: View {
         .contextMenu {
             Button("Rename…", action: startRename)
         }
-        .accessibilityElement(children: .combine)
+        // One element per layer. Not .combine: that made the row act as its eye button, so
+        // activating a layer hid it. The default action selects; the rest are named actions.
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityDescription)
         .accessibilityAddTraits(session.state.activeLayerID == layer.id ? .isSelected : [])
+        .accessibilityAction { session.setActiveLayer(layer.id) }
         .accessibilityAction(named: layer.isVisible ? "Hide" : "Show") { session.setVisibility(layer.id, !layer.isVisible) }
         .accessibilityAction(named: "Rename", startRename)
         .accessibilityAction(named: "Select") { session.setActiveLayer(layer.id) }
