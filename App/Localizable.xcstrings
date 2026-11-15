@@ -3,6 +3,17 @@
   "strings": {
     "": {},
     "%@": {},
+    "%@ (harmonized)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (harmoniserad)"
+          }
+        }
+      }
+    },
     "%@ Shape Path": {
       "extractionState": "manual",
       "localizations": {
@@ -74,10 +85,40 @@
     },
     "%lld points": {
       "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld point"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld points"
+                }
+              }
+            }
+          }
+        },
         "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld punkter"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld punkt"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld punkter"
+                }
+              }
+            }
           }
         }
       }
@@ -913,6 +954,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Undvik (valfritt)"
+          }
+        }
+      }
+    },
+    "B ← Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "B ← Blå"
+          }
+        }
+      }
+    },
+    "B ← Constant": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "B ← Konstant"
+          }
+        }
+      }
+    },
+    "B ← Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "B ← Grön"
+          }
+        }
+      }
+    },
+    "B ← Red": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "B ← Röd"
           }
         }
       }
@@ -2563,6 +2648,17 @@
         }
       }
     },
+    "Edit “%@”": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera ”%@”"
+          }
+        }
+      }
+    },
     "Editing mask": {
       "localizations": {
         "sv": {
@@ -2768,6 +2864,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Utöka arbetsytan"
+          }
+        }
+      }
+    },
+    "Expanded": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utökad"
           }
         }
       }
@@ -3091,6 +3198,17 @@
         }
       }
     },
+    "Fill “%@”": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll ”%@”"
+          }
+        }
+      }
+    },
     "Filter": {
       "localizations": {
         "sv": {
@@ -3150,6 +3268,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hitta kanter"
+          }
+        }
+      }
+    },
+    "Find distractions": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hitta störande element"
           }
         }
       }
@@ -3454,6 +3583,50 @@
         }
       }
     },
+    "G ← Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "G ← Blå"
+          }
+        }
+      }
+    },
+    "G ← Constant": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "G ← Konstant"
+          }
+        }
+      }
+    },
+    "G ← Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "G ← Grön"
+          }
+        }
+      }
+    },
+    "G ← Red": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "G ← Röd"
+          }
+        }
+      }
+    },
     "GPU": {
       "localizations": {
         "sv": {
@@ -3538,6 +3711,17 @@
         }
       }
     },
+    "Generate “%@”": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generera ”%@”"
+          }
+        }
+      }
+    },
     "Generate, fill, expand, relight and more through OpenRouter. Subject selection, depth blur and background removal run on this Mac.": {
       "localizations": {
         "sv": {
@@ -3576,6 +3760,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Generativ fyllning…"
+          }
+        }
+      }
+    },
+    "Generative fill": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generativ fyllning"
           }
         }
       }
@@ -3886,6 +4081,17 @@
         }
       }
     },
+    "Harmonize “%@”": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harmonisera ”%@”"
+          }
+        }
+      }
+    },
     "Healing Brush": {
       "extractionState": "manual",
       "localizations": {
@@ -3996,6 +4202,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Högdagrar"
+          }
+        }
+      }
+    },
+    "Highlights: Cyan – Red": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Högdagrar: Cyan – Röd"
+          }
+        }
+      }
+    },
+    "Highlights: Magenta – Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Högdagrar: Magenta – Grön"
+          }
+        }
+      }
+    },
+    "Highlights: Yellow – Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Högdagrar: Gul – Blå"
           }
         }
       }
@@ -4132,6 +4371,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Inre skugga"
+          }
+        }
+      }
+    },
+    "Inside": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Innanför"
           }
         }
       }
@@ -4457,6 +4707,17 @@
         }
       }
     },
+    "Lens blur": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linsoskärpa"
+          }
+        }
+      }
+    },
     "Let the assistant look at the image and propose three edits": {
       "localizations": {
         "sv": {
@@ -4752,6 +5013,17 @@
         }
       }
     },
+    "Magic Select (refine)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Magisk markering (förfina)"
+          }
+        }
+      }
+    },
     "Magic Select Tool (A)": {
       "localizations": {
         "sv": {
@@ -4848,6 +5120,17 @@
         }
       }
     },
+    "Match color": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matcha färg"
+          }
+        }
+      }
+    },
     "Medium": {
       "localizations": {
         "sv": {
@@ -4915,6 +5198,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mellantoner"
+          }
+        }
+      }
+    },
+    "Midtones: Cyan – Red": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellantoner: Cyan – Röd"
+          }
+        }
+      }
+    },
+    "Midtones: Magenta – Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellantoner: Magenta – Grön"
+          }
+        }
+      }
+    },
+    "Midtones: Yellow – Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellantoner: Gul – Blå"
           }
         }
       }
@@ -5539,6 +5855,17 @@
         }
       }
     },
+    "Outside": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utanför"
+          }
+        }
+      }
+    },
     "Overlay": {
       "extractionState": "manual",
       "localizations": {
@@ -5621,6 +5948,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Klistra in"
+          }
+        }
+      }
+    },
+    "Pasted Layer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inklistrat lager"
           }
         }
       }
@@ -5784,6 +6122,17 @@
         }
       }
     },
+    "Pixels": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pixlar"
+          }
+        }
+      }
+    },
     "Place Image": {
       "extractionState": "manual",
       "localizations": {
@@ -5832,6 +6181,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Planer som bara använder redigerarens egna verktyg körs alltid direkt. Planer med AI-jobb (som kostar krediter) väntar på Kör om inte det här är på."
+          }
+        }
+      }
+    },
+    "Polygon": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Polygon"
           }
         }
       }
@@ -6045,6 +6405,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kvalitet"
+          }
+        }
+      }
+    },
+    "R ← Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "R ← Blå"
+          }
+        }
+      }
+    },
+    "R ← Constant": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "R ← Konstant"
+          }
+        }
+      }
+    },
+    "R ← Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "R ← Grön"
+          }
+        }
+      }
+    },
+    "R ← Red": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "R ← Röd"
           }
         }
       }
@@ -6267,6 +6671,17 @@
         }
       }
     },
+    "Relight (%@)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny belysning (%@)"
+          }
+        }
+      }
+    },
     "Relight…": {
       "extractionState": "manual",
       "localizations": {
@@ -6347,6 +6762,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta bort text från bana"
+          }
+        }
+      }
+    },
+    "Remove background": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort bakgrund"
+          }
+        }
+      }
+    },
+    "Remove object": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort objekt"
+          }
+        }
+      }
+    },
+    "Remove reflections": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort reflexer"
           }
         }
       }
@@ -7087,6 +7535,17 @@
         }
       }
     },
+    "Select subject": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera motiv"
+          }
+        }
+      }
+    },
     "Selection": {
       "localizations": {
         "sv": {
@@ -7185,6 +7644,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skuggor"
+          }
+        }
+      }
+    },
+    "Shadows: Cyan – Red": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skuggor: Cyan – Röd"
+          }
+        }
+      }
+    },
+    "Shadows: Magenta – Green": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skuggor: Magenta – Grön"
+          }
+        }
+      }
+    },
+    "Shadows: Yellow – Blue": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skuggor: Gul – Blå"
           }
         }
       }
@@ -7586,6 +8078,17 @@
         }
       }
     },
+    "Star": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stjärna"
+          }
+        }
+      }
+    },
     "Start Blank": {
       "localizations": {
         "sv": {
@@ -7892,6 +8395,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Testa nyckel"
+          }
+        }
+      }
+    },
+    "Text": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text"
           }
         }
       }
@@ -8329,6 +8843,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skala upp"
+          }
+        }
+      }
+    },
+    "Upscale %lld×": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skala upp %lld×"
+          }
+        }
+      }
+    },
+    "Upscale %lld× (Real-ESRGAN)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skala upp %lld× (Real-ESRGAN)"
+          }
+        }
+      }
+    },
+    "Upscaled %lld×": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uppskalad %lld×"
           }
         }
       }
@@ -8799,6 +9346,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "kB"
+          }
+        }
+      }
+    },
+    "layer.name.group": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grupp"
           }
         }
       }

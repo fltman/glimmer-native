@@ -155,7 +155,7 @@ final class AIController {
         do {
             let model = try imageModel()
             let docSize = SIMD2(session.state.width, session.state.height)
-            run("Generate “\(prompt.prefix(40))”", {
+            run(String(localized: "Generate “\(String(prompt.prefix(40)))”"), {
                 let r = try await AIPipelines.generate(prompt: prompt, negative: negative, width: width, height: height, model: model)
                 return (r.image, r.cost)
             }, apply: { [weak self] image in
@@ -176,7 +176,7 @@ final class AIController {
         do {
             let model = try imageModel()
             let source = try composite(session.state)
-            run("Edit “\(instruction.prefix(40))”", {
+            run(String(localized: "Edit “\(String(instruction.prefix(40)))”"), {
                 let r = try await AIPipelines.edit(source, instruction: instruction, model: model)
                 return (r.image, r.cost)
             }, apply: { [weak self] image in
@@ -204,7 +204,7 @@ final class AIController {
                 defer { if access { url.stopAccessingSecurityScopedResource() } }
                 return RGBAImage(try ImageImporter.image(contentsOf: url))
             }
-            let title = mode == .remove ? "Remove object" : (prompt.isEmpty ? "Generative fill" : "Fill “\(prompt.prefix(40))”")
+            let title = mode == .remove ? "Remove object" : (prompt.isEmpty ? "Generative fill" : String(localized: "Fill “\(String(prompt.prefix(40)))”"))
             run(title, {
                 let r = try await AIPipelines.inpaint(image: source, mask: mask, selectionBounds: bounds, mode: mode,
                                                       prompt: prompt, reference: ref, model: model)
@@ -245,7 +245,7 @@ final class AIController {
             state.height = image.height
             state.layers = shifted
             state.selection = nil
-            let layer = Layer(name: "Expanded", content: .raster(tiles))
+            let layer = Layer(name: layerName("Expanded"), content: .raster(tiles))
             state.layers.append(layer)
             state.activeLayerID = layer.id
         }
@@ -322,7 +322,7 @@ final class AIController {
         do {
             let model = try imageModel()
             let source = try composite(session.state)
-            run("Relight (\(direction.title.lowercased()))", {
+            run(String(localized: "Relight (\(direction.title.lowercased()))"), {
                 let r = try await AIPipelines.relight(source, direction: direction, color: color, intensity: intensity,
                                                       environment: environment, model: model)
                 return (r.image, r.cost)
@@ -369,7 +369,7 @@ final class AIController {
             let roi = Imaging.clampROI(bounds, width: state.width, height: state.height, padding: 0.1)
             let fg = fgFull.cropped(to: roi), bg = bgFull.cropped(to: roi)
             let id = layer.id, name = layer.name
-            run("Harmonize “\(name)”", {
+            run(String(localized: "Harmonize “\(name)”"), {
                 let r = try await AIPipelines.harmonize(foreground: fg, background: bg, strength: strength, model: model)
                 return (r.image, r.cost)
             }, apply: { [weak self] image in
@@ -377,7 +377,7 @@ final class AIController {
                 let tiles = try ImageImporter.tiles(from: image.cgImage, origin: SIMD2(roi.x, roi.y))
                 self.session.document.edit("Harmonize", undoManager: self.session.undoManager) {
                     $0.updateLayer(id) { $0.isVisible = false }
-                    $0.insertLayerAboveActive(Layer(name: "\(name) (harmonized)", content: .raster(tiles)))
+                    $0.insertLayerAboveActive(Layer(name: String(localized: "\(name) (harmonized)"), content: .raster(tiles)))
                 }
             })
         } catch {
@@ -391,12 +391,12 @@ final class AIController {
         let state = session.state
         do {
             let metal = try metal
-            let title = neural ? "Upscale \(scale)× (Real-ESRGAN)" : "Upscale \(scale)×"
+            let title = neural ? String(localized: "Upscale \(scale)× (Real-ESRGAN)") : String(localized: "Upscale \(scale)×")
             if !enhance && !neural {
                 run(title, {
                     (try DocumentEffects.upscale(state, scale: scale, context: metal), nil)
                 }, apply: { grid in
-                    let layer = Layer(name: "Upscaled \(scale)×", content: .raster(grid))
+                    let layer = Layer(name: String(localized: "Upscaled \(scale)×"), content: .raster(grid))
                     DocumentOpener.shared.createDocument(DocumentState(width: state.width * scale, height: state.height * scale,
                                                                        layers: [layer]))
                 })
@@ -414,7 +414,7 @@ final class AIController {
             }, apply: { image in
                 let tiles = try ImageImporter.tiles(from: image.cgImage)
                 DocumentOpener.shared.createDocument(DocumentState(width: image.width, height: image.height,
-                                                                   layers: [Layer(name: "Upscaled \(scale)×", content: .raster(tiles))]))
+                                                                   layers: [Layer(name: String(localized: "Upscaled \(scale)×"), content: .raster(tiles))]))
             })
         } catch {
             session.report(error)
@@ -510,7 +510,7 @@ final class AIController {
                 guard let self else { return }
                 self.depthCache = (key, result.1)
                 self.session.document.edit("Lens Blur", undoManager: self.session.undoManager) {
-                    $0.insertLayerAboveActive(Layer(name: "Lens Blur", content: .raster(result.0)))
+                    $0.insertLayerAboveActive(Layer(name: layerName("Lens Blur"), content: .raster(result.0)))
                 }
             })
         } catch {
@@ -604,7 +604,7 @@ final class AIController {
         }, apply: { [weak self] grid in
             guard let self else { return }
             self.session.document.edit("Lens Blur", undoManager: self.session.undoManager) {
-                $0.insertLayerAboveActive(Layer(name: "Lens Blur", content: .raster(grid)))
+                $0.insertLayerAboveActive(Layer(name: layerName("Lens Blur"), content: .raster(grid)))
             }
         })
     }

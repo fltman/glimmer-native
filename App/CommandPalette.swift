@@ -26,19 +26,27 @@ enum Palette {
         var items = registry.descriptors.filter { (!$0.isSystemProvided || Palette.paletteOnly.contains($0.id)) && $0.id != .commandPalette }.map { d in
             PaletteItem(id: d.id.rawValue, title: d.title, subtitle: d.id.adjustmentKind != nil ? "Adjustment"
                             : d.id.filterKind.map { "Filter › \($0.group)" } ?? d.category.rawValue.capitalized,
-                        keywords: d.keywords, action: .command(d.id))
+                        keywords: d.keywords + localized(d.title), action: .command(d.id))
         }
         items += CanvasNSView.availableTools.map { t in
             PaletteItem(id: "tool.\(t.rawValue)", title: t.title, subtitle: "Tool" + (t.shortcutKey.map { " (\(String($0).uppercased()))" } ?? ""),
-                        keywords: ["tool"], action: .tool(t.rawValue))
+                        keywords: ["tool"] + localized(t.title), action: .tool(t.rawValue))
         }
         items += Preset.all.map { p in
-            PaletteItem(id: "preset.\(p.id)", title: p.name, subtitle: "Preset", keywords: ["look", "preset", "style"], action: .preset(p.id))
+            PaletteItem(id: "preset.\(p.id)", title: p.name, subtitle: "Preset",
+                        keywords: ["look", "preset", "style"] + localized(p.name), action: .preset(p.id))
         }
         return items
     }()
 
     static let recentsKey = "palette.recents"
+
+    /// The title in the user's language, when it differs, so typing Swedish
+    /// ("webben", "himmel") finds the command too.
+    static func localized(_ title: String) -> [String] {
+        let local = String(localized: String.LocalizationValue(title))
+        return local == title ? [] : [local]
+    }
 
     /// Commands plus the saved assistant actions.
     @MainActor

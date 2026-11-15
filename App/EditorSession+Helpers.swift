@@ -20,3 +20,6 @@ extension TileGrid {
 extension Comparable {
     func clamped(to range: ClosedRange<Self>) -> Self { min(max(self, range.lowerBound), range.upperBound) }
 }
+
+/// A name Glimmer gives a new layer, in the user's language ("Kurvor", "Lager 1").
+func layerName(_ english: String) -> String { String(localized: String.LocalizationValue(english)) }

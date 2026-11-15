@@ -268,11 +268,11 @@ extension EditorSession {
             return
         }
         do {
-            let pattern = Layer(name: "Pattern", mask: state.selection?.asMask,
+            let pattern = Layer(name: layerName("Pattern"), mask: state.selection?.asMask,
                                 content: .fill(.pattern(PatternFill(kind: patternKind, scale: patternScale,
                                                                     foreground: foreground, background: background))))
-            let pixels = Layer(name: "Pixels", content: .raster(layer.tiles))
-            let both = Layer(name: "Fill", content: .group(LayerGroup(children: [pixels, pattern])))
+            let pixels = Layer(name: layerName("Pixels"), content: .raster(layer.tiles))
+            let both = Layer(name: layerName("Fill"), content: .group(LayerGroup(children: [pixels, pattern])))
             // Keep pixels hanging outside the canvas: rasterize over their extent too.
             var area = state.bounds
             if let t = layer.tiles.tileBounds {
@@ -299,7 +299,7 @@ extension EditorSession {
                                 reverse: gradientReverse)
         let mask = state.selection?.asMask
         edit("Gradient") {
-            $0.insertLayerAboveActive(Layer(name: "Gradient", mask: mask, content: .fill(.gradient(fill))))
+            $0.insertLayerAboveActive(Layer(name: layerName("Gradient"), mask: mask, content: .fill(.gradient(fill))))
         }
     }
 
@@ -414,7 +414,7 @@ extension EditorSession {
         }
         do {
             guard let grid = try selectedPixels() else { return }
-            edit("New Layer via Copy") { $0.insertLayerAboveActive(Layer(name: $0.nextLayerName(), content: .raster(grid))) }
+            edit("New Layer via Copy") { $0.insertLayerAboveActive(Layer(name: $0.nextLayerName(prefix: layerName("Layer")), content: .raster(grid))) }
         } catch {
             report(error)
         }
@@ -423,7 +423,7 @@ extension EditorSession {
     /// Pastes Glimmer's own clipboard in place when it's current, otherwise an image from the pasteboard.
     func paste() -> Bool {
         if let clip = clipboard, clip.changeCount == NSPasteboard.general.changeCount {
-            edit("Paste") { $0.insertLayerAboveActive(Layer(name: "Pasted Layer", content: .raster(clip.grid))) }
+            edit("Paste") { $0.insertLayerAboveActive(Layer(name: layerName("Pasted Layer"), content: .raster(clip.grid))) }
             return true
         }
         return place(from: .general)

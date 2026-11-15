@@ -84,7 +84,7 @@ struct ColorWell: View {
     @Environment(\.self) private var environment
 
     var body: some View {
-        ColorPicker(label, selection: Binding(get: { color.swiftUI }, set: { set(SRGBColor($0, in: environment)) }),
+        ColorPicker(LocalizedStringKey(label), selection: Binding(get: { color.swiftUI }, set: { set(SRGBColor($0, in: environment)) }),
                     supportsOpacity: false)
             .font(.callout)
     }
@@ -103,7 +103,7 @@ struct AdjustmentEditor: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Label(adjustment.kind.title, systemImage: adjustment.kind.symbolName).font(.headline)
+                Label(LocalizedStringKey(adjustment.kind.title), systemImage: adjustment.kind.symbolName).font(.headline)
                 Spacer()
                 Button("Reset") {
                     if adjustment.kind == .curves, channel != .rgb || adjustment.curves.count > 1 {
@@ -159,7 +159,7 @@ struct AdjustmentEditor: View {
                 } commit: { commit() }
             }
             ForEach(adjustment.kind.toggles, id: \.key) { t in
-                Toggle(t.label, isOn: Binding(get: { adjustment.flag(t.key) }, set: { v in
+                Toggle(LocalizedStringKey(t.label), isOn: Binding(get: { adjustment.flag(t.key) }, set: { v in
                     var a = adjustment
                     a.flags[t.key] = v
                     update(a)

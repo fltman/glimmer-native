@@ -557,7 +557,7 @@ private struct JobsView: View {
                         case .cancelled: Image(systemName: "xmark.circle").foregroundStyle(.secondary)
                         }
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(job.title).lineLimit(1).font(.callout)
+                            Text(LocalizedStringKey(job.title)).lineLimit(1).font(.callout)
                             if case .failed(let message) = job.status {
                                 Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
                             }

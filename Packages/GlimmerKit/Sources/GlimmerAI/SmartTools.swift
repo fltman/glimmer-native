@@ -161,7 +161,7 @@ public enum ImageLabel {
         let n = name.trimmingCharacters(in: .whitespaces).lowercased()
         if n.isEmpty { return true }
         let prefixes = ["img", "dsc", "dscf", "dscn", "pxl", "mvimg", "photo", "image", "pasted", "screenshot",
-                        "skärmavbild", "skarmavbild", "untitled", "namnlös", "layer", "clipboard", "scan"]
+                        "skärmavbild", "skarmavbild", "untitled", "namnlös", "layer", "lager", "inklistrat", "clipboard", "scan"]
         if prefixes.contains(where: { n.hasPrefix($0) }) { return true }
         let digits = n.filter(\.isNumber).count
         return Double(digits) / Double(n.count) > 0.5

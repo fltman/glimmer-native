@@ -59,7 +59,7 @@ extension EditorSession {
                                           to: layer.tiles, frame: frame, selection: nil)
                 mode = .towardEffect
             case .patternStamp:
-                let pattern = Layer(name: "Pattern", content: .fill(.pattern(PatternFill(
+                let pattern = Layer(name: layerName("Pattern"), content: .fill(.pattern(PatternFill(
                     kind: patternKind, scale: patternScale, foreground: foreground, background: background))))
                 effect = try DocumentCompositor.rasterize(pattern, bounds: frame, blendSpace: state.blendSpace, context: metal)
                 mode = .towardEffect

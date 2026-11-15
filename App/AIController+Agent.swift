@@ -336,7 +336,7 @@ extension AIController {
         case "add_adjustment":
             guard let kind = AdjustmentKind(rawValue: step.string("type") ?? "") else { throw StepError("Unknown adjustment.") }
             let adjustment = Self.adjustment(kind, step.object("params"))
-            s.addLayer(Layer(name: kind.title, content: .adjustment(adjustment)), actionName: String(localized: "New \(String(localized: String.LocalizationValue(kind.title)))"))
+            s.addLayer(Layer(name: layerName(kind.title), content: .adjustment(adjustment)), actionName: String(localized: "New \(String(localized: String.LocalizationValue(kind.title)))"))
         case "apply_filter":
             guard let kind = FilterKind(rawValue: step.string("type") ?? "") else { throw StepError("Unknown filter.") }
             try ensurePixelLayer()

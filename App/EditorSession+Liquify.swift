@@ -84,8 +84,8 @@ extension EditorSession {
         var onlyInside = TileGrid()
         for c in coords { onlyInside[c] = inside[c] }
         let outside = try ops.run(.erase, on: l.engine.original, selection: selection, coords: coords)
-        let both = Layer(name: "Liquify", content: .group(LayerGroup(children: [
-            Layer(name: "Outside", content: .raster(outside)), Layer(name: "Inside", content: .raster(onlyInside)),
+        let both = Layer(name: layerName("Liquify"), content: .group(LayerGroup(children: [
+            Layer(name: layerName("Outside"), content: .raster(outside)), Layer(name: layerName("Inside"), content: .raster(onlyInside)),
         ])))
         var extent = state.bounds
         if let t = outside.tileBounds {

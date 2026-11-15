@@ -36,7 +36,7 @@ extension EditorSession {
         }
         let text = TextLayer(string: "", fontName: textDefaults.fontName, size: textDefaults.size, color: foreground,
                              alignment: textDefaults.alignment, origin: doc - SIMD2(0, textDefaults.size * 0.9))
-        let layer = Layer(name: "Text", content: .text(text))
+        let layer = Layer(name: layerName("Text"), content: .text(text))
         edit("New Text Layer") { $0.insertLayerAboveActive(layer) }
         editingText = layer.id
     }
@@ -48,7 +48,7 @@ extension EditorSession {
                              alignment: textDefaults.alignment, origin: line[0] - SIMD2(0, textDefaults.size * 0.9))
         text.onPath = line
         text.onPathID = pathID
-        let layer = Layer(name: "Text", content: .text(text))
+        let layer = Layer(name: layerName("Text"), content: .text(text))
         edit("New Text Layer") { $0.insertLayerAboveActive(layer) }
         tool = .type
         editingText = layer.id

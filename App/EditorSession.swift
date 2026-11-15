@@ -468,7 +468,7 @@ final class EditorSession {
     func perform(_ id: CommandID) {
         guard canPerform(id) else { return }
         if let kind = id.adjustmentKind {
-            addLayer(Layer(name: kind.title, content: .adjustment(Adjustment(kind))), actionName: String(localized: "New \(String(localized: String.LocalizationValue(kind.title)))"))
+            addLayer(Layer(name: layerName(kind.title), content: .adjustment(Adjustment(kind))), actionName: String(localized: "New \(String(localized: String.LocalizationValue(kind.title)))"))
             return
         }
         if let kind = id.filterKind {
@@ -516,18 +516,18 @@ final class EditorSession {
         case .liquify:
             beginLiquify()
         case .newLayer:
-            addLayer(Layer(name: state.nextLayerName(), content: .raster(TileGrid())), actionName: "New Layer")
+            addLayer(Layer(name: state.nextLayerName(prefix: layerName("Layer")), content: .raster(TileGrid())), actionName: "New Layer")
         case .newGroup:
-            addLayer(Layer(name: state.nextLayerName(prefix: "Group"), blendMode: .passThrough,
+            addLayer(Layer(name: state.nextLayerName(prefix: String(localized: "layer.name.group", defaultValue: "Group")), blendMode: .passThrough,
                            content: .group(LayerGroup())), actionName: "New Group")
         case .newSolidFill:
-            addLayer(Layer(name: "Color Fill", content: .fill(.solid(SRGBColor(0.2, 0.45, 0.9)))), actionName: "New Fill Layer")
+            addLayer(Layer(name: layerName("Color Fill"), content: .fill(.solid(SRGBColor(0.2, 0.45, 0.9)))), actionName: "New Fill Layer")
         case .newGradientFill:
             let w = Double(state.width), h = Double(state.height)
-            addLayer(Layer(name: "Gradient Fill", content: .fill(.gradient(
+            addLayer(Layer(name: layerName("Gradient Fill"), content: .fill(.gradient(
                 GradientFill(start: SIMD2(0, h / 2), end: SIMD2(w, h / 2))))), actionName: "New Fill Layer")
         case .newPatternFill:
-            addLayer(Layer(name: "Pattern Fill", content: .fill(.pattern(PatternFill()))), actionName: "New Fill Layer")
+            addLayer(Layer(name: layerName("Pattern Fill"), content: .fill(.pattern(PatternFill()))), actionName: "New Fill Layer")
         case .duplicateLayer:
             edit("Duplicate Layer") { $0.duplicateActiveLayer() }
         case .deleteLayer:
@@ -541,7 +541,7 @@ final class EditorSession {
         case .sendLayerToBack:
             edit("Send to Back") { $0.moveActiveLayer(by: -Int.max / 2) }
         case .groupLayers:
-            edit("Group Layer") { $0.groupActiveLayer(name: $0.nextLayerName(prefix: "Group")) }
+            edit("Group Layer") { $0.groupActiveLayer(name: $0.nextLayerName(prefix: String(localized: "layer.name.group", defaultValue: "Group"))) }
         case .ungroupLayers:
             edit("Ungroup") { $0.ungroupActiveLayer() }
         case .toggleClipping:
@@ -913,7 +913,7 @@ final class EditorSession {
         for type in [NSPasteboard.PasteboardType.png, .tiff, NSPasteboard.PasteboardType(UTType.jpeg.identifier)] {
             if let data = pasteboard.data(forType: type) {
                 do {
-                    try place(try ImageImporter.image(from: data), name: "Pasted Layer")
+                    try place(try ImageImporter.image(from: data), name: layerName("Pasted Layer"))
                 } catch {
                     report(error)
                 }

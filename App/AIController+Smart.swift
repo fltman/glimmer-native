@@ -58,7 +58,7 @@ extension AIController {
         let recipe = try await currentInsights().enhance
         let adjustments = recipe.adjustments
         guard recipe.isNoticeable, !adjustments.isEmpty else { return false }
-        let children = adjustments.map { Layer(name: $0.kind.title, content: .adjustment($0)) }
+        let children = adjustments.map { Layer(name: layerName($0.kind.title), content: .adjustment($0)) }
         let group = Layer(name: String(localized: "Auto Enhance"), blendMode: .passThrough,
                           content: .group(LayerGroup(children: children, isExpanded: false)))
         session.document.edit("Auto Enhance", undoManager: session.undoManager) {

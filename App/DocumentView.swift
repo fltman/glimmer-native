@@ -308,7 +308,7 @@ private struct TitleChip: View {
             }
             if let job = session.ai.jobs.first(where: { $0.status == .running }) {
                 ProgressView().controlSize(.small)
-                Text(job.title + "…").foregroundStyle(.secondary).lineLimit(1)
+                (Text(LocalizedStringKey(job.title)) + Text(verbatim: "…")).foregroundStyle(.secondary).lineLimit(1)
             }
         }
         .font(.callout)

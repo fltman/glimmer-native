@@ -65,7 +65,7 @@ extension EditorSession {
                                                                 isClosed: true)])
         }
         // A shape is a solid fill layer with a vector mask: recolourable, editable with the pen, scalable.
-        var layer = Layer(name: shapeKind.title, mask: path.asSelection.asMask, vectorMask: path, content: .fill(.solid(shapeFillColor ?? foreground)))
+        var layer = Layer(name: layerName(shapeKind.title), mask: path.asSelection.asMask, vectorMask: path, content: .fill(.solid(shapeFillColor ?? foreground)))
         if shapeFillColor == nil, foregroundOpacity < 1 { layer.opacity = foregroundOpacity }
         if shapeStrokeWidth >= 1 {
             // The outline is a layer style, so its colour and width stay editable.
