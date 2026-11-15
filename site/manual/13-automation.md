@@ -131,8 +131,8 @@ Glimmer's sibling apps, Flimmer and Jämmer, use the same API. Their assistants 
 Flimmer can hand you a picture to edit in Glimmer, such as a frame or a title card, and pick up the result when you save. The image opens in a new Glimmer window, and the bar at the top says **For Flimmer – ⌘S saves back** next to the file name.
 
 - Edit as usual, with layers, adjustments and the assistant.
-- Press ⌘S, or choose **File › Save Back to** *name*, to write the image back into the same file, in the same format (PNG stays PNG, JPEG stays JPEG). The layers are flattened in the file; Glimmer keeps them in the window. Flimmer sees the change and updates its copy.
-- Choose **File › Save a Glimmer Copy…** if you also want a layered `.glimmer` document, for example next to the image.
+- Press ⌘S, or choose **File › Save Back to** *name* (it takes the place of Save in this window), to write the image back into the same file, in the same format (PNG stays PNG, JPEG stays JPEG). The layers are flattened in the file; Glimmer keeps them in the window. Flimmer sees the change and updates its copy.
+- Choose **File › Save a Glimmer Copy…** (⇧⌘S) if you also want a layered `.glimmer` document, for example next to the image.
 - Glimmer never saves the image on its own: autosave keeps your work in the window but never touches the file.
 
 Images you open yourself, from the Finder or with **File › Open…**, open as new documents as before.

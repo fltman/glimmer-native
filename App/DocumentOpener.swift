@@ -246,7 +246,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // The local API for agents (guide at /glimmer), and the splash that points agents to it.
         MainActor.assumeIsolated { AgentServer.shared.start() }
-        MainActor.assumeIsolated { LinkedSaveShortcut.install() }
         let showsWelcome = !UserDefaults.standard.bool(forKey: WelcomeView.shownKey) && !CommandLine.arguments.contains("-skipWelcome")
         if showsWelcome {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {

@@ -10,17 +10,38 @@ struct GlimmerCommands: Commands {
 
     private let registry = CommandRegistry.standard
 
+    private static func send(_ action: String) {
+        NSApp.sendAction(NSSelectorFromString(action), to: nil, from: nil)
+    }
+
     var body: some Commands {
         let _ = DocumentOpener.shared.newDocumentAction = newDocument
         CommandGroup(replacing: .importExport) {
             items(registry.descriptors(in: .file))
         }
-        CommandGroup(after: .saveItem) {
-            // An image handed over by Flimmer or Jämmer: Save writes it back; this keeps the layers too.
+        // Save, rebuilt so an image handed over by Flimmer or Jämmer saves back from the
+        // menu and ⌘S alike. Otherwise these are the document's own actions, sent down the
+        // responder chain to it.
+        CommandGroup(replacing: .saveItem) {
+            // Close lives in this group too.
+            Button("Close") { NSApp.keyWindow?.performClose(nil) }
+                .keyboardShortcut("w")
             if let link = session?.linkedImage {
-                // ⌘S does this too (LinkedSaveShortcut); Save itself still saves a .glimmer.
                 Button("Save Back to \(link.fileName)") { session?.saveLinkedImage() }
+                    .keyboardShortcut("s")
                 Button("Save a Glimmer Copy…") { session?.saveGlimmerCopy() }
+                    .keyboardShortcut("s", modifiers: [.command, .shift])
+            } else {
+                Button("Save") { Self.send("saveDocument:") }
+                    .keyboardShortcut("s")
+                Button("Duplicate") { Self.send("duplicateDocument:") }
+                    .keyboardShortcut("s", modifiers: [.command, .shift])
+                Button("Rename…") { Self.send("renameDocument:") }
+                Button("Move To…") { Self.send("moveDocument:") }
+                Menu("Revert To") {
+                    Button("Last Saved Version") { Self.send("revertDocumentToSaved:") }
+                    Button("Browse All Versions…") { Self.send("browseDocumentVersions:") }
+                }
             }
         }
         // The system items read just "Undo"/"Redo"; these name the step (from the

@@ -62,24 +62,3 @@ extension EditorSession {
         }
     }
 }
-
-/// ⌘S in a window that edits a linked image saves it back. A local key monitor, because
-/// SwiftUI's File › Save doesn't go through the window's responder chain; the menu has
-/// its own "Save Back to …" item.
-enum LinkedSaveShortcut {
-    @MainActor static func install() {
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command,
-                  event.charactersIgnoringModifiers?.lowercased() == "s" else { return event }
-            let windowNumber = event.windowNumber
-            let handled = MainActor.assumeIsolated { () -> Bool in
-                guard let window = NSApp.window(withWindowNumber: windowNumber) ?? NSApp.keyWindow,
-                      let session = AgentRegistry.shared.sessions.first(where: { $0.canvasWindow === window }),
-                      session.linkedImage != nil else { return false }
-                session.saveLinkedImage()
-                return true
-            }
-            return handled ? nil : event
-        }
-    }
-}

@@ -1384,6 +1384,17 @@
         }
       }
     },
+    "Browse All Versions…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bläddra bland alla versioner…"
+          }
+        }
+      }
+    },
     "Brush": {
       "extractionState": "manual",
       "localizations": {
@@ -4739,6 +4750,17 @@
         }
       }
     },
+    "Last Saved Version": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senast sparade version"
+          }
+        }
+      }
+    },
     "Layer": {
       "localizations": {
         "sv": {
@@ -5503,6 +5525,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Flytta in i grupp"
+          }
+        }
+      }
+    },
+    "Move To…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta till…"
           }
         }
       }
@@ -7259,6 +7292,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Omvänd"
+          }
+        }
+      }
+    },
+    "Revert To": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återgå till"
           }
         }
       }
