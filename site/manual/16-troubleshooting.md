@@ -83,6 +83,14 @@ A job you cancel stops waiting for the result; OpenRouter may still bill a reque
 
 ## Files and export
 
+### "The document couldn't be saved"
+
+The disk doesn't have room for the document, or it can't be written to. macOS first says that the document could not be saved; when you close that message, Glimmer says how much room the document needs and how much is free. Your document is still open and nothing was lost: free up space, or save it on another disk. Glimmer explains this once per document, also when an automatic save fails, and leaves no half-written file behind.
+
+### "Your disk is almost full, so Glimmer keeps fewer undo steps"
+
+Glimmer keeps older undo steps on disk when they outgrow their share of memory. When the disk has too little room for that, it forgets the oldest steps instead of filling the disk. The document itself is not affected. Free up space and the full history is kept again for new changes.
+
 ### "The image file is damaged or incomplete"
 
 The file starts like an image but is cut short or broken inside, often after an interrupted download or copy. Glimmer doesn't open half a picture. Get the file again from where it came from.

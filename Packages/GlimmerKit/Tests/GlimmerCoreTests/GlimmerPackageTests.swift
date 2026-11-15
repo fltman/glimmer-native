@@ -79,6 +79,17 @@ func assertSamePixels(_ a: TileGrid, _ b: TileGrid) {
         #expect(try cache.data(for: changed) != first)
     }
 
+    @Test func encodedLayerCacheStaysWithinItsByteBudget() throws {
+        let cache = EncodedLayerCache(limit: 64, byteLimit: 200)
+        var total = 0
+        for i in 0..<20 {
+            let grid = TileGrid([TileCoord(i, 0): .solid(SIMD4(Float(i) / 20, 0, 0, 1))])
+            total += try cache.data(for: grid).count
+            #expect(cache.byteCount <= 200)
+        }
+        #expect(total > 200, "the layers together are more than the budget")
+    }
+
     @Test func rejectsNewerFormat() throws {
         let json = #"{"formatVersion": 99, "width": 10, "height": 10, "colorSpace": "sRGB", "blendSpace": "linear", "layers": []}"#
         #expect(throws: GlimmerPackageError.unsupportedFormatVersion(99)) {
@@ -247,6 +258,128 @@ func assertSamePixels(_ a: TileGrid, _ b: TileGrid) {
 import ImageIO
 
 @Suite struct UndoSnapshotTests {
+    @Test func aFullDiskMakesTheHistoryShorterNotTheDiskFuller() {
+        let gb = 1_073_741_824
+        // Room for the snapshot and the reserve: spill. Not enough: don't.
+        #expect(UndoSpillPolicy.canSpill(bytes: 2 * gb, free: 4 * gb))
+        #expect(!UndoSpillPolicy.canSpill(bytes: 2 * gb, free: 2 * gb + gb / 2), "the reserve stays free")
+        #expect(!UndoSpillPolicy.canSpill(bytes: gb, free: gb / 2))
+        #expect(UndoSpillPolicy.canSpill(bytes: gb, free: nil), "unknown free space: try, and handle the failure")
+        // Oldest first, until the rest fits; steps on disk (cost 0) don't help; the newest stays.
+        #expect(UndoSpillPolicy.stepsToForget(costs: [500, 500, 500, 500], budget: 1000) == 2)
+        #expect(UndoSpillPolicy.stepsToForget(costs: [0, 0, 900, 900], budget: 1000) == 3)
+        #expect(UndoSpillPolicy.stepsToForget(costs: [100, 100], budget: 1000) == 0)
+        #expect(UndoSpillPolicy.stepsToForget(costs: [5000], budget: 1000) == 0, "the newest step is always kept")
+        #expect(UndoSpillPolicy.stepsToForget(costs: [], budget: 0) == 0)
+        #expect((UndoSpillPolicy.freeBytes(at: FileManager.default.temporaryDirectory.appending(path: "not-there/yet")) ?? 0) > 0)
+    }
+
+    /// The document forgets steps by lowering the undo manager's limit: pin that it drops the oldest at once.
+    @MainActor @Test func loweringTheUndoLimitDropsTheOldestSteps() {
+        @MainActor final class Target { var value = 0 }
+        let target = Target()
+        let undo = UndoManager()
+        undo.groupsByEvent = false
+        for i in 1...5 {
+            undo.beginUndoGrouping()
+            let old = target.value
+            undo.registerUndo(withTarget: target) { t in MainActor.assumeIsolated { t.value = old } }
+            target.value = i
+            undo.endUndoGrouping()
+        }
+        undo.levelsOfUndo = 2
+        var undone = 0
+        while undo.canUndo { undo.undo(); undone += 1 }
+        #expect(undone == 2 && target.value == 3, "only the two newest steps are left: \(undone) undone, value \(target.value)")
+    }
+
+    @Test func savingWritesTheWholePackageAndReplacesAnEarlierOne() throws {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "save-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appending(path: "doc.glimmer")
+        var state = DocumentState.new(width: 300, height: 200, background: .white)
+        try DocumentSaver.write(GlimmerPackage.fileWrapper(for: state), to: url)
+        #expect(try GlimmerPackage.state(from: FileWrapper(url: url)).width == 300)
+        state.width = 400
+        try DocumentSaver.write(GlimmerPackage.fileWrapper(for: state), to: url)
+        #expect(try GlimmerPackage.state(from: FileWrapper(url: url)).width == 400, "an earlier version is replaced")
+        #expect(DocumentSaver.byteCount(of: try GlimmerPackage.fileWrapper(for: state)) > 100)
+        let message = DocumentSaveError.diskFull(needed: 50_000_000, free: 3_000_000, volume: "Photos").errorDescription ?? ""
+        #expect(message.contains("“Photos”") && message.contains("50") && message.contains("3"))
+    }
+
+    /// Run by scripts/test-disk-full.sh with a small, nearly full disk image mounted.
+    @Test func savingToAFullDiskSaysSoAndLeavesNoHalfDocument() throws {
+        guard let path = ProcessInfo.processInfo.environment["GLIMMER_FULL_DISK"], !path.isEmpty else { return }
+        let root = URL(fileURLWithPath: path, isDirectory: true)
+        // An earlier, small version saved while there was still room.
+        let url = root.appending(path: "doc.glimmer")
+        let small = DocumentState.new(width: 300, height: 200, background: .white)
+        try DocumentSaver.write(GlimmerPackage.fileWrapper(for: small), to: url)
+        // A layer that can't fit (random pixels don't compress).
+        var tiles: [TileCoord: Tile] = [:]
+        var seed: UInt32 = 5
+        for i in 0..<40 {
+            let texture = TileTexture.makeTexture()
+            var px = [Float16](repeating: 0, count: TileGeometry.size * TileGeometry.size * 4)
+            for j in px.indices { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
+            px.withUnsafeBytes {
+                texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size), mipmapLevel: 0,
+                                withBytes: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)
+            }
+            tiles[TileCoord(i % 8, i / 8)] = .texture(TileTexture(texture))
+        }
+        let layer = Layer(name: "Noise", content: .raster(TileGrid(tiles)))
+        let big = DocumentState(width: 2048, height: 1280, layers: [layer], activeLayerID: layer.id)
+        let wrapper = try GlimmerPackage.fileWrapper(for: big)
+        // Over the earlier version: refused before writing, and the earlier version is intact.
+        #expect(throws: DocumentSaveError.self) { try DocumentSaver.write(wrapper, to: url) }
+        #expect(try GlimmerPackage.state(from: FileWrapper(url: url)).width == 300, "the earlier saved version is untouched")
+        // As a new document: refused, and nothing is left where it would have been.
+        let fresh = root.appending(path: "new.glimmer")
+        #expect(throws: DocumentSaveError.self) { try DocumentSaver.write(wrapper, to: fresh) }
+        #expect(!FileManager.default.fileExists(atPath: fresh.path), "no empty or half document is left behind")
+        // The system makes the package's folder first; an empty one must not survive the failure.
+        let made = root.appending(path: "made.glimmer")
+        try FileManager.default.createDirectory(at: made, withIntermediateDirectories: false)
+        #expect(throws: DocumentSaveError.self) { try DocumentSaver.write(wrapper, to: made) }
+        #expect(!FileManager.default.fileExists(atPath: made.path), "the empty folder is removed")
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: root.path)) ?? []
+        #expect(names.filter { $0.contains("new") }.isEmpty, "\(names)")
+    }
+
+    /// Run by scripts/test-disk-full.sh with a small, nearly full disk image mounted.
+    @Test func aSnapshotThatDoesntFitLeavesNothingBehindAndStaysInMemory() throws {
+        guard let path = ProcessInfo.processInfo.environment["GLIMMER_FULL_DISK"], !path.isEmpty else { return }
+        let dir = URL(fileURLWithPath: path, isDirectory: true).appending(path: "undo")
+        // About 40 MB of pixels that don't compress.
+        var tiles: [TileCoord: Tile] = [:]
+        var seed: UInt32 = 3
+        for i in 0..<80 {
+            let texture = TileTexture.makeTexture()
+            var px = [Float16](repeating: 0, count: TileGeometry.size * TileGeometry.size * 4)
+            for j in px.indices { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
+            px.withUnsafeBytes {
+                texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size), mipmapLevel: 0,
+                                withBytes: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)
+            }
+            tiles[TileCoord(i % 10, i / 10)] = .texture(TileTexture(texture))
+        }
+        let layer = Layer(name: "Noise", content: .raster(TileGrid(tiles)))
+        let state = DocumentState(width: 2560, height: 2048, layers: [layer], activeLayerID: layer.id)
+        let snapshot = UndoSnapshot(state)
+        let free = try #require(UndoSpillPolicy.freeBytes(at: dir))
+        #expect(free < snapshot.diskBytesUpperBound, "the test disk must be too small: \(free) free")
+        #expect(!UndoSpillPolicy.canSpill(bytes: snapshot.diskBytesUpperBound, free: free))
+        // Forced anyway (as when the disk fills while writing): it fails cleanly.
+        #expect(throws: (any Error).self) { try snapshot.moveToDisk(in: dir) }
+        #expect(!snapshot.isOnDisk)
+        let left = (try? FileManager.default.contentsOfDirectory(atPath: dir.path)) ?? []
+        #expect(left.filter { $0.hasSuffix(".glimmer") }.isEmpty, "nothing half-written is left: \(left)")
+        #expect(try snapshot.state().layers.first?.tiles.tileBounds == state.layers.first?.tiles.tileBounds, "the step is still in memory")
+    }
+
     @Test func movesToDiskAndBack() throws {
         let texture = TileTexture.makeTexture()
         var px = [Float16](repeating: 0.25, count: TileGeometry.size * TileGeometry.size * 4)

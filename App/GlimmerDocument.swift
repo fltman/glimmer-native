@@ -17,7 +17,9 @@ final class GlimmerDocument: Document {
 
     var state: DocumentState
 
-    @ObservationIgnored let encodedLayers = EncodedLayerCache()
+    /// Saving re-encodes only the layers that changed. The cache may use an eighth of the
+    /// Mac's memory, so a big document's unchanged layers stay encoded between autosaves.
+    @ObservationIgnored let encodedLayers = EncodedLayerCache(byteLimit: Int(ProcessInfo.processInfo.physicalMemory / 8))
 
     /// Names of the undoable steps since the document was opened (History panel),
     /// and how many of them are applied (the rest can be redone).
@@ -53,6 +55,11 @@ final class GlimmerDocument: Document {
         FileManager.default.temporaryDirectory.appending(path: "undo-\(UUID().uuidString)")
     /// How many undo steps currently live on disk (shown in the History panel).
     private(set) var stepsOnDisk = 0
+    /// Set when the disk was too full to keep the whole undo history: what happened, for the user.
+    /// The window shows it once and clears it.
+    var diskNotice: String?
+    @ObservationIgnored private var saidDiskIsLow = false
+    @ObservationIgnored private weak var historyUndoManager: UndoManager?
 
     deinit {
         try? FileManager.default.removeItem(at: spillDirectory)
@@ -88,11 +95,36 @@ final class GlimmerDocument: Document {
         }
     }
 
-    func writer(configuration: sending WriteConfiguration) -> sending FileWrapperDocumentWriter<DocumentState> {
-        let cache = encodedLayers
-        return FileWrapperDocumentWriter(configuration) { snapshot, _ in
-            try GlimmerPackage.fileWrapper(for: snapshot, cache: cache, quickLook: Self.quickLookImages(snapshot))
+    /// Writes the package itself (instead of handing a file wrapper to SwiftUI) so that a full
+    /// disk is noticed before anything is written, nothing half-written is left behind, and
+    /// the person is told: a save that fails silently looks like a save that worked.
+    struct PackageWriter: DocumentWriter {
+        let cache: EncodedLayerCache
+
+        @concurrent
+        func write(snapshot: sending DocumentState, to destination: URL, previous: sending DocumentState?,
+                   progress: consuming Subprogress) async throws {
+            // The destination is a temporary copy that the system moves into place; its name is the document's.
+            let name = destination.lastPathComponent
+            do {
+                let wrapper = try GlimmerPackage.fileWrapper(for: snapshot, cache: cache, quickLook: GlimmerDocument.quickLookImages(snapshot))
+                // The empty folder the system made for the document must go when the write fails:
+                // left in place, the system takes the save for done and installs an empty document.
+                try DocumentSaver.write(wrapper, to: destination)
+                // Never wait for the main thread here: for some saves the system blocks it
+                // until this function returns, and waiting would lock the app up.
+                Task { @MainActor in SaveFailures.shared.saved(name) }
+            } catch {
+                let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                let advice = (error as? LocalizedError)?.recoverySuggestion
+                Task { @MainActor in SaveFailures.shared.failed(message, advice: advice, saving: name) }
+                throw error
+            }
         }
+    }
+
+    func writer(configuration: sending WriteConfiguration) -> sending PackageWriter {
+        PackageWriter(cache: encodedLayers)
     }
 
     @MainActor
@@ -169,6 +201,7 @@ final class GlimmerDocument: Document {
             transaction?.changed = true
             return
         }
+        historyUndoManager = undoManager
         // Snapshots share tiles, so a step costs only the tiles it changed.
         let box = UndoSnapshot(snapshot)
         if undoManager.isUndoing {
@@ -216,23 +249,58 @@ final class GlimmerDocument: Document {
             inMemory += stepCosts[i]
         }
         var index = 0
+        // Space already promised to snapshots that are being written.
+        var promised = snapshots.filter { spilling.contains(ObjectIdentifier($0)) }.reduce(0) { $0 + $1.diskBytesUpperBound }
         // The newest step always stays in memory, whatever it costs.
         while inMemory > Self.historyBudgetBytes, index < snapshots.count - 1 {
             let box = snapshots[index]
             if !box.isOnDisk, !spilling.contains(ObjectIdentifier(box)) {
+                // Never fill the disk with undo steps: when there isn't room, forget the oldest instead.
+                let bytes = box.diskBytesUpperBound
+                guard UndoSpillPolicy.canSpill(bytes: bytes + promised, free: UndoSpillPolicy.freeBytes(at: spillDirectory)) else {
+                    forgetOldestSteps()
+                    break
+                }
+                promised += bytes
                 inMemory -= stepCosts[index]
                 spilling.insert(ObjectIdentifier(box))
                 let directory = spillDirectory, cache = spillCache
                 Task { @MainActor [weak self] in
-                    await Task.detached(priority: .utility) { try? box.moveToDisk(in: directory, cache: cache) }.value
+                    let failed = await Task.detached(priority: .utility) { () -> Bool in
+                        do { try box.moveToDisk(in: directory, cache: cache); return false } catch { return true }
+                    }.value
                     guard let self else { return }
                     self.spilling.remove(ObjectIdentifier(box))
                     self.stepsOnDisk = self.snapshots.count { $0.isOnDisk }
+                    // The write failed (the disk filled up meanwhile): the step is still in memory.
+                    if failed { self.forgetOldestSteps() }
                 }
             }
             index += 1
         }
         stepsOnDisk = snapshots.count { $0.isOnDisk }
+    }
+
+    /// The disk has no room for older undo steps: drops the oldest ones until what is kept in
+    /// memory fits the budget, and says so once. The document itself is untouched.
+    @MainActor
+    private func forgetOldestSteps() {
+        guard let undoManager = historyUndoManager, !undoManager.isUndoing, !undoManager.isRedoing else { return }
+        let applied = min(historyIndex, snapshots.count)
+        let costs = (0..<applied).map { snapshots[$0].isOnDisk || spilling.contains(ObjectIdentifier(snapshots[$0])) ? 0 : stepCosts[$0] }
+        let forget = UndoSpillPolicy.stepsToForget(costs: costs, budget: Self.historyBudgetBytes)
+        guard forget > 0 else { return }
+        history.removeFirst(forget)
+        stepCosts.removeFirst(forget)
+        snapshots.removeFirst(forget)
+        historyIndex -= forget
+        // The undo manager drops its oldest steps when its limit goes below what it holds.
+        undoManager.levelsOfUndo = max(historyIndex, 1)
+        stepsOnDisk = snapshots.count { $0.isOnDisk }
+        if !saidDiskIsLow {
+            saidDiskIsLow = true
+            diskNotice = String(localized: "Your disk is almost full, so Glimmer keeps fewer undo steps for this document. The document itself is safe. Free up space to get the full history back for new changes.")
+        }
     }
 
     /// Memory an undo snapshot holds beyond the current state: the texture tiles only it references.

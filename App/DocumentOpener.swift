@@ -115,8 +115,11 @@ final class DocumentOpener {
     /// PNG or JPEG is then edited in linked mode, where Save writes back into the same file.
     func open(_ urls: [URL], requester: String? = nil) {
         for url in urls {
+            // By its extension first: the system can hand back an undeclared type for
+            // ".glimmer" (several copies of the app, or none registered yet), and the
+            // document would then be read as an image and refused.
             let type = UTType(filenameExtension: url.pathExtension)
-            if type?.conforms(to: .glimmerDocument) == true {
+            if url.pathExtension.lowercased() == "glimmer" || type?.conforms(to: .glimmerDocument) == true {
                 NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
                     if let error { NSApp.presentError(error) }
                 }

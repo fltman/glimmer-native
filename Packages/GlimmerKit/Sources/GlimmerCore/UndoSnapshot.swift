@@ -43,7 +43,53 @@ public final class UndoSnapshot: Sendable {
         guard case .memory(let state) = storage.withLock({ $0 }) else { return }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let url = directory.appending(path: UUID().uuidString + ".glimmer")
-        try GlimmerPackage.fileWrapper(for: state, cache: cache).write(to: url, options: .atomic, originalContentsURL: nil)
+        do {
+            try GlimmerPackage.fileWrapper(for: state, cache: cache).write(to: url, options: .atomic, originalContentsURL: nil)
+        } catch {
+            // A full disk or a write error: leave nothing half-written behind. The state stays in memory.
+            try? FileManager.default.removeItem(at: url)
+            throw error
+        }
         storage.withLock { $0 = .disk(url, selection: state.selection) }
+    }
+
+    /// The most bytes this snapshot can take on disk: its pixel tiles, uncompressed.
+    public var diskBytesUpperBound: Int {
+        guard case .memory(let state) = storage.withLock({ $0 }) else { return 0 }
+        return state.textureTileIDs.count * TileGeometry.byteCount
+    }
+}
+
+/// What to do with an undo history that has outgrown its memory budget.
+public enum UndoSpillPolicy {
+    /// Free space Glimmer always leaves on the disk it spills to.
+    public static let reserveBytes = 1_073_741_824
+
+    /// Bytes free for Glimmer's use on the volume that holds `url` (nil if it can't be read).
+    public static func freeBytes(at url: URL) -> Int? {
+        var probe = url
+        while !FileManager.default.fileExists(atPath: probe.path), probe.pathComponents.count > 1 { probe.deleteLastPathComponent() }
+        let values = try? probe.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey, .volumeAvailableCapacityKey])
+        if let v = values?.volumeAvailableCapacityForImportantUsage, v > 0 { return Int(v) }
+        return values?.volumeAvailableCapacity
+    }
+
+    /// Whether a snapshot of at most `bytes` may be written when `free` bytes are available.
+    public static func canSpill(bytes: Int, free: Int?) -> Bool {
+        guard let free else { return true }  // unknown: try, and handle the failure
+        return free - bytes >= reserveBytes
+    }
+
+    /// How many of the oldest applied steps to forget so the steps kept in memory fit `budget`.
+    /// `costs` are the applied steps' memory costs, oldest first, 0 for steps already on disk.
+    /// The newest applied step is always kept.
+    public static func stepsToForget(costs: [Int], budget: Int) -> Int {
+        var inMemory = costs.reduce(0, +)
+        var forget = 0
+        while inMemory > budget, forget < costs.count - 1 {
+            inMemory -= costs[forget]
+            forget += 1
+        }
+        return forget
     }
 }

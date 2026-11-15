@@ -212,18 +212,26 @@ public enum GlimmerPackage {
 public final class EncodedLayerCache: Sendable {
     private let entries = Mutex<[Int: Data]>([:])
     private let limit: Int
+    private let byteLimit: Int
 
-    public init(limit: Int = 64) {
+    /// `byteLimit`: the most encoded bytes kept (a full 96-megapixel layer of detailed pixels
+    /// encodes to several hundred megabytes; counting entries alone let the cache hold gigabytes).
+    public init(limit: Int = 64, byteLimit: Int = 384 * 1_048_576) {
         self.limit = limit
+        self.byteLimit = byteLimit
     }
+
+    /// Encoded bytes held right now.
+    public var byteCount: Int { entries.withLock { $0.values.reduce(0) { $0 + $1.count } } }
 
     public func data(for tiles: TileGrid) throws -> Data {
         let key = tiles.contentSignature
         if let hit = entries.withLock({ $0[key] }) { return hit }
         let data = try TileCodec.encode(tiles)
         entries.withLock { dict in
-            if dict.count >= limit { dict.removeAll() }
-            dict[key] = data
+            if dict.count >= limit || dict.values.reduce(data.count, { $0 + $1.count }) > byteLimit { dict.removeAll() }
+            // A layer bigger than the whole budget isn't kept at all.
+            if data.count <= byteLimit { dict[key] = data }
         }
         return data
     }

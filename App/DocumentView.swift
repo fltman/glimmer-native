@@ -133,6 +133,11 @@ struct DocumentView: View {
             .sheet(isPresented: $session.isBatchSheetPresented) {
                 BatchSheet(session: session)
             }
+            .onChange(of: session.document.diskNotice) { _, notice in
+                guard let notice else { return }
+                session.document.diskNotice = nil
+                session.errorMessage = notice
+            }
             .alert("Glimmer", isPresented: Binding(
                 get: { session.errorMessage != nil },
                 set: { if !$0 { session.errorMessage = nil } }

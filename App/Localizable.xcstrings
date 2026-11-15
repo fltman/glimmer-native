@@ -9336,6 +9336,28 @@
         }
       }
     },
+    "The document couldn't be saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentet kunde inte sparas"
+          }
+        }
+      }
+    },
+    "The document is still open and nothing was lost. Try saving it somewhere else.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentet är fortfarande öppet och inget har gått förlorat. Prova att spara det någon annanstans."
+          }
+        }
+      }
+    },
     "The image stays where the anchor is. New room is transparent; what a smaller canvas cuts off is kept outside it.": {
       "extractionState": "manual",
       "localizations": {
@@ -10311,6 +10333,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Du: %@"
+          }
+        }
+      }
+    },
+    "Your disk is almost full, so Glimmer keeps fewer undo steps for this document. The document itself is safe. Free up space to get the full history back for new changes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disken är nästan full, så Glimmer sparar färre ångra-steg för det här dokumentet. Själva dokumentet är oskadat. Frigör utrymme så sparas hela historiken igen för nya ändringar."
           }
         }
       }
