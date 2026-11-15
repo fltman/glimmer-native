@@ -543,8 +543,7 @@ enum AgentRouter {
                 job.result = ["results": stepList(results), "document": detail(session)]
                 if let failed = results.firstIndex(where: { $0.status == "failed" }) {
                     job.status = "failed"
-                    job.error = ["code": "step_failed", "step": failed,
-                                 "message": "Step \(failed) (\(results[failed].op)) failed: \(results[failed].error ?? "")"]
+                    job.error = stepFailure(results, failed)
                 } else if results.contains(where: { $0.status == "cancelled" }) {
                     job.status = "cancelled"
                 } else {
@@ -558,11 +557,18 @@ enum AgentRouter {
         let results = await session.ai.runAPISteps(steps)
         let list = stepList(results)
         if let failed = results.firstIndex(where: { $0.status == "failed" }) {
-            return .json(["error": ["code": "step_failed", "step": failed,
-                                    "message": "Step \(failed) (\(results[failed].op)) failed: \(results[failed].error ?? "")"] as [String: Any],
-                          "results": list, "document": detail(session)], status: 422)
+            return .json(["error": stepFailure(results, failed), "results": list, "document": detail(session)], status: 422)
         }
         return .json(["results": list, "document": detail(session)])
+    }
+
+    /// A failed step: `unprocessable` with a `reason` when the step refused for a known reason
+    /// (would_rasterize_text, bad_corners, group_has_mask…), otherwise `step_failed`.
+    private static func stepFailure(_ results: [AIController.APIStepResult], _ failed: Int) -> [String: Any] {
+        var e: [String: Any] = ["code": results[failed].reason == nil ? "step_failed" : "unprocessable", "step": failed,
+                                "message": "Step \(failed) (\(results[failed].op)) failed: \(results[failed].error ?? "")"]
+        if let reason = results[failed].reason { e["reason"] = reason }
+        return e
     }
 
     private static func stepList(_ results: [AIController.APIStepResult]) -> [[String: Any]] {

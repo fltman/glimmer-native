@@ -302,6 +302,21 @@ Add an empty pixel layer.
 |---|---|---|
 | `name` | string | Optional layer name. |
 
+### `transform_layer`
+
+Scale, rotate, skew or distort a layer or a group, like Free Transform. Text stays editable for scale, rotation and skew; corners (distort or perspective) would turn text into pixels and are refused unless allowRasterize is true. One undo step.
+
+| Param | Type | Description |
+|---|---|---|
+| `target` | string | Optional. The layer's or group's name or id; default the active layer. |
+| `scaleX` | number | Optional. Width in percent of the current size (default 100). |
+| `scaleY` | number | Optional. Height in percent of the current size (default 100). |
+| `degrees` | number | Optional. Rotation about the centre, clockwise. |
+| `skewX` | number | Optional. Horizontal skew in degrees. |
+| `skewY` | number | Optional. Vertical skew in degrees. |
+| `corners` | points | Optional. Four corners in document pixels, top-left, top-right, bottom-right, bottom-left, for distort or perspective (replaces scale, rotation and skew). |
+| `allowRasterize` | boolean | Optional. Let corners turn text layers into pixels (default false). |
+
 ### `add_waveform`
 
 Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolour, move and style.

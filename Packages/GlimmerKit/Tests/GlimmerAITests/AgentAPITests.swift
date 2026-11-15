@@ -122,3 +122,16 @@ import Testing
         #expect(AgentAPI.sibling(req(String(repeating: "a", count: 100)))?.count == 32)
     }
 }
+
+@Suite struct TransformLayerOpTests {
+    @Test func theSchemaTakesCornersAndAPermission() throws {
+        let op = try #require(AgentAPI.operations.first { $0["name"] as? String == "transform_layer" })
+        #expect(op["paid"] as? Bool == false && op["startsJob"] as? Bool == false && op["tier"] as? String == "advanced")
+        let props = try #require((op["params"] as? [String: Any])?["properties"] as? [String: Any])
+        let corners = try #require(props["corners"] as? [String: Any])
+        #expect(corners["type"] as? String == "array")
+        #expect((corners["items"] as? [String: Any])?["type"] as? String == "array")
+        #expect((props["allowRasterize"] as? [String: Any])?["type"] as? String == "boolean")
+        #expect(((op["params"] as? [String: Any])?["required"] as? [String])?.isEmpty == true, "every parameter is optional")
+    }
+}

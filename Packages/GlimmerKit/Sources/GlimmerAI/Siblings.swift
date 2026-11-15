@@ -443,7 +443,7 @@ public actor SiblingClient {
 }
 
 extension JSONValue {
-    var bool: Bool? { if case .bool(let b) = self { b } else { nil } }
+    public var bool: Bool? { if case .bool(let b) = self { b } else { nil } }
     /// The value as text for a path or query.
     var plainString: String {
         switch self {

@@ -126,6 +126,10 @@ Each request with editing steps is one undo step, named **Agent Edit**.
 
 Glimmer's sibling apps, Flimmer and Jämmer, use the same API. Their assistants can ask Glimmer for the same editing steps an agent can use, open an image as a new document, and get the result back. When a sibling changes a document, Glimmer shows **Requested by Flimmer** (or Jämmer) over the canvas for a few seconds, so you know where the change came from. You can undo it like any other edit. The siblings get no extra rights: they follow the same rules as any agent, and paid steps run only if you already confirmed the cost in the app that asked.
 
+### Transforming layers
+
+An agent (or the assistant) can scale, rotate, skew or distort a layer or a group with the `transform_layer` step, the same as Free Transform. Text stays editable for scale, rotation and skew. Corners (distort or perspective) would turn text into pixels, so Glimmer refuses them unless the request explicitly allows it, the way it asks you first in the window. A group with a layer mask inside is refused, as in the window. Each transform is one undo step.
+
 ### Cover art for podcasts
 
 An agent, or Flimmer when it asks Glimmer for an episode cover, can export the open image as podcast cover art: the middle square of the image at exactly 3000 × 3000 pixels (or 1400 × 1400), as JPEG or PNG, with no transparency, and under a file size you give. To meet the size limit Glimmer lowers only the JPEG quality, never the size; if 3000 pixels can't fit the limit and no size was asked for, it makes 1400. If the limit can't be met at all, the request fails and says how small the file can get. In the API this is the `podcast-cover` preset of the export request, described in the [Agent guide](../agents.html).

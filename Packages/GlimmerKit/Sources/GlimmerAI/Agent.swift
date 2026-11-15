@@ -255,6 +255,16 @@ public enum AgentPlanner {
             AgentParam("name", "string", "The layer's name (not case-sensitive; the topmost match wins) or its id."),
         ]),
         AgentOp("new_layer", "Add an empty pixel layer.", [AgentParam("name", "string", "Optional layer name.")]),
+        AgentOp("transform_layer", "Scale, rotate, skew or distort a layer or a group, like Free Transform. Text stays editable for scale, rotation and skew; corners (distort or perspective) would turn text into pixels and are refused unless allowRasterize is true. One undo step.", [
+            AgentParam("target", "string", "Optional. The layer's or group's name or id; default the active layer."),
+            AgentParam("scaleX", "number", "Optional. Width in percent of the current size (default 100)."),
+            AgentParam("scaleY", "number", "Optional. Height in percent of the current size (default 100)."),
+            AgentParam("degrees", "number", "Optional. Rotation about the centre, clockwise."),
+            AgentParam("skewX", "number", "Optional. Horizontal skew in degrees."),
+            AgentParam("skewY", "number", "Optional. Vertical skew in degrees."),
+            AgentParam("corners", "points", "Optional. Four corners in document pixels, top-left, top-right, bottom-right, bottom-left, for distort or perspective (replaces scale, rotation and skew)."),
+            AgentParam("allowRasterize", "boolean", "Optional. Let corners turn text layers into pixels (default false)."),
+        ]),
         AgentOp("add_waveform", "Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolour, move and style.", [
             AgentParam("style", "string", "Optional. bars (default) or wave (one outline).", options: SiblingWaveform.Style.allCases.map(\.rawValue)),
             AgentParam("bars", "number", "Optional. How many bars, 16–400 (default 64)."),
@@ -453,6 +463,10 @@ public enum AgentPlanner {
             switch p.type {
             case "number": schema["type"] = "number"
             case "object": schema["type"] = "object"
+            case "boolean": schema["type"] = "boolean"
+            case "points":  // [[x, y], …]
+                schema["type"] = "array"
+                schema["items"] = ["type": "array", "items": ["type": "number"], "minItems": 2, "maxItems": 2]
             default: schema["type"] = "string"
             }
             if let options = p.options { schema["enum"] = options }

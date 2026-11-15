@@ -224,6 +224,7 @@ extension AIController {
         let op: String
         let status: String  // done, failed, skipped
         let error: String?
+        var reason: String? = nil
     }
 
     /// Runs steps from the local agent API as one undo step. Stops at the first
@@ -249,7 +250,8 @@ extension AIController {
             } catch {
                 stopped = true
                 results.append(APIStepResult(op: step.op, status: "failed",
-                                             error: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription))
+                                             error: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription,
+                                             reason: (error as? StepError)?.reason))
             }
             progress?(i + 1)
         }
@@ -372,7 +374,12 @@ extension AIController {
 
     struct StepError: LocalizedError {
         let errorDescription: String?
-        init(_ message: String) { errorDescription = message }
+        /// A machine-readable reason (the API answers 422 unprocessable with it).
+        var reason: String?
+        init(_ message: String, reason: String? = nil) {
+            errorDescription = message
+            self.reason = reason
+        }
     }
 
     /// Runs one step; AI steps wait until their job has finished.
@@ -447,6 +454,8 @@ extension AIController {
             if let name = step.string("name"), let id = s.state.activeLayerID { s.rename(id, to: name) }
         case "add_waveform":
             try await performAddWaveform(step)
+        case "transform_layer":
+            try performTransformLayer(step)
         case let op where SiblingApp.split(tool: op) != nil:
             try await performSiblingTool(step)
         case "run_command":
