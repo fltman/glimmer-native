@@ -3,6 +3,24 @@ import Foundation
 
 /// On-device models Glimmer downloads on first use (Apple's Core ML conversions
 /// on Hugging Face), then compiles and keeps in Application Support.
+/// A model that isn't on the Mac yet couldn't be fetched (offline, or the server didn't answer).
+public struct ModelDownloadError: LocalizedError, Equatable {
+    public let model: String
+    public let underlying: String
+
+    public init(model: String, underlying: String) {
+        self.model = model
+        self.underlying = underlying
+    }
+
+    public var errorDescription: String? {
+        var why = underlying.trimmingCharacters(in: .whitespaces)
+        while why.hasSuffix(".") { why.removeLast() }
+        return "This needs the model “\(model)”, which Glimmer downloads once, and the download didn't work: \(why). "
+            + "Connect to the internet and try again. Everything that doesn't need this model keeps working offline."
+    }
+}
+
 public enum OnDeviceModel: String, CaseIterable, Sendable {
     case depth
     case segmentAnything
@@ -96,7 +114,11 @@ public actor ModelStore {
             if let dir = sourceOverride, FileManager.default.fileExists(atPath: dir.appending(path: package).path) {
                 source = dir.appending(path: package)
             } else {
-                source = try await download(package, from: model.repository, progress: progress)
+                do {
+                    source = try await download(package, from: model.repository, progress: progress)
+                } catch {
+                    throw ModelDownloadError(model: model.title, underlying: (error as NSError).localizedDescription)
+                }
             }
             let temp = try await MLModel.compileModel(at: source)
             try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)

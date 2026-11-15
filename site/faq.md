@@ -32,6 +32,16 @@ Create an account at openrouter.ai, add credit, and create a key at openrouter.a
 
 In your Mac's keychain. Glimmer sends it only to openrouter.ai, with the requests you start. There is no Glimmer server in between.
 
+## Does Glimmer work without the internet?
+
+Yes. Glimmer is a complete app on your Mac: there is no server to run and no account, and it starts and works with the network off. Offline you can open and save, use every tool, layer, adjustment, filter and text feature, Auto Enhance and Auto Color, Select Subject and Select People, Remove Background, Straighten Document, Image Text to Layers, Real-ESRGAN upscaling, Batch Process, export, Shortcuts and the agent API (it lives on your Mac, at 127.0.0.1).
+
+Three things need a connection:
+
+- **Two models that download once.** Select Sky, Lens Blur and Magic Select use models that Glimmer downloads the first time (see [Models downloaded on first use](manual/10-on-device-intelligence.md#models-downloaded-on-first-use)). After that they work offline. If you try one offline before its model is there, Glimmer says that the download didn't work and what to do; nothing else is affected.
+- **The OpenRouter features.** Generating, generative fill and the other paid AI features send the image to OpenRouter, so they need the internet and your key.
+- **Update checks.**
+
 ## What stays private?
 
 Your images stay on your Mac unless you start an OpenRouter feature. Then Glimmer sends the image (or the part it needs) to OpenRouter, which passes it to the model provider. On-device features never send anything anywhere. Glimmer has no accounts, no analytics and no telemetry, and no service of ours sits in between. Update checks read the update feed at glimmer.brattoo.com. You can point the AI features at another OpenRouter-compatible service, and the model downloads at a mirror, in Settings.

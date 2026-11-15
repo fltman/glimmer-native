@@ -16,7 +16,7 @@
 # default 600). Build first with scripts/test.sh.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-APP="$PWD/build/DerivedData/Build/Products/Debug/Glimmer.app"
+APP="${GLIMMER_TEST_APP:-$PWD/build/DerivedData/Build/Products/Debug/Glimmer.app}"  # GLIMMER_TEST_APP: another copy, e.g. the offline one
 [[ -d "$APP" ]] || { echo "Build first: scripts/test.sh"; exit 1; }
 (( $# > 0 )) || { echo "Usage: $0 <command> [args…]"; exit 1; }
 

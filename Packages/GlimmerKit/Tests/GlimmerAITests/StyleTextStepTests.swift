@@ -82,3 +82,13 @@ import Testing
         #expect(guide.contains("👍🏽") && guide.contains("\"op\": \"style_text\""))
     }
 }
+
+@Suite struct OfflineMessageTests {
+    @Test func aModelThatCantBeDownloadedSaysWhatToDo() {
+        let e = ModelDownloadError(model: "Depth (Depth Anything V2 Small)", underlying: "The Internet connection appears to be offline.")
+        let text = e.errorDescription ?? ""
+        #expect(text.contains("Depth (Depth Anything V2 Small)") && text.contains("downloads once"))
+        #expect(text.contains("offline. Connect to the internet and try again."), "one full stop, then what to do")
+        #expect(text.contains("keeps working offline"))
+    }
+}
