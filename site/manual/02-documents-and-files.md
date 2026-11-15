@@ -19,6 +19,18 @@ The undo history and the current selection are not saved. When you open a docume
 
 A `.glimmer` document is a package: Finder shows it as one file. Each side can be up to 32,768 pixels.
 
+### How large a document can be
+
+Three things limit a document:
+
+- **Each side** can be up to 32,768 pixels (30,000 in Image Size and Canvas Size).
+- **The canvas** must fit your Mac's memory. Glimmer keeps pixels in 16-bit floating point, which takes 8 bytes a pixel, and one full layer may use at most two fifths of the memory. On a Mac with 16 GB that is about 850 megapixels, for example 29,000 × 29,000; on a Mac with 8 GB it is half of that. A larger new document or resize is refused, and the message gives the numbers.
+- **Many large layers** matter long before the canvas limit. A measured example: a 6000 × 4000 document with 60 layers (three full-size layers, thirty photo layers, twelve smart objects, layer styles) takes about 5.5 GB of memory, saves in about 30 seconds and is about 700 MB on disk. The same document at 12,000 × 8,000 has four times the pixels; by calculation, not measurement, it needs about 20 GB, more than a 16 GB Mac has.
+
+When a document needs more than about three fifths of your Mac's memory, Glimmer tells you once. It keeps working, but it may get slow. Merging layers you no longer need apart, or making the image smaller with **Image › Image Size…**, helps.
+
+An image you open can have up to 256 megapixels.
+
 ### Saving and autosave
 
 Glimmer uses the standard Mac document system, so you save, rename, duplicate and move documents with the usual commands in the **File** menu. Choose **File › Save** (⌘S) to give a new document a name and a place.

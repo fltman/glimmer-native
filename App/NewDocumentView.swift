@@ -35,9 +35,12 @@ struct NewDocumentView: View {
     @AppStorage("newDocument.background") private var background = BackgroundChoice.white
     @State private var customColor = Color(red: 0.95, green: 0.93, blue: 0.88)
 
-    private var isValid: Bool {
+    private var sidesValid: Bool {
         (1...DocumentManifest.maxDimension).contains(width) && (1...DocumentManifest.maxDimension).contains(height)
     }
+    /// Why this Mac can't hold a canvas of that size, when it can't.
+    private var tooLarge: String? { sidesValid ? DocumentLimits.refusal(width: width, height: height) : nil }
+    private var isValid: Bool { sidesValid && tooLarge == nil }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -57,9 +60,11 @@ struct NewDocumentView: View {
                 if background == .custom {
                     ColorPicker("Color", selection: $customColor, supportsOpacity: false)
                 }
-                if !isValid {
+                if !sidesValid {
                     Text("Width and height must be between 1 and \(DocumentManifest.maxDimension) pixels.")
                         .foregroundStyle(.red)
+                } else if let tooLarge {
+                    Text(verbatim: tooLarge).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
                 }
             }
             .formStyle(.grouped)

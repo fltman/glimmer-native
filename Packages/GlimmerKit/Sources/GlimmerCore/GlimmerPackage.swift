@@ -249,25 +249,50 @@ public enum TileCodec {
     static let magic: [UInt8] = Array("GLTL".utf8)
     static let version: UInt32 = 1
 
+    /// Results of work done on several cores at once, filled in by index.
+    private final class Slots<T>: @unchecked Sendable {
+        private let lock = NSLock()
+        private var values: [T?]
+        private var failure: (any Error)?
+        init(count: Int) { values = Array(repeating: nil, count: count) }
+        func set(_ i: Int, _ value: T) { lock.lock(); values[i] = value; lock.unlock() }
+        func fail(_ error: any Error) { lock.lock(); if failure == nil { failure = error }; lock.unlock() }
+        func result() throws -> [T?] { if let failure { throw failure }; return values }
+    }
+
     public static func encode(_ grid: TileGrid) throws -> Data {
+        let coords = grid.tiles.keys.sorted()
+        // Compressing is the slow part of saving: the texture tiles are compressed on all cores.
+        let compressed = Slots<Data>(count: coords.count)
+        let tiles = coords.map { grid[$0]! }
+        nonisolated(unsafe) let work = tiles
+        DispatchQueue.concurrentPerform(iterations: coords.count) { i in
+            guard case .texture = work[i] else { return }
+            do {
+                let raw = work[i].pixels().withUnsafeBytes { Data($0) }
+                compressed.set(i, try (raw as NSData).compressed(using: .lzfse) as Data)
+            } catch {
+                compressed.fail(error)
+            }
+        }
+        let packed = try compressed.result()
         var out = Data()
         out.append(contentsOf: magic)
         out.appendLE(version)
         out.appendLE(UInt32(TileGeometry.size))
         out.appendLE(UInt32(grid.count))
-        for coord in grid.tiles.keys.sorted() {
+        for (i, coord) in coords.enumerated() {
             out.appendLE(Int32(coord.x))
             out.appendLE(Int32(coord.y))
-            switch grid[coord]! {
+            switch tiles[i] {
             case .solid(let c):
                 out.append(0)
                 for v in [c.x, c.y, c.z, c.w] { out.appendLE(v.bitPattern) }
             case .texture:
                 out.append(1)
-                let raw = grid[coord]!.pixels().withUnsafeBytes { Data($0) }
-                let compressed = try (raw as NSData).compressed(using: .lzfse) as Data
-                out.appendLE(UInt32(compressed.count))
-                out.append(compressed)
+                let data = packed[i] ?? Data()
+                out.appendLE(UInt32(data.count))
+                out.append(data)
             }
         }
         return out
@@ -283,6 +308,8 @@ public enum TileCodec {
         let count: UInt32 = try reader.read()
 
         var grid = TileGrid()
+        // Read the tile list first, then decompress the texture tiles on all cores.
+        var pending: [(coord: TileCoord, data: Data)] = []
         for _ in 0..<count {
             let x: Int32 = try reader.read()
             let y: Int32 = try reader.read()
@@ -296,26 +323,33 @@ public enum TileCodec {
                                            Float(bitPattern: b), Float(bitPattern: a)))
             case 1:
                 let length: UInt32 = try reader.read()
-                let compressed = try reader.data(Int(length))
-                let raw: Data
-                do {
-                    raw = try (compressed as NSData).decompressed(using: .lzfse) as Data
-                } catch {
-                    throw GlimmerPackageError.corruptLayer("tile \(x),\(y) does not decompress")
-                }
-                guard raw.count == TileGeometry.byteCount else {
-                    throw GlimmerPackageError.corruptLayer("tile \(x),\(y) has \(raw.count) bytes")
-                }
-                let texture = TileTexture.makeTexture()
-                raw.withUnsafeBytes { bytes in
-                    texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size),
-                                    mipmapLevel: 0, withBytes: bytes.baseAddress!,
-                                    bytesPerRow: TileGeometry.bytesPerRow)
-                }
-                grid[coord] = .texture(TileTexture(texture))
+                pending.append((coord, try reader.data(Int(length))))
             default:
                 throw GlimmerPackageError.corruptLayer("unknown tile kind \(kind)")
             }
+        }
+        let decoded = Slots<Tile>(count: pending.count)
+        nonisolated(unsafe) let work = pending
+        DispatchQueue.concurrentPerform(iterations: pending.count) { i in
+            let (coord, compressed) = work[i]
+            guard let raw = try? (compressed as NSData).decompressed(using: .lzfse) as Data else {
+                decoded.fail(GlimmerPackageError.corruptLayer("tile \(coord.x),\(coord.y) does not decompress"))
+                return
+            }
+            guard raw.count == TileGeometry.byteCount else {
+                decoded.fail(GlimmerPackageError.corruptLayer("tile \(coord.x),\(coord.y) has \(raw.count) bytes"))
+                return
+            }
+            let texture = TileTexture.makeTexture()
+            raw.withUnsafeBytes { bytes in
+                texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size),
+                                mipmapLevel: 0, withBytes: bytes.baseAddress!,
+                                bytesPerRow: TileGeometry.bytesPerRow)
+            }
+            decoded.set(i, .texture(TileTexture(texture)))
+        }
+        for (i, tile) in try decoded.result().enumerated() {
+            if let tile { grid[pending[i].coord] = tile }
         }
         return grid
     }

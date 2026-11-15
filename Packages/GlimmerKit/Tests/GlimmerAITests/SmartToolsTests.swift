@@ -5,7 +5,20 @@ import Foundation
 import GlimmerCore
 import Testing
 
-@Suite struct SmartToolsTests {
+/// Serialized: the text tests load the system's text-recognition model, and several loads at
+/// once on a busy Mac fail ("e5rt … compute operation … call failed").
+@Suite(.serialized) struct SmartToolsTests {
+    /// Text recognition with patience: the system's model sometimes fails to load while the Mac is
+    /// under load (other builds, a full test run). That says nothing about Glimmer, so try again.
+    static func lines(in image: CGImage) throws -> [ImageText.Line] {
+        var last: (any Error)?
+        for attempt in 0..<4 {
+            do { return try ImageText.lines(in: image) } catch { last = error }
+            Thread.sleep(forTimeInterval: 2 + Double(attempt) * 3)
+        }
+        throw last!
+    }
+
     /// A grey scene (several neutral tones) with an optional cast.
     static func greyScene(cast: SIMD3<Double> = .zero, width: Int = 300, height: Int = 200) -> CGImage {
         let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
@@ -66,7 +79,7 @@ import Testing
 
     @Test func readsTextWithItsPositionAndColour() throws {
         let image = Self.textImage("Grand Opening", light: true)
-        let lines = try ImageText.lines(in: image)
+        let lines = try Self.lines(in: image)
         let line = try #require(lines.first)
         #expect(line.string.localizedCaseInsensitiveContains("grand opening"))
         // CG drew the baseline at y = 80 from the bottom: the box sits around 220 − 80 − ~50 (y down).
@@ -79,7 +92,7 @@ import Testing
 
     @Test func textLayerCoversTheOriginalLine() throws {
         let image = Self.textImage("Grand Opening", light: true)
-        let line = try #require(try ImageText.lines(in: image).first)
+        let line = try #require(try Self.lines(in: image).first)
         let layer = ImageText.textLayer(for: line, in: image)
         guard case .text(let text) = layer.content else { Issue.record("not a text layer"); return }
         let size = text.layoutSize
@@ -91,7 +104,7 @@ import Testing
 
     @Test func darkTextOnLightReadsDark() throws {
         let image = Self.textImage("Hello", light: false)
-        let line = try #require(try ImageText.lines(in: image).first)
+        let line = try #require(try Self.lines(in: image).first)
         let color = ImageText.textColor(in: image, box: line.box)
         #expect(color.r < 0.3)
     }

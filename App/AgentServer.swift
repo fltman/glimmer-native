@@ -398,6 +398,7 @@ enum AgentRouter {
                 guard (1...30_000).contains(w), (1...30_000).contains(h) else {
                     throw APIError.badRequest("width and height must be 1…30000 pixels.")
                 }
+                if let tooLarge = DocumentLimits.refusal(width: w, height: h) { throw APIError.unprocessable("too_large", tooLarge) }
                 let bg: DocumentState.Background = switch obj["background"] as? String ?? "white" {
                 case "transparent": .transparent
                 case "black": .black

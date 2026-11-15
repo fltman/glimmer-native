@@ -59,6 +59,15 @@ final class GlimmerDocument: Document {
     /// The window shows it once and clears it.
     var diskNotice: String?
     @ObservationIgnored private var saidDiskIsLow = false
+    @ObservationIgnored private var saidDocumentIsLarge = false
+
+    /// Says once, without stopping anything, that the document has outgrown this Mac's memory.
+    @MainActor
+    func noteSize() {
+        guard !saidDocumentIsLarge, let notice = DocumentLimits.comfortNotice(textureTiles: state.textureTileIDs.count) else { return }
+        saidDocumentIsLarge = true
+        diskNotice = notice
+    }
     @ObservationIgnored private weak var historyUndoManager: UndoManager?
 
     deinit {
@@ -89,6 +98,7 @@ final class GlimmerDocument: Document {
     @MainActor
     func apply(snapshot: sending DocumentState, previous: sending DocumentState?) async throws {
         state = snapshot
+        noteSize()
         if let handedOver = queuedState {
             queuedState = nil
             DocumentOpener.shared.createDocument(handedOver)
@@ -231,6 +241,7 @@ final class GlimmerDocument: Document {
             historyIndex = history.count
         }
         spillIfNeeded()
+        noteSize()
         undoManager.registerUndo(withTarget: self) { document in
             let current = document.state
             // A snapshot that can't be read back leaves the document as it is.

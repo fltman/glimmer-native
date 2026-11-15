@@ -313,4 +313,4 @@ The History tab lists every step since you opened the document, starting with **
 
 Click a step to go back to it. The steps after it are dimmed, and you can click them to go forward again. As soon as you make a new change, the dimmed steps are gone. **Edit › Undo** (⌘Z) and **Edit › Redo** (⇧⌘Z) step through the same list, and the menu items name the step they undo or redo.
 
-Glimmer keeps the last 100 steps. Change the number under **History states** in **Glimmer › Settings › Performance**. When the history needs more memory than allowed, the oldest steps move to disk and load back when you undo that far.
+Glimmer keeps the last 100 steps. Change the number under **History states** in **Glimmer › Settings › Performance**. When the history needs more memory than allowed, the oldest steps move to disk and load back when you undo that far. Steps on disk share the layers they have in common, so they take much less room than a copy of the document each. If the disk is almost full, Glimmer forgets the oldest steps instead of filling it, and tells you once.

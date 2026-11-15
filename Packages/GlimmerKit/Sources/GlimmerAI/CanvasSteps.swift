@@ -109,6 +109,9 @@ public enum CanvasSteps {
               w.rounded() <= Double(maxSide), h.rounded() <= Double(maxSide) else {
             throw Refusal(reason: "bad_size", message: "The new size must be 1…\(maxSide) pixels on each side.")
         }
+        if let tooLarge = DocumentLimits.refusal(width: Int(w.rounded()), height: Int(h.rounded())) {
+            throw Refusal(reason: "too_large", message: tooLarge)
+        }
         return (Int(w.rounded()), Int(h.rounded()))
     }
 
@@ -197,6 +200,9 @@ public enum CanvasSteps {
         guard w.isFinite, h.isFinite, w.rounded() >= 1, h.rounded() >= 1,
               w.rounded() <= Double(maxSide), h.rounded() <= Double(maxSide) else {
             throw Refusal(reason: "bad_size", message: "The canvas must be 1…\(maxSide) pixels on each side.")
+        }
+        if let tooLarge = DocumentLimits.refusal(width: Int(w.rounded()), height: Int(h.rounded())) {
+            throw Refusal(reason: "too_large", message: tooLarge)
         }
         return canvasBox(old: (width, height), new: (Int(w.rounded()), Int(h.rounded())), anchor: anchor)
     }

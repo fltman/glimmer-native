@@ -13,7 +13,10 @@ struct CanvasSizeSheet: View {
 
     private var oldWidth: Int { session.state.width }
     private var oldHeight: Int { session.state.height }
-    private var isValid: Bool { (1...CanvasSteps.maxSide).contains(width) && (1...CanvasSteps.maxSide).contains(height) }
+    private var sidesValid: Bool { (1...CanvasSteps.maxSide).contains(width) && (1...CanvasSteps.maxSide).contains(height) }
+    /// Why this Mac can't hold a canvas of that size, when it can't.
+    private var tooLarge: String? { sidesValid ? DocumentLimits.refusal(width: width, height: height) : nil }
+    private var isValid: Bool { sidesValid && tooLarge == nil }
     private static let anchorNames = [["Top left", "Top center", "Top right"], ["Left", "Center", "Right"], ["Bottom left", "Bottom center", "Bottom right"]]
 
     var body: some View {
@@ -67,8 +70,10 @@ struct CanvasSizeSheet: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            if !isValid {
+            if !sidesValid {
                 Text("Each side must be 1 to \(CanvasSteps.maxSide) pixels.").foregroundStyle(.red).font(.callout)
+            } else if let tooLarge {
+                Text(verbatim: tooLarge).foregroundStyle(.red).font(.callout).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
                 Spacer()

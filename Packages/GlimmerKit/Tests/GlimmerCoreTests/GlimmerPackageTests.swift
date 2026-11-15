@@ -257,6 +257,35 @@ func assertSamePixels(_ a: TileGrid, _ b: TileGrid) {
 
 import ImageIO
 
+@Suite struct DocumentLimitsTests {
+    static let gb = 1_073_741_824
+
+    @Test func aCanvasWhoseSingleLayerCantFitIsRefusedWithTheNumbers() {
+        let mac16 = 16 * Self.gb
+        #expect(DocumentLimits.maxCanvasPixels(memory: mac16) == 858_993_459)
+        #expect(DocumentLimits.refusal(width: 12_000, height: 8_000, memory: mac16) == nil)
+        #expect(DocumentLimits.refusal(width: 28_000, height: 28_000, memory: mac16) == nil)
+        let message = DocumentLimits.refusal(width: 30_000, height: 30_000, memory: mac16) ?? ""
+        #expect(message.contains("30000 × 30000") && message.contains("6.7 GB") && message.contains("16 GB") && message.contains("858 megapixels"), "\(message)")
+        // The same canvas fits a bigger Mac and not a smaller one.
+        #expect(DocumentLimits.refusal(width: 30_000, height: 30_000, memory: 32 * Self.gb) == nil)
+        #expect(DocumentLimits.refusal(width: 20_000, height: 20_000, memory: 8 * Self.gb) == nil)
+        #expect(DocumentLimits.refusal(width: 24_000, height: 20_000, memory: 8 * Self.gb) != nil)
+        #expect(DocumentLimits.refusal(width: Int.max / 2, height: 4, memory: mac16) != nil, "an overflowing size is refused too")
+    }
+
+    @Test func aDocumentThatOutgrowsTheMacIsMentionedNotStopped() {
+        let mac16 = 16 * Self.gb
+        // The measured document: about 4,100 tiles and 5.5 GB.
+        let measured = DocumentLimits.estimatedBytes(textureTiles: 4_100)
+        #expect(abs(Double(measured) / Double(Self.gb) - 5.5) < 0.4, "\(measured)")
+        #expect(DocumentLimits.comfortNotice(textureTiles: 4_100, memory: mac16) == nil, "5.5 GB of 16 is comfortable")
+        let notice = DocumentLimits.comfortNotice(textureTiles: 8_000, memory: mac16) ?? ""
+        #expect(notice.contains("16 GB") && notice.contains("Merging layers") && notice.contains("Image Size"), "\(notice)")
+        #expect(DocumentLimits.comfortNotice(textureTiles: 4_100, memory: 8 * Self.gb) != nil, "the same document is too much for 8 GB")
+    }
+}
+
 @Suite struct UndoSpillStoreTests {
     /// A layer of pixels that don't compress, so its file is well over the small-file limit.
     static func noiseLayer(_ name: String, seed: UInt32) -> Layer {
@@ -525,5 +554,73 @@ import ImageIO
         snapshot = nil
         #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0 != "blobs" }.isEmpty)
         #expect(((try? FileManager.default.contentsOfDirectory(atPath: dir.appending(path: "blobs").path)) ?? []).isEmpty)
+    }
+}
+
+@Suite struct TileCodecSpeedTests {
+    /// A full 6000 × 4000 layer of pixels that don't compress (384 tiles, 192 MB): the worst case for saving.
+    @Test func encodingAndDecodingABigLayer() throws {
+        var tiles: [TileCoord: Tile] = [:]
+        var seed: UInt32 = 11
+        var px = [Float16](repeating: 0, count: TileGeometry.size * TileGeometry.size * 4)
+        for i in 0..<384 {
+            for j in stride(from: 0, to: px.count, by: 7) { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
+            let texture = TileTexture.makeTexture()
+            px.withUnsafeBytes {
+                texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size), mipmapLevel: 0,
+                                withBytes: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)
+            }
+            tiles[TileCoord(i % 24, i / 24)] = .texture(TileTexture(texture))
+        }
+        let grid = TileGrid(tiles)
+        var start = Date()
+        let data = try TileCodec.encode(grid)
+        let encode = Date().timeIntervalSince(start)
+        start = Date()
+        let back = try TileCodec.decode(data)
+        let decode = Date().timeIntervalSince(start)
+        print(String(format: "TileCodec 384 tiles: encode %.2f s, decode %.2f s, %d MB", encode, decode, data.count / 1_048_576))
+        #expect(back.count == 384)
+        #expect(back[TileCoord(5, 7)]?.pixels() == grid[TileCoord(5, 7)]?.pixels(), "the pixels come back exactly")
+        #expect(try TileCodec.encode(back) == data, "encoding is deterministic")
+    }
+}
+
+extension TileCodecSpeedTests {
+    /// Four layers of 20 tiles of fully random pixels (about 35 MB on disk): where does saving and opening spend its time?
+    @Test func savingAndOpeningAPackage() throws {
+        var seed: UInt32 = 17
+        var px = [Float16](repeating: 0, count: TileGeometry.size * TileGeometry.size * 4)
+        var layers: [Layer] = []
+        for l in 0..<4 {
+            var tiles: [TileCoord: Tile] = [:]
+            for i in 0..<20 {
+                for j in px.indices { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
+                let texture = TileTexture.makeTexture()
+                px.withUnsafeBytes {
+                    texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size), mipmapLevel: 0,
+                                    withBytes: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)
+                }
+                tiles[TileCoord(i % 8, i / 8)] = .texture(TileTexture(texture))
+            }
+            layers.append(Layer(name: "L\(l)", content: .raster(TileGrid(tiles))))
+        }
+        let state = DocumentState(width: 2048, height: 1280, layers: layers, activeLayerID: layers[0].id)
+        let dir = URL(fileURLWithPath: #filePath).deletingLastPathComponent().appending(path: ".speed-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appending(path: "doc.glimmer")
+        var t = Date()
+        let wrapper = try GlimmerPackage.fileWrapper(for: state)
+        let encode = Date().timeIntervalSince(t); t = Date()
+        try DocumentSaver.write(wrapper, to: url)
+        let write = Date().timeIntervalSince(t); t = Date()
+        let read = try FileWrapper(url: url, options: [])
+        let bytes = DocumentSaver.byteCount(of: read)
+        let load = Date().timeIntervalSince(t); t = Date()
+        let back = try GlimmerPackage.state(from: read)
+        let decode = Date().timeIntervalSince(t)
+        print(String(format: "Package 80 tiles, %d MB: encode %.2f s, write %.2f s, read file %.2f s, decode %.2f s", bytes / 1_048_576, encode, write, load, decode))
+        #expect(back.layers.count == 4)
     }
 }

@@ -95,6 +95,14 @@ Glimmer keeps older undo steps on disk when they outgrow their share of memory. 
 
 The file starts like an image but is cut short or broken inside, often after an interrupted download or copy. Glimmer doesn't open half a picture. Get the file again from where it came from.
 
+### "This document needs about … of memory"
+
+The document has grown past what your Mac holds comfortably. Nothing is wrong with it and you can keep working, but Glimmer may get slow. Merge layers you no longer need apart (**Layer › Merge Group**, or rasterize smart objects you are done with), or make the image smaller with **Image › Image Size…**. See [How large a document can be](02-documents-and-files.md#how-large-a-document-can-be).
+
+### "A canvas of … pixels needs … for a single layer"
+
+The new document or the new size is too large for this Mac's memory. The message says how large a canvas this Mac can hold. Choose a smaller size.
+
 ### "The image is too large"
 
 Glimmer opens images up to 256 megapixels (for example 16,000 × 16,000) and 32,768 pixels a side. Make the image smaller in another app first.

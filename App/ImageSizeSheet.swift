@@ -1,4 +1,5 @@
 import GlimmerAI
+import GlimmerCore
 import SwiftUI
 
 /// Image › Image Size…: a new pixel size for the whole image.
@@ -14,7 +15,10 @@ struct ImageSizeSheet: View {
     private enum Field { case width, height }
     private var oldWidth: Int { session.state.width }
     private var oldHeight: Int { session.state.height }
-    private var isValid: Bool { (1...CanvasSteps.maxSide).contains(width) && (1...CanvasSteps.maxSide).contains(height) }
+    private var sidesValid: Bool { (1...CanvasSteps.maxSide).contains(width) && (1...CanvasSteps.maxSide).contains(height) }
+    /// Why this Mac can't hold a canvas of that size, when it can't.
+    private var tooLarge: String? { sidesValid ? DocumentLimits.refusal(width: width, height: height) : nil }
+    private var isValid: Bool { sidesValid && tooLarge == nil }
     private var percent: Int { Int((Double(width) / Double(max(oldWidth, 1)) * 100).rounded()) }
 
     var body: some View {
@@ -57,8 +61,10 @@ struct ImageSizeSheet: View {
                 Spacer()
                 if isValid, keepProportions { Text("\(percent) %").foregroundStyle(.secondary).monospacedDigit() }
             }
-            if !isValid {
+            if !sidesValid {
                 Text("Each side must be 1 to \(CanvasSteps.maxSide) pixels.").foregroundStyle(.red).font(.callout)
+            } else if let tooLarge {
+                Text(verbatim: tooLarge).foregroundStyle(.red).font(.callout).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
                 Spacer()

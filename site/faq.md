@@ -70,6 +70,10 @@ Choose **Image › Image Size…** (⌥⌘I), type a new width or height in pixe
 
 Yes. Glimmer runs a small web server on your Mac, reachable only from your Mac, at `http://127.0.0.1:9001` (or the first free port from 9101 to 9119). An agent such as Claude can fetch the guide at `/glimmer` and then open, edit and export images in your open windows. Copy the line under **Help › Agent Access** and paste it to your agent. See the [Agent guide](agents.html) for the details. State-changing requests need a special header, requests from web pages are refused, and paid steps are refused unless the agent asks for them explicitly.
 
+## How large can a document be?
+
+Each side can be up to 32,768 pixels, and the canvas must fit your Mac's memory: about 850 megapixels on a Mac with 16 GB. Many large layers matter sooner. A 6000 × 4000 document with 60 layers takes about 5.5 GB of memory; at 12,000 × 8,000 the same document would need about 20 GB (calculated, not measured). Glimmer tells you once when a document outgrows your Mac, and merging layers or lowering the resolution helps. See [Documents and files](manual/02-documents-and-files.md).
+
 ## Does Glimmer work with Flimmer and Jämmer?
 
 Yes. The three apps can ask each other for things on your Mac. Glimmer's assistant can use Jämmer's and Flimmer's operations, for example to draw the waveform of an episode in Jämmer as a cover image, or to add an echo in Jämmer. Flimmer can hand Glimmer a picture to edit and pick up the result when you press ⌘S, and can ask Glimmer for cover art in podcast sizes (3000 × 3000 or 1400 × 1400 pixels). Glimmer shows "Requested by Flimmer" when a sibling changes something, and never opens another app unless you click to open it. Everything stays on your Mac, and nothing that costs money happens without your say. See [Automation](manual/13-automation.md).
