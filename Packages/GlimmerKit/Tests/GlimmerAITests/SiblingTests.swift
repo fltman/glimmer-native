@@ -8,9 +8,12 @@ final class FakeJammer: URLProtocol, @unchecked Sendable {
     struct Seen: Sendable { var method: String; var url: URL; var headers: [String: String]; var body: Data? }
     nonisolated(unsafe) static var seen: [Seen] = []
     nonisolated(unsafe) static var running = true
+    nonisolated(unsafe) static var statusBundleID: String?
     static let lock = NSLock()
 
-    static func reset(running: Bool = true) { lock.withLock { seen = []; self.running = running } }
+    static func reset(running: Bool = true, bundleID: String? = nil) {
+        lock.withLock { seen = []; self.running = running; statusBundleID = bundleID }
+    }
     static var requests: [Seen] { lock.withLock { seen } }
 
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -41,7 +44,10 @@ final class FakeJammer: URLProtocol, @unchecked Sendable {
 
     static func answer(_ method: String, _ url: URL) -> (Int, Any) {
         switch (method, url.path) {
-        case ("GET", "/api/v1/status"): return (200, ["app": ["name": "Jammer", "version": "0.1.0"]])
+        case ("GET", "/api/v1/status"):
+            var app: [String: Any] = ["name": "Jammer", "version": "0.1.0"]
+            if let id = lock.withLock({ statusBundleID }) { app["bundleID"] = id }
+            return (200, ["app": app])
         case ("GET", "/api/v1/operations"):
             let start: [String: Any] = ["type": "number", "x-in": "query"]
             let id: [String: Any] = ["type": "string", "x-in": "path"]
@@ -95,6 +101,14 @@ final class FakeJammer: URLProtocol, @unchecked Sendable {
             #expect(r.headers["X-Sibling"] == "glimmer")
             #expect(r.headers["Origin"] == nil)
         }
+    }
+
+    @Test func aSiblingOfTheOtherBuildIsNotUsed() async {
+        // These tests run as a release-style host, so a debug Jämmer on the port doesn't count.
+        FakeJammer.reset(bundleID: "com.brattoo.jammer.debug")
+        #expect(await FakeJammer.client().port(.jammer) == nil)
+        FakeJammer.reset(bundleID: "com.brattoo.jammer")
+        #expect(await FakeJammer.client().port(.jammer) == 9003)
     }
 
     @Test func operationsBecomeToolsNamedAfterTheApp() async throws {
@@ -177,6 +191,20 @@ final class FakeJammer: URLProtocol, @unchecked Sendable {
 }
 
 @Suite struct SiblingPlanningTests {
+    @Test func debugBuildsPairWithDebugBuilds() {
+        #expect(SiblingApp.jammer.bundleID(debug: true) == "com.brattoo.jammer.debug")
+        #expect(SiblingApp.flimmer.bundleID(debug: false) == "com.brattoo.flimmer")
+        #expect(!AppIdentity.isDebugBuild, "the test host isn't a debug Glimmer")
+    }
+
+    @Test func theBestInstalledCopyIsChosen() {
+        // /Applications first, then the highest build; LaunchServices' default can be a stale one.
+        #expect(SiblingApp.bestCopy([("/Users/x/actions-runner/Debug/Jammer.app", "2"), ("/Users/x/build/Jammer.app", "7")]) == 1)
+        #expect(SiblingApp.bestCopy([("/Users/x/build/Jammer.app", "9"), ("/Applications/Jammer.app", "3")]) == 1)
+        #expect(SiblingApp.bestCopy([("/a/Jammer.app", "1.10"), ("/b/Jammer.app", "1.9")]) == 0)
+        #expect(SiblingApp.bestCopy([]) == nil)
+    }
+
     @Test func toolNamesSplit() {
         #expect(SiblingApp.split(tool: "jammer_gain")! == (.jammer, "gain"))
         #expect(SiblingApp.split(tool: "flimmer_add_title")! == (.flimmer, "add_title"))

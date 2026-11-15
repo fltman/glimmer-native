@@ -5,6 +5,8 @@
 #   scripts/test-app.sh <command> [args…]
 #   scripts/test-app.sh zsh -c 'curl -s http://127.0.0.1:$GLIMMER_PORT/api/v1/status'
 #
+# The copy is the Debug build, com.brattoo.glimmer.debug: its own container, settings, saved
+# windows and keychain item, so tests never touch the real Glimmer.
 # The command gets GLIMMER_PID, GLIMMER_PORT and GLIMMER_APP. GLIMMER_ARGS adds launch arguments.
 # The copy starts without restoring earlier windows, so the test sees only its own.
 # The copy runs without OPENROUTER_API_KEY

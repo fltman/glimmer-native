@@ -5,6 +5,15 @@ import GlimmerCore
 // Flimmer and Jämmer for things through their local agent APIs, exactly like an
 // outside agent, with `X-Sibling: glimmer`. Everything stays on 127.0.0.1.
 
+/// Which build this is. Debug builds carry `.debug` on their bundle id and talk to the
+/// siblings' debug builds (series rule), so tests never reach the real apps.
+public enum AppIdentity {
+    public static let ownBundleID = Bundle.main.bundleIdentifier ?? "com.brattoo.glimmer"
+    public static var isDebugBuild: Bool { ownBundleID.hasSuffix(".debug") }
+    /// Glimmer's own id in this build (com.brattoo.glimmer or com.brattoo.glimmer.debug).
+    public static var glimmerBundleID: String { "com.brattoo.glimmer" + (isDebugBuild ? ".debug" : "") }
+}
+
 /// A sibling app Glimmer can ask for things.
 public enum SiblingApp: String, CaseIterable, Sendable {
     case flimmer, jammer
@@ -12,7 +21,20 @@ public enum SiblingApp: String, CaseIterable, Sendable {
     /// `app.name` in its `GET /api/v1/status`; a port counts only when this matches exactly.
     public var appName: String { self == .jammer ? "Jammer" : "Flimmer" }
     public var displayName: String { self == .jammer ? "Jämmer" : "Flimmer" }
-    public var bundleID: String { "com.brattoo.\(rawValue)" }
+    /// The sibling's id in this kind of build: debug builds pair with debug builds.
+    public var bundleID: String { bundleID(debug: AppIdentity.isDebugBuild) }
+    public func bundleID(debug: Bool) -> String { "com.brattoo.\(rawValue)" + (debug ? ".debug" : "") }
+
+    /// Which copy to open when several are installed (SIBLINGS.md §1): one in /Applications
+    /// first, then the highest CFBundleVersion. (A running copy is used before any of these.)
+    public static func bestCopy(_ copies: [(path: String, build: String)]) -> Int? {
+        func build(_ s: String) -> [Int] { s.split(separator: ".").map { Int($0) ?? 0 } }
+        return copies.indices.max { a, b in
+            let inApps = (copies[a].path.hasPrefix("/Applications/"), copies[b].path.hasPrefix("/Applications/"))
+            if inApps.0 != inApps.1 { return !inApps.0 }
+            return build(copies[a].build).lexicographicallyPrecedes(build(copies[b].build))
+        }
+    }
     /// The header every request that isn't a GET must carry.
     public var agentHeader: String { "X-\(appName)-Agent" }
     /// First port, then the reserved range (SIBLINGS.md §1).
@@ -236,8 +258,11 @@ public actor SiblingClient {
         request.setValue("glimmer", forHTTPHeaderField: AgentAPI.siblingHeader)
         guard let (data, response) = try? await session.data(for: request),
               (response as? HTTPURLResponse)?.statusCode == 200,
-              let root = try? JSONDecoder().decode([String: JSONValue].self, from: data) else { return false }
-        return root["app"]?.object?["name"]?.string == app.appName
+              let root = try? JSONDecoder().decode([String: JSONValue].self, from: data),
+              let info = root["app"]?.object, info["name"]?.string == app.appName else { return false }
+        // A sibling that says which build it is must be the matching one (debug with debug).
+        if let id = info["bundleID"]?.string { return id == app.bundleID }
+        return true
     }
 
     /// Which siblings run right now (searched concurrently).

@@ -49,10 +49,21 @@ extension AIController {
 
     /// Opens a sibling app, after the user clicked the button.
     static func launch(_ app: SiblingApp, session: EditorSession) {
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleID) else {
+        guard let url = applicationURL(app) else {
             session.errorMessage = String(localized: "\(app.displayName) isn't installed on this Mac.")
             return
         }
         NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+    }
+
+    /// The copy of a sibling to use (SIBLINGS.md §1): a running one, else the best installed
+    /// one. LaunchServices' own default can be any stale build with the same id.
+    static func applicationURL(_ app: SiblingApp) -> URL? {
+        if let running = NSRunningApplication.runningApplications(withBundleIdentifier: app.bundleID).first?.bundleURL {
+            return running
+        }
+        let urls = NSWorkspace.shared.urlsForApplications(withBundleIdentifier: app.bundleID)
+        let copies = urls.map { (path: $0.path, build: Bundle(url: $0)?.infoDictionary?["CFBundleVersion"] as? String ?? "0") }
+        return SiblingApp.bestCopy(copies).map { urls[$0] }
     }
 }

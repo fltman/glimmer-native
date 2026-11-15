@@ -25,8 +25,10 @@ public struct KeychainSecretStore: SecretStore {
         self.account = account
     }
 
+    /// The app's own keychain item: a debug build (com.brattoo.glimmer.debug) never reads the
+    /// real Glimmer's key.
     public static let openRouterAPIKey = KeychainSecretStore(
-        service: "com.brattoo.glimmer", account: "openrouter-api-key"
+        service: AppIdentity.glimmerBundleID, account: "openrouter-api-key"
     )
 
     private var baseQuery: [CFString: Any] {

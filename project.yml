@@ -53,6 +53,11 @@ targets:
         COMBINE_HIDPI_IMAGES: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SPARKLE_PUBLIC_KEY: ""
+      configs:
+        # Debug builds are a separate app (own container, settings, saved windows and keychain
+        # item), so tests never touch the real Glimmer; release.sh builds Release only.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.brattoo.glimmer.debug
     entitlements:
       path: App/Glimmer.entitlements
       properties:
@@ -126,6 +131,9 @@ targets:
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.brattoo.glimmer.debug.thumbnail
     entitlements:
       path: QuickLook/Thumbnail/Thumbnail.entitlements
       properties:
@@ -157,6 +165,9 @@ targets:
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
         SKIP_INSTALL: YES
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.brattoo.glimmer.debug.preview
     entitlements:
       path: QuickLook/Preview/Preview.entitlements
       properties:

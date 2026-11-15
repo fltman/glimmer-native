@@ -149,6 +149,9 @@ if [[ $DRY_RUN == 1 ]]; then
 else
   xcrun stapler validate "$APP"
 fi
+# Only the Release build is Glimmer: Debug builds are com.brattoo.glimmer.debug.
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP/Contents/Info.plist")
+[[ "$BUNDLE_ID" == com.brattoo.glimmer ]] || { echo "The app is $BUNDLE_ID, not com.brattoo.glimmer; release builds only."; exit 1; }
 BUILT=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" -c "Print CFBundleVersion" "$APP/Contents/Info.plist" | tr '\n' ' ')
 [[ "$BUILT" == "$VERSION $BUILD " ]] || { echo "The app says version $BUILT, expected $VERSION $BUILD"; exit 1; }
 

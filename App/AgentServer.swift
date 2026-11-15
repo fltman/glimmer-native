@@ -232,7 +232,8 @@ enum AgentRouter {
             return .text(AgentAPI.guide(port: port, appVersion: appVersion))
         case ["api", "v1", "status"]:
             try only("GET")
-            return .json(["app": ["name": "Glimmer", "version": appVersion], "api": AgentAPI.version, "port": Int(port),
+            return .json(["app": ["name": "Glimmer", "version": appVersion, "bundleID": AppIdentity.ownBundleID],
+                          "api": AgentAPI.version, "port": Int(port),
                           "documents": AgentRegistry.shared.sessions.map(summary),
                           "jobs": AgentJobs.shared.running.map(\.json)])
         case ["api", "v1", "operations"]:
