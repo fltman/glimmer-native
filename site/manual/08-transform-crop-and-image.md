@@ -10,6 +10,7 @@ It works on:
 
 - **Pixel layers.** The layer's pixels are resampled when you apply the transform.
 - **Text layers.** Scaling, rotating and skewing keep the text editable: the transform is stored with the text, and you can still change its words, font and color (the editor shows it turned like the text). Distort and perspective can't keep text editable, so when you apply one, Glimmer asks first, saying how many text layers would become pixels; **Cancel** keeps the box so you can change it. Undo brings the text back.
+  ![A rotated text layer being edited in place: the text cursor sits at the end of the tilted line](../screens/rotated-text.webp)
 - **Shape layers.** The vector shape is transformed, so edges stay sharp.
 - **Smart objects.** Only the placement changes. The original pixels are kept, so you can transform again later without losing quality.
 

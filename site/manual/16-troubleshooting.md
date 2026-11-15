@@ -119,6 +119,10 @@ Close other documents, hide layers you are not working on, and use **Fit on Scre
 - Another program may hold a port in that range. Docker containers often do: a MinIO server, for example, uses 9100 and 9101. Glimmer then uses the next free port, so this is harmless; just use the address the window shows. An agent that checks that `app.name` in `GET /api/v1/status` is `"Glimmer"` never mistakes the other program for Glimmer.
 - Glimmer finds Jämmer and Flimmer the same way, and skips ports where another program answers.
 
+### A copy built from source behaves like a different app
+
+A Debug build made from the source code is its own app to macOS: its identifier is `com.brattoo.glimmer.debug`, so it has its own settings, its own folder under `~/Library/Containers`, its own saved windows and its own Keychain item for the OpenRouter key. Nothing you do in it changes the Glimmer you installed. `GET /api/v1/status` shows which copy answered, under `app.bundleID`. A Debug build also looks for the Debug builds of Flimmer and Jämmer, not the installed ones.
+
 ### The assistant says "Jämmer is not running"
 
 The assistant needed Jämmer (or Flimmer) for your request, but couldn't find it on this Mac. Click **Open Jämmer**, wait until it has opened your document, and ask again. If Jämmer is open but still not found, quit and reopen it so that it starts its local server again.

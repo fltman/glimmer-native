@@ -48,6 +48,8 @@ Words and letters within one text layer can have their own font, style, size and
 
 While you are editing, the options bar shows the style at the text cursor, or at the start of the selection. With nothing selected, a change applies to the whole text. Text you type takes the style of the letter before it, and pasted text takes the style where it lands. ⌘Z while editing undoes a style change; after you finish, the whole edit is one undo step.
 
+![A text layer being edited over a mountain lake photo: the word "lake" is selected, bold and yellow, and the options bar shows its style](../screens/word-styling.webp)
+
 Alignment, tracking and line spacing always apply to the whole layer. A line with a bigger word gets taller, so the word doesn't run into the line above. Styled words also work with warp, text on a path and Free Transform.
 
 ### Warp

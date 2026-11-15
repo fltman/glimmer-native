@@ -10,7 +10,7 @@
   "features": [
     {
       "title": "Layers, the way you expect",
-      "text": "Pixel, adjustment, fill, text and shape layers, groups, masks, clipping masks, smart objects, 18 blend modes (plus pass-through for groups) and layer styles, all non-destructive in 16-bit linear colour.",
+      "text": "Pixel, adjustment, fill, text and shape layers, groups, masks, clipping masks, smart objects, 24 blend modes (plus pass-through for groups) and layer styles, all non-destructive in 16-bit linear colour.",
       "screen": "screens/layers-panel.webp"
     },
     {
@@ -34,6 +34,11 @@
       "screen": "screens/ai-panel.webp"
     },
     {
+      "title": "Text that stays text",
+      "text": "Give single words their own font, size or colour, warp the text or run it along a path. Scale, rotate and skew it with Free Transform, and you can still change the words.",
+      "screen": "screens/word-styling.webp"
+    },
+    {
       "title": "Text in photos becomes editable",
       "text": "Image Text to Layers turns the words in a photo into text layers at the right size and colour. Straighten Document flattens a page or a sign shot at an angle.",
       "screen": "screens/text-to-layers.webp"
@@ -54,13 +59,9 @@
       "screen": "screens/waveform-cover.webp"
     },
     {
-      "title": "Agents can drive it",
-      "text": "Hand your AI agent one line from Help › Agent Access. It reads the guide on your Mac and edits through a local API: open, edit, undo and export.",
+      "title": "Agents and Shortcuts can drive it",
+      "text": "Hand your AI agent one line from Help › Agent Access. It reads the guide on your Mac and edits through a local API: open, edit, transform, style text, undo and export. Six Shortcuts actions do the same for files, without opening a window.",
       "screen": "screens/agent-splash.webp"
-    },
-    {
-      "title": "Shortcuts and automation",
-      "text": "Shortcuts actions for Auto Enhance, Remove Background, presets, filters and saved actions work on files without opening a window."
     },
     {
       "title": "Brushes and retouching",

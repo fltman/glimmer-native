@@ -48,6 +48,10 @@ It opens the flattened image of a PSD, through macOS. Layers in PSD files are no
 
 Yes. Glimmer documents use macOS autosave and versions, so you can close a document without losing work and go back to earlier versions with **File › Revert To**. Autosave keeps your Glimmer document, never the image you opened: an image file only changes when you export over it, or when you save back an image that Flimmer handed you to edit.
 
+## Can one word in a text have its own style?
+
+Yes. Edit the text, select the words and change the font, style, size or color in the options bar; only the selection changes. The text stays editable, also after you scale, rotate or skew it with Free Transform. See [Text, paths and shapes](manual/09-text-paths-and-shapes.md).
+
 ## Can AI agents control Glimmer?
 
 Yes. Glimmer runs a small web server on your Mac, reachable only from your Mac, at `http://127.0.0.1:9001` (or the first free port from 9101 to 9119). An agent such as Claude can fetch the guide at `/glimmer` and then open, edit and export images in your open windows. Copy the line under **Help › Agent Access** and paste it to your agent. See the [Agent guide](agents.html) for the details. State-changing requests need a special header, requests from web pages are refused, and paid steps are refused unless the agent asks for them explicitly.

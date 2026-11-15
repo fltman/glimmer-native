@@ -599,7 +599,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
                 editorScale = scale
             }
         } else {
-            editor = TextLayerEditor(frame: .zero)
+            // TextKit 1 from the start: the editor measures with the layout manager, and a view
+            // that switches over after selecting leaves the first highlight behind.
+            editor = TextLayerEditor(usingTextLayoutManager: false)
             editor.drawsBackground = false
             editor.isRichText = true  // words can have their own font, size and colour
             editor.importsGraphics = false
@@ -621,6 +623,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         // What new typing looks like when the text is empty (otherwise the letter before the caret decides).
         if editor.string.isEmpty { editor.typingAttributes = Self.editorAttributes(text.baseStyle, scale: scale) }
         editor.alignment = text.alignment == .center ? .center : (text.alignment == .right ? .right : .left)
+        // A turned view's frame is its bounding box, so place and size it unturned, then turn it.
+        editor.frameRotation = 0
         if let box = text.boxWidth {
             editor.isHorizontallyResizable = false
             editor.textContainer?.widthTracksTextView = true
@@ -691,8 +695,12 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         guard let editor = textEditor, let font = editor.font, let lm = editor.layoutManager, let tc = editor.textContainer else { return }
         lm.ensureLayout(for: tc)
         let used = lm.usedRect(for: tc)
+        let turn = editor.frameRotation
+        editor.frameRotation = 0  // (sizing a turned view sizes its bounding box: the highlight drew a line too low)
         let width = editor.isHorizontallyResizable ? max(used.width + font.pointSize, font.pointSize * 2) : editor.frame.width
         editor.frame.size = CGSize(width: width, height: max(used.height, font.pointSize * 1.3) + 4)
+        editor.frameRotation = turn
+        if turn != 0 { editor.needsDisplay = true }  // a turned view redraws only part of itself otherwise
     }
 
     /// Ends text editing (Esc / ⌘⏎ / clicking elsewhere).
@@ -1262,6 +1270,8 @@ extension CanvasNSView: NSTextViewDelegate {
     }
 
     func textViewDidChangeSelection(_ notification: Notification) {
+        // A turned text view doesn't erase all of its old highlight by itself.
+        textEditor?.needsDisplay = true
         updateTextSelectionStyle()
     }
 }
