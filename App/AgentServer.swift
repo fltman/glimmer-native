@@ -19,14 +19,20 @@ final class AgentRegistry {
     }
 
     private var entries: [Entry] = []
+    /// The document whose window was key last: `frontmost` in /documents (series rule).
+    private(set) weak var front: EditorSession?
 
     func register(_ session: EditorSession) {
         entries.removeAll { $0.session == nil || $0.session === session }
         entries.append(Entry(id: session.agentID, session: session))
+        front = session  // a window that just opened is in front
     }
+
+    func markFront(_ session: EditorSession) { front = session }
 
     func unregister(_ session: EditorSession) {
         entries.removeAll { $0.session == nil || $0.session === session }
+        if front === session { front = entries.last?.session }
     }
 
     var sessions: [EditorSession] {
@@ -282,7 +288,8 @@ enum AgentRouter {
     static func summary(_ session: EditorSession) -> [String: Any] {
         let st = session.state
         return ["id": session.agentID, "name": st.layers.first?.name ?? "Untitled", "width": st.width, "height": st.height,
-                "layerCount": st.allLayers.count, "hasSelection": st.selection != nil]
+                "layerCount": st.allLayers.count, "hasSelection": st.selection != nil,
+                "frontmost": AgentRegistry.shared.front === session]
     }
 
     static func detail(_ session: EditorSession) -> [String: Any] {

@@ -18,7 +18,7 @@ scripts/test.sh                # package tests + app build (build/DerivedData)
 open Glimmer.xcodeproj         # after `xcodegen generate`
 ```
 
-**No test spends money.** Start test copies of the app with `env -u OPENROUTER_API_KEY open …` (debug builds read the key from the environment), and never send `"allowPaid": true` to a real provider from a test. `scripts/test.sh` and `scripts/uitest.sh` clear the key for you.
+**No test spends money.** Start test copies of the app with `env -u OPENROUTER_API_KEY open …` (debug builds read the key from the environment), and never send `"allowPaid": true` to a real provider from a test. `scripts/test.sh` and `scripts/uitest.sh` clear the key for you. `scripts/test-app.sh <command>` starts a test copy without the key, holds the GUI lock, runs the command with `GLIMMER_PORT` set, and quits that copy (by its pid) when the command ends.
 
 Opt-in suites: `GLIMMER_LIVE_AI=1` (real OpenRouter calls, the only deliberate exception) and `GLIMMER_MODELS_DIR=<dir>` (on-device Core ML models). Golden-image references live in `Packages/GlimmerKit/Tests/GlimmerRenderTests/Golden`; re-record them with `GLIMMER_RECORD_GOLDEN=1`.
 

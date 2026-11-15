@@ -116,6 +116,12 @@ Close other documents, hide layers you are not working on, and use **Fit on Scre
 - Glimmer must be running.
 - Use the address shown under **Help › Agent Access**. If port 9001 is taken by another program, Glimmer uses the first free port from 9101 to 9119, and the window shows the real address.
 - If the window says all ports are in use, quit the programs that use port 9001 and ports 9101–9119, then restart Glimmer.
+- Another program may hold a port in that range. Docker containers often do: a MinIO server, for example, uses 9100 and 9101. Glimmer then uses the next free port, so this is harmless; just use the address the window shows. An agent that checks that `app.name` in `GET /api/v1/status` is `"Glimmer"` never mistakes the other program for Glimmer.
+- Glimmer finds Jämmer and Flimmer the same way, and skips ports where another program answers.
+
+### The assistant says "Jämmer is not running"
+
+The assistant needed Jämmer (or Flimmer) for your request, but couldn't find it on this Mac. Click **Open Jämmer**, wait until it has opened your document, and ask again. If Jämmer is open but still not found, quit and reopen it so that it starts its local server again.
 
 ### The agent gets 403 forbidden
 

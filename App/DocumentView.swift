@@ -6,6 +6,7 @@ import SwiftUI
 struct DocumentView: View {
     @State private var session: EditorSession
     @Environment(\.undoManager) private var undoManager
+    @Environment(\.controlActiveState) private var activeState
     @AppStorage(Preferences.showOmnibarKey) private var showOmnibar = true
     @AppStorage(SelectionBar.showKey) private var showSelectionBar = true
 
@@ -147,6 +148,7 @@ struct DocumentView: View {
                 AgentRegistry.shared.register(session)
             }
             .onDisappear { AgentRegistry.shared.unregister(session) }
+            .onChange(of: activeState) { _, state in if state == .key { AgentRegistry.shared.markFront(session) } }
             .onChange(of: undoManager) { _, manager in session.undoManager = manager }
     }
 }
