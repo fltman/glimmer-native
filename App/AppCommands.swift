@@ -15,6 +15,14 @@ struct GlimmerCommands: Commands {
         CommandGroup(replacing: .importExport) {
             items(registry.descriptors(in: .file))
         }
+        CommandGroup(after: .saveItem) {
+            // An image handed over by Flimmer or Jämmer: Save writes it back; this keeps the layers too.
+            if let link = session?.linkedImage {
+                // ⌘S does this too (LinkedSaveShortcut); Save itself still saves a .glimmer.
+                Button("Save Back to \(link.fileName)") { session?.saveLinkedImage() }
+                Button("Save a Glimmer Copy…") { session?.saveGlimmerCopy() }
+            }
+        }
         // The system items read just "Undo"/"Redo"; these name the step (from the
         // document's history) and still go through the responder chain, so text
         // fields keep their own undo.

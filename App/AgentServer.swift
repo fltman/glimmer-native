@@ -289,7 +289,8 @@ enum AgentRouter {
         let st = session.state
         return ["id": session.agentID, "name": st.layers.first?.name ?? "Untitled", "width": st.width, "height": st.height,
                 "layerCount": st.allLayers.count, "hasSelection": st.selection != nil,
-                "frontmost": AgentRegistry.shared.front === session]
+                "frontmost": AgentRegistry.shared.front === session,
+                "linkedFile": session.linkedImage.map { ["name": $0.fileName, "format": $0.format.rawValue, "requester": $0.requester] } as Any? ?? NSNull()]
     }
 
     static func detail(_ session: EditorSession) -> [String: Any] {

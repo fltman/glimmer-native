@@ -245,7 +245,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         super.viewDidMoveToWindow()
         displayLink?.invalidate()
         displayLink = nil
-        guard window != nil else { return }
+        guard let hostWindow = window else { return }
+        session.canvasWindow = hostWindow
         let link = displayLink(target: self, selector: #selector(step(_:)))
         link.add(to: .main, forMode: .common)
         displayLink = link

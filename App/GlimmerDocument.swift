@@ -12,8 +12,8 @@ import UniformTypeIdentifiers
 /// stack to detect unsaved changes, so autosave depends on it.
 @Observable
 final class GlimmerDocument: Document {
-    static let readableContentTypes: [UTType] = [.glimmerDocument]
-    static let writableContentTypes: [UTType] = [.glimmerDocument]
+    static let readableContentTypes: [UTType] = UTType.glimmerDocumentTypes
+    static let writableContentTypes: [UTType] = UTType.glimmerDocumentTypes
 
     var state: DocumentState
 

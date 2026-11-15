@@ -146,6 +146,7 @@ struct DocumentView: View {
                 session.undoManager = undoManager
                 // Only a session that has a window is offered to agents.
                 AgentRegistry.shared.register(session)
+                DocumentOpener.shared.claimLink(for: session)
             }
             .onDisappear { AgentRegistry.shared.unregister(session) }
             .onChange(of: activeState) { _, state in if state == .key { AgentRegistry.shared.markFront(session) } }
@@ -311,13 +312,19 @@ private struct TitleChip: View {
     private var content: some View {
         HStack(spacing: 8) {
             Image(systemName: "sparkle").foregroundStyle(Theme.accent)
-            Text(session.documentName).fontWeight(.medium).lineLimit(1)
+            Text(session.linkedImage?.fileName ?? session.documentName).fontWeight(.medium).lineLimit(1)
             Text(verbatim: "\(session.state.width)×\(session.state.height)").foregroundStyle(.secondary)
             Text(session.canvas.zoom, format: .percent.precision(.fractionLength(0)))
                 .monospacedDigit()
                 .foregroundStyle(.secondary)
             if session.paintsMask {
                 Label("Editing mask", systemImage: "rectangle.dashed").foregroundStyle(.secondary)
+            }
+            if let link = session.linkedImage {
+                Label("For \(link.requester) – ⌘S saves back", systemImage: "link")
+                    .foregroundStyle(Theme.accent)
+                    .lineLimit(1)
+                    .accessibilityLabel("Editing \(link.fileName) for \(link.requester). Command-S saves it back.")
             }
             if session.isExporting {
                 ProgressView().controlSize(.small)

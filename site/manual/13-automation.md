@@ -126,6 +126,17 @@ Each request with editing steps is one undo step, named **Agent Edit**.
 
 Glimmer's sibling apps, Flimmer and Jämmer, use the same API. Their assistants can ask Glimmer for the same editing steps an agent can use, open an image as a new document, and get the result back. When a sibling changes a document, Glimmer shows **Requested by Flimmer** (or Jämmer) over the canvas for a few seconds, so you know where the change came from. You can undo it like any other edit. The siblings get no extra rights: they follow the same rules as any agent, and paid steps run only if you already confirmed the cost in the app that asked.
 
+### Editing an image for Flimmer
+
+Flimmer can hand you a picture to edit in Glimmer, such as a frame or a title card, and pick up the result when you save. The image opens in a new Glimmer window, and the bar at the top says **For Flimmer – ⌘S saves back** next to the file name.
+
+- Edit as usual, with layers, adjustments and the assistant.
+- Press ⌘S, or choose **File › Save Back to** *name*, to write the image back into the same file, in the same format (PNG stays PNG, JPEG stays JPEG). The layers are flattened in the file; Glimmer keeps them in the window. Flimmer sees the change and updates its copy.
+- Choose **File › Save a Glimmer Copy…** if you also want a layered `.glimmer` document, for example next to the image.
+- Glimmer never saves the image on its own: autosave keeps your work in the window but never touches the file.
+
+Images you open yourself, from the Finder or with **File › Open…**, open as new documents as before.
+
 ### Asking Jämmer and Flimmer
 
 Glimmer's assistant can ask its sibling apps for things too. When you ask the assistant something, Glimmer looks for Jämmer and Flimmer on your Mac. Every free operation a running sibling offers becomes something the assistant can use, alongside Glimmer's own steps. You don't set anything up. If a sibling isn't open, the assistant simply doesn't see its operations.

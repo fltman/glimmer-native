@@ -2117,6 +2117,17 @@
         }
       }
     },
+    "Couldn't save %@: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kunde inte spara %1$@: %2$@"
+          }
+        }
+      }
+    },
     "Create": {
       "localizations": {
         "sv": {
@@ -2765,6 +2776,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Redigera ”%@”"
+          }
+        }
+      }
+    },
+    "Editing %@ for %@. Command-S saves it back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigerar %1$@ åt %2$@. Kommando-S sparar tillbaka."
           }
         }
       }
@@ -3554,6 +3576,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Typsnitt"
+          }
+        }
+      }
+    },
+    "For %@ – ⌘S saves back": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "För %@ – ⌘S sparar tillbaka"
           }
         }
       }
@@ -5687,6 +5720,17 @@
         }
       }
     },
+    "No Metal GPU available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen Metal-grafikprocessor finns."
+          }
+        }
+      }
+    },
     "No Path": {
       "localizations": {
         "sv": {
@@ -7496,6 +7540,17 @@
         }
       }
     },
+    "Save Back to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara tillbaka till %@"
+          }
+        }
+      }
+    },
     "Save Current Brush…": {
       "localizations": {
         "sv": {
@@ -7512,6 +7567,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spara här"
+          }
+        }
+      }
+    },
+    "Save a Glimmer Copy…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara en Glimmer-kopia…"
           }
         }
       }
@@ -7552,6 +7618,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sparade"
+          }
+        }
+      }
+    },
+    "Saved %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sparade %@"
+          }
+        }
+      }
+    },
+    "Saved %@ for %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sparade %1$@ åt %2$@"
           }
         }
       }
@@ -8699,6 +8787,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bilden ser redan balanserad ut. Autoförbättra hittade inget att ändra."
+          }
+        }
+      }
+    },
+    "The layers stay editable in the copy; %@ is still what Save writes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagren går att redigera i kopian; det är fortfarande %@ som ⌘S skriver."
           }
         }
       }

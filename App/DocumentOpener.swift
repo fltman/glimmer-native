@@ -1,5 +1,7 @@
 import AppKit
+import GlimmerAI
 import GlimmerCore
+import GlimmerRender
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -101,7 +103,9 @@ final class DocumentOpener {
         pending.isEmpty ? nil : pending.removeFirst()
     }
 
-    func open(_ urls: [URL]) {
+    /// `requester` is the sibling app that handed the files over (Flimmer, Jämmer): its
+    /// PNG or JPEG is then edited in linked mode, where Save writes back into the same file.
+    func open(_ urls: [URL], requester: String? = nil) {
         for url in urls {
             let type = UTType(filenameExtension: url.pathExtension)
             if type?.conforms(to: .glimmerDocument) == true {
@@ -111,12 +115,46 @@ final class DocumentOpener {
             } else if url.pathExtension.lowercased() == "aips" {
                 openAips(url)
             } else {
-                openImage(url)
+                openImage(url, link: requester.flatMap { LinkedImage(url: url, requester: $0) })
             }
         }
     }
 
-    private func openImage(_ url: URL) {
+    /// Linked images waiting for their window, by the id of the document's first layer.
+    private var pendingLinks: [UUID: LinkedImage] = [:]
+
+    /// Called when a document window appears: a handed-over image becomes linked.
+    func claimLink(for session: EditorSession) {
+        guard let id = session.state.layers.first?.id, let link = pendingLinks.removeValue(forKey: id) else { return }
+        session.linkedImage = link
+        bringForward(session)
+    }
+
+    /// The app that handed the image over expects Glimmer in front with that document.
+    private func bringForward(_ session: EditorSession) {
+        DispatchQueue.main.async {
+            MainActor.assumeIsolated {
+                session.canvasWindow?.makeKeyAndOrderFront(nil)
+                AgentRegistry.shared.markFront(session)
+                NSApp.activate()
+            }
+        }
+    }
+
+    /// The sibling app that sent the current "open" Apple event, by its bundle id, or nil
+    /// for Finder and everything else (those images open as ordinary new documents).
+    static func appleEventRequester() -> String? {
+        #if DEBUG
+        // Tests hand files over from a script: `-linkAnyOpen YES`.
+        if UserDefaults.standard.bool(forKey: "linkAnyOpen") { return "Test" }
+        #endif
+        guard let event = NSAppleEventManager.shared().currentAppleEvent,
+              let pid = event.attributeDescriptor(forKeyword: AEKeyword(keySenderPIDAttr))?.int32Value,
+              let app = NSRunningApplication(processIdentifier: pid) else { return nil }
+        return SiblingApp.allCases.first(where: { $0.bundleID == app.bundleIdentifier })?.displayName
+    }
+
+    private func openImage(_ url: URL, link: LinkedImage? = nil) {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         do {
@@ -126,11 +164,14 @@ final class DocumentOpener {
             // instead of leaving a blank window behind.
             if let blank = AgentRegistry.shared.sessions.first(where: \.isUntouchedBlank) {
                 try blank.place(image, name: name)
+                blank.linkedImage = link
+                if link != nil { bringForward(blank) }
                 NSDocumentController.shared.noteNewRecentDocumentURL(url)
                 return
             }
             let tiles = try ImageImporter.tiles(from: image)
             let layer = Layer(name: name, content: .raster(tiles))
+            if let link { pendingLinks[layer.id] = link }
             createDocument(DocumentState(width: image.width, height: image.height, layers: [layer]))
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
         } catch {
@@ -167,6 +208,7 @@ final class DocumentOpener {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var didFinishLaunching = false
     private var deferredURLs: [URL] = []
+    private var deferredRequester: String?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
         // No system Open panel at launch: it only accepts .glimmer documents, and Glimmer
@@ -204,6 +246,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // The local API for agents (guide at /glimmer), and the splash that points agents to it.
         MainActor.assumeIsolated { AgentServer.shared.start() }
+        MainActor.assumeIsolated { LinkedSaveShortcut.install() }
         let showsWelcome = !UserDefaults.standard.bool(forKey: WelcomeView.shownKey) && !CommandLine.arguments.contains("-skipWelcome")
         if showsWelcome {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
@@ -226,12 +269,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         guard !deferredURLs.isEmpty else { return }
-        let urls = deferredURLs
+        let urls = deferredURLs, requester = deferredRequester
         deferredURLs = []
+        deferredRequester = nil
         // Let window restoration finish first: restored untitled documents also go
         // through `makeDocument` and would otherwise pick up the queued state.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            MainActor.assumeIsolated { DocumentOpener.shared.open(urls) }
+            MainActor.assumeIsolated { DocumentOpener.shared.open(urls, requester: requester) }
         }
     }
 
@@ -246,11 +290,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
+        // Read the sender while the "open" Apple event is still the current one.
+        let requester = MainActor.assumeIsolated { DocumentOpener.appleEventRequester() }
         guard didFinishLaunching else {
             deferredURLs += urls
+            deferredRequester = deferredRequester ?? requester
             return
         }
-        MainActor.assumeIsolated { DocumentOpener.shared.open(urls) }
+        MainActor.assumeIsolated { DocumentOpener.shared.open(urls, requester: requester) }
     }
 
     /// Sits ahead of NSDocumentController in the responder chain.

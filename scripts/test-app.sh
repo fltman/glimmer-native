@@ -5,7 +5,9 @@
 #   scripts/test-app.sh <command> [args…]
 #   scripts/test-app.sh zsh -c 'curl -s http://127.0.0.1:$GLIMMER_PORT/api/v1/status'
 #
-# The command gets GLIMMER_PID and GLIMMER_PORT. The copy runs without OPENROUTER_API_KEY
+# The command gets GLIMMER_PID, GLIMMER_PORT and GLIMMER_APP. GLIMMER_ARGS adds launch arguments.
+# The copy starts without restoring earlier windows, so the test sees only its own.
+# The copy runs without OPENROUTER_API_KEY
 # (no test spends money), and the script holds the shared GUI lock /tmp/gui-test.lock
 # while it runs. Build first with scripts/test.sh.
 set -euo pipefail
@@ -29,7 +31,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 BEFORE=" $( (pgrep -x Glimmer || true) | tr "\n" " ") "
-env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash
+env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -ApplePersistenceIgnoreState YES ${=GLIMMER_ARGS:-}
 PORT=""
 for _ in {1..80}; do
   if [[ -z "$PID" ]]; then
@@ -46,4 +48,4 @@ done
 [[ -n "$PID" && -n "$PORT" ]] || { echo "The test copy didn't start its agent server."; exit 1; }
 if ps eww -p "$PID" | grep -q "OPENROUTER_API_KEY="; then echo "The test copy has an OpenRouter key in its environment."; exit 1; fi
 echo "▸ Test copy pid $PID on port $PORT"
-GLIMMER_PID=$PID GLIMMER_PORT=$PORT "$@"
+GLIMMER_PID=$PID GLIMMER_PORT=$PORT GLIMMER_APP=$APP "$@"

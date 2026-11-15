@@ -4,6 +4,11 @@ import UniformTypeIdentifiers
 extension UTType {
     /// A `.glimmer` document package.
     public static let glimmerDocument = UTType(exportedAs: "com.brattoo.glimmer.document")
+
+    /// The only file type a Glimmer document reads and writes. Images are imported into new,
+    /// untitled documents and never opened in place: autosave once overwrote an opened
+    /// JPEG with a `.glimmer` package. Tests guard that no image type ever gets in here.
+    public static let glimmerDocumentTypes: [UTType] = [.glimmerDocument]
 }
 
 /// The colour space documents are tagged with. Pixels are always stored as

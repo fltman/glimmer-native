@@ -179,6 +179,10 @@ final class EditorSession {
     var isBatchSheetPresented = false
     /// A sibling app the assistant needed but that isn't running (offers to open it).
     var offlineSibling: SiblingApp?
+    /// An image a sibling app handed over to edit: Save writes it back (`EditorSession+Linked`).
+    var linkedImage: LinkedImage?
+    /// The document's window, set by the canvas.
+    @ObservationIgnored weak var canvasWindow: NSWindow?
     /// A short message shown over the canvas for a few seconds.
     private(set) var toast: String?
     @ObservationIgnored private var toastTask: Task<Void, Never>?
