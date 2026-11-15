@@ -30,7 +30,7 @@ git checkout project.yml            # the dry run bumped the version; the real r
 # 2. Local update test: patches both apps to read http://localhost:8765/appcast.xml,
 #    re-signs them, serves a signed appcast and installs the old app.
 scripts/rehearse-update.sh build/rehearsal/old/export build/release/export
-open "$HOME/Applications/Glimmer Update Rehearsal/Glimmer.app"   # then Glimmer › Check for Updates…
+env -u OPENROUTER_API_KEY open "$HOME/Applications/Glimmer Update Rehearsal/Glimmer.app"   # then Glimmer › Check for Updates…
 
 # 3. Clean up afterwards: quit the test app, stop the server, trash the test install.
 kill $(lsof -tiTCP:8765 -sTCP:LISTEN)

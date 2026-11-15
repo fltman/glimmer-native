@@ -48,4 +48,4 @@ lsof -tiTCP:8765 -sTCP:LISTEN >/dev/null 2>&1 && kill $(lsof -tiTCP:8765 -sTCP:L
 (cd "$WORK/feed" && nohup python3 -m http.server 8765 --bind 127.0.0.1 > ../server.log 2>&1 &)
 sleep 1
 curl -sf http://localhost:8765/appcast.xml >/dev/null && echo "▸ Serving $WORK/feed at http://localhost:8765/"
-echo "Next: open \"$INSTALL/Glimmer.app\", choose Glimmer › Check for Updates…, install and relaunch."
+echo "Next: env -u OPENROUTER_API_KEY open \"$INSTALL/Glimmer.app\", choose Glimmer › Check for Updates…, install and relaunch."

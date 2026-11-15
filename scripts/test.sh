@@ -1,6 +1,11 @@
 #!/bin/zsh
 # Runs the package tests and builds the app. Usage: scripts/test.sh
 set -euo pipefail
+# Never spend money in tests: apps and tests run without an OpenRouter key in the
+# environment, and no test sends "allowPaid": true to a real provider. Debug builds
+# read OPENROUTER_API_KEY from the environment, so a key left there would make paid
+# steps real. (GLIMMER_LIVE_AI=1 is the only opt-in, for deliberate live runs.)
+if [[ "${GLIMMER_LIVE_AI:-0}" != 1 ]]; then unset OPENROUTER_API_KEY; fi
 cd "${0:A:h}/.."
 
 echo "▸ Package tests"

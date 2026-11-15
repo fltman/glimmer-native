@@ -18,7 +18,9 @@ scripts/test.sh                # package tests + app build (build/DerivedData)
 open Glimmer.xcodeproj         # after `xcodegen generate`
 ```
 
-Opt-in suites: `GLIMMER_LIVE_AI=1` (real OpenRouter calls) and `GLIMMER_MODELS_DIR=<dir>` (on-device Core ML models). Golden-image references live in `Packages/GlimmerKit/Tests/GlimmerRenderTests/Golden`; re-record them with `GLIMMER_RECORD_GOLDEN=1`.
+**No test spends money.** Start test copies of the app with `env -u OPENROUTER_API_KEY open …` (debug builds read the key from the environment), and never send `"allowPaid": true` to a real provider from a test. `scripts/test.sh` and `scripts/uitest.sh` clear the key for you.
+
+Opt-in suites: `GLIMMER_LIVE_AI=1` (real OpenRouter calls, the only deliberate exception) and `GLIMMER_MODELS_DIR=<dir>` (on-device Core ML models). Golden-image references live in `Packages/GlimmerKit/Tests/GlimmerRenderTests/Golden`; re-record them with `GLIMMER_RECORD_GOLDEN=1`.
 
 `scripts/uitest.sh` runs the UI tests against the real app (new document, paint, undo, save, export). macOS asks once to allow UI automation. The same tests run on the self-hosted Mac with `gh workflow run "UI tests"`; they take over the mouse and keyboard for about a minute, so they're started by hand.
 
