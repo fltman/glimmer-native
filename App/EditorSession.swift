@@ -1,4 +1,5 @@
 import AppKit
+import GlimmerAI
 import GlimmerCore
 import GlimmerRender
 import GlimmerTools
@@ -424,8 +425,10 @@ final class EditorSession {
             return !layer.isRaster && !layer.isAdjustment
         case .export, .exportPNG:
             return !isExporting
-        case .autoEnhance, .autoStraighten, .suggestCrop:
+        case .autoEnhance, .autoStraighten, .suggestCrop, .autoColor, .selectPeople, .copyImageText, .textToLayers:
             return !isUntouchedBlank
+        case .exportForWeb:
+            return !isExporting
         case .deselect, .invertSelection, .aiRemoveObject, .featherSelection, .growSelection, .shrinkSelection:
             return state.selection != nil
         case .copy, .cut:
@@ -491,6 +494,15 @@ final class EditorSession {
         case .autoStraighten: ai.autoStraighten()
         case .suggestCrop: ai.suggestCrop()
         case .batchProcess: isBatchSheetPresented = true
+        case .autoColor: ai.autoColor()
+        case .selectPeople: ai.selectPeople()
+        case .copyImageText: ai.copyImageText()
+        case .textToLayers: ai.textToLayers()
+        case .exportForWeb:
+            var web = ExportOptions.web
+            web.colorSpace = .sRGB
+            exportOptions = web
+            isExportSheetPresented = true
         case .newDocument: DocumentOpener.shared.showNewDocumentWindow()
         case .openDocument: DocumentOpener.shared.showOpenPanel()
         case .showLayers, .showPaths, .showChannels, .showHistory:
@@ -866,7 +878,23 @@ final class EditorSession {
         }
         let origin = SIMD2((state.width - image.width) / 2, (state.height - image.height) / 2)
         let tiles = try ImageImporter.tiles(from: image, origin: origin)
-        edit("Place Image") { $0.insertLayerAboveActive(Layer(name: name, content: .raster(tiles))) }
+        let layer = Layer(name: name, content: .raster(tiles))
+        edit("Place Image") { $0.insertLayerAboveActive(layer) }
+        nameByContent(layer.id, image: image, currentName: name)
+    }
+
+    /// Gives a layer with a camera or clipboard name ("IMG_1234", "Pasted Layer")
+    /// a name that says what it shows, found on this Mac. Not an undo step: it
+    /// only replaces a name nobody chose.
+    func nameByContent(_ id: UUID, image: CGImage, currentName: String) {
+        guard ImageLabel.isGeneric(currentName) else { return }
+        Task { [weak self] in
+            let label = await Task.detached(priority: .utility) { () -> String? in
+                ImageLabel.name(for: Self.downscaled(image, maxSide: 512) ?? image)
+            }.value
+            guard let self, let label, self.state.allLayers.first(where: { $0.id == id })?.name == currentName else { return }
+            self.document.state.updateLayer(id) { $0.name = label }
+        }
     }
 
     /// Places images from a pasteboard (files or image data). Returns false if there were none.
@@ -925,7 +953,8 @@ final class EditorSession {
         guard let metal else { return }
         let panel = NSSavePanel()
         panel.allowedContentTypes = [options.format.contentType]
-        panel.nameFieldStringValue = "Untitled.\(options.format.contentType.preferredFilenameExtension ?? "png")"
+        let ext = options.format == .jpeg ? "jpg" : options.format.contentType.preferredFilenameExtension ?? "png"
+        panel.nameFieldStringValue = "Untitled.\(ext)"
         panel.canCreateDirectories = true
         let snapshot = state
         panel.begin { [weak self] response in
@@ -938,6 +967,8 @@ final class EditorSession {
                     try await Task.detached(priority: .userInitiated) {
                         try ImageExporter.export(snapshot, options: options, to: url, context: metal)
                     }.value
+                    let bytes = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                    self.showToast(String(localized: "Exported \(url.lastPathComponent) (\(ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)))."))
                 } catch {
                     self.report(error)
                 }

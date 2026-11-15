@@ -29,6 +29,7 @@ struct ExportSheet: View {
                         }
                     }
                 }
+                ExportLimitsFields(options: $session.exportOptions)
                 if format == .webp {
                     Text("WebP is lossless at 100 % and lossy below.")
                         .font(.callout)
@@ -43,7 +44,7 @@ struct ExportSheet: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
-                LabeledContent("Size", value: "\(session.state.width) × \(session.state.height) px")
+                LabeledContent("Size", value: Self.outputSize(session.state.width, session.state.height, session.exportOptions.maxPixelSide))
             }
             .formStyle(.grouped)
 
@@ -62,5 +63,48 @@ struct ExportSheet: View {
         }
         .frame(width: 420)
         .navigationTitle("Export")
+    }
+}
+
+extension ExportSheet {
+    static func outputSize(_ w: Int, _ h: Int, _ maxSide: Int?) -> String {
+        guard let side = maxSide, side > 0, max(w, h) > side else { return "\(w) × \(h) px" }
+        let k = Double(side) / Double(max(w, h))
+        return "\(Int((Double(w) * k).rounded())) × \(Int((Double(h) * k).rounded())) px"
+    }
+}
+
+/// Longest side and file-size limit, shared by Export and Batch Process.
+struct ExportLimitsFields: View {
+    @Binding var options: ExportOptions
+
+    var body: some View {
+        Toggle("Limit longest side", isOn: Binding(get: { options.maxPixelSide != nil },
+                                                   set: { options.maxPixelSide = $0 ? 2048 : nil }))
+        if let side = options.maxPixelSide {
+            LabeledContent("Longest side") {
+                HStack(spacing: 4) {
+                    TextField("", value: Binding(get: { side }, set: { options.maxPixelSide = max(16, $0) }), format: .number)
+                        .multilineTextAlignment(.trailing).frame(width: 80)
+                    Text("px").foregroundStyle(.secondary)
+                }
+            }
+        }
+        if options.format.hasQuality {
+            Toggle("Limit file size", isOn: Binding(get: { options.maxBytes != nil },
+                                                    set: { options.maxBytes = $0 ? 500_000 : nil }))
+            if let bytes = options.maxBytes {
+                LabeledContent("At most") {
+                    HStack(spacing: 4) {
+                        TextField("", value: Binding(get: { bytes / 1000 }, set: { options.maxBytes = max(5, $0) * 1000 }),
+                                  format: .number)
+                            .multilineTextAlignment(.trailing).frame(width: 80)
+                        Text("kB").foregroundStyle(.secondary)
+                    }
+                }
+                Text("Glimmer finds the best quality that fits, and scales the image down only if it must.")
+                    .font(.callout).foregroundStyle(.secondary)
+            }
+        }
     }
 }

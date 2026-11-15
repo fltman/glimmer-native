@@ -60,6 +60,8 @@ struct AIPanel: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Button("Auto Enhance", systemImage: "wand.and.rays") { ai.autoEnhance() }
                                 .help("Corrects tone and colour as editable adjustment layers. Runs on this Mac, free. ⇧⌘L")
+                            Button("Auto Color", systemImage: "eyedropper.halffull") { ai.autoColor() }
+                                .help("Removes a colour cast with a Color Balance layer. Runs on this Mac, free. ⇧⌘B")
                             Button("Auto Straighten", systemImage: "level") { ai.autoStraighten() }
                                 .help("Finds a tilted horizon and opens Crop, levelled. Runs on this Mac, free.")
                             Button("Suggest Crop", systemImage: "crop") { ai.suggestCrop() }
@@ -69,6 +71,10 @@ struct AIPanel: View {
                                 .help("Masks the active layer to its subject. Runs on this Mac, free.")
                             Button("Select Subject", systemImage: "person.and.background.dotted") { ai.selectSubject() }
                                 .help("Selects the main subject. Runs on this Mac, free.")
+                            Button("Select People", systemImage: "person.2") { ai.selectPeople() }
+                                .help("Selects every person, with finer edges than Select Subject. Runs on this Mac, free.")
+                            Button("Image Text to Layers", systemImage: "text.viewfinder") { ai.textToLayers() }
+                                .help("Turns the text in the image into editable text layers. Runs on this Mac, free.")
                             Button("Magic Select Tool (A)", systemImage: "wand.and.sparkles") { session.tool = .magicSelect }
                                 .help("Click an object to select it; ⌥-click to exclude. Return keeps, Esc cancels.")
                         }
@@ -318,6 +324,8 @@ private struct PlanView: View {
         case "image_edit_composite": "AI edit: \(step.string("instruction") ?? "")"
         case "generate_layer": "Generate: \(step.string("prompt") ?? "")"
         case "auto_enhance": "Auto Enhance"
+        case "auto_color": "Auto Color"
+        case "select_people": "Select people"
         case "remove_background": "Remove background"
         case "select_subject": "Select subject"
         case "inpaint_selection": step.string("mode") == "remove" ? "Remove selected object" : "Fill selection: \(step.string("prompt") ?? "")"

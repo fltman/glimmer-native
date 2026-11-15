@@ -116,6 +116,11 @@ extension CommandID {
     public static let autoStraighten: CommandID = "image.autoStraighten"
     public static let suggestCrop: CommandID = "image.suggestCrop"
     public static let batchProcess: CommandID = "file.batch"
+    public static let autoColor: CommandID = "image.autoColor"
+    public static let selectPeople: CommandID = "select.people"
+    public static let copyImageText: CommandID = "edit.copyImageText"
+    public static let textToLayers: CommandID = "layer.textToLayers"
+    public static let exportForWeb: CommandID = "file.exportForWeb"
     public static let toggleRulers: CommandID = "view.rulers"
     public static let toggleGrid: CommandID = "view.grid"
     public static let toggleSnap: CommandID = "view.snap"
@@ -241,6 +246,8 @@ public struct CommandRegistry: Sendable {
                           keywords: ["new document", "blank", "create"], isSystemProvided: true),
         CommandDescriptor(.openDocument, "Open…", category: .file, shortcut: KeyShortcut("o"),
                           keywords: ["open image", "open project", "file"], isSystemProvided: true),
+        CommandDescriptor(.exportForWeb, "Export for Web…", category: .file,
+                          keywords: ["web", "small file", "compress", "file size", "kb", "email", "share", "optimize"]),
         CommandDescriptor(.batchProcess, "Batch Process…", category: .file,
                           keywords: ["batch", "folder", "many images", "bulk", "convert", "droplet", "automate"]),
         CommandDescriptor(.exportWebProject, "Export Web Project (.aips)…", category: .file,
@@ -282,6 +289,8 @@ public struct CommandRegistry: Sendable {
                           shortcut: KeyShortcut("i", [.command, .shift]), keywords: ["invert selection"]),
         CommandDescriptor(.selectSubject, "Subject", category: .select,
                           keywords: ["select subject", "person", "object", "ai"]),
+        CommandDescriptor(.selectPeople, "People", category: .select,
+                          keywords: ["select people", "person", "persons", "human", "portrait", "figure"]),
         CommandDescriptor(.featherSelection, "Feather…", category: .select, keywords: ["soften", "blur selection"]),
         CommandDescriptor(.growSelection, "Expand…", category: .select, keywords: ["grow", "dilate"]),
         CommandDescriptor(.shrinkSelection, "Contract…", category: .select, keywords: ["shrink", "erode"]),
@@ -295,6 +304,10 @@ public struct CommandRegistry: Sendable {
                           keywords: ["fill selection"]),
         CommandDescriptor(.fillPattern, "Fill with Pattern", category: .edit,
                           keywords: ["fill selection", "texture", "tile"]),
+        CommandDescriptor(.copyImageText, "Copy Text in Image", category: .edit,
+                          keywords: ["ocr", "live text", "read text", "extract text", "recognize"]),
+        CommandDescriptor(.textToLayers, "Image Text to Layers", category: .layer,
+                          keywords: ["ocr", "editable text", "live text", "convert text", "recognize", "replace text"]),
         CommandDescriptor(.layerViaCopy, "New Layer via Copy", category: .layer,
                           shortcut: KeyShortcut("j"), keywords: ["copy selection to layer"]),
 
@@ -322,6 +335,8 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.crop, "Crop", category: .image, keywords: ["trim", "canvas size"]),
         CommandDescriptor(.autoEnhance, "Auto Enhance", category: .image, shortcut: KeyShortcut("l", [.command, .shift]),
                           keywords: ["auto tone", "auto color", "auto contrast", "fix", "improve", "magic", "levels"]),
+        CommandDescriptor(.autoColor, "Auto Color", category: .image, shortcut: KeyShortcut("b", [.command, .shift]),
+                          keywords: ["white balance", "color cast", "neutral", "tint", "temperature", "fix colors", "auto white"]),
         CommandDescriptor(.autoStraighten, "Auto Straighten", category: .image,
                           keywords: ["level", "horizon", "tilt", "crooked", "rotate", "fix"]),
         CommandDescriptor(.suggestCrop, "Suggest Crop", category: .image,

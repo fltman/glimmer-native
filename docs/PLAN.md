@@ -415,6 +415,14 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **Diskreta notiser:** besked som "ingen lutande horisont" visas som en notis som försvinner, inte som en modal dialog.
   - **Lärdom:** Vision rapporterar horisontens vinkel med omvänt tecken (stigande åt höger är negativt). Ett test med en syntetisk lutande horisont låser tecknet.
   - **Lärdom (router):** routern på enheten valde "Blend Colors in Gamma Space" för "fix the colors" eftersom ordet matchade. Inställningar, visningar och filkommandon är nu aldrig kandidater, och allmänna "fixa/förbättra"-förfrågningar går till Auto Enhance. Det är verifierat med Apples modell på enheten.
+- **Fler smarta funktioner (2026-11-15):**
+  - **Auto Color (⇧⌘B):** färgsticket mäts på bildens nästan neutrala pixlar (mättade färger räknas inte, så en röd bil eller blå himmel blir inget stick) och tas bort med ett Color Balance-lager till 80 %. Auto Enhance gör det också när sticket är tydligt (över 0,03).
+  - **Select People:** Visions personsegmentering i noggrant läge, med finare hår och kanter än Select Subject.
+  - **Bildens text:** "Copy Text in Image" kopierar texten. "Image Text to Layers" gör varje rad till ett redigerbart textlager över originalet, med bredden matchad och färgen hämtad från de pixlar som skiljer sig mest från bakgrunden.
+  - **Export for Web… och storleksgränser:** längsta sida och maxstorlek i kB finns i Export och Batch. Kvaliteten hittas genom bisektion, och bilden skalas ner bara om inte ens låg kvalitet ryms. Exporten bekräftar med filnamn och storlek.
+  - **Smarta lagernamn:** placerade och inklistrade bilder med kamera- eller urklippsnamn ("IMG_1234", "Pasted Layer") får namn efter innehållet från Visions klassificering.
+  - **Assistenten** har fått stegen `auto_color` och `select_people`, och omnibaren föreslår Select People, Image Text to Layers och Auto Color när bilden har det.
+  - **Lärdom:** den snabba textigenkänningen missar stiliserad text som affischrubriker. Analysen använder den noggranna nivån med en minsta texthöjd, vilket fortfarande tar under en sekund.
 
 ## 4. Teststrategi
 

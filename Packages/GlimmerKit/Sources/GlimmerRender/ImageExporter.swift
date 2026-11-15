@@ -70,14 +70,25 @@ public struct ExportOptions: Equatable, Sendable {
     public var colorSpace: WorkingColorSpace
     /// Straight sRGB colour used behind transparent pixels for formats without alpha.
     public var matte: SIMD3<Double>
+    /// Scale down so the longer side is at most this many pixels (nil = full size).
+    public var maxPixelSide: Int?
+    /// Lossy formats: lower the quality (and if need be the size) until the file
+    /// fits in this many bytes (nil = no limit).
+    public var maxBytes: Int?
+
+    /// Settings for the web: JPEG, sRGB, 2048 px, under 500 kB.
+    public static let web = ExportOptions(format: .jpeg, quality: 0.85, maxPixelSide: 2048, maxBytes: 500_000)
 
     public init(format: Format = .png, bitDepth: BitDepth = .eight, quality: Double = 0.92,
-                colorSpace: WorkingColorSpace = .sRGB, matte: SIMD3<Double> = SIMD3(1, 1, 1)) {
+                colorSpace: WorkingColorSpace = .sRGB, matte: SIMD3<Double> = SIMD3(1, 1, 1),
+                maxPixelSide: Int? = nil, maxBytes: Int? = nil) {
         self.format = format
         self.bitDepth = bitDepth
         self.quality = quality
         self.colorSpace = colorSpace
         self.matte = matte
+        self.maxPixelSide = maxPixelSide
+        self.maxBytes = maxBytes
     }
 }
 
@@ -155,7 +166,64 @@ public enum ImageExporter {
         return converted
     }
 
+    /// Encodes `image`, honouring `maxPixelSide` and `maxBytes`. With a byte
+    /// limit, the quality is found by bisection; when even a low quality is too
+    /// big, the image is scaled down too, so the limit is always met when possible.
     public static func encode(_ image: CGImage, options: ExportOptions) throws -> Data {
+        var source = image
+        if let side = options.maxPixelSide, side > 0, max(image.width, image.height) > side {
+            source = try resized(image, maxSide: side)
+        }
+        guard let limit = options.maxBytes, limit > 0, options.format.hasQuality else {
+            return try encodeOnce(source, options: options)
+        }
+        var opts = options
+        opts.quality = min(options.quality, 0.98)  // WebP at 100 % is lossless, never smaller
+        var smallest: Data?
+        for _ in 0..<4 {
+            let first = try encodeOnce(source, options: opts)
+            if first.count <= limit { return first }
+            var lo = 0.05, hi = opts.quality, best: Data?
+            var probe = opts
+            probe.quality = lo
+            let floor = try encodeOnce(source, options: probe)
+            if floor.count <= limit {
+                best = floor
+                for _ in 0..<6 {
+                    probe.quality = (lo + hi) / 2
+                    let data = try encodeOnce(source, options: probe)
+                    if data.count <= limit { best = data; lo = probe.quality } else { hi = probe.quality }
+                }
+            }
+            if let best { return best }
+            if floor.count < smallest?.count ?? .max { smallest = floor }
+            // Too big even at low quality: shrink and try again.
+            let k = max(0.3, min(0.9, sqrt(Double(limit) / Double(floor.count)) * 0.95))
+            let side = max(16, Int(Double(max(source.width, source.height)) * k))
+            source = try resized(source, maxSide: side)
+        }
+        if let smallest { return smallest }
+        return try encodeOnce(source, options: opts)
+    }
+
+    /// `image` scaled so its longer side is `maxSide`, resampled in linear light.
+    public static func resized(_ image: CGImage, maxSide: Int) throws -> CGImage {
+        let k = Double(maxSide) / Double(max(image.width, image.height))
+        guard k < 1 else { return image }
+        let w = max(1, Int((Double(image.width) * k).rounded())), h = max(1, Int((Double(image.height) * k).rounded()))
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 16, bytesPerRow: 0,
+                                  space: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!,
+                                  bitmapInfo: CGBitmapInfo.floatComponents.rawValue | CGBitmapInfo.byteOrder16Little.rawValue
+                                      | CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            throw RenderError.resourceCreationFailed("resize context")
+        }
+        ctx.interpolationQuality = .high
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        guard let out = ctx.makeImage() else { throw RenderError.resourceCreationFailed("resized image") }
+        return out
+    }
+
+    static func encodeOnce(_ image: CGImage, options: ExportOptions) throws -> Data {
         if options.format == .webp { return try encodeWebP(image, options: options) }
         let data = NSMutableData()
         guard let dest = CGImageDestinationCreateWithData(

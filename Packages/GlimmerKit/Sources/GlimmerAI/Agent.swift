@@ -227,6 +227,8 @@ public enum AgentPlanner {
             AgentParam("prompt", "string", "What to generate."),
         ], aiJob: true),
         AgentOp("auto_enhance", "Automatic tone and colour correction (on-device, free, instant) as editable adjustment layers. A good first step for \"fix\", \"improve\" or \"make it look better\" before any creative changes."),
+        AgentOp("auto_color", "Neutralise a colour cast (on-device, free) with a Color Balance layer. For \"too yellow/blue/green\", \"fix the white balance\"."),
+        AgentOp("select_people", "Select every person in the image (on-device, free, more precise than select_subject for people)."),
         AgentOp("remove_background", "Cut the main subject out of the active layer onto transparency (adds a mask).", aiJob: true),
         AgentOp("select_subject", "Select the main subject (on-device).", aiJob: true),
         AgentOp("inpaint_selection", "Regenerate or erase the SELECTED region. Requires a selection.", [

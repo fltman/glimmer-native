@@ -168,6 +168,7 @@ struct BatchSheet: View {
                             }
                         }
                     }
+                    ExportLimitsFields(options: $options)
                     LabeledContent("Save to") {
                         HStack {
                             Text(destination?.lastPathComponent ?? String(localized: "Choose a folder"))

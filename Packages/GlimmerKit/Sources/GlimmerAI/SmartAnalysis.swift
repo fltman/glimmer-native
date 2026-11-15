@@ -65,8 +65,11 @@ public enum SmartAnalysis {
         let saliency = VNGenerateAttentionBasedSaliencyImageRequest()
         let faces = VNDetectFaceRectanglesRequest()
         let text = VNRecognizeTextRequest()
-        text.recognitionLevel = .fast
+        // The fast level misses stylised type (a poster's headline); accurate with a
+        // minimum height stays quick because it skips the fine print.
+        text.recognitionLevel = .accurate
         text.usesLanguageCorrection = false
+        text.minimumTextHeight = 0.02
         try? handler.perform([horizon, saliency, faces, text])
         if let angle = horizon.results?.first?.angle {
             // Vision measures the angle the other way round (a horizon rising to the right is negative).
@@ -95,11 +98,18 @@ public enum SmartAnalysis {
         /// RGB curve (sRGB values, like the Curves adjustment).
         public var curve: [CurvePoint] = CurveMath.identity
         public var vibrance = 0.0
+        /// Colour cast of the neutrals (see `SmartAnalysis.colorCast`).
+        public var colorCast: SIMD3<Double>?
         public init() {}
+
+        /// Auto Enhance only corrects a clear cast; Auto Color handles subtle ones.
+        public static let castThreshold = 0.03
+
+        public var correctsCast: Bool { SmartAnalysis.isNoticeableCast(colorCast, threshold: Self.castThreshold) }
 
         /// Whether applying it would visibly change the image.
         public var isNoticeable: Bool {
-            curve.contains { abs($0.y - $0.x) > 0.025 } || abs(vibrance) > 0.08
+            curve.contains { abs($0.y - $0.x) > 0.025 } || abs(vibrance) > 0.08 || correctsCast
         }
 
         public var adjustments: [Adjustment] {
@@ -108,6 +118,9 @@ public enum SmartAnalysis {
                 var a = Adjustment(.curves)
                 a.curves[.rgb] = curve
                 list.append(a)
+            }
+            if correctsCast, let colorCast {
+                list.append(SmartAnalysis.castCorrection(colorCast))
             }
             if abs(vibrance) > 0.01 {
                 var a = Adjustment(.vibrance)
@@ -141,6 +154,7 @@ public enum SmartAnalysis {
         if recipe.curve.count < 2 { recipe.curve = CurveMath.identity }
         recipe.curve = folded(recipe.curve, shadows: shadows, highlights: highlights)
         recipe.vibrance = min(max(recipe.vibrance, -1), 1)
+        recipe.colorCast = colorCast(image)
         return recipe
     }
 

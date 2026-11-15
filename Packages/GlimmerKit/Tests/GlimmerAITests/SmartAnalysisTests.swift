@@ -41,7 +41,7 @@ import Testing
         // Lifts the image: the curve's midpoint rises.
         #expect(CurveMath.evaluate(recipe.curve, at: 0.3) > 0.3)
         #expect(!recipe.adjustments.isEmpty)
-        #expect(recipe.adjustments.allSatisfy { $0.kind == .curves || $0.kind == .vibrance })
+        #expect(recipe.adjustments.allSatisfy { [.curves, .vibrance, .colorBalance].contains($0.kind) })
     }
 
     @Test func toneStatsSeeADarkImage() {

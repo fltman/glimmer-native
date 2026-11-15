@@ -49,6 +49,16 @@ enum HeadlessEditor {
                              layers: [Layer(name: name.isEmpty ? "Image" : name, content: .raster(tiles))])
     }
 
+    /// Auto Color: a Color Balance layer that removes the cast, if there is one.
+    static func autoColor(_ state: DocumentState) throws -> DocumentState {
+        let image = try ImageExporter.flattenedSRGB(state, context: metal)
+        guard let cast = SmartAnalysis.colorCast(image), SmartAnalysis.isNoticeableCast(cast, threshold: 0.012) else { return state }
+        var state = state
+        state.activeLayerID = state.layers.last?.id
+        state.insertLayerAboveActive(Layer(name: "Auto Color", content: .adjustment(SmartAnalysis.castCorrection(cast))))
+        return state
+    }
+
     /// Auto Enhance as editable adjustment layers. Returns the state unchanged
     /// when the image needs nothing.
     static func autoEnhance(_ state: DocumentState) throws -> DocumentState {
@@ -139,6 +149,8 @@ enum HeadlessEditor {
                 state.insertLayerAboveActive(Layer(name: String(text.string.prefix(32)), content: .text(text)))
             case "auto_enhance":
                 state = try autoEnhance(state)
+            case "auto_color":
+                state = try autoColor(state)
             case "remove_background":
                 state = try removeBackground(state)
             case "select_all", "deselect", "set_foreground", "new_layer":

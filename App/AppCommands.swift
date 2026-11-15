@@ -38,6 +38,8 @@ struct GlimmerCommands: Commands {
         CommandGroup(after: .pasteboard) {
             Divider()
             items([.fillForeground, .fillBackground, .fillPattern])
+            Divider()
+            items([.copyImageText])
         }
         CommandGroup(before: .toolbar) {
             items(registry.descriptors(in: .view).filter { ![.toggleRulers, .toggleGrid, .toggleSnap, .toggleNavigator, .toggleClassicLayout, .hideInterface].contains($0.id) })
@@ -54,7 +56,7 @@ struct GlimmerCommands: Commands {
             Menu("Adjustments") {
                 items(AdjustmentKind.allCases.map { .newAdjustment($0) })
             }
-            items([.autoEnhance, .autoStraighten])
+            items([.autoEnhance, .autoColor, .autoStraighten])
             Divider()
             items([.freeTransform, .crop, .suggestCrop])
             Divider()
@@ -95,6 +97,7 @@ struct GlimmerCommands: Commands {
                 items([.deleteMask])
             }
             Menu("Smart Objects") { items([.convertToSmartObject]) }
+            items([.textToLayers])
             items([.rasterizeLayer])
             Divider()
             items([.layerStyle])

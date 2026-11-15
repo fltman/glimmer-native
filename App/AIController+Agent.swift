@@ -359,6 +359,10 @@ extension AIController {
             generate(prompt: step.string("prompt") ?? "", negative: "", width: s.state.width, height: s.state.height)
         case "auto_enhance":
             try await performAutoEnhance()
+        case "auto_color":
+            try await performAutoColor()
+        case "select_people":
+            try await performSelectPeople()
         case "remove_background":
             try ensurePixelLayer()
             removeBackground()

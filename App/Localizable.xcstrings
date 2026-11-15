@@ -1,6 +1,7 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "": {},
     "%@": {},
     "%@ Shape Path": {
       "extractionState": "manual",
@@ -77,6 +78,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld punkter"
+          }
+        }
+      }
+    },
+    "%lld text layers added. Paint out or remove the original text underneath to replace it.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld textlager har lagts till. Måla över eller ta bort originaltexten under för att ersätta den."
           }
         }
       }
@@ -795,6 +806,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Assistent: %@"
+          }
+        }
+      }
+    },
+    "At most": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Högst"
+          }
+        }
+      }
+    },
+    "Auto Color": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autofärg"
           }
         }
       }
@@ -1762,6 +1793,16 @@
         }
       }
     },
+    "Copied %lld lines of text.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopierade %lld rader text."
+          }
+        }
+      }
+    },
     "Copy": {
       "extractionState": "manual",
       "localizations": {
@@ -1769,6 +1810,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kopiera"
+          }
+        }
+      }
+    },
+    "Copy Text in Image": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiera text i bilden"
           }
         }
       }
@@ -2717,12 +2769,39 @@
         }
       }
     },
+    "Export for Web…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera för webben…"
+          }
+        }
+      }
+    },
     "Export the image": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Exportera bilden"
+          }
+        }
+      }
+    },
+    "Exported %@ (%@).": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Exported %1$@ (%2$@)."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporterade %@ (%@)."
           }
         }
       }
@@ -3465,6 +3544,26 @@
         }
       }
     },
+    "Glimmer finds the best quality that fits, and scales the image down only if it must.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer hittar den bästa kvalitet som ryms och skalar bara ner bilden om det behövs."
+          }
+        }
+      }
+    },
+    "Glimmer found no text in the image.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer hittade ingen text i bilden."
+          }
+        }
+      }
+    },
     "Glimmer found no tilted horizon to straighten.": {
       "localizations": {
         "sv": {
@@ -3886,6 +3985,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bildformat"
+          }
+        }
+      }
+    },
+    "Image Text to Layers": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildens text till lager"
           }
         }
       }
@@ -4325,6 +4434,26 @@
         }
       }
     },
+    "Limit file size": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begränsa filstorlek"
+          }
+        }
+      }
+    },
+    "Limit longest side": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Begränsa längsta sidan"
+          }
+        }
+      }
+    },
     "Line": {
       "extractionState": "manual",
       "localizations": {
@@ -4438,6 +4567,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Läs in kanalen som markering"
+          }
+        }
+      }
+    },
+    "Longest side": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Längsta sidan"
           }
         }
       }
@@ -4993,6 +5132,26 @@
         }
       }
     },
+    "No colour cast to correct.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget färgstick att rätta."
+          }
+        }
+      }
+    },
+    "No people found in the image.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inga personer hittades i bilden."
+          }
+        }
+      }
+    },
     "Noise": {
       "extractionState": "manual",
       "localizations": {
@@ -5431,6 +5590,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Penntryck"
+          }
+        }
+      }
+    },
+    "People": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personer"
           }
         }
       }
@@ -6075,6 +6245,16 @@
         }
       }
     },
+    "Removes a colour cast with a Color Balance layer. Runs on this Mac, free. ⇧⌘B": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tar bort ett färgstick med ett färgbalanslager. Körs på den här Macen, gratis. ⇧⌘B"
+          }
+        }
+      }
+    },
     "Rename": {
       "localizations": {
         "sv": {
@@ -6711,6 +6891,16 @@
         }
       }
     },
+    "Select People": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera personer"
+          }
+        }
+      }
+    },
     "Select Subject": {
       "localizations": {
         "sv": {
@@ -6767,6 +6957,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Markeringen med mönster"
+          }
+        }
+      }
+    },
+    "Selects every person, with finer edges than Select Subject. Runs on this Mac, free.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markerar alla personer, med finare kanter än Markera motiv. Körs på den här Macen, gratis."
           }
         }
       }
@@ -7510,6 +7710,16 @@
         }
       }
     },
+    "Text from Image": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text från bilden"
+          }
+        }
+      }
+    },
     "Text model": {
       "localizations": {
         "sv": {
@@ -7733,6 +7943,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Slå på Lutning → vinkel, Lutning → rundhet eller Rotation → vinkel under Dynamik i penselinställningarna för att forma penseln med pennan."
+          }
+        }
+      }
+    },
+    "Turns the text in the image into editable text layers. Runs on this Mac, free.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gör om texten i bilden till redigerbara textlager. Körs på den här Macen, gratis."
           }
         }
       }
@@ -8356,6 +8576,16 @@
         }
       }
     },
+    "kB": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kB"
+          }
+        }
+      }
+    },
     "make it warmer": {
       "extractionState": "stale",
       "localizations": {
@@ -8378,6 +8608,16 @@
       }
     },
     "pt": {},
+    "px": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "px"
+          }
+        }
+      }
+    },
     "relight": {
       "extractionState": "stale",
       "localizations": {
