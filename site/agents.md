@@ -322,7 +322,7 @@ Run an editor menu command.
 
 | Param | Type | Description |
 |---|---|---|
-| `id` | string | Command id. One of: `view.zoomIn`, `view.zoomOut`, `view.fit`, `view.actualSize`, `view.rotateLeft`, `view.rotateRight`, `view.resetRotation`, `view.rulers`, `view.grid`, `view.snap`, `view.clearGuides`, `view.palette`, `view.classicLayout`, `view.hideInterface`, `view.navigator`, `view.toggleLayers`, `layer.new`, `layer.duplicate`, `layer.delete`, `layer.forward`, `layer.backward`, `layer.front`, `layer.back`, `layer.newGroup`, `layer.group`, `layer.ungroup`, `layer.clip`, `layer.mask.revealAll`, `layer.mask.hideAll`, `layer.mask.toggle`, `layer.mask.delete`, `layer.smart.convert`, `layer.rasterize`, `select.all`, `select.none`, `select.invert`, `select.subject`, `select.people`, `select.sky`, `layer.textToLayers` … (see /api/v1/operations) |
+| `id` | string | Command id. One of: `view.zoomIn`, `view.zoomOut`, `view.fit`, `view.actualSize`, `view.rotateLeft`, `view.rotateRight`, `view.resetRotation`, `view.rulers`, `view.grid`, `view.snap`, `view.clearGuides`, `view.palette`, `view.classicLayout`, `view.hideInterface`, `view.navigator`, `view.toggleLayers`, `layer.new`, `layer.duplicate`, `layer.delete`, `layer.forward`, `layer.backward`, `layer.front`, `layer.back`, `layer.newGroup`, `layer.group`, `layer.ungroup`, `layer.clip`, `layer.mask.revealAll`, `layer.mask.hideAll`, `layer.mask.toggle`, `layer.mask.delete`, `layer.mask.edit`, `layer.smart.convert`, `layer.rasterize`, `select.all`, `select.none`, `select.invert`, `select.subject`, `select.people`, `select.sky` … (see /api/v1/operations) |
 
 ## Good to know
 

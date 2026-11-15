@@ -479,16 +479,24 @@ private struct SwatchesView: View {
         .frame(width: 236)
     }
 
+    static func hex(_ c: SRGBColor) -> String {
+        func b(_ v: Double) -> Int { Int((min(max(v, 0), 1) * 255).rounded()) }
+        return String(format: "#%02X%02X%02X", b(c.r), b(c.g), b(c.b))
+    }
+
     private func grid(_ colors: [SRGBColor], removable: Bool) -> some View {
         LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 8), count: 5), spacing: 8) {
             ForEach(Array(colors.enumerated()), id: \.offset) { _, c in
-                RoundedRectangle(cornerRadius: 5)
-                    .fill(c.swiftUI)
-                    .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.separator))
-                    .frame(width: 30, height: 30)
-                    .onTapGesture {
-                        if NSEvent.modifierFlags.contains(.option) { session.background = c } else { session.foreground = c }
-                    }
+                // A real button, so the keyboard reaches it; ⌥-click sets the background.
+                Button {
+                    if NSEvent.modifierFlags.contains(.option) { session.background = c } else { session.foreground = c }
+                } label: {
+                    RoundedRectangle(cornerRadius: 5)
+                        .fill(c.swiftUI)
+                        .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(.separator))
+                        .frame(width: 30, height: 30)
+                }
+                .buttonStyle(.plain)
                     .contextMenu {
                         if removable {
                             Button("Remove") {
@@ -497,9 +505,9 @@ private struct SwatchesView: View {
                             }
                         }
                     }
-                    .accessibilityElement()
-                    .accessibilityLabel(Text("Colour swatch"))
-                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel(Text("Colour \(Self.hex(c))"))
+                    .accessibilityHint(Text("Sets the foreground colour."))
+                    .accessibilityAction(named: Text("Set as Background")) { session.background = c }
             }
         }
     }

@@ -73,6 +73,12 @@ struct LayersPanel: View {
         }
         .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
+        // Return renames the selected layer, as in the Finder.
+        .onKeyPress(.return) {
+            guard let id = session.state.activeLayerID else { return .ignored }
+            session.renameRequest = id
+            return .handled
+        }
         .overlay {
             if session.state.layers.isEmpty {
                 ContentUnavailableView("No Layers", systemImage: "square.3.layers.3d.slash",
@@ -374,6 +380,21 @@ private struct LayerRow: View {
         .accessibilityAction(named: layer.isVisible ? "Hide" : "Show") { session.setVisibility(layer.id, !layer.isVisible) }
         .accessibilityAction(named: "Rename", startRename)
         .accessibilityAction(named: "Select") { session.setActiveLayer(layer.id) }
+        // The mask and the layer are picked by clicking their thumbnails; these do it without a mouse.
+        .accessibilityAction(named: "Edit Mask") {
+            guard layer.mask != nil else { return }
+            session.setActiveLayer(layer.id)
+            session.editingMask = true
+        }
+        .accessibilityAction(named: "Edit Layer") {
+            session.setActiveLayer(layer.id)
+            session.editingMask = false
+        }
+        .onChange(of: session.renameRequest) { _, id in
+            guard id == layer.id else { return }
+            session.renameRequest = nil
+            startRename()
+        }
     }
 
     private var accessibilityDescription: String {

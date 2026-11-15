@@ -129,6 +129,19 @@ struct PaletteRowView: View {
     let row: PaletteRow
     let selected: Bool
 
+    private var accessibilityText: Text {
+        switch row {
+        case .item(let item):
+            var parts = [String(localized: String.LocalizationValue(item.title)), String(localized: String.LocalizationValue(item.subtitle))]
+            if case .command(let id) = item.action, let s = CommandRegistry.standard.descriptor(for: id)?.shortcut {
+                parts.append(s.display)
+            }
+            return Text(verbatim: parts.joined(separator: ", "))
+        case .ask(let q):
+            return Text("Ask the assistant: “\(q)”")
+        }
+    }
+
     var body: some View {
         HStack(spacing: 12) {
             switch row {
@@ -156,6 +169,10 @@ struct PaletteRowView: View {
                 Spacer()
             }
         }
+        // One element per row: the command, its kind and shortcut, not the capitals and the icon.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityText)
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(selected ? Theme.accent.opacity(0.28) : .clear, in: .rect(cornerRadius: 7))
@@ -342,6 +359,7 @@ struct Omnibar: View {
         }
         .frame(width: 720)
         .onChange(of: focused) { if focused { session.ai.refreshInsights() } }
+        .onChange(of: session.omnibarFocusRequest) { focused = true }
     }
 
     private func smartTitle(_ id: CommandID) -> String {

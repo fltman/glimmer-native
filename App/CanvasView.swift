@@ -993,7 +993,18 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     override func keyDown(with event: NSEvent) {
         let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         if event.keyCode == 48, mods.isDisjoint(with: [.command, .control, .option]) {  // Tab
-            session.perform(.hideInterface)
+            // With Full Keyboard Access, Tab moves the focus on (the canvas mustn't trap it);
+            // otherwise it hides the interface, as in other editors (also View › Hide Interface).
+            if NSApp.isFullKeyboardAccessEnabled {
+                if mods.contains(.shift) { window?.selectPreviousKeyView(nil) } else { window?.selectNextKeyView(nil) }
+            } else {
+                session.perform(.hideInterface)
+            }
+            return
+        }
+        if event.charactersIgnoringModifiers == "/", mods.isDisjoint(with: [.command, .control, .option]) {
+            // / jumps to the search bar (or the palette when the bar is hidden).
+            session.requestOmnibarFocus()
             return
         }
         if mods == .command, let key = event.charactersIgnoringModifiers {

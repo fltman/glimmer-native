@@ -89,6 +89,7 @@ extension CommandID {
     public static let addMaskHideAll: CommandID = "layer.mask.hideAll"
     public static let toggleMask: CommandID = "layer.mask.toggle"
     public static let deleteMask: CommandID = "layer.mask.delete"
+    public static let editMask: CommandID = "layer.mask.edit"
     public static let convertToSmartObject: CommandID = "layer.smart.convert"
     public static let rasterizeLayer: CommandID = "layer.rasterize"
     public static let layerStyle: CommandID = "layer.style"
@@ -278,6 +279,9 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.addMaskHideAll, "Add Layer Mask (Hide All)", category: .layer, keywords: ["mask"]),
         CommandDescriptor(.toggleMask, "Enable/Disable Layer Mask", category: .layer, keywords: ["mask"]),
         CommandDescriptor(.deleteMask, "Delete Layer Mask", category: .layer, keywords: ["mask"]),
+        // Painting goes to the mask instead of the pixels: the keyboard way to click the mask thumbnail.
+        CommandDescriptor(.editMask, "Edit Layer Mask", category: .layer,
+                          shortcut: KeyShortcut("\\"), keywords: ["mask", "target", "paint mask"]),
         CommandDescriptor(.convertToSmartObject, "Convert to Smart Object", category: .layer, keywords: ["smart"]),
         CommandDescriptor(.rasterizeLayer, "Rasterize Layer", category: .layer, keywords: ["flatten", "merge group"]),
         CommandDescriptor(.layerStyle, "Layer Style…", category: .layer,

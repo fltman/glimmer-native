@@ -179,6 +179,19 @@ final class EditorSession {
     var isBatchSheetPresented = false
     /// A sibling app the assistant needed but that isn't running (offers to open it).
     var offlineSibling: SiblingApp?
+    /// Bumped to move the keyboard focus to the omnibar (/ on the canvas).
+    var omnibarFocusRequest = 0
+    /// A layer whose name field should open (Return in the Layers panel).
+    var renameRequest: UUID?
+
+    func requestOmnibarFocus() {
+        if UserDefaults.standard.object(forKey: Preferences.showOmnibarKey) as? Bool ?? true, !interfaceHidden {
+            omnibarFocusRequest += 1
+        } else {
+            isPaletteOpen = true
+        }
+    }
+
     /// An image a sibling app handed over to edit: Save writes it back (`EditorSession+Linked`).
     var linkedImage: LinkedImage?
     /// The document's window, set by the canvas.
@@ -425,7 +438,7 @@ final class EditorSession {
             return layer?.isClipped == true || path.last! > 0
         case .addMaskRevealAll, .addMaskHideAll:
             return layer != nil && layer?.mask == nil
-        case .toggleMask, .deleteMask:
+        case .toggleMask, .deleteMask, .editMask:
             return layer?.mask != nil
         case .convertToSmartObject:
             return (layer?.isRaster == true && !(layer?.tiles.isEmpty ?? true)) || layer?.isText == true
@@ -470,6 +483,7 @@ final class EditorSession {
         case .toggleClassicLayout: classicLayout
         case .hideInterface: interfaceHidden
         case .toggleMask: activeLayer?.mask?.isEnabled == false
+        case .editMask: editingMask
         default: false
         }
     }
@@ -572,6 +586,8 @@ final class EditorSession {
             editActive(enabled ? "Disable Layer Mask" : "Enable Layer Mask") { $0.mask?.isEnabled = !enabled }
         case .deleteMask:
             editActive("Delete Layer Mask") { $0.mask = nil; $0.vectorMask = nil }
+        case .editMask:
+            editingMask.toggle()
         case .convertToSmartObject:
             convertToSmartObject()
         case .rasterizeLayer:

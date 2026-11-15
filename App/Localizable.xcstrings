@@ -2013,6 +2013,17 @@
         }
       }
     },
+    "Colour %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färg %@"
+          }
+        }
+      }
+    },
     "Colour swatch": {
       "localizations": {
         "sv": {
@@ -2766,6 +2777,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Redigera bild med prompt…"
+          }
+        }
+      }
+    },
+    "Edit Layer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera lager"
+          }
+        }
+      }
+    },
+    "Edit Layer Mask": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera lagermask"
+          }
+        }
+      }
+    },
+    "Edit Mask": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigera mask"
           }
         }
       }
@@ -8107,6 +8151,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Flytta längst bak"
+          }
+        }
+      }
+    },
+    "Set as Background": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd som bakgrund"
+          }
+        }
+      }
+    },
+    "Sets the foreground colour.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Väljer förgrundsfärgen."
           }
         }
       }
