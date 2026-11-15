@@ -118,6 +118,7 @@ private struct KeyBanner: View {
                 .font(.callout)
                 .foregroundStyle(.secondary)
             SettingsLink { Text("Open Settings…") }
+                .simultaneousGesture(TapGesture().onEnded { UserDefaults.standard.set("ai", forKey: SettingsView.tabKey) })
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -15,17 +15,19 @@ Glimmer also has AI tools. Some run on your Mac, such as subject selection, dept
 
 ### The Welcome window
 
-The first time you open Glimmer, the Welcome window appears. It sums up what the app does and gives you three buttons:
+The first time you open Glimmer, the Welcome window appears, together with an empty document window. The Welcome window sums up what the app does and gives you three buttons:
 
-- **Add OpenRouter Key…** opens Settings, where you paste your key.
-- **Open Image…** shows the Open panel.
+- **Add OpenRouter Key…** opens **Settings › AI**, where you paste your key. You only need a key for the cloud AI tools.
+- **Open Image…** shows the Open panel. Pick a photo, a `.glimmer` document or a Glimmer for the web project.
 - **New Document** opens the New Document window. Press ⏎ to choose it.
 
 The Welcome window appears only once. To see it again, choose **Help › Welcome to Glimmer**.
 
+The empty document shows a start card with **Open Image** and the other ways in. When you open an image while that empty document is still untouched, the image takes over its window, so you don't end up with a blank window next to your photo.
+
 ### The Agent Access window
 
-On later launches, Glimmer shows the Agent Access window instead. Glimmer runs a small local server on your Mac (127.0.0.1, port 9001, or the first free port from 9101 to 9119 when 9001 is taken) that AI agents such as Claude can use to open, edit and export images in your open windows. The window shows one line of text to give to your agent. The agent fetches a guide from Glimmer and learns the rest from there.
+On later launches, Glimmer shows the Agent Access window instead of the Welcome window, again with an empty document unless macOS reopens the documents you had open. Glimmer runs a small local server on your Mac (127.0.0.1, port 9001, or the first free port from 9101 to 9119 when 9001 is taken) that AI agents such as Claude can use to open, edit and export images in your open windows. The window shows one line of text to give to your agent. The agent fetches a guide from Glimmer and learns the rest from there.
 
 ![The Agent Access window, with the line of text for an AI agent, a Copy button and a Show at launch checkbox](../screens/agent-splash.webp)
 
@@ -33,7 +35,7 @@ On later launches, Glimmer shows the Agent Access window instead. Glimmer runs a
 - Turn off **Show at launch** if you don't want the window at every launch.
 - Click **Close** (or press ⏎) to dismiss it.
 
-You can open the window at any time with **Help › Agent Access…**. Turning off **Show at launch** only hides the window. The local server still runs, and it only accepts connections from your own Mac.
+You can open the window at any time with **Help › Agent Access…**. The **Help** menu also links to this manual and to the FAQ on glimmer.brattoo.com. Turning off **Show at launch** only hides the window. The local server still runs, and it only accepts connections from your own Mac.
 
 ## Creating a new document
 

@@ -40,12 +40,14 @@ struct WelcomeView: View {
             }
             HStack {
                 Button("Add OpenRouter Key…") {
+                    UserDefaults.standard.set("ai", forKey: SettingsView.tabKey)
                     openSettings()
                 }
                 Spacer()
                 Button("Open Image…") {
                     dismiss()
-                    NSDocumentController.shared.openDocument(nil)
+                    // Glimmer's own panel: images, web projects and .glimmer documents.
+                    DocumentOpener.shared.showOpenPanel()
                 }
                 Button("New Document") {
                     dismiss()

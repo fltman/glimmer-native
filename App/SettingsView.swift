@@ -3,21 +3,25 @@ import GlimmerCore
 import SwiftUI
 
 struct SettingsView: View {
+    /// The selected tab, kept so "Add OpenRouter Key…" can open Settings on AI.
+    static let tabKey = "settings.tab"
+    @AppStorage(Self.tabKey) private var tab = "general"
+
     var body: some View {
-        TabView {
-            Tab("General", systemImage: "gearshape") {
+        TabView(selection: $tab) {
+            Tab("General", systemImage: "gearshape", value: "general") {
                 GeneralSettingsView()
             }
-            Tab("AI", systemImage: "sparkles") {
+            Tab("AI", systemImage: "sparkles", value: "ai") {
                 AISettingsView()
             }
-            Tab("Models", systemImage: "cpu") {
+            Tab("Models", systemImage: "cpu", value: "models") {
                 ModelSettingsView()
             }
-            Tab("Performance", systemImage: "gauge.with.dots.needle.67percent") {
+            Tab("Performance", systemImage: "gauge.with.dots.needle.67percent", value: "performance") {
                 PerformanceSettingsView()
             }
-            Tab("Tablet", systemImage: "applepencil.tip") {
+            Tab("Tablet", systemImage: "applepencil.tip", value: "tablet") {
                 TabletSettingsView()
             }
         }

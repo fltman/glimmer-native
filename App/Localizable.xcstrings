@@ -3638,6 +3638,17 @@
         }
       }
     },
+    "Frequently Asked Questions": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vanliga frågor"
+          }
+        }
+      }
+    },
     "Front": {
       "extractionState": "manual",
       "localizations": {
@@ -3877,6 +3888,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Glimmer-åtgärd"
+          }
+        }
+      }
+    },
+    "Glimmer Manual": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmers manual"
           }
         }
       }

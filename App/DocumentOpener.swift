@@ -121,8 +121,16 @@ final class DocumentOpener {
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         do {
             let image = try ImageImporter.image(contentsOf: url)
+            let name = url.deletingPathExtension().lastPathComponent
+            // An empty, untouched document (the one Glimmer opens at launch) becomes the image,
+            // instead of leaving a blank window behind.
+            if let blank = AgentRegistry.shared.sessions.first(where: \.isUntouchedBlank) {
+                try blank.place(image, name: name)
+                NSDocumentController.shared.noteNewRecentDocumentURL(url)
+                return
+            }
             let tiles = try ImageImporter.tiles(from: image)
-            let layer = Layer(name: url.deletingPathExtension().lastPathComponent, content: .raster(tiles))
+            let layer = Layer(name: name, content: .raster(tiles))
             createDocument(DocumentState(width: image.width, height: image.height, layers: [layer]))
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
         } catch {
@@ -161,6 +169,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var deferredURLs: [URL] = []
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        // No system Open panel at launch: it only accepts .glimmer documents, and Glimmer
+        // shows its Welcome window, Agent Access or its own Open panel instead.
+        UserDefaults.standard.register(defaults: ["NSShowAppCentricOpenPanelInsteadOfUntitledFile": false])
         // UI tests start clean: no restored windows. Volatile, so the user's own
         // restoration setting is never touched.
         if CommandLine.arguments.contains("-uiTestingNewDocument") {
@@ -203,6 +214,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 MainActor.assumeIsolated { DocumentOpener.shared.showAgentSplash() }
             }
+        } else if deferredURLs.isEmpty, !CommandLine.arguments.contains("-uiTestingNewDocument") {
+            // Nothing else to show and no windows restored: offer Glimmer's own Open panel
+            // (images too), not the system's document panel that only accepts .glimmer files.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                MainActor.assumeIsolated {
+                    if !NSApp.windows.contains(where: { $0.isVisible && $0.level == .normal && !($0 is NSPanel) }) {
+                        DocumentOpener.shared.showOpenPanel()
+                    }
+                }
+            }
         }
         guard !deferredURLs.isEmpty else { return }
         let urls = deferredURLs
@@ -212,6 +233,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             MainActor.assumeIsolated { DocumentOpener.shared.open(urls) }
         }
+    }
+
+    /// macOS would otherwise show its own Open panel at launch, which only accepts
+    /// .glimmer documents; Glimmer shows Welcome, Agent Access or its own panel instead.
+    func applicationShouldOpenUntitledFile(_ sender: NSApplication) -> Bool { false }
+
+    /// Clicking the Dock icon with no windows open shows Glimmer's Open panel.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !flag { MainActor.assumeIsolated { DocumentOpener.shared.showOpenPanel() } }
+        return false
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {

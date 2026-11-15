@@ -28,6 +28,9 @@ struct GlimmerApp: App {
             CommandGroup(replacing: .help) {
                 Button("Welcome to Glimmer") { DocumentOpener.shared.showWelcomeWindow() }
                 Button("Agent Access…") { DocumentOpener.shared.showAgentSplash() }
+                Divider()
+                Link("Glimmer Manual", destination: URL(string: "https://glimmer.brattoo.com/manual/")!)
+                Link("Frequently Asked Questions", destination: URL(string: "https://glimmer.brattoo.com/faq.html")!)
             }
         }
 
