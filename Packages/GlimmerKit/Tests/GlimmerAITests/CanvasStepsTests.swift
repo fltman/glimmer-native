@@ -122,3 +122,16 @@ import Testing
         #expect(half.dropShadow?.opacity == e.dropShadow?.opacity && half.outerGlow == nil)
     }
 }
+
+@Suite struct CanvasSizeTests {
+    @Test func theAnchorDecidesWhereTheNewRoomGoes() {
+        let old = (width: 1000, height: 600)
+        // Wider, anchored in the middle: the room is shared between left and right.
+        #expect(CanvasSteps.canvasBox(old: old, new: (1200, 600), anchor: (1, 1)) == PixelRect(x: -100, y: 0, width: 1200, height: 600))
+        // Anchored top-left: everything is added to the right and below.
+        #expect(CanvasSteps.canvasBox(old: old, new: (1200, 800), anchor: (0, 0)) == PixelRect(x: 0, y: 0, width: 1200, height: 800))
+        // Anchored bottom-right, smaller: the top-left is cut away.
+        #expect(CanvasSteps.canvasBox(old: old, new: (500, 300), anchor: (2, 2)) == PixelRect(x: 500, y: 300, width: 500, height: 300))
+        #expect(CanvasSteps.canvasBox(old: old, new: (1001, 600), anchor: (1, 1)).x == -1)
+    }
+}

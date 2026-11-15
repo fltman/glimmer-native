@@ -88,6 +88,7 @@ Pattern Stamp, Blur, Sharpen and Smudge have no key. Pick them in the tool palet
 | ⇧⌘L | Auto Enhance |
 | ⇧⌘B | Auto Color |
 | ⌥⌘I | Image Size… |
+| ⌥⌘C | Canvas Size… |
 | ⌘T | Free Transform |
 
 ## Layer

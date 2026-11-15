@@ -383,6 +383,17 @@
         }
       }
     },
+    "Anchor": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fästpunkt"
+          }
+        }
+      }
+    },
     "API key": {
       "localizations": {
         "sv": {
@@ -1384,6 +1395,39 @@
         }
       }
     },
+    "Bottom center": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nederst i mitten"
+          }
+        }
+      }
+    },
+    "Bottom left": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nederst till vänster"
+          }
+        }
+      }
+    },
+    "Bottom right": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nederst till höger"
+          }
+        }
+      }
+    },
     "Brightness": {
       "extractionState": "manual",
       "localizations": {
@@ -1555,6 +1599,28 @@
         }
       }
     },
+    "Canvas Size": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arbetsytans storlek"
+          }
+        }
+      }
+    },
+    "Canvas Size…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arbetsytans storlek…"
+          }
+        }
+      }
+    },
     "Cell Size": {
       "extractionState": "manual",
       "localizations": {
@@ -1562,6 +1628,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cellstorlek"
+          }
+        }
+      }
+    },
+    "Center": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitten"
           }
         }
       }
@@ -9248,6 +9325,17 @@
         }
       }
     },
+    "The image stays where the anchor is. New room is transparent; what a smaller canvas cuts off is kept outside it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilden ligger kvar där fästpunkten är. Ny yta är genomskinlig; det som en mindre arbetsyta skär bort finns kvar utanför den."
+          }
+        }
+      }
+    },
     "TIFF": {},
     "Tablet": {
       "localizations": {
@@ -9528,6 +9616,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ovanifrån"
+          }
+        }
+      }
+    },
+    "Top center": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Överst i mitten"
+          }
+        }
+      }
+    },
+    "Top left": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Överst till vänster"
+          }
+        }
+      }
+    },
+    "Top right": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Överst till höger"
           }
         }
       }

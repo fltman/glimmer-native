@@ -109,6 +109,7 @@ extension CommandID {
     public static let freeTransform: CommandID = "edit.transform"
     public static let crop: CommandID = "image.crop"
     public static let imageSize: CommandID = "image.size"
+    public static let canvasSize: CommandID = "image.canvasSize"
     public static let flipHorizontal: CommandID = "image.flipHorizontal"
     public static let flipVertical: CommandID = "image.flipVertical"
     public static let rotateRight: CommandID = "image.rotateRight"
@@ -341,7 +342,9 @@ public struct CommandRegistry: Sendable {
 
         CommandDescriptor(.freeTransform, "Free Transform", category: .image, shortcut: KeyShortcut("t"),
                           keywords: ["scale", "rotate", "resize layer"]),
-        CommandDescriptor(.crop, "Crop", category: .image, keywords: ["trim", "canvas size"]),
+        CommandDescriptor(.crop, "Crop", category: .image, keywords: ["trim"]),
+        CommandDescriptor(.canvasSize, "Canvas Size…", category: .image, shortcut: KeyShortcut("c", [.command, .option]),
+                          keywords: ["extend", "border", "margin", "more room", "add space", "resize canvas"]),
         CommandDescriptor(.imageSize, "Image Size…", category: .image, shortcut: KeyShortcut("i", [.command, .option]),
                           keywords: ["resize", "scale image", "dimensions", "pixels", "smaller", "larger", "resample"]),
         CommandDescriptor(.autoEnhance, "Auto Enhance", category: .image, shortcut: KeyShortcut("l", [.command, .shift]),

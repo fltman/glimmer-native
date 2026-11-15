@@ -171,7 +171,7 @@ extension EditorSession {
     }
 
     /// Resizes the canvas to `rect` (the Crop tool's box, or an agent's `crop` step).
-    func cropCanvas(to rect: PixelRect, deletePixels: Bool) throws {
+    func cropCanvas(to rect: PixelRect, deletePixels: Bool, actionName: String = "Crop") throws {
         guard let metal else { throw RenderError.noMetalDevice }
         let x = rect.x, y = rect.y, w = rect.width, h = rect.height
         let offset = SIMD2(-x, -y)
@@ -182,7 +182,7 @@ extension EditorSession {
         // Keep the zoom and centre the new canvas, as the web app does.
         if w != state.width || h != state.height { canvas.keepZoomOnResize = true }
         let d = SIMD2(Double(-x), Double(-y))
-        edit("Crop") { state in
+        edit(actionName) { state in
             state.layers = layers
             state.width = w
             state.height = h

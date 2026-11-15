@@ -1,6 +1,6 @@
 # Transform, crop and image
 
-This chapter covers changing the size, angle and shape of a layer with Free Transform, cutting the canvas down with the Crop tool, and the commands in the Image menu that resize, straighten, rotate and flip the whole image.
+This chapter covers changing the size, angle and shape of a layer with Free Transform, cutting the canvas down with the Crop tool, and the commands in the Image menu that resize the image or its canvas and straighten, rotate and flip the whole image.
 
 ## Free Transform
 
@@ -131,7 +131,19 @@ Every layer is resampled to the new size. Masks, paths, guides and layer styles 
 
 Making an image larger this way adds no detail. For that, use **Upscale** in the AI panel. See [AI with OpenRouter](11-ai-with-openrouter.md#upscale).
 
-To change the size of one layer, use Free Transform. To change the canvas without scaling the image, use the Crop tool.
+To change the size of one layer, use Free Transform. To change the canvas without scaling the image, use Canvas Size or the Crop tool.
+
+## Canvas Size
+
+Choose **Image › Canvas Size…** (⌥⌘C) to give the image more room, or less, without scaling it. Use it to add a border, or to make space beside a photo for text.
+
+![The Canvas Size dialog with a wider canvas and the anchor in the center](../screens/canvas-size.webp)
+
+1. Type the new width and height in pixels. Each side can be 1 to 30,000 pixels.
+2. Under **Anchor**, click where the image should stay. With the center square, new room is shared between both sides. With the top left square, all of it is added to the right and below.
+3. Click **Resize**.
+
+New room is transparent. To fill it, add a fill layer below the image, or use **Expand** in the AI panel. If you make the canvas smaller, what is cut off is kept outside the canvas, and you can move a layer to bring it back. Paths and guides move with the image, and the selection is removed. Changing the canvas size is one undo step.
 
 ## Rotating and flipping the image
 

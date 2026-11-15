@@ -178,7 +178,7 @@ public enum AgentPlanner {
     public static let runnableCommands: [CommandDescriptor] = CommandRegistry.standard.descriptors.filter { d in
         [.layer, .select, .image, .view].contains(d.category) && d.id.adjustmentKind == nil && !d.isSystemProvided
             && ![CommandID.layerStyle, .newSolidFill, .newGradientFill, .newPatternFill,
-                 .featherSelection, .growSelection, .shrinkSelection, .crop, .imageSize, .freeTransform].contains(d.id)
+                 .featherSelection, .growSelection, .shrinkSelection, .crop, .imageSize, .canvasSize, .freeTransform].contains(d.id)
     }
 
     private static func number(_ v: Double) -> String {

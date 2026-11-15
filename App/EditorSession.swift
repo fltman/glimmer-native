@@ -180,6 +180,7 @@ final class EditorSession {
     var isExportSheetPresented = false
     var isLayerStylePresented = false
     var isImageSizePresented = false
+    var isCanvasSizePresented = false
     var exportOptions = ExportOptions()
     var isExporting = false
     var errorMessage: String?
@@ -665,6 +666,8 @@ final class EditorSession {
             tool = .crop
         case .imageSize:
             isImageSizePresented = true
+        case .canvasSize:
+            isCanvasSizePresented = true
         case .toggleRulers:
             edit(state.aids.rulersVisible ? "Hide Rulers" : "Show Rulers") { $0.aids.rulersVisible.toggle() }
         case .toggleGrid:

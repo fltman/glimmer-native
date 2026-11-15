@@ -87,7 +87,7 @@ struct GlimmerCommands: Commands {
             }
             items([.autoEnhance, .autoColor, .autoStraighten])
             Divider()
-            items([.imageSize])
+            items([.imageSize, .canvasSize])
             Divider()
             items([.freeTransform, .crop, .suggestCrop, .straightenDocument])
             Divider()

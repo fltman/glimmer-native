@@ -121,6 +121,9 @@ struct DocumentView: View {
             .sheet(isPresented: $session.isExportSheetPresented) {
                 ExportSheet(session: session)
             }
+            .sheet(isPresented: $session.isCanvasSizePresented) {
+                CanvasSizeSheet(session: session)
+            }
             .sheet(isPresented: $session.isImageSizePresented) {
                 ImageSizeSheet(session: session)
             }

@@ -153,6 +153,21 @@ public enum CanvasSteps {
         return hit.id
     }
 
+    /// The box Canvas Size cuts or extends the canvas to, in the old canvas's pixels. `anchor`
+    /// says which part of the image stays put: 0, 1 or 2 for left/centre/right and top/middle/bottom.
+    public static func canvasBox(old: (width: Int, height: Int), new: (width: Int, height: Int),
+                                 anchor: (x: Int, y: Int)) -> PixelRect {
+        func origin(_ old: Int, _ new: Int, _ a: Int) -> Int {
+            switch a {
+            case 0: 0
+            case 2: old - new
+            default: Int((Double(old - new) / 2).rounded(.down))
+            }
+        }
+        return PixelRect(x: origin(old.width, new.width, anchor.x), y: origin(old.height, new.height, anchor.y),
+                         width: new.width, height: new.height)
+    }
+
     /// How `add_image` fits an image into the canvas.
     public enum Fit: String, CaseIterable, Sendable { case none, contain, cover }
 
