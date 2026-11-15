@@ -178,7 +178,7 @@ public enum AgentPlanner {
     public static let runnableCommands: [CommandDescriptor] = CommandRegistry.standard.descriptors.filter { d in
         [.layer, .select, .image, .view].contains(d.category) && d.id.adjustmentKind == nil && !d.isSystemProvided
             && ![CommandID.layerStyle, .newSolidFill, .newGradientFill, .newPatternFill,
-                 .featherSelection, .growSelection, .shrinkSelection, .crop, .freeTransform].contains(d.id)
+                 .featherSelection, .growSelection, .shrinkSelection, .crop, .imageSize, .freeTransform].contains(d.id)
     }
 
     private static func number(_ v: Double) -> String {
@@ -275,6 +275,36 @@ public enum AgentPlanner {
             AgentParam("bold", "boolean", "Optional. true for the bold member of each word's font family, false for the regular one."),
             AgentParam("size", "number", "Optional. Font size in document pixels."),
             AgentParam("color", "string", "Optional. #RRGGBB."),
+        ]),
+        AgentOp("crop", "Crop the canvas for every layer, like the Crop tool. Give exactly one of: a rectangle (x, y, width, height), toSelection, or aspect. A rectangle partly outside the canvas is clipped to it; the step's info says which box was used. One undo step.", [
+            AgentParam("x", "number", "Optional. Left edge of the box in document pixels (default 0)."),
+            AgentParam("y", "number", "Optional. Top edge of the box in document pixels (default 0)."),
+            AgentParam("width", "number", "Optional, with a rectangle. Width of the box in pixels."),
+            AgentParam("height", "number", "Optional, with a rectangle. Height of the box in pixels."),
+            AgentParam("toSelection", "boolean", "Optional, instead of a rectangle. true crops to the bounds of the selection."),
+            AgentParam("aspect", "string", "Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centred box of that shape."),
+            AgentParam("deletePixels", "boolean", "Optional. true throws away what is outside the box; false (default) keeps it outside the canvas."),
+        ]),
+        AgentOp("resize_image", "Resample the whole image to a new size, like Image › Image Size: every layer, mask, path and guide is scaled. Give width or height alone to keep the proportions; give both for exactly that size (the proportions may change); or give scale. Text and smart objects stay editable. One undo step.", [
+            AgentParam("width", "number", "Optional. New width in pixels."),
+            AgentParam("height", "number", "Optional. New height in pixels."),
+            AgentParam("scale", "number", "Optional, instead of width and height. 0.5 halves both sides, 2 doubles them."),
+        ]),
+        AgentOp("select_rect", "Select a rectangle or an ellipse. A box partly outside the canvas is clipped to it.", [
+            AgentParam("x", "number", "Left edge in document pixels."),
+            AgentParam("y", "number", "Top edge in document pixels."),
+            AgentParam("width", "number", "Width in pixels."),
+            AgentParam("height", "number", "Height in pixels."),
+            AgentParam("shape", "string", "Optional. rect (default) or ellipse (inscribed in the box).", options: ["rect", "ellipse"]),
+            AgentParam("mode", "string", "Optional. How it combines with the selection there is (default replace).", options: ["replace", "add", "subtract", "intersect"]),
+            AgentParam("feather", "number", "Optional. Soften the edge by this many pixels."),
+        ]),
+        AgentOp("set_layer", "Change a layer's opacity, blend mode, visibility or name. One undo step.", [
+            AgentParam("target", "string", "Optional. The layer's id or name; default the active layer. A name two layers share is refused: use the id."),
+            AgentParam("opacity", "number", "Optional. 0…1, as GET document reports it."),
+            AgentParam("blendMode", "string", "Optional. The blend mode id, as GET document reports it (pass-through for groups only).", options: BlendMode.allCases.map(\.rawValue)),
+            AgentParam("visible", "boolean", "Optional. Show or hide the layer."),
+            AgentParam("name", "string", "Optional. The new name."),
         ]),
         AgentOp("add_waveform", "Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolour, move and style.", [
             AgentParam("style", "string", "Optional. bars (default) or wave (one outline).", options: SiblingWaveform.Style.allCases.map(\.rawValue)),

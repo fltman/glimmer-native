@@ -1,6 +1,6 @@
 # Transform, crop and image
 
-This chapter covers changing the size, angle and shape of a layer with Free Transform, cutting the canvas down with the Crop tool, and the commands in the Image menu that straighten, rotate and flip the whole image.
+This chapter covers changing the size, angle and shape of a layer with Free Transform, cutting the canvas down with the Crop tool, and the commands in the Image menu that resize, straighten, rotate and flip the whole image.
 
 ## Free Transform
 
@@ -117,6 +117,21 @@ If the whole image already frames the subject well, Glimmer tells you and leaves
 **Image › Straighten Document** looks for a rectangular object photographed at an angle, such as a sheet of paper, a receipt, a sign, a whiteboard or a screen. It corrects the perspective so the object becomes a flat rectangle and opens the result as a **new document**. Your original document stays as it was.
 
 If Glimmer can't find such an object, it tells you.
+
+## Image Size
+
+Choose **Image › Image Size…** (⌥⌘I) to make the whole image larger or smaller. Type a new width or height in pixels, or click **25 %**, **50 %** or **200 %**, then click **Resize**.
+
+![The Image Size dialog with a new width and height over a photo of a bakery](../screens/image-size.webp)
+
+- With **Keep proportions** on, typing one side sets the other, so the image keeps its shape. Turn it off to set both sides yourself; the image is then stretched or squeezed.
+- Each side can be 1 to 30,000 pixels.
+
+Every layer is resampled to the new size. Masks, paths, guides and layer styles (the size of a shadow, the width of a stroke) are scaled along. Text layers stay editable, and smart objects keep their original pixels. The selection is removed. Resizing is one undo step.
+
+Making an image larger this way adds no detail. For that, use **Upscale** in the AI panel. See [AI with OpenRouter](11-ai-with-openrouter.md#upscale).
+
+To change the size of one layer, use Free Transform. To change the canvas without scaling the image, use the Crop tool.
 
 ## Rotating and flipping the image
 

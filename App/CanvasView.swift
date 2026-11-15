@@ -585,6 +585,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         let v = controller.transform.viewPoint(fromDocument: t.apply(text.origin))
         let origin = CGPoint(x: v.x, y: v.y)  // subview frames use the (flipped) view space
         let editor: NSTextView
+        var isNewEditor = false
         if let existing = textEditor {
             editor = existing
             // Zoomed while typing: scale every stretch's font, keeping each word's style.
@@ -607,6 +608,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             editor.importsGraphics = false
             editor.allowsUndo = true
             editor.textContainerInset = .zero
+            // fitEditor sizes it (a turned view that sizes itself measures its bounding box).
+            editor.isVerticallyResizable = false
             editor.textContainer?.lineFragmentPadding = 0
             editorScale = scale
             editor.textStorage?.setAttributedString(Self.editorText(text, scale: scale))
@@ -616,7 +619,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             editorLayerID = id
             session.textStyler = self
             window?.makeFirstResponder(editor)
-            editor.selectAll(nil)
+            isNewEditor = true
             // Hide the layer's own pixels while editing.
             session.overrides = LayerOverrides(pixels: [id: TileGrid()])
         }
@@ -637,6 +640,9 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         }
         editor.frameRotation = turn  // about the frame's origin, the text's top-left
         fitEditor()
+        if isNewEditor {
+            editor.selectAll(nil)
+        }
         updateTextSelectionStyle()
     }
 
@@ -1308,6 +1314,20 @@ extension CanvasNSView: TextStyler {
 final class TextLayerEditor: NSTextView {
     override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [.string] }
     override func paste(_ sender: Any?) { pasteAsPlainText(sender) }
+
+    /// A selection that reaches the end of the text is filled to the edge of what is being
+    /// drawn. For a turned editor that is its bounding box, larger than the editor: keep
+    /// the drawing inside the editor's own box.
+    override func draw(_ dirtyRect: NSRect) {
+        NSGraphicsContext.saveGraphicsState()
+        NSBezierPath(rect: bounds).addClip()
+        super.draw(dirtyRect)
+        NSGraphicsContext.restoreGraphicsState()
+    }
+
+    override func drawBackground(in rect: NSRect) {
+        super.drawBackground(in: rect.intersection(bounds))
+    }
 }
 
 /// Pixel rulers along the top and left edges. Purely visual; clicks fall through

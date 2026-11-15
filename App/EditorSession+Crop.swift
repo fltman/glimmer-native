@@ -164,38 +164,45 @@ extension EditorSession {
         let w = Int(c.rect.width.rounded()), h = Int(c.rect.height.rounded())
         guard w >= 1, h >= 1 else { return }
         do {
-            let offset = SIMD2(-x, -y)
-            var layers = try state.layers.map { try TileOperations.translate($0, by: offset, context: metal) }
-            if cropDeletesPixels {
-                layers = try trimmed(layers, to: PixelRect(x: 0, y: 0, width: w, height: h), ops: PixelOps(context: metal))
-            }
-            // Keep the zoom and centre the new canvas, as the web app does.
-            if w != state.width || h != state.height { canvas.keepZoomOnResize = true }
-            let d = SIMD2(Double(-x), Double(-y))
-            edit("Crop") { state in
-                state.layers = layers
-                state.width = w
-                state.height = h
-                state.selection = nil
-                state.paths = state.paths.map { path in
-                    var p = path
-                    p.subpaths = p.subpaths.map { sub in
-                        var s = sub
-                        s.anchors = s.anchors.map { a in
-                            PathAnchor(a.point + d, handleIn: a.handleIn + d, handleOut: a.handleOut + d)
-                        }
-                        return s
-                    }
-                    return p
-                }
-                state.aids.guides = state.aids.guides.map { g in
-                    var g = g
-                    g.position += g.axis == .vertical ? d.x : d.y
-                    return g
-                }
-            }
+            try cropCanvas(to: PixelRect(x: x, y: y, width: w, height: h), deletePixels: cropDeletesPixels)
         } catch {
             report(error)
+        }
+    }
+
+    /// Resizes the canvas to `rect` (the Crop tool's box, or an agent's `crop` step).
+    func cropCanvas(to rect: PixelRect, deletePixels: Bool) throws {
+        guard let metal else { throw RenderError.noMetalDevice }
+        let x = rect.x, y = rect.y, w = rect.width, h = rect.height
+        let offset = SIMD2(-x, -y)
+        var layers = try state.layers.map { try TileOperations.translate($0, by: offset, context: metal) }
+        if deletePixels {
+            layers = try trimmed(layers, to: PixelRect(x: 0, y: 0, width: w, height: h), ops: PixelOps(context: metal))
+        }
+        // Keep the zoom and centre the new canvas, as the web app does.
+        if w != state.width || h != state.height { canvas.keepZoomOnResize = true }
+        let d = SIMD2(Double(-x), Double(-y))
+        edit("Crop") { state in
+            state.layers = layers
+            state.width = w
+            state.height = h
+            state.selection = nil
+            state.paths = state.paths.map { path in
+                var p = path
+                p.subpaths = p.subpaths.map { sub in
+                    var s = sub
+                    s.anchors = s.anchors.map { a in
+                        PathAnchor(a.point + d, handleIn: a.handleIn + d, handleOut: a.handleOut + d)
+                    }
+                    return s
+                }
+                return p
+            }
+            state.aids.guides = state.aids.guides.map { g in
+                var g = g
+                g.position += g.axis == .vertical ? d.x : d.y
+                return g
+            }
         }
     }
 
@@ -273,6 +280,29 @@ extension EditorSession {
     /// outside it are dropped; text layers are rasterized.
     func transformCanvas(_ rot: GlimmerCore.AffineTransform, width w: Int, height h: Int, actionName: String,
                                  metal: MetalContext) {
+        do {
+            try transformCanvas(rot, width: w, height: h, actionName: actionName, metal: metal, scaling: false)
+            canvas.perform(.fitToWindow)
+        } catch {
+            report(error)
+        }
+    }
+
+    /// Image Size: every layer scaled to a canvas of `width` × `height`. Text and smart objects
+    /// stay editable, and guides are scaled along.
+    func resizeImage(width: Int, height: Int) throws {
+        guard let metal else { throw RenderError.noMetalDevice }
+        guard width != state.width || height != state.height else { return }
+        commitLiveEdit()
+        let scale = GlimmerCore.AffineTransform(a: Double(width) / Double(state.width), d: Double(height) / Double(state.height))
+        try transformCanvas(scale, width: width, height: height, actionName: String(localized: "Image Size"), metal: metal, scaling: true)
+        canvas.perform(.fitToWindow)
+    }
+
+    /// `scaling`: `rot` only scales, so text keeps its letters (the transform is stored with
+    /// it), guides move along and layer styles scale with the image.
+    private func transformCanvas(_ rot: GlimmerCore.AffineTransform, width w: Int, height h: Int, actionName: String,
+                                 metal: MetalContext, scaling: Bool) throws {
         let limit = PixelRect(x: 0, y: 0, width: w, height: h)
         let docBounds = state.bounds
         do {
@@ -289,6 +319,7 @@ extension EditorSession {
             }
             func rotateLayer(_ layer: Layer) throws -> Layer {
                 var l = layer
+                if scaling { l.effects = layer.effects.scaled(by: (abs(rot.a) * abs(rot.d)).squareRoot()) }
                 if let path = layer.vectorMask {
                     let p = path.applying(rot)
                     l.vectorMask = p
@@ -303,6 +334,9 @@ extension EditorSession {
                 switch layer.content {
                 case .raster(let grid):
                     l.content = .raster(try resample(grid))
+                case .text(var text) where scaling:
+                    text.transform = Self.concat(rot, text.transform ?? .identity)
+                    l.content = .text(text)
                 case .text:
                     let raster = try DocumentCompositor.rasterize(layer, bounds: docBounds, blendSpace: state.blendSpace, context: metal)
                     l.content = .raster(try resample(raster))
@@ -327,7 +361,11 @@ extension EditorSession {
                 state.width = w
                 state.height = h
                 state.selection = nil
-                state.aids.guides = []
+                state.aids.guides = !scaling ? [] : state.aids.guides.map { g in
+                    var g = g
+                    g.position *= g.axis == .vertical ? rot.a : rot.d
+                    return g
+                }
                 state.paths = state.paths.map { path in
                     var p = path
                     p.subpaths = p.subpaths.map { sub in
@@ -340,9 +378,6 @@ extension EditorSession {
                     return p
                 }
             }
-            canvas.perform(.fitToWindow)
-        } catch {
-            report(error)
         }
     }
 

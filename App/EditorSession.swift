@@ -179,6 +179,7 @@ final class EditorSession {
     var documentName = "Untitled"
     var isExportSheetPresented = false
     var isLayerStylePresented = false
+    var isImageSizePresented = false
     var exportOptions = ExportOptions()
     var isExporting = false
     var errorMessage: String?
@@ -662,6 +663,8 @@ final class EditorSession {
         case .rotate180: flipCanvas(.rotate180)
         case .crop:
             tool = .crop
+        case .imageSize:
+            isImageSizePresented = true
         case .toggleRulers:
             edit(state.aids.rulersVisible ? "Hide Rulers" : "Show Rulers") { $0.aids.rulersVisible.toggle() }
         case .toggleGrid:

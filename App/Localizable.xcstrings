@@ -352,6 +352,17 @@
         }
       }
     },
+    "Add Image": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till bild"
+          }
+        }
+      }
+    },
     "AI": {
       "localizations": {
         "sv": {
@@ -2814,6 +2825,17 @@
         }
       }
     },
+    "Each side must be 1 to %lld pixels.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varje sida måste vara 1 till %lld pixlar."
+          }
+        }
+      }
+    },
     "Edit Fill": {
       "extractionState": "manual",
       "localizations": {
@@ -4520,6 +4542,17 @@
         }
       }
     },
+    "Height in pixels": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höjd i pixlar"
+          }
+        }
+      }
+    },
     "Hi — I'm your editing assistant. Tell me what you want: I'll adjust the photo (“make it warmer”), edit its content (“make the sky pink”), generate a new layer (“add a red bird”), or plan several steps and check the result.": {
       "localizations": {
         "sv": {
@@ -4741,6 +4774,28 @@
         }
       }
     },
+    "Image Size": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildstorlek"
+          }
+        }
+      }
+    },
+    "Image Size…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildstorlek…"
+          }
+        }
+      }
+    },
     "Image Text to Layers": {
       "localizations": {
         "sv": {
@@ -4888,6 +4943,17 @@
         }
       }
     },
+    "Keep proportions": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behåll proportioner"
+          }
+        }
+      }
+    },
     "Keep these steps to run again from ⌘K or the Actions menu": {
       "localizations": {
         "sv": {
@@ -4997,6 +5063,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lagermask"
+          }
+        }
+      }
+    },
+    "Layer Properties": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lageregenskaper"
           }
         }
       }
@@ -6111,6 +6188,17 @@
         }
       }
     },
+    "Now %lld × %lld pixels": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nu %lld × %lld pixlar"
+          }
+        }
+      }
+    },
     "Nudge": {
       "extractionState": "manual",
       "localizations": {
@@ -7010,6 +7098,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "R ← Röd"
+          }
+        }
+      }
+    },
+    "Resize": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändra storlek"
           }
         }
       }
@@ -9013,6 +9112,17 @@
         }
       }
     },
+    "Style Text": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formatera text"
+          }
+        }
+      }
+    },
     "Stylize": {
       "extractionState": "manual",
       "localizations": {
@@ -10005,6 +10115,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bredd och höjd måste vara mellan 1 och %lld pixlar."
+          }
+        }
+      }
+    },
+    "Width in pixels": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bredd i pixlar"
           }
         }
       }

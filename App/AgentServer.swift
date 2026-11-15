@@ -277,6 +277,9 @@ enum AgentRouter {
             case ["export"]:
                 try only("POST")
                 return try await export(session, r)
+            case ["layers"]:
+                try only("POST")
+                return try addImage(session, r)
             default:
                 throw APIError.notFound("No such path: \(r.path). See /glimmer.")
             }
@@ -514,6 +517,49 @@ enum AgentRouter {
         session.showToast(String(localized: "Requested by \(sibling)"))
     }
 
+    /// `add_image`: the body's image becomes a new layer, one undo step of its own.
+    private static func addImage(_ session: EditorSession, _ r: AgentAPI.Request) throws -> Response {
+        let type = (r.headers["content-type"] ?? "").lowercased()
+        guard type.hasPrefix("image/") || type == "application/octet-stream" else {
+            throw APIError.badRequest("Send the image's bytes with Content-Type: image/… (the options go in the query).")
+        }
+        let fitName = r.query["fit"] ?? "contain"
+        guard let fit = CanvasSteps.Fit(rawValue: fitName) else { throw APIError.badRequest("fit must be contain, cover or none.") }
+        func number(_ key: String) throws -> Double? {
+            guard let text = r.query[key] else { return nil }
+            guard let v = Double(text), v.isFinite, abs(v) <= 1e6 else { throw APIError.badRequest("\(key) must be a number.") }
+            return v
+        }
+        let x = try number("x"), y = try number("y")
+        let smart: Bool
+        switch r.query["smartObject"] ?? "true" {
+        case "true", "1": smart = true
+        case "false", "0": smart = false
+        default: throw APIError.badRequest("smartObject must be true or false.")
+        }
+        guard !r.body.isEmpty else { throw APIError.unprocessable("bad_image", "The image body is empty.") }
+        let image: CGImage
+        do {
+            image = try ImageImporter.image(from: r.body)
+        } catch {
+            throw APIError.unprocessable("bad_image", "Glimmer couldn't read the image (\(error.localizedDescription)). Send PNG, JPEG, HEIC, TIFF or WebP bytes.")
+        }
+        guard image.width <= CanvasSteps.maxSide, image.height <= CanvasSteps.maxSide else {
+            throw APIError.unprocessable("too_large", "The image is \(image.width) × \(image.height); the most is \(CanvasSteps.maxSide) pixels a side.")
+        }
+        let name = (r.query["name"]?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : String($0.prefix(200)) }
+        let layer: Layer
+        do {
+            layer = try session.addImageLayer(image, name: name ?? String(localized: "Image"), fit: fit, x: x, y: y, smartObject: smart)
+        } catch {
+            throw APIError.internalError(error.localizedDescription)
+        }
+        showRequester(r, in: session)
+        var info: [String: Any] = ["id": layer.id.uuidString, "name": layer.name]
+        if let b = layerBounds(layer) { info["bounds"] = ["x": b.x, "y": b.y, "width": b.width, "height": b.height] }
+        return .json(["layer": info, "document": detail(session)], status: 201)
+    }
+
     private static func steps(_ session: EditorSession, _ r: AgentAPI.Request) async throws -> Response {
         let obj = try json(r)
         guard let raw = obj["steps"] as? [Any], !raw.isEmpty else {
@@ -534,6 +580,7 @@ enum AgentRouter {
                   let decoded = try? JSONDecoder().decode(AgentStep.self, from: data) else {
                 throw APIError.badRequest("Step \(i): \"params\" must be an object.")
             }
+            if let problem = CanvasSteps.malformed(decoded) { throw APIError.badRequest("Step \(i): \(problem)") }
             if AgentAPI.paidOps.contains(op) {
                 guard allowPaid else {
                     throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) calls OpenRouter and costs money. Pass \"allowPaid\": true to allow it.")

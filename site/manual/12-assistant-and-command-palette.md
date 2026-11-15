@@ -121,8 +121,10 @@ The assistant works through a fixed set of steps. It can:
 - apply presets,
 - add a text layer at the top, center or bottom, and give single words their own font, boldness, size or color,
 - scale, rotate, skew or distort a layer or a group, like Free Transform,
+- crop the image to a shape such as 16:9 or to the selection, and resize the whole image,
+- change a layer's opacity, blend mode, visibility or name,
 - run Auto Enhance and Auto Color,
-- select the subject, people, the sky or everything, invert and feather the selection, and deselect,
+- select the subject, people, the sky, a rectangle, an ellipse or everything, invert and feather the selection, and deselect,
 - remove the background,
 - fill the selection with a color, set the foreground color, add an empty layer and choose which layer to work on,
 - run many commands from the Image, Layer, Select and View menus,
@@ -131,7 +133,8 @@ The assistant works through a fixed set of steps. It can:
 It can't:
 
 - paint, retouch or draw with the brushes,
-- crop or use Liquify,
+- straighten with the Crop tool or use Liquify,
+- add an image from a file as a new layer (use **File › Place Image…**),
 - open, save or export files,
 - open dialogs such as Layer Style or the fill layer dialogs,
 - change Glimmer's settings.

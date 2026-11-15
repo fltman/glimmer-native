@@ -87,6 +87,8 @@ struct GlimmerCommands: Commands {
             }
             items([.autoEnhance, .autoColor, .autoStraighten])
             Divider()
+            items([.imageSize])
+            Divider()
             items([.freeTransform, .crop, .suggestCrop, .straightenDocument])
             Divider()
             items([.rotateRight, .rotateLeft, .rotate180, .flipHorizontal, .flipVertical])

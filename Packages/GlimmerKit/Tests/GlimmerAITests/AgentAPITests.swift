@@ -99,7 +99,7 @@ import Testing
                 #expect(id?["x-in"] as? String == "path" && (params["required"] as? [String])?.contains("id") == true, "\(name)")
             }
         }
-        #expect(Set(AgentAPI.operations.compactMap { $0["call"] == nil ? nil : $0["name"] as? String }) == ["export", "image", "undo", "redo"])
+        #expect(Set(AgentAPI.operations.compactMap { $0["call"] == nil ? nil : $0["name"] as? String }) == ["export", "image", "add_image", "undo", "redo"])
         // Every op has a tier; the core set is small and every core name exists.
         #expect(AgentAPI.operations.allSatisfy { ["core", "advanced"].contains($0["tier"] as? String ?? "") })
         let core = AgentAPI.operations.filter { $0["tier"] as? String == "core" }.compactMap { $0["name"] as? String }

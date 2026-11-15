@@ -62,6 +62,10 @@ Yes. Glimmer documents use macOS autosave and versions, so you can close a docum
 
 Yes. Edit the text, select the words and change the font, style, size or color in the options bar; only the selection changes. The text stays editable, also after you scale, rotate or skew it with Free Transform. See [Text, paths and shapes](manual/09-text-paths-and-shapes.md).
 
+## How do I resize an image?
+
+Choose **Image › Image Size…** (⌥⌘I), type a new width or height in pixels and click **Resize**. With **Keep proportions** on, the other side follows. Text stays editable and layer styles are scaled along. To change the canvas without scaling the image, use the Crop tool. See [Transform, crop and image](manual/08-transform-crop-and-image.md).
+
 ## Can AI agents control Glimmer?
 
 Yes. Glimmer runs a small web server on your Mac, reachable only from your Mac, at `http://127.0.0.1:9001` (or the first free port from 9101 to 9119). An agent such as Claude can fetch the guide at `/glimmer` and then open, edit and export images in your open windows. Copy the line under **Help › Agent Access** and paste it to your agent. See the [Agent guide](agents.html) for the details. State-changing requests need a special header, requests from web pages are refused, and paid steps are refused unless the agent asks for them explicitly.

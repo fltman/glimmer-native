@@ -60,7 +60,7 @@
     },
     {
       "title": "Agents and Shortcuts can drive it",
-      "text": "Hand your AI agent one line from Help › Agent Access. It reads the guide on your Mac and edits through a local API: open, edit, transform, style text, undo and export. Six Shortcuts actions do the same for files, without opening a window.",
+      "text": "Hand your AI agent one line from Help › Agent Access. It reads the guide on your Mac and edits through a local API: open, combine images, crop, resize, transform, style text, undo and export. Six Shortcuts actions do the same for files, without opening a window.",
       "screen": "screens/agent-splash.webp"
     },
     {

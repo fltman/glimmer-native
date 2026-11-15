@@ -225,8 +225,9 @@ public enum AgentAPI {
     /// The operations a sibling's assistant takes first when it can offer only a few tools
     /// (SIBLINGS.md §3): the everyday edits, a cover's parts, selection and export.
     public static let coreOps: Set<String> = [
-        "add_adjustment", "apply_preset", "apply_filter", "add_text", "add_waveform", "auto_enhance", "auto_color",
+        "add_adjustment", "add_text", "add_waveform", "auto_enhance",
         "select_subject", "remove_background", "generate_layer", "image_edit_composite", "export", "image", "undo",
+        "crop", "resize_image", "set_layer", "add_image",
     ]
 
     static let formats = ["png", "jpeg", "heic", "tiff", "webp"]
@@ -258,6 +259,15 @@ public enum AgentAPI {
             ]),
             op("image", "The flattened image as bytes.", "GET", "image",
                ["format": format.merging(["x-in": "query"]) { $1 }, "maxSide": maxSide.merging(["x-in": "query"]) { $1 }]),
+            op("add_image", "Add an image as a new layer in an open document, to combine two images. The request body is the image's bytes (PNG, JPEG, HEIC, TIFF or WebP; Content-Type image/… or application/octet-stream), not JSON; the options go in the query. The new layer lands above the active layer and becomes the active one. One undo step. Answers 201 with {layer: {id, name, bounds}}.", "POST", "layers", [
+                "name": ["type": "string", "x-in": "query", "description": "Optional. The layer's name (default Image)."],
+                "fit": ["type": "string", "enum": CanvasSteps.Fit.allCases.map(\.rawValue), "x-in": "query",
+                        "description": "Optional. contain (default): scaled down to fit the canvas, never up. cover: scaled to cover the whole canvas. none: at its own size."],
+                "x": ["type": "number", "x-in": "query", "description": "Optional. Left edge in document pixels (default: centred)."],
+                "y": ["type": "number", "x-in": "query", "description": "Optional. Top edge in document pixels (default: centred)."],
+                "smartObject": ["type": "boolean", "x-in": "query",
+                                "description": "Optional. true (default) keeps the image's own pixels, so later scaling doesn't soften it; false makes a plain pixel layer."],
+            ], undoable: true),
             op("undo", "Undo the last change (a whole steps request is one).", "POST", "undo"),
             op("redo", "Redo the last undone change.", "POST", "redo"),
         ]
@@ -321,7 +331,7 @@ public enum AgentAPI {
         |---|---|---|
         | GET | `/glimmer` | This guide (Markdown). |
         | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents and the running `jobs`. |
-        | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
+        | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `add_image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
         | GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`), and ⌘S writes it back. |
         | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\\|"black"\\|"transparent", "name"}`). `name` names the document's window. Glimmer's untouched start document is replaced instead of leaving an empty window. |
         | GET | `/api/v1/documents/{id}` | Size, layers (top first, each with `bounds` in document pixels when it has content), the active layer and whether there is a selection. |
@@ -330,6 +340,7 @@ public enum AgentAPI {
         | GET | `/api/v1/jobs` | Recent jobs (see Long jobs). |
         | GET | `/api/v1/jobs/{id}` | One job: status, progress and, when finished, the result. |
         | DELETE | `/api/v1/jobs/{id}` | Cancel a job that is still running. |
+        | POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document. Query: `name`, `fit=contain\\|cover\\|none`, `x`, `y`, `smartObject=true\\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
         | POST | `/api/v1/documents/{id}/undo` | Undo the last step (a whole `steps` request counts as one). |
         | POST | `/api/v1/documents/{id}/redo` | Redo. |
         | POST | `/api/v1/documents/{id}/export` | The finished image as bytes. Body: `{"format": "png\\|jpeg\\|heic\\|tiff\\|webp", "quality": 0.9, "maxSide": 2048, "maxBytes": 500000}`; all optional (PNG by default). |
@@ -404,8 +415,8 @@ public enum AgentAPI {
         | 404 | `not_found` | No such document, path or operation. |
         | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
         | 413 | `too_large` | Body over 256 MB. |
-        | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
-        | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`). |
+        | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
+        | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`, `bad_image`, `too_large`). |
         | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
         ## Operations
@@ -437,6 +448,8 @@ public enum AgentAPI {
         - Adjustment layers are non-destructive; filters change pixels. Prefer `add_adjustment` for tone and colour.
         - `auto_enhance` and `auto_color` add editable adjustment layers, worked out on the Mac.
         - After a step, `GET /api/v1/documents/{id}/image` shows you what the user sees.
+        - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers`. Place it with `transform_layer`, blend it with `set_layer`, cut it out with `remove_background`.
+        - `crop`, `resize_image` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
         - The user may be editing the same document. Read the document before you act on it, and keep requests small.
 
         """

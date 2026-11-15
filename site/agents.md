@@ -50,7 +50,7 @@ Opening a document answers `201 Created`. To start from a blank canvas instead, 
 |---|---|---|
 | GET | `/glimmer` | This guide (Markdown). |
 | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents and the running `jobs`. |
-| GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
+| GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `add_image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
 | GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`), and ⌘S writes it back. |
 | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\|"black"\|"transparent", "name"}`). `name` names the document's window. Glimmer's untouched start document is replaced instead of leaving an empty window. |
 | GET | `/api/v1/documents/{id}` | Size, layers (top first, each with `bounds` in document pixels when it has content), the active layer and whether there is a selection. |
@@ -59,6 +59,7 @@ Opening a document answers `201 Created`. To start from a blank canvas instead, 
 | GET | `/api/v1/jobs` | Recent jobs (see Long jobs). |
 | GET | `/api/v1/jobs/{id}` | One job: status, progress and, when finished, the result. |
 | DELETE | `/api/v1/jobs/{id}` | Cancel a job that is still running. |
+| POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document. Query: `name`, `fit=contain\|cover\|none`, `x`, `y`, `smartObject=true\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
 | POST | `/api/v1/documents/{id}/undo` | Undo the last step (a whole `steps` request counts as one). |
 | POST | `/api/v1/documents/{id}/redo` | Redo. |
 | POST | `/api/v1/documents/{id}/export` | The finished image as bytes. Body: `{"format": "png\|jpeg\|heic\|tiff\|webp", "quality": 0.9, "maxSide": 2048, "maxBytes": 500000}`; all optional (PNG by default). |
@@ -132,8 +133,8 @@ Errors are JSON: `{"error": {"code": "…", "message": "…"}}`. A failed step a
 | 404 | `not_found` | No such document, path or operation. |
 | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
 | 413 | `too_large` | Body over 256 MB. |
-| 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
-| 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`). |
+| 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
+| 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`, `bad_image`, `too_large`). |
 | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
 ## Operations
@@ -344,6 +345,56 @@ Give words in a text layer their own font, boldness, size or colour (the rest of
 | `size` | number | Optional. Font size in document pixels. |
 | `color` | string | Optional. #RRGGBB. |
 
+### `crop`
+
+Crop the canvas for every layer, like the Crop tool. Give exactly one of: a rectangle (x, y, width, height), toSelection, or aspect. A rectangle partly outside the canvas is clipped to it; the step's info says which box was used. One undo step.
+
+| Param | Type | Description |
+|---|---|---|
+| `x` | number | Optional. Left edge of the box in document pixels (default 0). |
+| `y` | number | Optional. Top edge of the box in document pixels (default 0). |
+| `width` | number | Optional, with a rectangle. Width of the box in pixels. |
+| `height` | number | Optional, with a rectangle. Height of the box in pixels. |
+| `toSelection` | boolean | Optional, instead of a rectangle. true crops to the bounds of the selection. |
+| `aspect` | string | Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centred box of that shape. |
+| `deletePixels` | boolean | Optional. true throws away what is outside the box; false (default) keeps it outside the canvas. |
+
+### `resize_image`
+
+Resample the whole image to a new size, like Image › Image Size: every layer, mask, path and guide is scaled. Give width or height alone to keep the proportions; give both for exactly that size (the proportions may change); or give scale. Text and smart objects stay editable. One undo step.
+
+| Param | Type | Description |
+|---|---|---|
+| `width` | number | Optional. New width in pixels. |
+| `height` | number | Optional. New height in pixels. |
+| `scale` | number | Optional, instead of width and height. 0.5 halves both sides, 2 doubles them. |
+
+### `select_rect`
+
+Select a rectangle or an ellipse. A box partly outside the canvas is clipped to it.
+
+| Param | Type | Description |
+|---|---|---|
+| `x` | number | Left edge in document pixels. |
+| `y` | number | Top edge in document pixels. |
+| `width` | number | Width in pixels. |
+| `height` | number | Height in pixels. |
+| `shape` | string | Optional. rect (default) or ellipse (inscribed in the box). One of: `rect`, `ellipse` |
+| `mode` | string | Optional. How it combines with the selection there is (default replace). One of: `replace`, `add`, `subtract`, `intersect` |
+| `feather` | number | Optional. Soften the edge by this many pixels. |
+
+### `set_layer`
+
+Change a layer's opacity, blend mode, visibility or name. One undo step.
+
+| Param | Type | Description |
+|---|---|---|
+| `target` | string | Optional. The layer's id or name; default the active layer. A name two layers share is refused: use the id. |
+| `opacity` | number | Optional. 0…1, as GET document reports it. |
+| `blendMode` | string | Optional. The blend mode id, as GET document reports it (pass-through for groups only). One of: `pass-through`, `normal`, `darken`, `multiply`, `color-burn`, `linear-burn`, `lighten`, `screen`, `color-dodge`, `linear-dodge`, `overlay`, `soft-light`, `hard-light`, `vivid-light`, `linear-light`, `pin-light`, `hard-mix`, `difference`, `exclusion`, `subtract`, `divide`, `hue`, `saturation`, `color`, `luminosity` |
+| `visible` | boolean | Optional. Show or hide the layer. |
+| `name` | string | Optional. The new name. |
+
 ### `add_waveform`
 
 Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolour, move and style.
@@ -371,4 +422,6 @@ Run an editor menu command.
 - Adjustment layers are non-destructive; filters change pixels. Prefer `add_adjustment` for tone and colour.
 - `auto_enhance` and `auto_color` add editable adjustment layers, worked out on the Mac.
 - After a step, `GET /api/v1/documents/{id}/image` shows you what the user sees.
+- To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers`. Place it with `transform_layer`, blend it with `set_layer`, cut it out with `remove_background`.
+- `crop`, `resize_image` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
 - The user may be editing the same document. Read the document before you act on it, and keep requests small.

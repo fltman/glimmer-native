@@ -461,6 +461,14 @@ extension AIController {
             try performTransformLayer(step)
         case "style_text":
             try performStyleText(step)
+        case "crop":
+            try performCrop(step)
+        case "resize_image":
+            try performResizeImage(step)
+        case "select_rect":
+            try performSelectRect(step)
+        case "set_layer":
+            try performSetLayer(step)
         case let op where SiblingApp.split(tool: op) != nil:
             try await performSiblingTool(step)
         case "run_command":

@@ -130,6 +130,18 @@ Glimmer's sibling apps, Flimmer and Jämmer, use the same API. Their assistants 
 
 An agent (or the assistant) can scale, rotate, skew or distort a layer or a group with the `transform_layer` step, the same as Free Transform. Text stays editable for scale, rotation and skew. Corners (distort or perspective) would turn text into pixels, so Glimmer refuses them unless the request explicitly allows it, the way it asks you first in the window. Layer masks follow the transform, as in the window. Each transform is one undo step.
 
+### Combining images, cropping and resizing
+
+An agent can build a picture from several images. It opens the first image as a document and sends each further image to that document, where it lands as a new layer above the active one, fitted to the canvas. From there the usual steps apply: `transform_layer` places it, `remove_background` cuts it out, and `set_layer` changes its opacity, blend mode, visibility or name.
+
+Three steps change the canvas and the selection by numbers:
+
+- `crop` cuts the canvas to a rectangle, to the selection, or to the largest centered box of a shape such as 16:9. By default the pixels outside are kept, as when **Delete cropped pixels** is off in the Crop tool.
+- `resize_image` resamples the whole image, the same as **Image › Image Size…**.
+- `select_rect` selects a rectangle or an ellipse, and can add to or take away from the selection there is.
+
+Each of these is one undo step. If a request can't be done, for example a crop to a selection when nothing is selected, Glimmer refuses it and says why, and the document is left as it was.
+
 ### Styling words
 
 The `style_text` step gives words in a text layer their own font, boldness, size or color, the same as selecting them while editing and changing the options bar. The agent names the words (every occurrence, or only the first), and the reply says how many it found and where. The text stays editable, and each step is one undo step.

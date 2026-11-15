@@ -351,3 +351,18 @@ public struct LayerGroup: Sendable {
         self.isExpanded = isExpanded
     }
 }
+
+extension LayerEffects {
+    /// The same styles for an image scaled by `factor` (Image Size): distances, sizes and
+    /// stroke widths follow, so a shadow looks the same on the smaller image.
+    public func scaled(by factor: Double) -> LayerEffects {
+        var e = self
+        e.dropShadow?.distance *= factor
+        e.dropShadow?.size *= factor
+        e.innerShadow?.distance *= factor
+        e.innerShadow?.size *= factor
+        e.outerGlow?.size *= factor
+        e.stroke?.width *= factor
+        return e
+    }
+}
