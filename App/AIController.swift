@@ -142,7 +142,8 @@ final class AIController {
 
     private func addLayer(_ image: RGBAImage, name: String, origin: SIMD2<Int>, action: String) throws {
         let tiles = try ImageImporter.tiles(from: image.cgImage, origin: origin)
-        session.document.edit(action, undoManager: session.undoManager) {
+        // The job finishes outside any user event: an undo step of its own.
+        session.document.edit(action, undoManager: session.undoManager, separateStep: true) {
             $0.insertLayerAboveActive(Layer(name: name, content: .raster(tiles)))
         }
     }

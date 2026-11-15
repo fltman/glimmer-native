@@ -119,13 +119,20 @@ final class GlimmerDocument: Document {
 
     /// Applies an undoable change. Snapshots are cheap (tiles are shared), so
     /// undo simply restores the previous state.
+    /// `separateStep`: for changes made outside a user event (an AI job finishing, the agent
+    /// API), which must be undo steps of their own (`UndoManager.separateStep`).
     @MainActor
-    func edit(_ actionName: String, undoManager: UndoManager?, _ change: (inout DocumentState) throws -> Void) rethrows {
+    func edit(_ actionName: String, undoManager: UndoManager?, separateStep: Bool = false,
+              _ change: (inout DocumentState) throws -> Void) rethrows {
         let before = state
         var after = state
         try change(&after)
         state = after
-        registerUndo(actionName, undoManager: undoManager, restoring: before)
+        if separateStep, let undoManager {
+            undoManager.separateStep { registerUndo(actionName, undoManager: undoManager, restoring: before) }
+        } else {
+            registerUndo(actionName, undoManager: undoManager, restoring: before)
+        }
     }
 
     /// Records an undo step for a change that was applied interactively (e.g. a
@@ -141,11 +148,16 @@ final class GlimmerDocument: Document {
         transaction = (actionName, state, false)
     }
 
+    /// Transactions (agent steps, assistant plans, saved actions) end outside a user event, so
+    /// each is an undo step of its own; otherwise quick requests merged into one.
     @MainActor
     func endTransaction(undoManager: UndoManager?) {
         guard let t = transaction else { return }
         transaction = nil
-        if t.changed { registerUndo(t.name, undoManager: undoManager, restoring: t.before) }
+        guard t.changed else { return }
+        if let undoManager {
+            undoManager.separateStep { registerUndo(t.name, undoManager: undoManager, restoring: t.before) }
+        }
     }
 
     var isInTransaction: Bool { transaction != nil }

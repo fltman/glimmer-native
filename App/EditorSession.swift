@@ -200,7 +200,9 @@ final class EditorSession {
 
     /// The untouched start document takes another document's content (one undo step).
     func replaceUntouched(with new: DocumentState) {
+        document.beginTransaction("New Document")  // an agent request: its own undo step
         edit("New Document") { $0 = new }
+        document.endTransaction(undoManager: undoManager)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in self?.canvas.perform(.fitToWindow) }
     }
 
