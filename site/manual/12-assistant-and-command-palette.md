@@ -121,7 +121,7 @@ The assistant works through a fixed set of steps. It can:
 - apply presets,
 - add a text layer at the top, center or bottom, and give single words their own font, boldness, size or color,
 - scale, rotate, skew or distort a layer or a group, like Free Transform,
-- crop the image to a shape such as 16:9 or to the selection, and resize the whole image,
+- crop the image to a shape such as 16:9 or to the selection, add room around it, and resize the whole image,
 - change a layer's opacity, blend mode, visibility or name,
 - run Auto Enhance and Auto Color,
 - select the subject, people, the sky, a rectangle, an ellipse or everything, invert and feather the selection, and deselect,

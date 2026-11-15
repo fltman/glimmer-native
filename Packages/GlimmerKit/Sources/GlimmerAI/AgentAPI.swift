@@ -415,7 +415,7 @@ public enum AgentAPI {
         | 404 | `not_found` | No such document, path or operation. |
         | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
         | 413 | `too_large` | Body over 256 MB. |
-        | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
+        | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `bad_anchor`, `bad_color`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
         | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`, `bad_image`, `too_large`). |
         | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
@@ -449,7 +449,7 @@ public enum AgentAPI {
         - `auto_enhance` and `auto_color` add editable adjustment layers, worked out on the Mac.
         - After a step, `GET /api/v1/documents/{id}/image` shows you what the user sees.
         - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers`. Place it with `transform_layer`, blend it with `set_layer`, cut it out with `remove_background`.
-        - `crop`, `resize_image` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
+        - `resize_canvas` adds room around the image (`crop` can only take room away). `aspect` with `anchor` is the short way to a thumbnail shape with space for a title.\n        - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
         - The user may be editing the same document. Read the document before you act on it, and keep requests small.
 
         """

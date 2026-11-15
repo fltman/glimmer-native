@@ -32,6 +32,10 @@ public enum CanvasSteps {
             let size = has("width") || has("height")
             if size, has("scale") { return "resize_image takes width/height or scale, not both." }
             if !size, !has("scale") { return "resize_image needs width, height or scale." }
+        case "resize_canvas":
+            let size = has("width") || has("height")
+            if size, has("aspect") { return "resize_canvas takes width/height or aspect, not both." }
+            if !size, !has("aspect") { return "resize_canvas needs width, height or aspect." }
         case "select_rect":
             if !(has("width") && has("height")) { return "select_rect needs x, y, width and height." }
         default:
@@ -166,6 +170,35 @@ public enum CanvasSteps {
         }
         return PixelRect(x: origin(old.width, new.width, anchor.x), y: origin(old.height, new.height, anchor.y),
                          width: new.width, height: new.height)
+    }
+
+    static let anchors: [String: (x: Int, y: Int)] = [
+        "top-left": (0, 0), "top": (1, 0), "top-right": (2, 0), "left": (0, 1), "center": (1, 1), "right": (2, 1),
+        "bottom-left": (0, 2), "bottom": (1, 2), "bottom-right": (2, 2),
+    ]
+    public static let anchorNames = ["top-left", "top", "top-right", "left", "center", "right", "bottom-left", "bottom", "bottom-right"]
+
+    /// The box `resize_canvas` gives the canvas, in the old canvas's pixels. With `aspect`: the
+    /// smallest canvas of that shape that holds the current one.
+    public static func canvasBox(_ step: AgentStep, width: Int, height: Int) throws -> PixelRect {
+        guard let anchor = anchors[step.string("anchor") ?? "center"] else {
+            throw Refusal(reason: "bad_anchor", message: "anchor must be one of: \(anchorNames.joined(separator: ", ")).")
+        }
+        var w = Double(width), h = Double(height)
+        if let text = step.string("aspect") {
+            guard let a = aspect(text) else {
+                throw Refusal(reason: "bad_aspect", message: "aspect must be W:H with positive numbers, like 16:9.")
+            }
+            if a > w / h { w = (h * a).rounded(.up) } else { h = (w / a).rounded(.up) }
+        } else {
+            w = step.number("width") ?? w
+            h = step.number("height") ?? h
+        }
+        guard w.isFinite, h.isFinite, w.rounded() >= 1, h.rounded() >= 1,
+              w.rounded() <= Double(maxSide), h.rounded() <= Double(maxSide) else {
+            throw Refusal(reason: "bad_size", message: "The canvas must be 1…\(maxSide) pixels on each side.")
+        }
+        return canvasBox(old: (width, height), new: (Int(w.rounded()), Int(h.rounded())), anchor: anchor)
     }
 
     /// How `add_image` fits an image into the canvas.

@@ -1599,6 +1599,17 @@
         }
       }
     },
+    "Canvas Fill": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyllning för arbetsytan"
+          }
+        }
+      }
+    },
     "Canvas Size": {
       "extractionState": "manual",
       "localizations": {

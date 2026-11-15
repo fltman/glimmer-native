@@ -290,6 +290,13 @@ public enum AgentPlanner {
             AgentParam("height", "number", "Optional. New height in pixels."),
             AgentParam("scale", "number", "Optional, instead of width and height. 0.5 halves both sides, 2 doubles them."),
         ]),
+        AgentOp("resize_canvas", "Give the image more room, or less, without scaling it, like Image › Canvas Size. Give width and/or height (one alone keeps the other side), or aspect. New room is transparent unless fill is given; what a smaller canvas cuts off is kept outside it. The step's info says which box was used. One undo step.", [
+            AgentParam("width", "number", "Optional. New canvas width in pixels."),
+            AgentParam("height", "number", "Optional. New canvas height in pixels."),
+            AgentParam("aspect", "string", "Optional, instead of width and height. W:H, like 16:9: the smallest canvas of that shape that holds the whole image."),
+            AgentParam("anchor", "string", "Optional. Where the image stays (default center); new room goes on the other sides.", options: CanvasSteps.anchorNames),
+            AgentParam("fill", "string", "Optional. #RRGGBB: adds a colour fill layer at the bottom so the new room isn't transparent. Ignored when no room is added."),
+        ]),
         AgentOp("select_rect", "Select a rectangle or an ellipse. A box partly outside the canvas is clipped to it.", [
             AgentParam("x", "number", "Left edge in document pixels."),
             AgentParam("y", "number", "Top edge in document pixels."),

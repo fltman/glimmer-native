@@ -133,7 +133,7 @@ Errors are JSON: `{"error": {"code": "…", "message": "…"}}`. A failed step a
 | 404 | `not_found` | No such document, path or operation. |
 | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
 | 413 | `too_large` | Body over 256 MB. |
-| 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
+| 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `bad_anchor`, `bad_color`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
 | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`, `bad_image`, `too_large`). |
 | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
@@ -369,6 +369,18 @@ Resample the whole image to a new size, like Image › Image Size: every layer, 
 | `height` | number | Optional. New height in pixels. |
 | `scale` | number | Optional, instead of width and height. 0.5 halves both sides, 2 doubles them. |
 
+### `resize_canvas`
+
+Give the image more room, or less, without scaling it, like Image › Canvas Size. Give width and/or height (one alone keeps the other side), or aspect. New room is transparent unless fill is given; what a smaller canvas cuts off is kept outside it. The step's info says which box was used. One undo step.
+
+| Param | Type | Description |
+|---|---|---|
+| `width` | number | Optional. New canvas width in pixels. |
+| `height` | number | Optional. New canvas height in pixels. |
+| `aspect` | string | Optional, instead of width and height. W:H, like 16:9: the smallest canvas of that shape that holds the whole image. |
+| `anchor` | string | Optional. Where the image stays (default center); new room goes on the other sides. One of: `top-left`, `top`, `top-right`, `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right` |
+| `fill` | string | Optional. #RRGGBB: adds a colour fill layer at the bottom so the new room isn't transparent. Ignored when no room is added. |
+
 ### `select_rect`
 
 Select a rectangle or an ellipse. A box partly outside the canvas is clipped to it.
@@ -423,5 +435,6 @@ Run an editor menu command.
 - `auto_enhance` and `auto_color` add editable adjustment layers, worked out on the Mac.
 - After a step, `GET /api/v1/documents/{id}/image` shows you what the user sees.
 - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers`. Place it with `transform_layer`, blend it with `set_layer`, cut it out with `remove_background`.
-- `crop`, `resize_image` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
+- `resize_canvas` adds room around the image (`crop` can only take room away). `aspect` with `anchor` is the short way to a thumbnail shape with space for a title.
+        - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
 - The user may be editing the same document. Read the document before you act on it, and keep requests small.

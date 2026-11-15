@@ -134,9 +134,10 @@ An agent (or the assistant) can scale, rotate, skew or distort a layer or a grou
 
 An agent can build a picture from several images. It opens the first image as a document and sends each further image to that document, where it lands as a new layer above the active one, fitted to the canvas. From there the usual steps apply: `transform_layer` places it, `remove_background` cuts it out, and `set_layer` changes its opacity, blend mode, visibility or name.
 
-Three steps change the canvas and the selection by numbers:
+Four steps change the canvas and the selection by numbers:
 
 - `crop` cuts the canvas to a rectangle, to the selection, or to the largest centered box of a shape such as 16:9. By default the pixels outside are kept, as when **Delete cropped pixels** is off in the Crop tool.
+- `resize_canvas` adds room around the image, or takes it away, without scaling it, the same as **Image › Canvas Size…**. It can also make the smallest canvas of a shape such as 16:9 that holds the whole image, and fill the new room with a color.
 - `resize_image` resamples the whole image, the same as **Image › Image Size…**.
 - `select_rect` selects a rectangle or an ellipse, and can add to or take away from the selection there is.
 

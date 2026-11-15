@@ -32,6 +32,30 @@ extension AIController {
         stepInfo = ["width": size.width, "height": size.height]
     }
 
+    func performResizeCanvas(_ step: AgentStep) throws {
+        let s = session
+        let w = s.state.width, h = s.state.height
+        let box = try refusing { try CanvasSteps.canvasBox(step, width: w, height: h) }
+        let fillText = step.string("fill")
+        let fill = parseHexColor(fillText)
+        if fillText != nil, fill == nil { throw StepError("fill must be #RRGGBB.", reason: "bad_color") }
+        if s.cropSession != nil { s.cropSession = nil }
+        if box.width != w || box.height != h {
+            try s.cropCanvas(to: box, deletePixels: false, actionName: String(localized: "Canvas Size"))
+        }
+        var info = Self.json(box)
+        if let fill {
+            if box.width > w || box.height > h {
+                let layer = Layer(name: String(localized: "Canvas Fill"), content: .fill(.solid(fill)))
+                s.edit(String(localized: "Canvas Size")) { $0.layers.insert(layer, at: 0) }
+                info["fill"] = "added"
+            } else {
+                info["fill"] = "not_needed"
+            }
+        }
+        stepInfo = info
+    }
+
     func performSelectRect(_ step: AgentStep) throws {
         let s = session
         let box = try refusing { try CanvasSteps.rect(step, canvas: s.state.bounds) }

@@ -465,6 +465,8 @@ extension AIController {
             try performCrop(step)
         case "resize_image":
             try performResizeImage(step)
+        case "resize_canvas":
+            try performResizeCanvas(step)
         case "select_rect":
             try performSelectRect(step)
         case "set_layer":

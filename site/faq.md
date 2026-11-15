@@ -64,7 +64,7 @@ Yes. Edit the text, select the words and change the font, style, size or color i
 
 ## How do I resize an image?
 
-Choose **Image › Image Size…** (⌥⌘I), type a new width or height in pixels and click **Resize**. With **Keep proportions** on, the other side follows. Text stays editable and layer styles are scaled along. To add room around the image without scaling it, choose **Image › Canvas Size…** (⌥⌘C). See [Transform, crop and image](manual/08-transform-crop-and-image.md).
+Choose **Image › Image Size…** (⌥⌘I), type a new width or height in pixels and click **Resize**. With **Keep proportions** on, the other side follows. Text stays editable and layer styles are scaled along. To add room around the image without scaling it, choose **Image › Canvas Size…** (⌥⌘C). The assistant and agents can do both. See [Transform, crop and image](manual/08-transform-crop-and-image.md).
 
 ## Can AI agents control Glimmer?
 

@@ -124,6 +124,28 @@ import Testing
 }
 
 @Suite struct CanvasSizeTests {
+    static func step(_ params: [String: JSONValue]) -> AgentStep { AgentStep(op: "resize_canvas", params: params) }
+
+    @Test func resizeCanvasTakesASizeOrAShape() throws {
+        #expect(CanvasSteps.malformed(Self.step([:])) != nil)
+        #expect(CanvasSteps.malformed(Self.step(["aspect": .string("16:9"), "width": .number(10)])) != nil)
+        #expect(CanvasSteps.malformed(Self.step(["height": .number(10)])) == nil)
+        // One side alone keeps the other.
+        #expect(try CanvasSteps.canvasBox(Self.step(["width": .number(1200)]), width: 1000, height: 600) == PixelRect(x: -100, y: 0, width: 1200, height: 600))
+        // The smallest 16:9 canvas that holds a square image, the image on the right.
+        let wide = try CanvasSteps.canvasBox(Self.step(["aspect": .string("16:9"), "anchor": .string("right")]), width: 900, height: 900)
+        #expect(wide == PixelRect(x: -700, y: 0, width: 1600, height: 900))
+        // A wide image made square grows in height.
+        #expect(try CanvasSteps.canvasBox(Self.step(["aspect": .string("1:1"), "anchor": .string("top")]), width: 1000, height: 600) == PixelRect(x: 0, y: 0, width: 1000, height: 1000))
+        func reason(_ p: [String: JSONValue]) -> String? {
+            do { _ = try CanvasSteps.canvasBox(Self.step(p), width: 1000, height: 600) } catch let r as CanvasSteps.Refusal { return r.reason } catch { return "other" }
+            return nil
+        }
+        #expect(reason(["width": .number(0)]) == "bad_size" && reason(["width": .number(99_999)]) == "bad_size")
+        #expect(reason(["width": .number(10), "anchor": .string("middle")]) == "bad_anchor")
+        #expect(reason(["aspect": .string("wide")]) == "bad_aspect")
+    }
+
     @Test func theAnchorDecidesWhereTheNewRoomGoes() {
         let old = (width: 1000, height: 600)
         // Wider, anchored in the middle: the room is shared between left and right.
