@@ -144,15 +144,26 @@ extension SmartAnalysis {
 // MARK: What's in the picture
 
 public enum ImageLabel {
-    /// A short name for what the image shows ("Dog", "Beach"), or nil when
-    /// Vision isn't confident.
-    public static func name(for image: CGImage, minimumConfidence: Float = 0.35) -> String? {
+    /// Vision's labels form a hierarchy and the broad parents ("structure",
+    /// "outdoor") always score highest; they make poor names.
+    static let tooBroad: Set<String> = ["structure", "outdoor", "indoor", "land", "tableware", "utensil", "liquid", "drink",
+                                        "material", "textile", "wood_processed", "conveyance", "machine", "container",
+                                        "art", "people", "adult", "sky", "blue_sky", "plant", "vegetation", "water",
+                                        "water_body", "consumer_electronics", "furniture", "clothing", "office_supplies"]
+
+    /// A short name for what the image shows ("Mug", "Rocks & Bridge"), or nil
+    /// when Vision isn't confident: the best specific label, plus a second one
+    /// when it is nearly as likely.
+    public static func name(for image: CGImage, minimumConfidence: Float = 0.2) -> String? {
         let request = VNClassifyImageRequest()
         try? VNImageRequestHandler(cgImage: image).perform([request])
-        guard let best = (request.results ?? []).filter({ $0.confidence >= minimumConfidence })
-            .max(by: { $0.confidence < $1.confidence }) else { return nil }
-        let words = best.identifier.split(separator: "_").joined(separator: " ")
-        return words.prefix(1).uppercased() + words.dropFirst()
+        let specific = (request.results ?? []).filter { $0.confidence >= minimumConfidence && !tooBroad.contains($0.identifier) }
+            .sorted { $0.confidence > $1.confidence }
+        guard let best = specific.first else { return nil }
+        var words = [best.identifier]
+        if specific.count > 1, best.confidence - specific[1].confidence < 0.1 { words.append(specific[1].identifier) }
+        let pretty = words.map { $0.split(separator: "_").joined(separator: " ") }.joined(separator: " & ")
+        return pretty.prefix(1).uppercased() + pretty.dropFirst()
     }
 
     /// Names a camera or the system gave the file ("IMG_1234", "Screenshot …",
