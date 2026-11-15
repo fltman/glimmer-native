@@ -2,9 +2,12 @@ import AppKit
 import GlimmerAI
 import GlimmerCore
 import GlimmerRender
+import OSLog
 import SwiftUI
 import UniformTypeIdentifiers
 
+
+let openLog = Logger(subsystem: "com.brattoo.glimmer", category: "open")
 
 /// A small window (Welcome, Agent Access) that closes with Esc, wherever the focus is.
 final class EscapeClosingWindow: NSWindow {
@@ -155,10 +158,23 @@ final class DocumentOpener {
             return ["YES", "1", "true"].contains(any) ? "Test" : any
         }
         #endif
-        guard let event = NSAppleEventManager.shared().currentAppleEvent,
-              let pid = event.attributeDescriptor(forKeyword: AEKeyword(keySenderPIDAttr))?.int32Value,
-              let app = NSRunningApplication(processIdentifier: pid) else { return nil }
-        return SiblingApp.allCases.first(where: { $0.bundleID == app.bundleIdentifier })?.displayName
+        guard let event = NSAppleEventManager.shared().currentAppleEvent else {
+            openLog.notice("open: no current Apple event")
+            return nil
+        }
+        guard let pid = event.attributeDescriptor(forKeyword: AEKeyword(keySenderPIDAttr))?.int32Value,
+              let app = NSRunningApplication(processIdentifier: pid) else {
+            openLog.notice("open: the Apple event names no running sender")
+            return nil
+        }
+        openLog.notice("open from \(app.bundleIdentifier ?? "?", privacy: .public) (pid \(pid))")
+        if let sibling = SiblingApp.allCases.first(where: { $0.bundleID == app.bundleIdentifier }) { return sibling.displayName }
+        #if DEBUG
+        // Tests send from a helper app with its own bundle id: `-linkSenderIDs <id>[,<id>…]`.
+        let extra = (UserDefaults.standard.string(forKey: "linkSenderIDs") ?? "").split(separator: ",").map(String.init)
+        if let id = app.bundleIdentifier, extra.contains(id) { return app.localizedName ?? id }
+        #endif
+        return nil
     }
 
     private func openImage(_ url: URL, link: LinkedImage? = nil) {
