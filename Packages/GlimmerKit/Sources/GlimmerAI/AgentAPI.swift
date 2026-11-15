@@ -203,11 +203,22 @@ public enum AgentAPI {
     /// step is undoable (a whole `steps` request is one undo step).
     /// Requests that aren't steps carry `call` (method and path; `{id}` is the document).
     public static var operations: [[String: Any]] {
-        AgentPlanner.ops.map { op in
+        (AgentPlanner.ops.map { op in
             ["name": op.name, "description": op.description, "params": AgentPlanner.paramsSchema(op),
-             "paid": paidOps.contains(op.name), "undoable": true, "startsJob": op.startsJob]
-        } + endpointOperations
+             "paid": paidOps.contains(op.name), "undoable": true, "startsJob": op.startsJob] as [String: Any]
+        } + endpointOperations).map { op in
+            var op = op
+            op["tier"] = coreOps.contains(op["name"] as? String ?? "") ? "core" : "advanced"
+            return op
+        }
     }
+
+    /// The operations a sibling's assistant takes first when it can offer only a few tools
+    /// (SIBLINGS.md §3): the everyday edits, a cover's parts, selection and export.
+    public static let coreOps: Set<String> = [
+        "add_adjustment", "apply_preset", "apply_filter", "add_text", "add_waveform", "auto_enhance", "auto_color",
+        "select_subject", "remove_background", "generate_layer", "image_edit_composite", "export", "image", "undo",
+    ]
 
     static let formats = ["png", "jpeg", "heic", "tiff", "webp"]
 
@@ -301,9 +312,9 @@ public enum AgentAPI {
         |---|---|---|
         | GET | `/glimmer` | This guide (Markdown). |
         | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents and the running `jobs`. |
-        | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). |
+        | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
         | GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`), and ⌘S writes it back. |
-        | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\\|"black"\\|"transparent"}`). |
+        | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\\|"black"\\|"transparent", "name"}`). `name` names the document's window. Glimmer's untouched start document is replaced instead of leaving an empty window. |
         | GET | `/api/v1/documents/{id}` | Size, layers (top first), the active layer and whether there is a selection. |
         | GET | `/api/v1/documents/{id}/image` | The flattened image. Query: `format=png\\|jpeg`, `maxSide=<px>`. |
         | POST | `/api/v1/documents/{id}/steps` | Run steps in order. Body: `{"steps": [{"op": "…", "params": {…}}], "allowPaid": false, "async": false}`. Answers 200 when done, or 202 with a job (see Long jobs). |

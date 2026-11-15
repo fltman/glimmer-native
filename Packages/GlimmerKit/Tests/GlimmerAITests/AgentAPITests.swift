@@ -88,6 +88,10 @@ import Testing
             }
         }
         #expect(Set(AgentAPI.operations.compactMap { $0["call"] == nil ? nil : $0["name"] as? String }) == ["export", "image", "undo", "redo"])
+        // Every op has a tier; the core set is small and every core name exists.
+        #expect(AgentAPI.operations.allSatisfy { ["core", "advanced"].contains($0["tier"] as? String ?? "") })
+        let core = AgentAPI.operations.filter { $0["tier"] as? String == "core" }.compactMap { $0["name"] as? String }
+        #expect((10...15).contains(core.count) && Set(core) == AgentAPI.coreOps)
         // It's plain JSON, and paid steps are the ones that start jobs.
         #expect(JSONSerialization.isValidJSONObject(["operations": AgentAPI.operations]))
         let export = try #require(AgentAPI.operations.first { $0["name"] as? String == "export" })

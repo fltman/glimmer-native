@@ -312,7 +312,7 @@ private struct TitleChip: View {
     private var content: some View {
         HStack(spacing: 8) {
             Image(systemName: "sparkle").foregroundStyle(Theme.accent).accessibilityHidden(true)
-            Text(session.linkedImage?.fileName ?? session.documentName).fontWeight(.medium).lineLimit(1)
+            Text(session.linkedImage?.fileName ?? session.explicitName ?? session.documentName).fontWeight(.medium).lineLimit(1)
             Text(verbatim: "\(session.state.width)×\(session.state.height)").foregroundStyle(.secondary)
             Text(session.canvas.zoom, format: .percent.precision(.fractionLength(0)))
                 .monospacedDigit()

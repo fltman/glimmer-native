@@ -287,7 +287,7 @@ enum AgentRouter {
 
     static func summary(_ session: EditorSession) -> [String: Any] {
         let st = session.state
-        return ["id": session.agentID, "name": st.layers.first?.name ?? "Untitled", "width": st.width, "height": st.height,
+        return ["id": session.agentID, "name": session.explicitName ?? st.layers.first?.name ?? "Untitled", "width": st.width, "height": st.height,
                 "layerCount": st.allLayers.count, "hasSelection": st.selection != nil,
                 "frontmost": AgentRegistry.shared.front === session,
                 "linkedFile": session.linkedImage.map { ["name": $0.fileName, "format": $0.format.rawValue, "requester": $0.requester] } as Any? ?? NSNull()]
@@ -327,15 +327,17 @@ enum AgentRouter {
     private static func createDocument(_ r: AgentAPI.Request) async throws -> Response {
         let type = (r.headers["content-type"] ?? "").lowercased()
         var state: DocumentState
+        var name = r.query["name"]
         if type.hasPrefix("image/") || type == "application/octet-stream" {
-            state = try documentFromImage(r.body, name: r.query["name"] ?? "Image")
+            state = try documentFromImage(r.body, name: name ?? "Image")
         } else {
             let obj = try json(r)
+            name = obj["name"] as? String ?? name
             if let b64 = obj["image"] as? String {
                 guard let data = Data(base64Encoded: b64, options: .ignoreUnknownCharacters) else {
                     throw APIError.badRequest("\"image\" isn't valid base64.")
                 }
-                state = try documentFromImage(data, name: obj["name"] as? String ?? "Image")
+                state = try documentFromImage(data, name: name ?? "Image")
             } else if let w = obj["width"] as? Int, let h = obj["height"] as? Int {
                 guard (1...30_000).contains(w), (1...30_000).contains(h) else {
                     throw APIError.badRequest("width and height must be 1…30000 pixels.")
@@ -350,11 +352,23 @@ enum AgentRouter {
                 throw APIError.badRequest("Send image bytes (Content-Type: image/…), {\"image\": \"<base64>\"} or {\"width\": …, \"height\": …}.")
             }
         }
+        name = name.map { String($0.trimmingCharacters(in: .whitespacesAndNewlines).prefix(200)) }
+        // Glimmer's untouched start document becomes this one, instead of leaving an empty
+        // window behind (as opening an image does). Documents the API made are never reused.
+        if let blank = AgentRegistry.shared.sessions.first(where: { $0.isUntouchedBlank && !$0.madeByAPI }) {
+            blank.replaceUntouched(with: state)
+            blank.madeByAPI = true
+            if let name, !name.isEmpty { blank.setDocumentName(name) }
+            showRequester(r, in: blank)
+            return .json(["document": detail(blank)], status: 201)
+        }
         let marker = state.layers.first?.id
         DocumentOpener.shared.createDocument(state)
         // The window opens asynchronously; wait for its session to register.
         for _ in 0..<100 {
             if let session = AgentRegistry.shared.sessions.first(where: { $0.state.layers.first?.id == marker }) {
+                session.madeByAPI = true
+                if let name, !name.isEmpty { session.setDocumentName(name) }
                 showRequester(r, in: session)
                 return .json(["document": detail(session)], status: 201)
             }

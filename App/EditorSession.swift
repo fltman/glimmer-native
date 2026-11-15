@@ -179,6 +179,31 @@ final class EditorSession {
     var isBatchSheetPresented = false
     /// A sibling app the assistant needed but that isn't running (offers to open it).
     var offlineSibling: SiblingApp?
+    /// The name an agent or sibling gave the document (POST /documents with `name`).
+    var explicitName: String?
+    /// Made through the agent API: never reused as the "untouched start document".
+    @ObservationIgnored var madeByAPI = false
+
+    /// Names the untitled document: the window title (and the name Save suggests) and the chip.
+    func setDocumentName(_ name: String) {
+        explicitName = name
+        func apply() {
+            guard let window = canvasWindow, let document = NSDocumentController.shared.document(for: window) else { return }
+            document.displayName = name
+            window.title = name
+            documentName = name
+        }
+        apply()
+        // A new window may not be attached yet.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { MainActor.assumeIsolated(apply) }
+    }
+
+    /// The untouched start document takes another document's content (one undo step).
+    func replaceUntouched(with new: DocumentState) {
+        edit("New Document") { $0 = new }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in self?.canvas.perform(.fitToWindow) }
+    }
+
     /// Bumped to move the keyboard focus to the omnibar (/ on the canvas).
     var omnibarFocusRequest = 0
     /// A layer whose name field should open (Return in the Layers panel).
