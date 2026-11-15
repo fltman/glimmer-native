@@ -201,6 +201,7 @@ struct BatchSheet: View {
                         LabeledContent("Quality") {
                             HStack {
                                 Slider(value: $options.quality, in: 0.1...1)
+                                    .accessibilityValue(Text(options.quality, format: .percent.precision(.fractionLength(0))))
                                 Text(options.quality, format: .percent.precision(.fractionLength(0)))
                                     .monospacedDigit().frame(width: 44, alignment: .trailing)
                             }

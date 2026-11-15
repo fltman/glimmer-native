@@ -507,6 +507,8 @@ struct GradientStopsEditor: View {
                         update(s)
                     }), in: 0...1, onEditingChanged: { if !$0 { commit() } })
                     .controlSize(.small)
+                    .accessibilityLabel("Stop position")
+                    .accessibilityValue("\(Int((stop.position * 100).rounded())) %")
                     Button {
                         var s = stops
                         s.remove(at: i)

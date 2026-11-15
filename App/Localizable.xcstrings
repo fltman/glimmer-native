@@ -3745,6 +3745,17 @@
         }
       }
     },
+    "Font size (points)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teckenstorlek (punkter)"
+          }
+        }
+      }
+    },
     "For %@ – ⌘S saves back": {
       "extractionState": "manual",
       "localizations": {
@@ -8812,6 +8823,17 @@
         }
       }
     },
+    "Stop position": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stoppets position"
+          }
+        }
+      }
+    },
     "Straighten": {
       "extractionState": "manual",
       "localizations": {
@@ -9992,6 +10014,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Du: %@"
+          }
+        }
+      }
+    },
+    "Zoom": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zoom"
           }
         }
       }

@@ -23,6 +23,7 @@ struct ExportSheet: View {
                     LabeledContent("Quality") {
                         HStack {
                             Slider(value: $session.exportOptions.quality, in: 0.1...1)
+                                .accessibilityValue(Text(session.exportOptions.quality, format: .percent.precision(.fractionLength(0))))
                             Text(session.exportOptions.quality, format: .percent.precision(.fractionLength(0)))
                                 .monospacedDigit()
                                 .frame(width: 44, alignment: .trailing)

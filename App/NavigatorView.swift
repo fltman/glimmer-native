@@ -33,11 +33,17 @@ struct NavigatorView: View {
             }
             .frame(width: 220, height: 150)
             HStack(spacing: 6) {
-                Button { canvas.zoom(by: 1 / 1.25, around: canvas.viewSize / 2) } label: { Image(systemName: "minus.magnifyingglass") }
+                Button { canvas.zoom(by: 1 / 1.25, around: canvas.viewSize / 2) } label: {
+                    Label("Zoom Out", systemImage: "minus.magnifyingglass").labelStyle(.iconOnly)
+                }
                 Slider(value: Binding(get: { log2(max(canvas.zoom, 0.01)) },
                                       set: { canvas.zoom(by: pow(2, $0) / max(canvas.zoom, 0.01), around: canvas.viewSize / 2) }),
                        in: -6...5)
-                Button { canvas.zoom(by: 1.25, around: canvas.viewSize / 2) } label: { Image(systemName: "plus.magnifyingglass") }
+                    .accessibilityLabel("Zoom")
+                    .accessibilityValue("\(Int((canvas.zoom * 100).rounded())) %")
+                Button { canvas.zoom(by: 1.25, around: canvas.viewSize / 2) } label: {
+                    Label("Zoom In", systemImage: "plus.magnifyingglass").labelStyle(.iconOnly)
+                }
                 Text("\(Int((canvas.zoom * 100).rounded())) %")
                     .monospacedDigit()
                     .font(.caption)

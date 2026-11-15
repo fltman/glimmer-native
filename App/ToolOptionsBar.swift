@@ -374,6 +374,7 @@ private struct TextOptions: View {
         .frame(width: 110)
         HStack(spacing: 3) {
             TextField("Size", value: Binding(get: { t.size }, set: { v in apply { $0.size = max(v, 1) } }), format: .number.precision(.fractionLength(0...1)))
+                .accessibilityLabel("Font size (points)")  // only a placeholder before (axaudit: WEAK)
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 50)
             Text("pt").foregroundStyle(.secondary)
