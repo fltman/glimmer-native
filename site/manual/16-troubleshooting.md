@@ -77,7 +77,7 @@ The AI panel's job list shows the error. Common causes:
 
 - The OpenRouter account has no credit left. Add credit at openrouter.ai.
 - The model you chose in **Settings › AI** is unavailable or doesn't accept images. Pick another model.
-- The Mac is offline.
+- The Mac is offline. Glimmer says it couldn't reach the AI service. The tools that run on your Mac keep working.
 
 A job you cancel stops waiting for the result; OpenRouter may still bill a request that it already started.
 

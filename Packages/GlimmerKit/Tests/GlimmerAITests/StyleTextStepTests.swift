@@ -90,6 +90,8 @@ import Testing
         #expect(text.contains("Depth (Depth Anything V2 Small)") && text.contains("downloads once"))
         #expect(text.contains("offline. Connect to the internet and try again."), "one full stop, then what to do")
         #expect(text.contains("keeps working offline"))
+        let net = OpenRouterError.network("The Internet connection appears to be offline.").errorDescription ?? ""
+        #expect(net == "Glimmer couldn't reach the AI service: The Internet connection appears to be offline. Check your internet connection and try again. The tools that run on this Mac keep working.")
         let denied = ModelDownloadError(model: "Depth", underlying: "The operation couldn’t be completed. Operation not permitted").errorDescription ?? ""
         #expect(denied.contains("didn't work: Operation not permitted. Connect") && !denied.contains("couldn’t be completed"))
     }

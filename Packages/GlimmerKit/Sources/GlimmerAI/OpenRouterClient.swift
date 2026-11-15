@@ -55,7 +55,10 @@ public enum OpenRouterError: Error, Equatable, LocalizedError {
         case .contentPolicy(let m): "The request was blocked by content policy." + (m.map { " \($0)" } ?? "")
         case .badRequest(let m): "OpenRouter could not process the request." + (m.map { " \($0)" } ?? "")
         case .unavailable(let s): "OpenRouter is unavailable (HTTP \(s))."
-        case .network(let m): "Network error: \(m)"
+        case .network(let m):
+            // What the system says ("The Internet connection appears to be offline"), then what to do.
+            "Glimmer couldn't reach the AI service: \(m.trimmingCharacters(in: CharacterSet(charactersIn: ". ")))."
+                + " Check your internet connection and try again. The tools that run on this Mac keep working."
         case .unexpectedResponse(let s, let m): "Unexpected response (HTTP \(s))." + (m.map { " \($0)" } ?? "")
         case .noImageInResponse(let m): "The model didn't return an image." + (m.map { " It said: \($0.prefix(300))" } ?? "")
         }
