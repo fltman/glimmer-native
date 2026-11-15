@@ -16,6 +16,23 @@ public enum AgentAPI {
     /// Steps that call OpenRouter and cost money. Everything else runs on the Mac.
     public static var paidOps: Set<String> { Set(AgentPlanner.ops.filter(\.isAIJob).map(\.name)) }
 
+    // MARK: Siblings
+
+    /// Header a sibling app (Flimmer, Jämmer) adds with its slug. It grants nothing;
+    /// Glimmer logs it and shows who asked.
+    public static let siblingHeader = "X-Sibling"
+    static let siblingNames = ["glimmer": "Glimmer", "flimmer": "Flimmer", "jammer": "Jämmer"]
+
+    /// The app named by `X-Sibling`, for display: the known siblings by name, anything
+    /// else reduced to at most 32 letters, digits and hyphens. Nil without the header.
+    public static func sibling(_ r: Request) -> String? {
+        guard let raw = r.headers[siblingHeader.lowercased()] else { return nil }
+        let slug = String(raw.trimmingCharacters(in: .whitespaces).lowercased()
+            .filter { ($0.isASCII && ($0.isLetter || $0.isNumber)) || $0 == "-" }.prefix(32))
+        guard !slug.isEmpty else { return nil }
+        return siblingNames[slug] ?? slug.prefix(1).uppercased() + slug.dropFirst()
+    }
+
     // MARK: HTTP
 
     public struct Request: Sendable, Equatable {
@@ -182,17 +199,44 @@ public enum AgentAPI {
 
     /// The operations `POST /steps` accepts, from the same list the built-in
     /// assistant uses, so the API, the guide and the executor can't drift apart.
+    /// The shape is the series' sibling protocol: `params` is a JSON Schema, and every
+    /// step is undoable (a whole `steps` request is one undo step).
+    /// Requests that aren't steps carry `call` (method and path; `{id}` is the document).
     public static var operations: [[String: Any]] {
         AgentPlanner.ops.map { op in
-            var params: [[String: Any]] = []
-            for p in op.params {
-                var entry: [String: Any] = ["name": p.name, "type": p.type, "description": p.description,
-                                            "required": !p.description.localizedCaseInsensitiveContains("optional")]
-                if let options = p.options { entry["options"] = options }
-                params.append(entry)
-            }
-            return ["name": op.name, "description": op.description, "paid": paidOps.contains(op.name), "params": params]
+            ["name": op.name, "description": op.description, "params": AgentPlanner.paramsSchema(op),
+             "paid": paidOps.contains(op.name), "undoable": true, "startsJob": op.startsJob]
+        } + endpointOperations
+    }
+
+    static let formats = ["png", "jpeg", "heic", "tiff", "webp"]
+
+    /// The requests besides `steps` that a sibling's assistant may call as tools. Params
+    /// marked `"x-in": "path"` or `"query"` go there; the rest go in the JSON body.
+    static var endpointOperations: [[String: Any]] {
+        func op(_ name: String, _ description: String, _ method: String, _ path: String,
+                _ properties: [String: Any] = [:], undoable: Bool = false) -> [String: Any] {
+            var properties = properties
+            properties["id"] = ["type": "string", "x-in": "path", "description": "The document id (GET /api/v1/documents)."]
+            return ["name": name, "description": description,
+             "params": ["type": "object", "properties": properties, "required": ["id"]] as [String: Any],
+             "paid": false, "undoable": undoable, "startsJob": false,
+             "call": ["method": method, "path": "/api/\(version)/documents/{id}/\(path)"]]
         }
+        let format: [String: Any] = ["type": "string", "enum": formats, "description": "Optional. Default png."]
+        let maxSide: [String: Any] = ["type": "integer", "minimum": 16, "description": "Optional. Scale so the longer side fits, in pixels."]
+        return [
+            op("export", "Render the document to an image file and return its bytes (JSON body).", "POST", "export", [
+                "format": format,
+                "quality": ["type": "number", "minimum": 0.05, "maximum": 1, "description": "Optional. JPEG, HEIC and WebP quality."],
+                "maxSide": maxSide,
+                "maxBytes": ["type": "integer", "minimum": 1000, "description": "Optional. Largest file size in bytes (JPEG, HEIC, WebP)."],
+            ]),
+            op("image", "The flattened image as bytes.", "GET", "image",
+               ["format": format.merging(["x-in": "query"]) { $1 }, "maxSide": maxSide.merging(["x-in": "query"]) { $1 }]),
+            op("undo", "Undo the last change (a whole steps request is one).", "POST", "undo"),
+            op("redo", "Redo the last undone change.", "POST", "redo"),
+        ]
     }
 
     // MARK: Guide
@@ -253,9 +297,9 @@ public enum AgentAPI {
         |---|---|---|
         | GET | `/glimmer` | This guide (Markdown). |
         | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents and the running `jobs`. |
-        | GET | `/api/v1/operations` | Every step operation with its parameters (JSON). |
+        | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). |
         | GET | `/api/v1/documents` | The open documents. |
-        | POST | `/api/v1/documents` | Open an image (raw bytes, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\\|"black"\\|"transparent"}`). |
+        | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\\|"black"\\|"transparent"}`). |
         | GET | `/api/v1/documents/{id}` | Size, layers (top first), the active layer and whether there is a selection. |
         | GET | `/api/v1/documents/{id}/image` | The flattened image. Query: `format=png\\|jpeg`, `maxSide=<px>`. |
         | POST | `/api/v1/documents/{id}/steps` | Run steps in order. Body: `{"steps": [{"op": "…", "params": {…}}], "allowPaid": false, "async": false}`. Answers 200 when done, or 202 with a job (see Long jobs). |
@@ -302,6 +346,10 @@ public enum AgentAPI {
               $BASE/api/v1/documents/$ID/steps | python3 -c 'import json,sys; print(json.load(sys.stdin)["job"]["id"])')
         curl -s $BASE/api/v1/jobs/$JOB
         ```
+
+        ### Requests from other apps
+
+        Glimmer's siblings, Flimmer and Jämmer, call this API like any agent and add `X-Sibling: <their slug>` (for example `X-Sibling: flimmer`). Glimmer logs it and shows "Requested by Flimmer" in the window it changes. The header grants nothing extra.
 
         ### Export size limits
 

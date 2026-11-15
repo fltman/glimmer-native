@@ -7024,6 +7024,17 @@
         }
       }
     },
+    "Requested by %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På begäran av %@"
+          }
+        }
+      }
+    },
     "Reset": {
       "localizations": {
         "sv": {

@@ -50,9 +50,9 @@ Opening a document answers `201 Created`. To start from a blank canvas instead, 
 |---|---|---|
 | GET | `/glimmer` | This guide (Markdown). |
 | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents and the running `jobs`. |
-| GET | `/api/v1/operations` | Every step operation with its parameters (JSON). |
+| GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). |
 | GET | `/api/v1/documents` | The open documents. |
-| POST | `/api/v1/documents` | Open an image (raw bytes, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\|"black"\|"transparent"}`). |
+| POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\|"black"\|"transparent"}`). |
 | GET | `/api/v1/documents/{id}` | Size, layers (top first), the active layer and whether there is a selection. |
 | GET | `/api/v1/documents/{id}/image` | The flattened image. Query: `format=png\|jpeg`, `maxSide=<px>`. |
 | POST | `/api/v1/documents/{id}/steps` | Run steps in order. Body: `{"steps": [{"op": "…", "params": {…}}], "allowPaid": false, "async": false}`. Answers 200 when done, or 202 with a job (see Long jobs). |
@@ -98,6 +98,10 @@ Poll `GET /api/v1/jobs/{id}` until `status` is `done`, `failed` or `cancelled` (
 JOB=$(curl -s -X POST -H 'X-Glimmer-Agent: 1' -d '{"steps": [{"op": "auto_enhance"}], "async": true}'       $BASE/api/v1/documents/$ID/steps | python3 -c 'import json,sys; print(json.load(sys.stdin)["job"]["id"])')
 curl -s $BASE/api/v1/jobs/$JOB
 ```
+
+### Requests from other apps
+
+Glimmer's siblings, Flimmer and Jämmer, call this API like any agent and add `X-Sibling: <their slug>` (for example `X-Sibling: flimmer`). Glimmer logs it and shows "Requested by Flimmer" in the window it changes. The header grants nothing extra.
 
 ### Export size limits
 

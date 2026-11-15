@@ -3,6 +3,7 @@ import GlimmerAI
 import GlimmerCore
 import GlimmerRender
 import Network
+import OSLog
 import UniformTypeIdentifiers
 
 // MARK: Open documents
@@ -193,7 +194,13 @@ enum AgentRouter {
 
     static var appVersion: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?" }
 
+    private static let log = Logger(subsystem: "com.brattoo.glimmer", category: "agent")
+
     static func route(_ r: AgentAPI.Request, port: UInt16) async -> Response {
+        // A sibling app (Flimmer, Jämmer) names itself; it grants nothing, it's only shown.
+        if let sibling = AgentAPI.sibling(r) {
+            log.notice("\(r.method, privacy: .public) \(r.path, privacy: .public) requested by \(sibling, privacy: .public)")
+        }
         do {
             return try await dispatch(r, port: port)
         } catch let error as APIError {
@@ -313,7 +320,7 @@ enum AgentRouter {
         let type = (r.headers["content-type"] ?? "").lowercased()
         var state: DocumentState
         if type.hasPrefix("image/") || type == "application/octet-stream" {
-            state = try documentFromImage(r.body, name: "Image")
+            state = try documentFromImage(r.body, name: r.query["name"] ?? "Image")
         } else {
             let obj = try json(r)
             if let b64 = obj["image"] as? String {
@@ -340,6 +347,7 @@ enum AgentRouter {
         // The window opens asynchronously; wait for its session to register.
         for _ in 0..<100 {
             if let session = AgentRegistry.shared.sessions.first(where: { $0.state.layers.first?.id == marker }) {
+                showRequester(r, in: session)
                 return .json(["document": detail(session)], status: 201)
             }
             try await Task.sleep(for: .milliseconds(50))
@@ -401,6 +409,12 @@ enum AgentRouter {
 
     // MARK: Editing
 
+    /// "Requested by Flimmer" over the canvas, when a sibling app makes the change.
+    private static func showRequester(_ r: AgentAPI.Request, in session: EditorSession) {
+        guard let sibling = AgentAPI.sibling(r) else { return }
+        session.showToast(String(localized: "Requested by \(sibling)"))
+    }
+
     private static func steps(_ session: EditorSession, _ r: AgentAPI.Request) async throws -> Response {
         let obj = try json(r)
         guard let raw = obj["steps"] as? [Any], !raw.isEmpty else {
@@ -431,6 +445,7 @@ enum AgentRouter {
             }
             steps.append(decoded)
         }
+        showRequester(r, in: session)
         // Paid steps take a while: they always run as a job, and so does any request that asks.
         if obj["async"] as? Bool == true || steps.contains(where: { AgentAPI.paidOps.contains($0.op) }) {
             let job = AgentJobs.Job(kind: "steps", documentID: session.agentID)

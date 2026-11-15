@@ -79,6 +79,8 @@ public struct AgentOp: Sendable {
     public let params: [AgentParam]
     /// Runs an AI job (costs money, takes a while).
     public let isAIJob: Bool
+    /// Through the API, a request with this step always runs as a job (202), like every paid step.
+    public var startsJob: Bool { isAIJob }
 
     public init(_ name: String, _ description: String, _ params: [AgentParam] = [], aiJob: Bool = false) {
         self.name = name
@@ -431,24 +433,32 @@ public enum AgentPlanner {
     Colours are #RRGGBB. Pass {} for default settings.
     """
 
+    /// The JSON Schema of an op's params. The assistant's tools, the API's operation
+    /// list and the guide all use it, so they describe the same thing.
+    public static func paramsSchema(_ op: AgentOp) -> [String: Any] {
+        var properties: [String: Any] = [:]
+        var required: [String] = []
+        for p in op.params {
+            var schema: [String: Any] = ["description": p.description]
+            switch p.type {
+            case "number": schema["type"] = "number"
+            case "object": schema["type"] = "object"
+            default: schema["type"] = "string"
+            }
+            if let options = p.options { schema["enum"] = options }
+            properties[p.name] = schema
+            if !p.description.localizedCaseInsensitiveContains("optional") { required.append(p.name) }
+        }
+        return ["type": "object", "properties": properties, "required": required]
+    }
+
     /// One function tool per op; the schemas are generated from `ops`.
     public static func toolSchemas() -> [[String: Any]] {
         ops.map { op in
-            var properties: [String: Any] = [:]
-            var required: [String] = []
-            for p in op.params {
-                var schema: [String: Any] = ["description": p.description]
-                switch p.type {
-                case "number": schema["type"] = "number"
-                case "object": schema["type"] = "object"
-                default: schema["type"] = "string"
-                }
-                if let options = p.options { schema["enum"] = options }
-                properties[p.name] = schema
-                if !p.description.localizedCaseInsensitiveContains("optional") { required.append(p.name) }
-            }
+            var parameters = paramsSchema(op)
+            var properties = parameters["properties"] as? [String: Any] ?? [:]
             properties["rationale"] = ["type": "string", "description": "One short sentence: why this step."]
-            let parameters: [String: Any] = ["type": "object", "properties": properties, "required": required]
+            parameters["properties"] = properties
             let description = op.isAIJob ? op.description + " (AI job: costs money and takes a while.)" : op.description
             return ["type": "function", "function": ["name": op.name, "description": description, "parameters": parameters]]
         }

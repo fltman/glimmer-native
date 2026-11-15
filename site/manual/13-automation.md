@@ -122,4 +122,10 @@ The API is built so that only programs on your own Mac can use it, and only on p
 
 Each request with editing steps is one undo step, named **Agent Edit**.
 
+### Requests from Flimmer and Jämmer
+
+Glimmer's sibling apps, Flimmer and Jämmer, use the same API. Their assistants can ask Glimmer for the same editing steps an agent can use, open an image as a new document, and get the result back. When a sibling changes a document, Glimmer shows **Requested by Flimmer** (or Jämmer) over the canvas for a few seconds, so you know where the change came from. You can undo it like any other edit. The siblings get no extra rights: they follow the same rules as any agent, and paid steps run only if you already confirmed the cost in the app that asked.
+
+Glimmer can't yet ask Flimmer or Jämmer for anything itself.
+
 For the full API, see the [Agent guide](../agents.html).

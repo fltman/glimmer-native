@@ -59,7 +59,7 @@ import Testing
 
     @Test func operationsAndGuideComeFromTheAssistantsList() {
         let ops = AgentAPI.operations
-        #expect(ops.count == AgentPlanner.ops.count)
+        #expect(ops.filter { $0["call"] == nil }.count == AgentPlanner.ops.count)
         #expect(ops.contains { ($0["name"] as? String) == "generate_layer" && ($0["paid"] as? Bool) == true })
         #expect(ops.contains { ($0["name"] as? String) == "auto_enhance" && ($0["paid"] as? Bool) == false })
         let guide = AgentAPI.guide(port: 9007, appVersion: "0.2.0")
@@ -68,5 +68,49 @@ import Testing
         // Quick start comes before the endpoint reference.
         #expect(guide.range(of: "## Quick start")!.lowerBound < guide.range(of: "## Endpoints")!.lowerBound)
         for op in AgentPlanner.ops { #expect(guide.contains("### `\(op.name)`"), "\(op.name)") }
+    }
+}
+
+@Suite struct SiblingProtocolTests {
+    @Test func operationsHaveTheSeriesShape() throws {
+        for op in AgentAPI.operations {
+            let name = try #require(op["name"] as? String)
+            #expect(op["description"] is String, "\(name)")
+            #expect(op["paid"] is Bool && op["undoable"] is Bool && op["startsJob"] is Bool, "\(name)")
+            let params = try #require(op["params"] as? [String: Any], "\(name)")
+            #expect(params["type"] as? String == "object")
+            #expect(params["properties"] is [String: Any] && params["required"] is [String])
+            #expect((params["properties"] as? [String: Any])?["rationale"] == nil, "only the assistant's own tools carry rationale")
+            if let call = op["call"] as? [String: String] {
+                #expect(["GET", "POST"].contains(call["method"] ?? "") && call["path"]?.hasPrefix("/api/v1/documents/{id}/") == true)
+                let id = (params["properties"] as? [String: Any])?["id"] as? [String: Any]
+                #expect(id?["x-in"] as? String == "path" && (params["required"] as? [String])?.contains("id") == true, "\(name)")
+            }
+        }
+        #expect(Set(AgentAPI.operations.compactMap { $0["call"] == nil ? nil : $0["name"] as? String }) == ["export", "image", "undo", "redo"])
+        // It's plain JSON, and paid steps are the ones that start jobs.
+        #expect(JSONSerialization.isValidJSONObject(["operations": AgentAPI.operations]))
+        let image = try #require(AgentAPI.operations.first { $0["name"] as? String == "image" })
+        let imageProps = try #require((image["params"] as? [String: Any])?["properties"] as? [String: Any])
+        #expect((imageProps["maxSide"] as? [String: Any])?["x-in"] as? String == "query")
+        let gen = try #require(AgentAPI.operations.first { $0["name"] as? String == "generate_layer" })
+        #expect(gen["paid"] as? Bool == true && gen["startsJob"] as? Bool == true)
+        let adj = try #require(AgentAPI.operations.first { $0["name"] as? String == "add_adjustment" })
+        #expect(adj["paid"] as? Bool == false && adj["startsJob"] as? Bool == false)
+        let props = try #require((adj["params"] as? [String: Any])?["properties"] as? [String: Any])
+        #expect((props["type"] as? [String: Any])?["enum"] is [String])
+    }
+
+    @Test func siblingHeaderIsShownByName() {
+        func req(_ value: String?) -> AgentAPI.Request {
+            AgentAPI.Request(method: "POST", path: "/", headers: value.map { ["x-sibling": $0] } ?? [:])
+        }
+        #expect(AgentAPI.sibling(req(nil)) == nil)
+        #expect(AgentAPI.sibling(req("flimmer")) == "Flimmer")
+        #expect(AgentAPI.sibling(req(" Jammer ")) == "Jämmer")
+        #expect(AgentAPI.sibling(req("other-app")) == "Other-app")
+        #expect(AgentAPI.sibling(req("<script>")) == "Script")
+        #expect(AgentAPI.sibling(req("!!!")) == nil)
+        #expect(AgentAPI.sibling(req(String(repeating: "a", count: 100)))?.count == 32)
     }
 }
