@@ -334,7 +334,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The local API for agents (guide at /glimmer), and the splash that points agents to it.
         MainActor.assumeIsolated { AgentServer.shared.start() }
         let showsWelcome = !UserDefaults.standard.bool(forKey: WelcomeView.shownKey) && !CommandLine.arguments.contains("-skipWelcome")
-        if launchedForSibling {
+        if UserDefaults.standard.bool(forKey: "forceAgentSplash") {
+            // `-forceAgentSplash YES` (series rule): Agent Access at launch whatever else applies,
+            // e.g. to audit it with axaudit.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                MainActor.assumeIsolated { DocumentOpener.shared.showAgentSplash() }
+            }
+        } else if launchedForSibling {
             // Only the handed-over file: no Welcome, Agent Access or Open panel.
         } else if showsWelcome {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {

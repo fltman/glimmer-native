@@ -63,7 +63,12 @@ extension AIController {
             return running
         }
         let urls = NSWorkspace.shared.urlsForApplications(withBundleIdentifier: app.bundleID)
-        let copies = urls.map { (path: $0.path, build: Bundle(url: $0)?.infoDictionary?["CFBundleVersion"] as? String ?? "0") }
+        let copies = urls.map { url in
+            (path: url.path,
+             build: Bundle(url: url)?.infoDictionary?["CFBundleVersion"] as? String ?? "0",
+             modified: (try? url.appending(path: "Contents/Info.plist").resourceValues(forKeys: [.contentModificationDateKey]))?
+                 .contentModificationDate ?? .distantPast)
+        }
         return SiblingApp.bestCopy(copies).map { urls[$0] }
     }
 }

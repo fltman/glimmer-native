@@ -25,14 +25,25 @@ public enum SiblingApp: String, CaseIterable, Sendable {
     public var bundleID: String { bundleID(debug: AppIdentity.isDebugBuild) }
     public func bundleID(debug: Bool) -> String { "com.brattoo.\(rawValue)" + (debug ? ".debug" : "") }
 
-    /// Which copy to open when several are installed (SIBLINGS.md §1): one in /Applications
-    /// first, then the highest CFBundleVersion. (A running copy is used before any of these.)
-    public static func bestCopy(_ copies: [(path: String, build: String)]) -> Int? {
+    /// Which copy to open when several are installed (SIBLINGS.md §1): the highest
+    /// CFBundleVersion (compared as numbers), then /Applications on a tie, then the most
+    /// recently built. Version first: a stale copy elsewhere once won and broke a cold start.
+    /// (A running copy is used before any of these.)
+    public static func bestCopy(_ copies: [(path: String, build: String, modified: Date)]) -> Int? {
         func build(_ s: String) -> [Int] { s.split(separator: ".").map { Int($0) ?? 0 } }
+        func compare(_ a: [Int], _ b: [Int]) -> Int {  // numeric, missing parts count as 0
+            for i in 0..<max(a.count, b.count) {
+                let x = i < a.count ? a[i] : 0, y = i < b.count ? b[i] : 0
+                if x != y { return x < y ? -1 : 1 }
+            }
+            return 0
+        }
         return copies.indices.max { a, b in
+            let c = compare(build(copies[a].build), build(copies[b].build))
+            if c != 0 { return c < 0 }
             let inApps = (copies[a].path.hasPrefix("/Applications/"), copies[b].path.hasPrefix("/Applications/"))
             if inApps.0 != inApps.1 { return !inApps.0 }
-            return build(copies[a].build).lexicographicallyPrecedes(build(copies[b].build))
+            return copies[a].modified < copies[b].modified
         }
     }
     /// The header every request that isn't a GET must carry.

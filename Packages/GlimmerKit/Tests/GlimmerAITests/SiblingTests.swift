@@ -198,10 +198,16 @@ final class FakeJammer: URLProtocol, @unchecked Sendable {
     }
 
     @Test func theBestInstalledCopyIsChosen() {
-        // /Applications first, then the highest build; LaunchServices' default can be a stale one.
-        #expect(SiblingApp.bestCopy([("/Users/x/actions-runner/Debug/Jammer.app", "2"), ("/Users/x/build/Jammer.app", "7")]) == 1)
-        #expect(SiblingApp.bestCopy([("/Users/x/build/Jammer.app", "9"), ("/Applications/Jammer.app", "3")]) == 1)
-        #expect(SiblingApp.bestCopy([("/a/Jammer.app", "1.10"), ("/b/Jammer.app", "1.9")]) == 0)
+        let old = Date(timeIntervalSince1970: 1_000), new = Date(timeIntervalSince1970: 2_000)
+        // The highest build wins, even over /Applications: a stale copy broke a cold start.
+        #expect(SiblingApp.bestCopy([("/Users/x/actions-runner/Debug/Jammer.app", "2", new), ("/Users/x/build/Jammer.app", "7", old)]) == 1)
+        #expect(SiblingApp.bestCopy([("/Users/x/build/Jammer.app", "9", old), ("/Applications/Jammer.app", "3", new)]) == 0)
+        // Builds compare as numbers, missing parts as 0.
+        #expect(SiblingApp.bestCopy([("/a/Jammer.app", "1.10", old), ("/b/Jammer.app", "1.9", new)]) == 0)
+        #expect(SiblingApp.bestCopy([("/a/Jammer.app", "10", old), ("/b/Jammer.app", "9.9", new)]) == 0)
+        // Same build: /Applications, then the most recently built.
+        #expect(SiblingApp.bestCopy([("/Users/x/Jammer.app", "5", new), ("/Applications/Jammer.app", "5", old)]) == 1)
+        #expect(SiblingApp.bestCopy([("/a/Jammer.app", "5", old), ("/b/Jammer.app", "5.0", new)]) == 1)
         #expect(SiblingApp.bestCopy([]) == nil)
     }
 
