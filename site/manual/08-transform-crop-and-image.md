@@ -13,7 +13,9 @@ It works on:
 - **Shape layers.** The vector shape is transformed, so edges stay sharp.
 - **Smart objects.** Only the placement changes. The original pixels are kept, so you can transform again later without losing quality.
 
-Other layer kinds can't be transformed.
+- **Groups.** Every pixel, text, shape and smart object layer inside the group is transformed together with one box, as one undo step: pixels are resampled, text becomes pixels, shapes stay sharp and smart objects keep their original pixels. Adjustment layers and plain fill layers in the group are left as they are, since they have nothing to place. A group with a layer mask on a layer inside can't be transformed yet, because the mask would stay behind; transform those layers one by one.
+
+Adjustment layers and plain fill layers on their own can't be transformed.
 
 ### The transform box
 

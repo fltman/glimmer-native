@@ -205,9 +205,9 @@ struct ToolOptionsBar: View {
             .labelsHidden()
             .fixedSize()
             if t.quad == nil {
-                numberField("W", t.box.scaleX * 100, suffix: "%") { session.setTransform(scaleXPercent: $0) }
-                numberField("H", t.box.scaleY * 100, suffix: "%") { session.setTransform(scaleYPercent: $0) }
-                numberField("∠", t.box.rotation * 180 / .pi, suffix: "°") { session.setTransform(degrees: $0) }
+                numberField("W", name: "Width (percent)", t.box.scaleX * 100, suffix: "%") { session.setTransform(scaleXPercent: $0) }
+                numberField("H", name: "Height (percent)", t.box.scaleY * 100, suffix: "%") { session.setTransform(scaleYPercent: $0) }
+                numberField("∠", name: "Angle (degrees)", t.box.rotation * 180 / .pi, suffix: "°") { session.setTransform(degrees: $0) }
                 Text("corners keep proportions, ⇧ frees them · drag just outside a corner to rotate · click away to apply · ⌘-drag a corner to distort").foregroundStyle(.secondary)
             } else {
                 Text(t.mode == .skew ? "Drag an edge to slant it" : t.mode == .perspective
@@ -251,13 +251,17 @@ struct ToolOptionsBar: View {
             .keyboardShortcut(.defaultAction)
     }
 
-    private func numberField(_ label: String, _ value: Double, suffix: String, set: @escaping (Double) -> Void) -> some View {
+    /// `name` is what VoiceOver says (the visible label is a single letter or symbol); without
+    /// it the field was named only by its placeholder (axaudit: WEAK).
+    private func numberField(_ label: String, name: LocalizedStringKey, _ value: Double, suffix: String,
+                             set: @escaping (Double) -> Void) -> some View {
         HStack(spacing: 3) {
-            Text(LocalizedStringKey(label)).foregroundStyle(.secondary)
+            Text(LocalizedStringKey(label)).foregroundStyle(.secondary).accessibilityHidden(true)
             TextField(label, value: Binding(get: { (value * 10).rounded() / 10 }, set: set), format: .number.precision(.fractionLength(0...1)))
                 .textFieldStyle(.roundedBorder)
                 .frame(width: 56)
                 .labelsHidden()
+                .accessibilityLabel(Text(name))
             Text(suffix).foregroundStyle(.secondary)
         }
     }

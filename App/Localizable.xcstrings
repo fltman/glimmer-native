@@ -772,6 +772,17 @@
         }
       }
     },
+    "Angle (degrees)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vinkel (grader)"
+          }
+        }
+      }
+    },
     "Apple Intelligence runs one-command requests directly and sends only the rest to OpenRouter.": {
       "localizations": {
         "sv": {
@@ -3880,6 +3891,17 @@
         }
       }
     },
+    "Free Transform works on pixel, text and shape layers, smart objects and groups.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fri transformering fungerar på pixel-, text- och formlager, smarta objekt och grupper."
+          }
+        }
+      }
+    },
     "Frequently Asked Questions": {
       "extractionState": "manual",
       "localizations": {
@@ -4450,6 +4472,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Höjd"
+          }
+        }
+      }
+    },
+    "Height (percent)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höjd (procent)"
           }
         }
       }
@@ -9207,6 +9240,17 @@
         }
       }
     },
+    "This group has nothing Free Transform can move.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppen har inget som Fri transformering kan flytta."
+          }
+        }
+      }
+    },
     "Threshold": {
       "extractionState": "manual",
       "localizations": {
@@ -9878,6 +9922,17 @@
         }
       }
     },
+    "Width (percent)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bredd (procent)"
+          }
+        }
+      }
+    },
     "Width and height must be between 1 and %lld pixels.": {
       "localizations": {
         "sv": {
@@ -10221,6 +10276,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "”%@” kostar pengar i den andra appen, så Glimmer ber inte om det."
+          }
+        }
+      }
+    },
+    "“%@” in this group has a layer mask, which Free Transform can't move with it yet. Transform the layers one by one, or apply the mask first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "”%@” i gruppen har en lagermask, som Fri transformering ännu inte kan flytta med. Transformera lagren ett i taget, eller verkställ masken först."
           }
         }
       }

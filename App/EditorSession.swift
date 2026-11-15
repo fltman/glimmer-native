@@ -491,7 +491,7 @@ final class EditorSession {
         case .layerViaCopy:
             return activeLayer?.isRaster ?? false
         case .freeTransform:
-            return activeLayer.map { $0.isRaster || $0.isText || $0.vectorMask != nil || { if case .smart = $0.content { true } else { false } }($0) } ?? false
+            return activeLayer.map { $0.isRaster || $0.isText || $0.isGroup || $0.vectorMask != nil || { if case .smart = $0.content { true } else { false } }($0) } ?? false
         case .zoomIn, .zoomOut, .fitToWindow, .actualSize, .rotateViewLeft, .rotateViewRight, .resetViewRotation:
             return canvas.canPerform(id)
         default:

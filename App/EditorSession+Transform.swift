@@ -107,6 +107,10 @@ extension EditorSession {
         var mode = TransformMode.scaleRotate
         /// Shape layers transform their vector mask (no resampling).
         var originalVector: VectorPath?
+        /// A group transforms every layer with content inside it with one box (source space
+        /// = the union of their bounds, starting at `groupOrigin`).
+        var members: [GroupMember] = []
+        var groupOrigin = SIMD2<Double>(0, 0)
 
         var corners: [SIMD2<Double>] { quad ?? box.corners }
         var edges: [SIMD2<Double>] {
@@ -132,10 +136,105 @@ extension EditorSession {
         }
     }
 
+    /// A layer inside a transformed group, as it was when the transform began.
+    enum GroupMember {
+        /// Pixels (text rendered to pixels), translated to their own bounds' origin, which sits
+        /// at `offset` in the group's source space.
+        case pixels(id: UUID, source: TileGrid, size: SIMD2<Int>, offset: SIMD2<Double>)
+        case smart(id: UUID, original: GlimmerCore.AffineTransform)
+        case shape(id: UUID, original: VectorPath)
+    }
+
+    /// Free Transform on a group: one box around all its layers' content; every pixel, text,
+    /// shape and smart object layer inside is transformed with it, as one undo step.
+    /// Adjustment layers and plain fills have nothing to place. Pixel masks would stay where
+    /// they are, so a group with one inside is refused rather than transformed wrongly.
+    func beginGroupTransform(_ group: Layer, metal: MetalContext) throws {
+        var members: [GroupMember] = []
+        var lo = SIMD2(Double.infinity, Double.infinity), hi = -lo
+        func extend(_ a: SIMD2<Double>, _ b: SIMD2<Double>) { lo = simd_min(lo, a); hi = simd_max(hi, b) }
+        var pending: [(UUID, TileGrid, PixelRect)] = []
+        for layer in group.subtree.dropFirst() {
+            if layer.mask != nil, layer.vectorMask == nil {
+                errorMessage = String(localized: "“\(layer.name)” in this group has a layer mask, which Free Transform can't move with it yet. Transform the layers one by one, or apply the mask first.")
+                return
+            }
+            var content = layer.content
+            if case .text(let text) = content { content = .raster(DocumentCompositor.rasterize(text)) }
+            switch content {
+            case .raster(let grid):
+                guard let b = grid.tileBounds.flatMap({ contentBounds(of: grid, within: $0) }) else { continue }
+                pending.append((layer.id, grid, b))
+                extend(SIMD2(Double(b.x), Double(b.y)), SIMD2(Double(b.x + b.width), Double(b.y + b.height)))
+            case .smart(let smart):
+                let z = smart.sourceSize
+                let corners = [SIMD2(0, 0), SIMD2(z.x, 0), z, SIMD2(0, z.y)].map(smart.transform.apply)
+                extend(corners.reduce(corners[0], simd_min), corners.reduce(corners[0], simd_max))
+                members.append(.smart(id: layer.id, original: smart.transform))
+            case .fill where layer.vectorMask != nil:
+                guard let r = layer.vectorMask!.controlBounds, r.width > 0, r.height > 0 else { continue }
+                extend(SIMD2(r.minX, r.minY), SIMD2(r.maxX, r.maxY))
+                members.append(.shape(id: layer.id, original: layer.vectorMask!))
+            default:
+                continue
+            }
+        }
+        guard lo.x < hi.x, lo.y < hi.y else {
+            errorMessage = String(localized: "This group has nothing Free Transform can move.")
+            return
+        }
+        for (id, grid, b) in pending {
+            let source = try TileOperations.translate(grid, by: SIMD2(-b.x, -b.y), context: metal)
+            members.append(.pixels(id: id, source: source, size: SIMD2(b.width, b.height), offset: SIMD2(Double(b.x), Double(b.y)) - lo))
+        }
+        var session = TransformSession(layerID: group.id, source: TileGrid(), isSmart: false,
+            box: TransformBox(x: lo.x, y: lo.y, scaleX: 1, scaleY: 1, rotation: 0, sourceSize: hi - lo))
+        session.members = members
+        session.groupOrigin = lo
+        transformSession = session
+        originalShapeState = state
+        updateTransformPreview()
+    }
+
+    /// Places every layer of a transformed group for the current box.
+    private func previewGroup(_ t: TransformSession, metal: MetalContext) throws {
+        let toGroup = GlimmerCore.AffineTransform(tx: -t.groupOrigin.x, ty: -t.groupOrigin.y)
+        let docToDoc = t.transform.concatenating(toGroup)  // old document position → new
+        var pixels: [UUID: TileGrid] = [:]
+        let renderer = try SmartObjectRenderer(context: metal)
+        for member in t.members {
+            switch member {
+            case .pixels(let id, let source, let size, let offset):
+                let smart = SmartObject(source: source, width: size.x, height: size.y,
+                                        transform: t.transform.concatenating(GlimmerCore.AffineTransform(tx: offset.x, ty: offset.y)))
+                pixels[id] = try renderer.render(smart, limit: RegionOps_public.expand(state.bounds, by: 512))
+            case .smart(let id, let original):
+                document.state.updateLayer(id) { layer in
+                    if case .smart(var s) = layer.content { s.transform = docToDoc.concatenating(original); layer.content = .smart(s) }
+                }
+            case .shape(let id, let original):
+                let path = original.applying(docToDoc)
+                document.state.updateLayer(id) { l in
+                    l.vectorMask = path
+                    var mask = path.asSelection.asMask
+                    mask.isEnabled = l.mask?.isEnabled ?? true
+                    mask.density = l.mask?.density ?? 1
+                    mask.feather = l.mask?.feather ?? 0
+                    l.mask = mask
+                }
+            }
+        }
+        overrides = LayerOverrides(pixels: pixels)
+    }
+
     func beginTransform() {
         commitLiveEdit()
         guard let metal, let layer = activeLayer else { return }
         do {
+            if layer.isGroup {
+                try beginGroupTransform(layer, metal: metal)
+                return
+            }
             // Text transforms as its rendered pixels; applying turns it into a pixel layer (undo brings the text back).
             var content = layer.content
             if case .text(let text) = content { content = .raster(DocumentCompositor.rasterize(text)) }
@@ -166,7 +265,7 @@ extension EditorSession {
                 transformSession = session
                 originalShapeState = state
             default:
-                errorMessage = "Free Transform works on pixel layers, shapes and smart objects."
+                errorMessage = String(localized: "Free Transform works on pixel, text and shape layers, smart objects and groups.")
                 return
             }
             updateTransformPreview()
@@ -183,6 +282,10 @@ extension EditorSession {
 
     func updateTransformPreview() {
         guard let t = transformSession, let metal else { return }
+        if !t.members.isEmpty {
+            do { try previewGroup(t, metal: metal) } catch { report(error) }
+            return
+        }
         if let original = t.originalVector, let r = original.controlBounds {
             // Source space = the path's bounds at the origin.
             let toSource = GlimmerCore.AffineTransform(tx: -r.minX, ty: -r.minY)
@@ -217,6 +320,16 @@ extension EditorSession {
     func commitTransform() {
         guard let t = transformSession else { return }
         transformSession = nil
+        if !t.members.isEmpty, let before = originalShapeState {
+            // Smart objects and shapes are already placed; the pixels come from the preview.
+            originalShapeState = nil
+            for (id, grid) in overrides.pixels {
+                document.state.updateLayer(id) { $0.content = .raster(grid) }  // text becomes pixels, as for one layer
+            }
+            overrides = .none
+            document.commitInteractiveEdit("Free Transform", undoManager: undoManager, before: before)
+            return
+        }
         if t.originalVector != nil, let before = originalShapeState {
             originalShapeState = nil
             document.commitInteractiveEdit("Free Transform", undoManager: undoManager, before: before)
@@ -243,6 +356,12 @@ extension EditorSession {
     func cancelTransform() {
         guard let t = transformSession else { return }
         transformSession = nil
+        if !t.members.isEmpty, let before = originalShapeState {
+            originalShapeState = nil
+            document.state = before
+            overrides = .none
+            return
+        }
         if t.originalVector != nil, let before = originalShapeState {
             originalShapeState = nil
             document.state = before
