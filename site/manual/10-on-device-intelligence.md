@@ -78,7 +78,7 @@ The first click on an image takes a moment while Segment Anything reads the imag
 
 Choose **AI › Remove Background**, or click **Remove Background** in the **On This Mac** section. Glimmer finds the subject of the active layer and adds a layer mask that hides everything else. Your pixels are not deleted. Paint on the mask to fix the edges, or turn the mask off to get the background back.
 
-The active layer must be a pixel layer. Remove Background doesn't work on adjustment layers or groups.
+The active layer must be a pixel layer or a smart object. Remove Background doesn't work on adjustment layers or groups.
 
 ## Lens Blur with depth
 

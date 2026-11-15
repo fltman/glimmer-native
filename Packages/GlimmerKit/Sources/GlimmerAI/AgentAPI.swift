@@ -259,8 +259,9 @@ public enum AgentAPI {
             ]),
             op("image", "The flattened image as bytes.", "GET", "image",
                ["format": format.merging(["x-in": "query"]) { $1 }, "maxSide": maxSide.merging(["x-in": "query"]) { $1 }]),
-            op("add_image", "Add an image as a new layer in an open document, to combine two images. The request body is the image's bytes (PNG, JPEG, HEIC, TIFF or WebP; Content-Type image/… or application/octet-stream), not JSON; the options go in the query. The new layer lands above the active layer and becomes the active one. One undo step. Answers 201 with {layer: {id, name, bounds}}.", "POST", "layers", [
-                "name": ["type": "string", "x-in": "query", "description": "Optional. The layer's name (default Image)."],
+            op("add_image", "Add an image as a new layer in an open document, to combine two images. An assistant gives fromDocument: another open document, whose picture becomes the layer (open the second image as a document first). An app can instead send the image's bytes as the request body (PNG, JPEG, HEIC, TIFF or WebP; Content-Type image/… or application/octet-stream). The other options go in the query. The new layer lands above the active layer and becomes the active one. One undo step. Answers 201 with {layer: {id, name, bounds}}.", "POST", "layers", [
+                "fromDocument": ["type": "string", "description": "The id of another open document; its flattened picture becomes the new layer. Leave out when the body is image bytes."],
+                "name": ["type": "string", "x-in": "query", "description": "Optional. The layer's name (default: the source document's name, or Image)."],
                 "fit": ["type": "string", "enum": CanvasSteps.Fit.allCases.map(\.rawValue), "x-in": "query",
                         "description": "Optional. contain (default): scaled down to fit the canvas, never up. cover: scaled to cover the whole canvas. none: at its own size."],
                 "x": ["type": "number", "x-in": "query", "description": "Optional. Left edge in document pixels (default: centred)."],
@@ -340,7 +341,7 @@ public enum AgentAPI {
         | GET | `/api/v1/jobs` | Recent jobs (see Long jobs). |
         | GET | `/api/v1/jobs/{id}` | One job: status, progress and, when finished, the result. |
         | DELETE | `/api/v1/jobs/{id}` | Cancel a job that is still running. |
-        | POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document. Query: `name`, `fit=contain\\|cover\\|none`, `x`, `y`, `smartObject=true\\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
+        | POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document, or JSON `{"fromDocument": "<id>"}` to use another open document's picture. Query: `name`, `fit=contain\\|cover\\|none`, `x`, `y`, `smartObject=true\\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
         | POST | `/api/v1/documents/{id}/undo` | Undo the last step (a whole `steps` request counts as one). |
         | POST | `/api/v1/documents/{id}/redo` | Redo. |
         | POST | `/api/v1/documents/{id}/export` | The finished image as bytes. Body: `{"format": "png\\|jpeg\\|heic\\|tiff\\|webp", "quality": 0.9, "maxSide": 2048, "maxBytes": 500000}`; all optional (PNG by default). |
@@ -416,7 +417,7 @@ public enum AgentAPI {
         | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
         | 413 | `too_large` | Body over 256 MB. |
         | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `bad_anchor`, `bad_color`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
-        | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`, `bad_image`, `too_large`). |
+        | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`, `bad_image`, `too_large`, `unknown_document`, `same_document`). |
         | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
         ## Operations
@@ -448,7 +449,7 @@ public enum AgentAPI {
         - Adjustment layers are non-destructive; filters change pixels. Prefer `add_adjustment` for tone and colour.
         - `auto_enhance` and `auto_color` add editable adjustment layers, worked out on the Mac.
         - After a step, `GET /api/v1/documents/{id}/image` shows you what the user sees.
-        - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers`. Place it with `transform_layer`, blend it with `set_layer`, cut it out with `remove_background`.
+        - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers` (its bytes, or `fromDocument` if it is already open as a document). Place it with `transform_layer`, blend it with `set_layer`, cut it out with `remove_background`.
         - `resize_canvas` adds room around the image (`crop` can only take room away). `aspect` with `anchor` is the short way to a thumbnail shape with space for a title.\n        - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
         - The user may be editing the same document. Read the document before you act on it, and keep requests small.
 

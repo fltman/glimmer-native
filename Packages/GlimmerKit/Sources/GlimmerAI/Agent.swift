@@ -232,7 +232,7 @@ public enum AgentPlanner {
         AgentOp("auto_color", "Neutralise a colour cast (on-device, free) with a Color Balance layer. For \"too yellow/blue/green\", \"fix the white balance\"."),
         AgentOp("select_sky", "Select the sky (on-device, free). Use before replacing or adjusting the sky."),
         AgentOp("select_people", "Select every person in the image (on-device, free, more precise than select_subject for people)."),
-        AgentOp("remove_background", "Cut the main subject out of the active layer onto transparency (adds a mask; on-device, free)."),
+        AgentOp("remove_background", "Cut the main subject out of the active layer onto transparency (adds a mask; on-device, free). Works on a pixel layer or a smart object, such as an image just added with add_image."),
         AgentOp("select_subject", "Select the main subject (on-device, free)."),
         AgentOp("inpaint_selection", "Regenerate or erase the SELECTED region. Requires a selection.", [
             AgentParam("prompt", "string", "What to fill the selection with (may be empty for remove)."),

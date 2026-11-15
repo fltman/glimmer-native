@@ -423,7 +423,9 @@ extension AIController {
         case "select_sky":
             guard try await performSelectSky() else { throw StepError("No sky found along the top of the image.") }
         case "remove_background":
-            try ensurePixelLayer()
+            // A smart object (an image an agent just added) is cut out as it is; only a layer
+            // without a picture of its own sends the step to the nearest pixel layer.
+            if case .smart = s.state.activeLayer?.content {} else { try ensurePixelLayer() }
             removeBackground()
         case "select_subject":
             selectSubject()

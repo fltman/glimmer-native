@@ -132,7 +132,7 @@ An agent (or the assistant) can scale, rotate, skew or distort a layer or a grou
 
 ### Combining images, cropping and resizing
 
-An agent can build a picture from several images. It opens the first image as a document and sends each further image to that document, where it lands as a new layer above the active one, fitted to the canvas. From there the usual steps apply: `transform_layer` places it, `remove_background` cuts it out, and `set_layer` changes its opacity, blend mode, visibility or name.
+An agent can build a picture from several images. It opens the first image as a document and sends each further image to that document, where it lands as a new layer above the active one, fitted to the canvas. An image that is already open as a document of its own can be added the same way, by naming that document. From there the usual steps apply: `transform_layer` places it, `remove_background` cuts it out, and `set_layer` changes its opacity, blend mode, visibility or name.
 
 Four steps change the canvas and the selection by numbers:
 

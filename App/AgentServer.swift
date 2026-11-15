@@ -520,8 +520,19 @@ enum AgentRouter {
     /// `add_image`: the body's image becomes a new layer, one undo step of its own.
     private static func addImage(_ session: EditorSession, _ r: AgentAPI.Request) throws -> Response {
         let type = (r.headers["content-type"] ?? "").lowercased()
-        guard type.hasPrefix("image/") || type == "application/octet-stream" else {
-            throw APIError.badRequest("Send the image's bytes with Content-Type: image/… (the options go in the query).")
+        // An app sends the image's bytes; an assistant, which has none, names an open document.
+        var source: EditorSession?
+        if !(type.hasPrefix("image/") || type == "application/octet-stream") {
+            guard let key = (try? json(r))?["fromDocument"] as? String, !key.isEmpty else {
+                throw APIError.badRequest("Send the image's bytes with Content-Type: image/…, or JSON {\"fromDocument\": \"<document id>\"}. The options go in the query.")
+            }
+            guard let other = AgentRegistry.shared.session(key) else {
+                throw APIError.unprocessable("unknown_document", "No open document with id \(key). GET /api/v1/documents lists them.")
+            }
+            guard other !== session else {
+                throw APIError.unprocessable("same_document", "fromDocument is this document. Name another open document.")
+            }
+            source = other
         }
         let fitName = r.query["fit"] ?? "contain"
         guard let fit = CanvasSteps.Fit(rawValue: fitName) else { throw APIError.badRequest("fit must be contain, cover or none.") }
@@ -537,12 +548,20 @@ enum AgentRouter {
         case "false", "0": smart = false
         default: throw APIError.badRequest("smartObject must be true or false.")
         }
-        guard !r.body.isEmpty else { throw APIError.unprocessable("bad_image", "The image body is empty.") }
         let image: CGImage
-        do {
-            image = try ImageImporter.image(from: r.body)
-        } catch {
-            throw APIError.unprocessable("bad_image", "Glimmer couldn't read the image (\(error.localizedDescription)). Send PNG, JPEG, HEIC, TIFF or WebP bytes.")
+        if let source {
+            do {
+                image = try ImageExporter.flattenedSRGB(source.state, context: source.ai.metal)
+            } catch {
+                throw APIError.internalError(error.localizedDescription)
+            }
+        } else {
+            guard !r.body.isEmpty else { throw APIError.unprocessable("bad_image", "The image body is empty.") }
+            do {
+                image = try ImageImporter.image(from: r.body)
+            } catch {
+                throw APIError.unprocessable("bad_image", "Glimmer couldn't read the image (\(error.localizedDescription)). Send PNG, JPEG, HEIC, TIFF or WebP bytes.")
+            }
         }
         guard image.width <= CanvasSteps.maxSide, image.height <= CanvasSteps.maxSide else {
             throw APIError.unprocessable("too_large", "The image is \(image.width) × \(image.height); the most is \(CanvasSteps.maxSide) pixels a side.")
@@ -550,7 +569,7 @@ enum AgentRouter {
         let name = (r.query["name"]?.trimmingCharacters(in: .whitespacesAndNewlines)).flatMap { $0.isEmpty ? nil : String($0.prefix(200)) }
         let layer: Layer
         do {
-            layer = try session.addImageLayer(image, name: name ?? String(localized: "Image"), fit: fit, x: x, y: y, smartObject: smart)
+            layer = try session.addImageLayer(image, name: name ?? source.flatMap { $0.explicitName ?? $0.state.layers.first?.name } ?? String(localized: "Image"), fit: fit, x: x, y: y, smartObject: smart)
         } catch {
             throw APIError.internalError(error.localizedDescription)
         }
