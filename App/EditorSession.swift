@@ -102,6 +102,12 @@ final class EditorSession {
     var transformSession: TransformSession?
     var cropSession: CropSession?
     var editingText: UUID?
+    /// While text is being edited: the style at the caret or the start of the selection, and
+    /// whether letters are selected (then the options bar styles only them).
+    var textSelectionStyle: TextStyle?
+    var textSelectionIsRange = false
+    /// The open text editor, which styles the selected words.
+    @ObservationIgnored weak var textStyler: (any TextStyler)?
     var textDefaults: (fontName: String, size: Double, alignment: GlimmerCore.TextAlignment) = ("HelveticaNeue-Bold", 96, .left)
     var activePathID: UUID?
     @ObservationIgnored var penDrag: (Int, Int, Int)?

@@ -37,6 +37,9 @@ public struct TextLayer: Codable, Hashable, Sendable {
     /// Rotation, scale and skew from Free Transform, applied after layout (document →
     /// document), so the text stays editable. Always affine; nil when untransformed.
     public var transform: AffineTransform?
+    /// Words or letters styled differently from the layer (font, size, colour); nil when the
+    /// whole text has the layer's style. See TextStyles.swift.
+    public var styles: [TextStyleRun]?
 
     public init(string: String, fontName: String = "HelveticaNeue", size: Double = 72, color: SRGBColor = .black,
                 alignment: TextAlignment = .left, tracking: Double = 0, lineHeight: Double = 1.2,
@@ -60,22 +63,33 @@ public struct TextLayer: Codable, Hashable, Sendable {
         case .center: .center
         case .right: .right
         }
-        var align = ctAlign
-        var lineHeightValue = CGFloat(size * lineHeight)
-        let settings = [
-            CTParagraphStyleSetting(spec: .alignment, valueSize: MemoryLayout<CTTextAlignment>.size, value: &align),
-            CTParagraphStyleSetting(spec: .minimumLineHeight, valueSize: MemoryLayout<CGFloat>.size, value: &lineHeightValue),
-            CTParagraphStyleSetting(spec: .maximumLineHeight, valueSize: MemoryLayout<CGFloat>.size, value: &lineHeightValue),
-        ]
-        let style = CTParagraphStyleCreate(settings, settings.count)
-        let attrs: [NSAttributedString.Key: Any] = [
-            NSAttributedString.Key(kCTFontAttributeName as String): font,
-            NSAttributedString.Key(kCTForegroundColorAttributeName as String):
-                CGColor(srgbRed: color.r, green: color.g, blue: color.b, alpha: 1),
-            NSAttributedString.Key(kCTParagraphStyleAttributeName as String): style,
-            NSAttributedString.Key(kCTKernAttributeName as String): tracking / 1000 * size,
-        ]
-        return NSAttributedString(string: string.isEmpty ? " " : string, attributes: attrs)
+        func paragraphStyle(lineSize: Double) -> CTParagraphStyle {
+            var align = ctAlign
+            var lineHeightValue = CGFloat(lineSize * lineHeight)
+            let settings = [
+                CTParagraphStyleSetting(spec: .alignment, valueSize: MemoryLayout<CTTextAlignment>.size, value: &align),
+                CTParagraphStyleSetting(spec: .minimumLineHeight, valueSize: MemoryLayout<CGFloat>.size, value: &lineHeightValue),
+                CTParagraphStyleSetting(spec: .maximumLineHeight, valueSize: MemoryLayout<CGFloat>.size, value: &lineHeightValue),
+            ]
+            return CTParagraphStyleCreate(settings, settings.count)
+        }
+        let paragraphKey = NSAttributedString.Key(kCTParagraphStyleAttributeName as String)
+        var attrs = attributes(for: baseStyle)
+        attrs[paragraphKey] = paragraphStyle(lineSize: size)
+        guard hasStyledRuns, !string.isEmpty else {
+            return NSAttributedString(string: string.isEmpty ? " " : string, attributes: attrs)
+        }
+        let out = NSMutableAttributedString(string: string, attributes: attrs)
+        let runs = resolvedRuns()
+        for run in runs where run.style != baseStyle { out.addAttributes(attributes(for: run.style), range: run.range) }
+        // Each paragraph's lines are as tall as its largest letters need, so a bigger word
+        // doesn't run into the line above.
+        let ns = string as NSString
+        ns.enumerateSubstrings(in: NSRange(location: 0, length: ns.length), options: [.byParagraphs, .substringNotRequired]) { _, _, enclosing, _ in
+            let largest = runs.filter { NSIntersectionRange($0.range, enclosing).length > 0 }.map(\.style.size).reduce(0, max)
+            if largest > self.size { out.addAttribute(paragraphKey, value: paragraphStyle(lineSize: largest), range: enclosing) }
+        }
+        return out
     }
 
     /// Size of the laid-out text (document pixels).
@@ -167,6 +181,13 @@ public struct TextLayer: Codable, Hashable, Sendable {
 
     /// The glyph outlines of the laid-out text, in text-box coordinates (y down, origin top-left).
     public func glyphOutlines() -> CGPath {
+        let result = CGMutablePath()
+        for (_, path) in glyphOutlinesByColor() { result.addPath(path) }
+        return result
+    }
+
+    /// The glyph outlines grouped by the colour they're drawn in, in the order colours first appear.
+    public func glyphOutlinesByColor() -> [(color: CGColor, path: CGPath)] {
         let size = layoutSize
         let framesetter = CTFramesetterCreateWithAttributedString(attributedString())
         let frame = CTFramesetterCreateFrame(framesetter, CFRange(),
@@ -174,7 +195,8 @@ public struct TextLayer: Codable, Hashable, Sendable {
         let lines = CTFrameGetLines(frame) as! [CTLine]
         var origins = [CGPoint](repeating: .zero, count: lines.count)
         CTFrameGetLineOrigins(frame, CFRange(), &origins)
-        let result = CGMutablePath()
+        let base = CGColor(srgbRed: color.r, green: color.g, blue: color.b, alpha: 1)
+        var groups: [(color: CGColor, path: CGMutablePath)] = []
         for (line, lineOrigin) in zip(lines, origins) {
             for run in CTLineGetGlyphRuns(line) as! [CTRun] {
                 let count = CTRunGetGlyphCount(run)
@@ -185,29 +207,38 @@ public struct TextLayer: Codable, Hashable, Sendable {
                 CTRunGetPositions(run, CFRange(), &positions)
                 let attrs = CTRunGetAttributes(run) as NSDictionary
                 let runFont = attrs[kCTFontAttributeName as String].map { $0 as! CTFont } ?? font
+                let runColor = attrs[kCTForegroundColorAttributeName as String].map { $0 as! CGColor } ?? base
+                let target: CGMutablePath
+                if let g = groups.first(where: { $0.color == runColor }) {
+                    target = g.path
+                } else {
+                    target = CGMutablePath()
+                    groups.append((runColor, target))
+                }
                 for k in 0..<count {
                     guard let glyph = CTFontCreatePathForGlyph(runFont, glyphs[k], nil) else { continue }
                     // Glyph space is y up; flip into the y-down box.
                     let x = lineOrigin.x + positions[k].x, y = lineOrigin.y + positions[k].y
                     let t = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: x, ty: size.height - y)
-                    result.addPath(glyph, transform: t)
+                    target.addPath(glyph, transform: t)
                 }
             }
         }
-        return result
+        return groups.map { ($0.color, $0.path as CGPath) }
     }
 
     /// Fills the glyph outlines bent through the warp envelope (vector, so edges stay crisp).
     private func drawWarped(_ warp: TextWarp, in ctx: CGContext, bounds b: PixelRect, size: CGSize) {
         let w = Double(size.width), h = Double(size.height)
         let ox = origin.x - Double(b.x), oy = origin.y - Double(b.y)
-        let warped = warp.apply(to: glyphOutlines(), width: w, height: h)
         // Box (y down) → context (y up).
         var t = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: ox, ty: Double(b.height) - oy)
-        guard let placed = warped.copy(using: &t) else { return }
-        ctx.setFillColor(CGColor(srgbRed: color.r, green: color.g, blue: color.b, alpha: 1))
-        ctx.addPath(placed)
-        ctx.fillPath(using: .winding)
+        for (fill, outlines) in glyphOutlinesByColor() {
+            guard let placed = warp.apply(to: outlines, width: w, height: h).copy(using: &t) else { continue }
+            ctx.setFillColor(fill)
+            ctx.addPath(placed)
+            ctx.fillPath(using: .winding)
+        }
     }
 
     /// Draws each glyph centred on its arc-length position along `line`, rotated to the tangent.
@@ -245,6 +276,7 @@ public struct TextLayer: Codable, Hashable, Sendable {
             CTRunGetAdvances(run, CFRange(), &advances)
             let attrs = CTRunGetAttributes(run) as NSDictionary
             let runFont = attrs[kCTFontAttributeName as String].map { $0 as! CTFont } ?? font
+            if let runColor = attrs[kCTForegroundColorAttributeName as String] { ctx.setFillColor(runColor as! CGColor) }
             for k in 0..<count {
                 let mid = start + Double(positions[k].x) + Double(advances[k].width) / 2
                 guard let (p, angle) = point(at: mid) else { continue }

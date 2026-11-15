@@ -5,6 +5,13 @@ import GlimmerTools
 import SwiftUI
 import simd
 
+/// The open text editor, as the options bar sees it.
+@MainActor protocol TextStyler: AnyObject {
+    /// Restyles the selected letters, or (selectionOnly false) the whole text in the editor.
+    /// nil leaves a property as it is.
+    func style(selectionOnly: Bool, fontName: String?, size: Double?, color: SRGBColor?)
+}
+
 extension EditorSession {
     // MARK: Text
 
@@ -60,23 +67,60 @@ extension EditorSession {
         return simd_distance(p, a + ab * t)
     }
 
-    func commitText(_ string: String, id: UUID) {
+    /// Stores what the text editor holds when it closes: the text and the style of each stretch.
+    func commitText(_ string: String, runs: [(range: NSRange, style: TextStyle)], id: UUID) {
         guard let layer = state.layer(id: id), case .text(var text) = layer.content else { return }
         if string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             edit("Delete Empty Text") { _ = $0.removeLayer(id) }
             return
         }
-        guard string != text.string else { return }
-        text.string = string
+        let before = text
+        text.setStyledText(string, runs: runs)
+        guard text != before else { return }
         let name = String(string.split(separator: "\n").first ?? "Text").prefix(32)
-        edit("Edit Text") { $0.updateLayer(id) { $0.content = .text(text); $0.name = String(name) } }
+        let action = text.string == before.string ? "Style Text" : "Edit Text"
+        edit(action) { $0.updateLayer(id) { $0.content = .text(text); $0.name = String(name) } }
     }
 
-    /// Live change to the active text layer's style (options bar).
+    /// Live change to the active text layer's style (options bar). While text is being edited
+    /// with letters selected, font, size and colour change only those letters; otherwise the
+    /// whole layer (and the per-word values of that property give way).
     func updateText(_ change: @escaping (inout TextLayer) -> Void) {
+        if let layer = activeLayer, case .text(let t) = layer.content, let styler = textStyler {
+            if textSelectionIsRange, let selected = textSelectionStyle {
+                var probe = t
+                probe.fontName = selected.fontName
+                probe.size = selected.size
+                probe.color = selected.color
+                change(&probe)
+                styler.style(selectionOnly: true,
+                             fontName: probe.fontName != selected.fontName ? probe.fontName : nil,
+                             size: probe.size != selected.size ? probe.size : nil,
+                             color: probe.color != selected.color ? probe.color : nil)
+                // Alignment, tracking and line height belong to the whole layer.
+                var rest = t
+                change(&rest)
+                rest.fontName = t.fontName
+                rest.size = t.size
+                rest.color = t.color
+                if rest != t { liveLayer("Text Style") { $0.content = .text(rest) } }
+                return
+            }
+            var changed = t
+            change(&changed)
+            styler.style(selectionOnly: false,
+                         fontName: changed.fontName != t.fontName ? changed.fontName : nil,
+                         size: changed.size != t.size ? changed.size : nil,
+                         color: changed.color != t.color ? changed.color : nil)
+        }
         if let layer = activeLayer, case .text = layer.content {
             liveLayer("Text Style") { layer in
-                if case .text(var t) = layer.content { change(&t); layer.content = .text(t) }
+                if case .text(var t) = layer.content {
+                    let old = t
+                    change(&t)
+                    t.dropStyles(changedFrom: old)
+                    layer.content = .text(t)
+                }
             }
         }
         var d = TextLayer(string: "", fontName: textDefaults.fontName, size: textDefaults.size, color: .black,

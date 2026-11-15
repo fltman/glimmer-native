@@ -37,7 +37,18 @@ The options bar shows these controls. They change the active text layer right aw
 | On path | Runs the text along a path (only shown when the document has paths) |
 | Warp | Bends the text into a shape (not for text on a path) |
 
-The options change the whole text layer. You can't style single words differently within one layer.
+When you aren't editing the text, the options change the whole text layer. A change to the font, size or color then applies to every word, including words you styled on their own.
+
+### Styling single words
+
+Words and letters within one text layer can have their own font, style, size and color, for example one word in bold or in another color.
+
+1. Edit the text and select the words with the pointer or with Shift and the arrow keys.
+2. Change the font, style, size or color in the options bar. Only the selection changes.
+
+While you are editing, the options bar shows the style at the text cursor, or at the start of the selection. With nothing selected, a change applies to the whole text. Text you type takes the style of the letter before it, and pasted text takes the style where it lands. ⌘Z while editing undoes a style change; after you finish, the whole edit is one undo step.
+
+Alignment, tracking and line spacing always apply to the whole layer. A line with a bigger word gets taller, so the word doesn't run into the line above. Styled words also work with warp, text on a path and Free Transform.
 
 ### Warp
 
@@ -65,7 +76,7 @@ To take text off its path, choose **No Path** from the **On path** menu. If you 
 
 A text layer has no pixels of its own to paint on. Some commands turn it into pixels:
 
-- **Free Transform** turns it into a pixel layer when you apply the transform.
+- **Free Transform** keeps it as text when you scale, rotate or skew it. Distort and perspective turn it into a pixel layer after asking.
 - **Convert to Smart Object** turns it into a smart object of its pixels.
 - **Rasterize Layer** turns it into a pixel layer.
 - Rotating or flipping the whole image, or a straightened crop, turns it into a pixel layer.

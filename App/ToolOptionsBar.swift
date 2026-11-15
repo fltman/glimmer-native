@@ -347,7 +347,15 @@ private struct TextOptions: View {
     @Bindable var session: EditorSession
 
     private var current: TextLayer {
-        if let layer = session.activeLayer, case .text(let t) = layer.content { return t }
+        if let layer = session.activeLayer, case .text(var t) = layer.content {
+            // While typing: the font, size and colour at the caret or of the selected words.
+            if session.editingText == layer.id, let style = session.textSelectionStyle {
+                t.fontName = style.fontName
+                t.size = style.size
+                t.color = style.color
+            }
+            return t
+        }
         let d = session.textDefaults
         return TextLayer(string: "", fontName: d.fontName, size: d.size, color: session.foreground, alignment: d.alignment, origin: .zero)
     }

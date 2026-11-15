@@ -52,6 +52,8 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     private let minorGridLayer = CAShapeLayer()
     private var textEditor: NSTextView?
     private var editorLayerID: UUID?
+    /// View points per document pixel the editor's fonts are drawn at.
+    fileprivate var editorScale: Double = 1
     private lazy var rulers: RulerView = {
         let v = RulerView(frame: bounds)
         v.autoresizingMask = [.width, .height]
@@ -562,9 +564,13 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             textEditor = nil
             editorLayerID = nil
             let string = editor.string
+            let runs = Self.styleRuns(of: editor, scale: editorScale)
             editor.removeFromSuperview()
             session.overrides = .none
-            session.commitText(string, id: id)
+            session.textStyler = nil
+            session.textSelectionStyle = nil
+            session.textSelectionIsRange = false
+            session.commitText(string, runs: runs, id: id)
             window?.makeFirstResponder(self)
         }
         guard let id = session.editingText, let layer = session.state.layer(id: id), case .text(let text) = layer.content else {
@@ -578,29 +584,42 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         let scale = controller.transform.scale * textScale
         let v = controller.transform.viewPoint(fromDocument: t.apply(text.origin))
         let origin = CGPoint(x: v.x, y: v.y)  // subview frames use the (flipped) view space
-        let font = NSFont(name: text.fontName, size: text.size * scale) ?? .systemFont(ofSize: text.size * scale)
         let editor: NSTextView
         if let existing = textEditor {
             editor = existing
+            // Zoomed while typing: scale every stretch's font, keeping each word's style.
+            if abs(scale - editorScale) > 1e-9, let storage = editor.textStorage {
+                let ratio = scale / editorScale
+                storage.beginEditing()
+                storage.enumerateAttribute(.font, in: NSRange(location: 0, length: storage.length)) { value, range, _ in
+                    guard let f = value as? NSFont else { return }
+                    storage.addAttribute(.font, value: NSFont(descriptor: f.fontDescriptor, size: f.pointSize * ratio) ?? f, range: range)
+                }
+                storage.endEditing()
+                editorScale = scale
+            }
         } else {
-            editor = NSTextView(frame: .zero)
+            editor = TextLayerEditor(frame: .zero)
             editor.drawsBackground = false
-            editor.isRichText = false
+            editor.isRichText = true  // words can have their own font, size and colour
+            editor.importsGraphics = false
             editor.allowsUndo = true
             editor.textContainerInset = .zero
             editor.textContainer?.lineFragmentPadding = 0
-            editor.string = text.string
+            editorScale = scale
+            editor.textStorage?.setAttributedString(Self.editorText(text, scale: scale))
             editor.delegate = self
             addSubview(editor)
             textEditor = editor
             editorLayerID = id
+            session.textStyler = self
             window?.makeFirstResponder(editor)
             editor.selectAll(nil)
             // Hide the layer's own pixels while editing.
             session.overrides = LayerOverrides(pixels: [id: TileGrid()])
         }
-        editor.font = font
-        editor.textColor = NSColor(srgbRed: text.color.r, green: text.color.g, blue: text.color.b, alpha: 1)
+        // What new typing looks like when the text is empty (otherwise the letter before the caret decides).
+        if editor.string.isEmpty { editor.typingAttributes = Self.editorAttributes(text.baseStyle, scale: scale) }
         editor.alignment = text.alignment == .center ? .center : (text.alignment == .right ? .right : .left)
         if let box = text.boxWidth {
             editor.isHorizontallyResizable = false
@@ -614,6 +633,58 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         }
         editor.frameRotation = turn  // about the frame's origin, the text's top-left
         fitEditor()
+        updateTextSelectionStyle()
+    }
+
+    /// The text layer as the editor shows it: every stretch in its font, size and colour.
+    fileprivate static func editorText(_ text: TextLayer, scale: Double) -> NSAttributedString {
+        let out = NSMutableAttributedString()
+        for run in text.resolvedRuns() {
+            out.append(NSAttributedString(string: (text.string as NSString).substring(with: run.range),
+                                          attributes: editorAttributes(run.style, scale: scale)))
+        }
+        return out
+    }
+
+    fileprivate static func editorAttributes(_ style: TextStyle, scale: Double) -> [NSAttributedString.Key: Any] {
+        [.font: NSFont(name: style.fontName, size: style.size * scale) ?? .systemFont(ofSize: style.size * scale),
+         .foregroundColor: NSColor(srgbRed: style.color.r, green: style.color.g, blue: style.color.b, alpha: 1)]
+    }
+
+    /// The style of each stretch of the editor's text, in document pixels.
+    fileprivate static func styleRuns(of editor: NSTextView, scale: Double) -> [(range: NSRange, style: TextStyle)] {
+        guard let storage = editor.textStorage, storage.length > 0 else { return [] }
+        var runs: [(range: NSRange, style: TextStyle)] = []
+        storage.enumerateAttributes(in: NSRange(location: 0, length: storage.length)) { attrs, range, _ in
+            runs.append((range, style(from: attrs, scale: scale)))
+        }
+        return runs
+    }
+
+    fileprivate static func style(from attrs: [NSAttributedString.Key: Any], scale: Double) -> TextStyle {
+        let font = attrs[.font] as? NSFont ?? .systemFont(ofSize: 12)
+        let rgb = (attrs[.foregroundColor] as? NSColor)?.usingColorSpace(.sRGB)
+        // Zoom makes sizes like 39.99999; a hundredth of a pixel is plenty.
+        let size = ((Double(font.pointSize) / max(scale, 1e-9)) * 100).rounded() / 100
+        return TextStyle(fontName: font.fontName, size: size,
+                         color: rgb.map { SRGBColor($0.redComponent, $0.greenComponent, $0.blueComponent) } ?? .black)
+    }
+
+    /// Tells the options bar the style at the caret or the start of the selection.
+    fileprivate func updateTextSelectionStyle() {
+        guard let editor = textEditor, let storage = editor.textStorage else { return }
+        let sel = editor.selectedRange()
+        let attrs: [NSAttributedString.Key: Any]
+        if storage.length == 0 {
+            attrs = editor.typingAttributes
+        } else if sel.length > 0 {
+            attrs = storage.attributes(at: min(sel.location, storage.length - 1), effectiveRange: nil)
+        } else {
+            attrs = editor.typingAttributes
+        }
+        let style = Self.style(from: attrs, scale: editorScale)
+        if session.textSelectionStyle != style { session.textSelectionStyle = style }
+        if session.textSelectionIsRange != (sel.length > 0) { session.textSelectionIsRange = sel.length > 0 }
     }
 
     fileprivate func fitEditor() {
@@ -1187,7 +1258,46 @@ extension CanvasNSView: NSTextViewDelegate {
 
     func textDidChange(_ notification: Notification) {
         fitEditor()
+        updateTextSelectionStyle()
     }
+
+    func textViewDidChangeSelection(_ notification: Notification) {
+        updateTextSelectionStyle()
+    }
+}
+
+extension CanvasNSView: TextStyler {
+    func style(selectionOnly: Bool, fontName: String?, size: Double?, color: SRGBColor?) {
+        guard let editor = textEditor, let storage = editor.textStorage, fontName != nil || size != nil || color != nil else { return }
+        let scale = editorScale
+        func restyle(_ attrs: [NSAttributedString.Key: Any]) -> [NSAttributedString.Key: Any] {
+            var style = Self.style(from: attrs, scale: scale)
+            if let fontName { style.fontName = fontName }
+            if let size { style.size = max(size, 1) }
+            if let color { style.color = color }
+            var out = attrs
+            for (k, v) in Self.editorAttributes(style, scale: scale) { out[k] = v }
+            return out
+        }
+        let range = selectionOnly ? editor.selectedRange() : NSRange(location: 0, length: storage.length)
+        if range.length > 0, editor.shouldChangeText(in: range, replacementString: nil) {
+            // Through shouldChange/didChange so ⌘Z in the editor undoes it.
+            storage.beginEditing()
+            storage.enumerateAttributes(in: range) { attrs, sub, _ in storage.setAttributes(restyle(attrs), range: sub) }
+            storage.endEditing()
+            editor.didChangeText()
+        }
+        if !selectionOnly || range.length == 0 { editor.typingAttributes = restyle(editor.typingAttributes) }
+        fitEditor()
+        updateTextSelectionStyle()
+    }
+}
+
+/// The canvas's text editor. Pasted or dropped text takes the style where it lands instead of
+/// bringing fonts and colours from another app.
+final class TextLayerEditor: NSTextView {
+    override var readablePasteboardTypes: [NSPasteboard.PasteboardType] { [.string] }
+    override func paste(_ sender: Any?) { pasteAsPlainText(sender) }
 }
 
 /// Pixel rulers along the top and left edges. Purely visual; clicks fall through
