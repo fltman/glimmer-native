@@ -153,6 +153,11 @@ enum HeadlessEditor {
                 state = try autoColor(state)
             case "remove_background":
                 state = try removeBackground(state)
+            case "select_layer":
+                let key = step.string("name") ?? ""
+                if let layer = state.allLayers.reversed().first(where: { $0.name.caseInsensitiveCompare(key) == .orderedSame }) {
+                    state.activeLayerID = layer.id
+                }
             case "select_all", "deselect", "set_foreground", "new_layer":
                 continue  // no effect on the exported image
             default:

@@ -202,6 +202,9 @@ final class EditorSession {
     @ObservationIgnored private var thumbnailTask: Task<Void, Never>?
     @ObservationIgnored private var move: (layer: UUID, start: SIMD2<Double>, bounds: PixelRect?)?
 
+    /// How the local agent API addresses this window's document.
+    let agentID = UUID().uuidString
+
     init(document: GlimmerDocument) {
         self.document = document
         canvas.documentSize = document.state.size

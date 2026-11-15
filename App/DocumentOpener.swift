@@ -36,6 +36,7 @@ final class DocumentOpener {
     }
 
     private var welcomeWindow: NSWindow?
+    private var agentWindow: NSWindow?
 
     func showWelcomeWindow() {
         if let welcomeWindow {
@@ -56,6 +57,27 @@ final class DocumentOpener {
         window.makeKeyAndOrderFront(nil)
         welcomeWindow = window
         UserDefaults.standard.set(true, forKey: WelcomeView.shownKey)
+    }
+
+    func showAgentSplash() {
+        if let agentWindow {
+            agentWindow.makeKeyAndOrderFront(nil)
+            return
+        }
+        let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView],
+                              backing: .buffered, defer: false)
+        window.titlebarAppearsTransparent = true
+        window.title = String(localized: "Agent Access")
+        window.appearance = NSAppearance(named: .darkAqua)
+        window.backgroundColor = NSColor(red: 0.05, green: 0.04, blue: 0.08, alpha: 1)
+        window.isReleasedWhenClosed = false
+        window.contentViewController = NSHostingController(rootView: AgentSplashView(dismiss: { [weak self] in
+            self?.agentWindow?.close()
+            self?.agentWindow = nil
+        }))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        agentWindow = window
     }
 
     /// SwiftUI's action for opening a new document from an instance (captured
@@ -169,9 +191,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
-        if !UserDefaults.standard.bool(forKey: WelcomeView.shownKey), !CommandLine.arguments.contains("-skipWelcome") {
+        // The local API for agents (guide at /glimmer), and the splash that points agents to it.
+        MainActor.assumeIsolated { AgentServer.shared.start() }
+        let showsWelcome = !UserDefaults.standard.bool(forKey: WelcomeView.shownKey) && !CommandLine.arguments.contains("-skipWelcome")
+        if showsWelcome {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 MainActor.assumeIsolated { DocumentOpener.shared.showWelcomeWindow() }
+            }
+        } else if UserDefaults.standard.object(forKey: AgentSplashView.showAtLaunchKey) as? Bool ?? true,
+                  !CommandLine.arguments.contains("-uiTestingNewDocument"), !CommandLine.arguments.contains("-skipAgentSplash") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                MainActor.assumeIsolated { DocumentOpener.shared.showAgentSplash() }
             }
         }
         guard !deferredURLs.isEmpty else { return }

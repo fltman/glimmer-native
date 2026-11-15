@@ -70,7 +70,7 @@
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://github.com/fltman/glimmer-native/releases/latest/download/appcast.xml</string>
+	<string>https://glimmer.brattoo.com/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>$(SPARKLE_PUBLIC_KEY)</string>
 	<key>UTExportedTypeDeclarations</key>

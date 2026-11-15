@@ -58,6 +58,8 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
+        # The local agent API (127.0.0.1 only, see AgentServer).
+        com.apple.security.network.server: true
         com.apple.security.files.user-selected.read-write: true
         # Sparkle's installer XPC services in a sandboxed app.
         com.apple.security.temporary-exception.mach-lookup.global-name:
@@ -73,7 +75,7 @@ targets:
         LSApplicationCategoryType: public.app-category.graphics-design
         NSHumanReadableCopyright: "© 2026 Brattoo AB"
         # Updates (Sparkle). The updater stays off until SUPublicEDKey is set by scripts/release.sh.
-        SUFeedURL: https://github.com/fltman/glimmer-native/releases/latest/download/appcast.xml
+        SUFeedURL: https://glimmer.brattoo.com/appcast.xml
         SUPublicEDKey: $(SPARKLE_PUBLIC_KEY)
         SUEnableInstallerLauncherService: true
         SUEnableAutomaticChecks: true

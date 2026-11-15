@@ -132,7 +132,12 @@ struct DocumentView: View {
             .preferredColorScheme(.dark)
             .tint(Theme.accent)
             .focusedSceneValue(\.editorSession, session)
-            .onAppear { session.undoManager = undoManager }
+            .onAppear {
+                session.undoManager = undoManager
+                // Only a session that has a window is offered to agents.
+                AgentRegistry.shared.register(session)
+            }
+            .onDisappear { AgentRegistry.shared.unregister(session) }
             .onChange(of: undoManager) { _, manager in session.undoManager = manager }
     }
 }
@@ -154,8 +159,9 @@ private struct StartCard: View {
             Image("GlimmerLogo")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 220, height: 220)
-                .clipShape(.rect(cornerRadius: 12))
+                .frame(width: 180, height: 180)
+                .clipShape(.rect(cornerRadius: 40, style: .continuous))
+                .shadow(color: Color(red: 0.77, green: 0.36, blue: 1).opacity(0.35), radius: 24)
                 .accessibilityLabel("Glimmer")
             Text("Drop a file anywhere, paste from your clipboard, or open one — or just describe an image in the bar below and AI generates it.")
                 .multilineTextAlignment(.center)

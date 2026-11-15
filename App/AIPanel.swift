@@ -331,6 +331,7 @@ private struct PlanView: View {
         case "auto_color": "Auto Color"
         case "select_people": "Select people"
         case "select_sky": "Select sky"
+        case "select_layer": "Select layer “\(step.string("name") ?? "")”"
         case "remove_background": "Remove background"
         case "select_subject": "Select subject"
         case "inpaint_selection": step.string("mode") == "remove" ? "Remove selected object" : "Fill selection: \(step.string("prompt") ?? "")"

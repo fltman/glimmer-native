@@ -27,6 +27,7 @@ struct GlimmerApp: App {
             CheckForUpdatesCommand()
             CommandGroup(replacing: .help) {
                 Button("Welcome to Glimmer") { DocumentOpener.shared.showWelcomeWindow() }
+                Button("Agent Access…") { DocumentOpener.shared.showAgentSplash() }
             }
         }
 

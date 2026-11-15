@@ -431,6 +431,16 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **Lärdom (fel hittat):** SAM:s maskavkodare tar högst 15 prompt-tokens, alltså 14 punkter plus utfyllnad. Magic Select gav fel vid den femtonde klickpunkten och behåller nu de 14 senaste.
   - **Lärdom (prestanda):** Select Sky tar runt 0,7 sekunder varmt på en 4K-bild. Första körningen efter start kostar cirka 2 sekunder extra för att Core ML läser in SAM:s prompt- och maskmodeller. Djup och punkter räknas på en kopia med 1 024 pixlar.
 
+- **Agenter, ikon och domän (2026-11-15):**
+  - **Lokalt API för agenter:** appen serverar en guide på `http://127.0.0.1:9001/glimmer` (eller nästa lediga port upp till 9020, eftersom 9001 kan vara upptagen av andra tjänster) och ett JSON-API under `/api/v1`. Status, öppna eller skapa dokument, lagerträd, bild, `steps` med assistentens egna operationer (ett ångra-steg per förfrågan), ångra och gör om, samt export med storleksgränser.
+  - **Säkerhet:** servern lyssnar bara på loopback. Host måste vara den här datorn (skydd mot DNS-rebinding), anrop med `Origin` avvisas, alla POST kräver `X-Glimmer-Agent: 1`, och betalda steg kräver `allowPaid: true`. Inga filsökvägar: bilder går i anropen. Felformatet `{error:{code,message,step?}}` och koderna är samordnade med Flimmer. Operationslistan och guiden genereras ur assistentens schema (`AgentAPI` i GlimmerAI), så att de inte kan glida isär.
+  - **Splash ("Till din agent"):** visas vid start med texten och en kopieringsknapp, och finns även under Help › Agent Access. Den kan stängas av.
+  - **Verifierat med en blind agent:** en agent som bara fick fältets text hämtade guiden och gjorde en riktig redigering (svartvitt, vinjett och text, sedan export under 400 kB) på första försöket. Luckorna den hittade är åtgärdade i guiden, och operationen `select_layer` är tillagd.
+  - **Lärdom:** `DocumentView` skapar sin `EditorSession` i sin init, och SwiftUI kan göra det flera gånger. Därför registreras sessioner först i `onAppear`, så att API:et aldrig ser en session utan fönster och ångra-historik.
+  - **Lärdom:** XcodeGen skriver entitlements-filen ur `project.yml`. `network.server` måste stå där, annars skrivs den över.
+  - **Ikon:** familjen Neon (originalen ligger i `design/icon/`). Startkortet och splashen använder samma glyf och violetta färg.
+  - **Inför releasen:** Sparkles appcast-URL är nu `https://glimmer.brattoo.com/appcast.xml`. **Flödet måste finnas där innan en version publiceras**, annars hittar appen inga uppdateringar. Nedladdningarna (`--download-url-prefix` i `release.sh`) pekar fortfarande på GitHub Releases. Ingen push sker förrän vid releasen.
+
 ## 4. Teststrategi
 
 - **GlimmerCore:** modell, COW-tiles, undo/redo-invarianter, serialisering (rundtur och versionsmigrering) och `.aips`-import mot riktiga filer från webbappen.

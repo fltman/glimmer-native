@@ -249,6 +249,9 @@ public enum AgentPlanner {
         AgentOp("deselect", "Clear the selection."),
         AgentOp("invert_selection", "Invert the selection."),
         AgentOp("feather_selection", "Soften the selection edge.", [AgentParam("radius", "number", "Pixels.")]),
+        AgentOp("select_layer", "Make a layer the active one, so the following steps act on it. New layers become active by themselves.", [
+            AgentParam("name", "string", "The layer's name (not case-sensitive; the topmost match wins) or its id."),
+        ]),
         AgentOp("new_layer", "Add an empty pixel layer.", [AgentParam("name", "string", "Optional layer name.")]),
         AgentOp("run_command", "Run an editor menu command.", [
             AgentParam("id", "string", "Command id.", options: runnableCommands.map(\.id.rawValue)),

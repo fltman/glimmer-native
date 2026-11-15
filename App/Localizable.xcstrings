@@ -267,6 +267,17 @@
         }
       }
     },
+    "A photo editor for the Mac that agents can drive too.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En bildredigerare för Macen som även agenter kan styra."
+          }
+        }
+      }
+    },
     "A photo editor for the Mac, with AI where it helps.": {
       "localizations": {
         "sv": {
@@ -605,6 +616,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "Estetik %@, skärpa %lld %%"
+          }
+        }
+      }
+    },
+    "Agent Access": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agentåtkomst"
+          }
+        }
+      }
+    },
+    "Agent Access…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agentåtkomst…"
+          }
+        }
+      }
+    },
+    "Agent Edit": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agentredigering"
           }
         }
       }
@@ -1950,6 +1994,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gör om till smart objekt"
+          }
+        }
+      }
+    },
+    "Copied": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopierat"
           }
         }
       }
@@ -3444,6 +3499,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Typsnitt"
+          }
+        }
+      }
+    },
+    "For your agent": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Till din agent"
           }
         }
       }
@@ -5952,6 +6018,17 @@
         }
       }
     },
+    "Paste this into Claude or another AI agent. It fetches the guide from Glimmer on this Mac and can then open, edit and export images in your open windows.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klistra in det här i Claude eller en annan AI-agent. Den hämtar guiden från Glimmer på den här Macen och kan sedan öppna, redigera och exportera bilder i dina öppna fönster."
+          }
+        }
+      }
+    },
     "Pasted Layer": {
       "extractionState": "manual",
       "localizations": {
@@ -6213,6 +6290,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Stående"
+          }
+        }
+      }
+    },
+    "Ports %@–%@ are all in use.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Portarna %@–%@ är alla upptagna."
           }
         }
       }
@@ -7764,6 +7852,17 @@
         }
       }
     },
+    "Show at launch": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa vid start"
+          }
+        }
+      }
+    },
     "Show depth map": {
       "localizations": {
         "sv": {
@@ -8417,6 +8516,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Textstil"
+          }
+        }
+      }
+    },
+    "Text for your agent": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text till din agent"
           }
         }
       }

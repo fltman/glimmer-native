@@ -214,6 +214,39 @@ extension AIController {
         return failed
     }
 
+    // MARK: Agent API
+
+    struct APIStepResult {
+        let op: String
+        let status: String  // done, failed, skipped
+        let error: String?
+    }
+
+    /// Runs steps from the local agent API as one undo step. Stops at the first
+    /// failure and reports the rest as skipped.
+    func runAPISteps(_ steps: [AgentStep]) async -> [APIStepResult] {
+        session.commitLiveEdit()
+        session.document.beginTransaction(String(localized: "Agent Edit"))
+        defer { session.document.endTransaction(undoManager: session.undoManager) }
+        var results: [APIStepResult] = []
+        var failed = false
+        for step in steps {
+            if failed {
+                results.append(APIStepResult(op: step.op, status: "skipped", error: nil))
+                continue
+            }
+            do {
+                try await execute(step)
+                results.append(APIStepResult(op: step.op, status: "done", error: nil))
+            } catch {
+                failed = true
+                results.append(APIStepResult(op: step.op, status: "failed",
+                                             error: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription))
+            }
+        }
+        return results
+    }
+
     /// The quality check: the model compares before and after and may adjust once.
     private func review(goal: String, steps: [AgentStep], before: DocumentState) async {
         guard reviewsResults, !goal.isEmpty, let metal = MetalContext.shared,
@@ -389,6 +422,12 @@ extension AIController {
         case "feather_selection":
             guard s.state.selection != nil else { throw StepError("There's no selection to feather.") }
             s.modifySelection(.featherSelection, radius: step.number("radius") ?? 10)
+        case "select_layer":
+            let key = (step.string("name") ?? "").trimmingCharacters(in: .whitespaces)
+            guard let layer = s.state.allLayers.reversed().first(where: {
+                $0.id.uuidString.caseInsensitiveCompare(key) == .orderedSame || $0.name.caseInsensitiveCompare(key) == .orderedSame
+            }) else { throw StepError("No layer named “\(key)”.") }
+            s.setActiveLayer(layer.id)
         case "new_layer":
             s.perform(.newLayer)
             if let name = step.string("name"), let id = s.state.activeLayerID { s.rename(id, to: name) }
