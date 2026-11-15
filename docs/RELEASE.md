@@ -13,7 +13,7 @@ A checklist for release day, from a full local rehearsal on 2026-11-15 (0.2.0 �
 | Appcast | Valid: version 3, shortVersionString 0.3.0, minimumSystemVersion 27.0, EdDSA signature, enclosure URL and length |
 | Real update | An installed 0.2.0 found 0.3.0 (Glimmer › Check for Updates…), downloaded it, verified it, installed it, relaunched, and the relaunched app reported 0.3.0 through its agent API |
 | Notarization | App rehearsed 2026-11-15 with `release.sh 0.3.0 --notarize-only` (Anders' approval): Xcode uploaded and notarized the app, `stapler validate` passes, `spctl -a -vvv` says `accepted, source=Notarized Developer ID`. |
-| DMG | Signed but **not notarized**: `spctl -a -vvv -t install` says `rejected, source=Unnotarized Developer ID`. Xcode only notarizes the app, so the script now notarizes the DMG with notarytool (Before, step 8); not yet rehearsed. |
+| DMG | Rehearsed 2026-11-15 (Anders' approval): notarytool with the `brattoo-notary` profile, status Accepted; `stapler validate` passes and `spctl -a -vvv -t install` says `accepted, source=Notarized Developer ID`. (The first rehearsal, before this step existed, said `rejected, source=Unnotarized Developer ID`.) |
 
 Problems found and fixed: a version bump made `site/agents.md` (which names the version) fail the tests, so every release stopped at the test step (the script now regenerates it); the dry-run signature check failed falsely (fixed); the script would silently create a **new** Sparkle key on a Mac without the old one, which would lock out every existing user (it now stops instead); the appcast had no release notes (now read from `docs/release-notes/<version>.html`).
 
