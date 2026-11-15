@@ -12,8 +12,8 @@ A checklist for release day, from a full local rehearsal on 2026-11-15 (0.2.0 �
 | Sparkle key | Read from the login keychain (Sparkle's default item, account `ed25519`) without a prompt; public key starts `68SC/iBt…` |
 | Appcast | Valid: version 3, shortVersionString 0.3.0, minimumSystemVersion 27.0, EdDSA signature, enclosure URL and length |
 | Real update | An installed 0.2.0 found 0.3.0 (Glimmer › Check for Updates…), downloaded it, verified it, installed it, relaunched, and the relaunched app reported 0.3.0 through its agent API |
-| Notarization | Rehearsed 2026-11-15 with `release.sh 0.3.0 --notarize-only` (Anders' approval): Xcode uploaded and notarized the app, `stapler validate` passes, `spctl -a -vvv` says `accepted, source=Notarized Developer ID`. |
-| DMG | Signed but **not notarized**: `spctl -a -vvv -t install` says `rejected, source=Unnotarized Developer ID`. Xcode only notarizes the app; see Before, step 8. |
+| Notarization | App rehearsed 2026-11-15 with `release.sh 0.3.0 --notarize-only` (Anders' approval): Xcode uploaded and notarized the app, `stapler validate` passes, `spctl -a -vvv` says `accepted, source=Notarized Developer ID`. |
+| DMG | Signed but **not notarized**: `spctl -a -vvv -t install` says `rejected, source=Unnotarized Developer ID`. Xcode only notarizes the app, so the script now notarizes the DMG with notarytool (Before, step 8); not yet rehearsed. |
 
 Problems found and fixed: a version bump made `site/agents.md` (which names the version) fail the tests, so every release stopped at the test step (the script now regenerates it); the dry-run signature check failed falsely (fixed); the script would silently create a **new** Sparkle key on a Mac without the old one, which would lock out every existing user (it now stops instead); the appcast had no release notes (now read from `docs/release-notes/<version>.html`).
 
@@ -62,12 +62,12 @@ Take `/tmp/gui-test.lock` before launching the test app (the update relaunches i
 5. **Anders:** signed in under Xcode › Settings › Accounts with the Brattoo AB team (notarization uses it).
 6. Release notes in `docs/release-notes/<version>.html` (0.3.0's are written).
 7. `glimmer.brattoo.com` ready to serve `https://glimmer.brattoo.com/appcast.xml` (see After). Until it does, the released app finds no updates.
-8. **Anders, once:** a notarytool profile, so the DMG is notarized too: `xcrun notarytool store-credentials glimmer-notary` (Apple ID, team V783A2L763, an app-specific password from account.apple.com). Then run the release with `NOTARY_PROFILE=glimmer-notary`. Without it the app inside is notarized but the DMG is rejected by Gatekeeper.
+8. **Anders, once:** the series' notarytool profile, so the DMG is notarized too: `xcrun notarytool store-credentials brattoo-notary --apple-id <apple-id> --team-id V783A2L763` (with an app-specific password from account.apple.com). The script stops before building if it's missing (`NOTARY_PROFILE=<name>` picks another).
 
 ### Run
 
 ```sh
-NOTARY_PROFILE=glimmer-notary scripts/release.sh 0.3.0 --publish
+scripts/release.sh 0.3.0 --publish
 ```
 
 This runs the tests, bumps the version, archives, exports and notarizes through Xcode (up to 30 minutes), staples and checks the app, builds and signs the DMG, writes `build/release/updates/appcast.xml`, commits the version, tags `v0.3.0`, pushes, and creates the GitHub release with the DMG and the appcast. The last line runs Gatekeeper's check (`spctl --assess`) on the app.

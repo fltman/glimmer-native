@@ -19,9 +19,10 @@
 #
 # Notarization goes through Xcode, using the account in Xcode › Settings › Accounts.
 # Xcode notarizes the app, not the DMG around it, and Gatekeeper rejects an unnotarized
-# DMG ("source=Unnotarized Developer ID"). NOTARY_PROFILE=<name> also notarizes and
-# staples the DMG with notarytool; create the profile once with
-# `xcrun notarytool store-credentials <name>` (Apple ID, team V783A2L763, app-specific password).
+# DMG ("source=Unnotarized Developer ID"), so the script also notarizes and staples the DMG
+# with notarytool, using the keychain profile NOTARY_PROFILE (default brattoo-notary, shared
+# by the series). It stops before building if the profile is missing; create it once with
+# `xcrun notarytool store-credentials brattoo-notary` (Apple ID, team V783A2L763, app-specific password).
 # The Sparkle EdDSA key must already be in your login keychain (Sparkle's generate_keys); the
 # script stops if it isn't, because a new key would break updates for existing users.
 # CREATE_SPARKLE_KEY=1 creates one, for the very first release only.
@@ -46,6 +47,14 @@ done
 if (( PUBLISH + DRY_RUN + NOTARIZE_ONLY > 1 )); then echo "Choose one of --publish, --notarize-only and --dry-run."; exit 1; fi
 if [[ $PUBLISH == 1 && -n "$(git status --porcelain)" ]]; then
   echo "Commit or stash your changes before publishing."; exit 1
+fi
+NOTARY_PROFILE="${NOTARY_PROFILE:-brattoo-notary}"
+if [[ $DRY_RUN != 1 ]] && ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
+  echo "The notarytool profile \"$NOTARY_PROFILE\" isn't in this Mac's keychain (or Apple can't be reached), so the DMG can't be notarized."
+  echo "Create it once (Apple ID, team V783A2L763, an app-specific password from account.apple.com):"
+  echo "  xcrun notarytool store-credentials $NOTARY_PROFILE --apple-id <apple-id> --team-id V783A2L763"
+  echo "or pass NOTARY_PROFILE=<name> for another profile."
+  exit 1
 fi
 if [[ -n "$NEW_VERSION" ]]; then
   BUILD=$(awk '/CURRENT_PROJECT_VERSION/ {gsub(/"/,"",$2); print $2; exit}' project.yml)
@@ -151,12 +160,10 @@ ln -s /Applications "$STAGE/Applications"
 DMG="$OUT/Glimmer-$VERSION.dmg"
 hdiutil create -volname "Glimmer $VERSION" -srcfolder "$STAGE" -ov -format ULFO "$DMG" >/dev/null
 codesign --sign "Developer ID Application: Brattoo AB (V783A2L763)" --timestamp "$DMG"
-if [[ $DRY_RUN != 1 && -n "${NOTARY_PROFILE:-}" ]]; then
+if [[ $DRY_RUN != 1 ]]; then
   echo "▸ Notarizing the DMG (notarytool, profile $NOTARY_PROFILE)"
   xcrun notarytool submit "$DMG" --keychain-profile "$NOTARY_PROFILE" --wait
   xcrun stapler staple "$DMG"
-elif [[ $DRY_RUN != 1 ]]; then
-  echo "  (DMG not notarized: set NOTARY_PROFILE, or Gatekeeper rejects the DMG itself; the app inside is notarized)"
 fi
 
 if [[ "${SKIP_SPARKLE:-0}" == 1 ]]; then echo "✔ $DMG (no appcast)"; exit 0; fi
@@ -188,7 +195,7 @@ if [[ $DRY_RUN == 1 ]]; then
 else
   echo "▸ Gatekeeper"
   spctl --assess --type execute -vvv "$APP"
-  spctl --assess --type install -vvv "$DMG" || true
-  if [[ -n "${NOTARY_PROFILE:-}" ]]; then xcrun stapler validate "$DMG"; fi
+  spctl --assess --type install -vvv "$DMG"
+  xcrun stapler validate "$DMG"
   if [[ $NOTARIZE_ONLY == 1 ]]; then echo "  Notarize-only: nothing committed, tagged, pushed or uploaded; the appcast is local."; fi
 fi
