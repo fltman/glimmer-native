@@ -24,9 +24,14 @@ struct DocumentView: View {
             }
             .overlay(alignment: .topLeading) {
                 if !session.interfaceHidden {
-                    TitleChip(session: session)
-                        .padding(.leading, 84)  // clear of the window buttons
-                        .padding(.top, 10)
+                    GeometryReader { geo in
+                        // Never under the AI, Tools, Layers and Export chips at the top right.
+                        TitleChip(session: session)
+                            .frame(maxWidth: max(180, geo.size.width - 84 - 360), alignment: .leading)
+                            .padding(.leading, 84)  // clear of the window buttons
+                            .padding(.top, 10)
+                    }
+                    .allowsHitTesting(false)
                 }
             }
             .overlay(alignment: .top) {
@@ -324,6 +329,8 @@ private struct TitleChip: View {
                 Label("For \(link.requester) – ⌘S saves back", systemImage: "link")
                     .foregroundStyle(Theme.accent)
                     .lineLimit(1)
+                    .truncationMode(.tail)
+                    .layoutPriority(-1)  // shortens first when the window is narrow
                     .accessibilityLabel("Editing \(link.fileName) for \(link.requester). Command-S saves it back.")
             }
             if session.isExporting {

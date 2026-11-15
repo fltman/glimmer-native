@@ -135,6 +135,7 @@ final class DocumentOpener {
     func claimLink(for session: EditorSession) {
         guard let id = session.state.layers.first?.id, let link = pendingLinks.removeValue(forKey: id) else { return }
         session.linkedImage = link
+        session.setDocumentName(link.fileName)
         bringForward(session)
     }
 
@@ -152,27 +153,50 @@ final class DocumentOpener {
     /// The sibling app that sent the current "open" Apple event, by its bundle id, or nil
     /// for Finder and everything else (those images open as ordinary new documents).
     static func appleEventRequester() -> String? {
+        requester(of: NSAppleEventManager.shared().currentAppleEvent)
+    }
+
+    /// The process that sent `event`: its PID attribute, or the audit token (which a
+    /// sandboxed sender's events carry even when the PID is LaunchServices' or missing).
+    nonisolated static func senderApp(of event: NSAppleEventDescriptor) -> NSRunningApplication? {
+        var pids: [pid_t] = []
+        if let pid = event.attributeDescriptor(forKeyword: AEKeyword(keySenderPIDAttr))?.int32Value, pid > 0 { pids.append(pid) }
+        if let token = event.attributeDescriptor(forKeyword: AEKeyword(keySenderAuditTokenAttr))?.data,
+           token.count == MemoryLayout<audit_token_t>.size {
+            // audit_token_to_pid (libbsm) reads val[5]; read it directly rather than link libbsm.
+            let pid = token.withUnsafeBytes { pid_t(bitPattern: $0.load(as: audit_token_t.self).val.5) }
+            if pid > 0 { pids.append(pid) }
+        }
+        let apps = pids.compactMap { NSRunningApplication(processIdentifier: $0) }
+        openLog.notice("open event: pids \(pids.map(String.init).joined(separator: ","), privacy: .public) → \(apps.map { $0.bundleIdentifier ?? "?" }.joined(separator: ","), privacy: .public)")
+        // LaunchServices can be the sender when it starts the app; prefer a real app.
+        return apps.first { $0.bundleIdentifier != nil && $0.activationPolicy != .prohibited } ?? apps.first
+    }
+
+    nonisolated static func requester(of event: NSAppleEventDescriptor?) -> String? {
         #if DEBUG
         // Tests hand files over from a script: `-linkAnyOpen YES`, or `-linkAnyOpen Flimmer` to name the app.
         if let any = UserDefaults.standard.string(forKey: "linkAnyOpen"), !["", "NO", "0", "false"].contains(any) {
             return ["YES", "1", "true"].contains(any) ? "Test" : any
         }
         #endif
-        guard let event = NSAppleEventManager.shared().currentAppleEvent else {
+        guard let event else {
             openLog.notice("open: no current Apple event")
             return nil
         }
-        guard let pid = event.attributeDescriptor(forKeyword: AEKeyword(keySenderPIDAttr))?.int32Value,
-              let app = NSRunningApplication(processIdentifier: pid) else {
+        guard let app = senderApp(of: event) else {
             openLog.notice("open: the Apple event names no running sender")
             return nil
         }
-        openLog.notice("open from \(app.bundleIdentifier ?? "?", privacy: .public) (pid \(pid))")
+        openLog.notice("open from \(app.bundleIdentifier ?? "?", privacy: .public) (pid \(app.processIdentifier))")
         if let sibling = SiblingApp.allCases.first(where: { $0.bundleID == app.bundleIdentifier }) { return sibling.displayName }
         #if DEBUG
-        // Tests send from a helper app with its own bundle id: `-linkSenderIDs <id>[,<id>…]`.
+        // Tests send from helper apps with their own bundle ids: com.brattoo.glimmer.linktester…
+        // (a sandboxed helper can't pass launch arguments), or `-linkSenderIDs <id>[,<id>…]`.
         let extra = (UserDefaults.standard.string(forKey: "linkSenderIDs") ?? "").split(separator: ",").map(String.init)
-        if let id = app.bundleIdentifier, extra.contains(id) { return app.localizedName ?? id }
+        if let id = app.bundleIdentifier, extra.contains(id) || id.hasPrefix("com.brattoo.glimmer.linktester") {
+            return app.localizedName ?? id
+        }
         #endif
         return nil
     }
@@ -188,7 +212,10 @@ final class DocumentOpener {
             if let blank = AgentRegistry.shared.sessions.first(where: \.isUntouchedBlank) {
                 try blank.place(image, name: name)
                 blank.linkedImage = link
-                if link != nil { bringForward(blank) }
+                if let link {
+                    blank.setDocumentName(link.fileName)
+                    bringForward(blank)
+                }
                 NSDocumentController.shared.noteNewRecentDocumentURL(url)
                 return
             }
@@ -198,6 +225,7 @@ final class DocumentOpener {
             createDocument(DocumentState(width: image.width, height: image.height, layers: [layer]))
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
         } catch {
+            openLog.error("couldn't open \(url.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
             NSApp.presentError(error)
         }
     }
@@ -232,8 +260,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var didFinishLaunching = false
     private var deferredURLs: [URL] = []
     private var deferredRequester: String?
+    /// Started by a sibling app to edit a file: no restored windows, no Welcome or splash.
+    private var launchedForSibling = false
+
+    /// "Open documents" events, read here rather than in application(_:open:): on a cold launch
+    /// with windows to restore, AppKit delivers the files later, when the event (and so its sender)
+    /// is gone. Opening the files ourselves is fine: LaunchServices grants this process access.
+    @objc func handleOpenDocuments(_ event: NSAppleEventDescriptor, withReplyEvent reply: NSAppleEventDescriptor) {
+        guard let list = event.paramDescriptor(forKeyword: keyDirectObject) else { return }
+        let items = list.numberOfItems > 0 ? (1...list.numberOfItems).compactMap { list.atIndex($0) } : [list]
+        let urls = items.compactMap { $0.coerce(toDescriptorType: typeFileURL)?.fileURLValue ?? $0.fileURLValue }
+        let requester = DocumentOpener.requester(of: event)
+        openLog.notice("odoc: \(urls.count) file(s), requester \(requester ?? "none", privacy: .public), launching \(!self.didFinishLaunching)")
+        receive(urls, requester: requester)
+    }
+
+    private func receive(_ urls: [URL], requester: String?) {
+        guard !urls.isEmpty else { return }
+        guard didFinishLaunching else {
+            if requester != nil, deferredURLs.isEmpty {
+                // Started by a sibling to edit a file: no old windows, no Welcome or splash.
+                // Volatile, like the UI tests, so the user's own setting is untouched.
+                launchedForSibling = true
+                var args = UserDefaults.standard.volatileDomain(forName: UserDefaults.argumentDomain)
+                args["ApplePersistenceIgnoreState"] = true
+                UserDefaults.standard.setVolatileDomain(args, forName: UserDefaults.argumentDomain)
+            }
+            deferredURLs += urls
+            deferredRequester = deferredRequester ?? requester
+            return
+        }
+        MainActor.assumeIsolated { DocumentOpener.shared.open(urls, requester: requester) }
+    }
 
     func applicationWillFinishLaunching(_ notification: Notification) {
+        NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(handleOpenDocuments(_:withReplyEvent:)),
+                                                     forEventClass: AEEventClass(kCoreEventClass), andEventID: AEEventID(kAEOpenDocuments))
+        openLog.notice("will finish launching")
         // No system Open panel at launch: it only accepts .glimmer documents, and Glimmer
         // shows its Welcome window, Agent Access or its own Open panel instead.
         UserDefaults.standard.register(defaults: ["NSShowAppCentricOpenPanelInsteadOfUntitledFile": false])
@@ -248,6 +311,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         didFinishLaunching = true
+        openLog.notice("did finish launching; for a sibling: \(self.launchedForSibling)")
         // Undo snapshots a previous run left on disk (documents remove their own while the app runs).
         let temp = FileManager.default.temporaryDirectory
         for name in (try? FileManager.default.contentsOfDirectory(atPath: temp.path)) ?? [] where name.hasPrefix("undo-") {
@@ -270,7 +334,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The local API for agents (guide at /glimmer), and the splash that points agents to it.
         MainActor.assumeIsolated { AgentServer.shared.start() }
         let showsWelcome = !UserDefaults.standard.bool(forKey: WelcomeView.shownKey) && !CommandLine.arguments.contains("-skipWelcome")
-        if showsWelcome {
+        if launchedForSibling {
+            // Only the handed-over file: no Welcome, Agent Access or Open panel.
+        } else if showsWelcome {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 MainActor.assumeIsolated { DocumentOpener.shared.showWelcomeWindow() }
             }
@@ -312,14 +378,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        // Read the sender while the "open" Apple event is still the current one.
-        let requester = MainActor.assumeIsolated { DocumentOpener.appleEventRequester() }
-        guard didFinishLaunching else {
-            deferredURLs += urls
-            deferredRequester = deferredRequester ?? requester
-            return
-        }
-        MainActor.assumeIsolated { DocumentOpener.shared.open(urls, requester: requester) }
+        // Opens that don't come as an "open documents" event (handleOpenDocuments takes those).
+        receive(urls, requester: MainActor.assumeIsolated { DocumentOpener.appleEventRequester() })
     }
 
     /// Sits ahead of NSDocumentController in the responder chain.
