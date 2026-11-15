@@ -255,6 +255,15 @@ public enum AgentPlanner {
             AgentParam("name", "string", "The layer's name (not case-sensitive; the topmost match wins) or its id."),
         ]),
         AgentOp("new_layer", "Add an empty pixel layer.", [AgentParam("name", "string", "Optional layer name.")]),
+        AgentOp("add_waveform", "Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolour, move and style.", [
+            AgentParam("style", "string", "Optional. bars (default) or wave (one outline).", options: SiblingWaveform.Style.allCases.map(\.rawValue)),
+            AgentParam("bars", "number", "Optional. How many bars, 16–400 (default 64)."),
+            AgentParam("color", "string", "Optional. #RRGGBB; default the foreground colour."),
+            AgentParam("height", "number", "Optional. Share of the canvas height, 0.05–1 (default 0.3)."),
+            AgentParam("width", "number", "Optional. Share of the canvas width, 0.1–1 (default 0.8)."),
+            AgentParam("position", "string", "Optional. center (default), top or bottom.", options: ["center", "top", "bottom"]),
+            AgentParam("document", "string", "Optional. The Jämmer document id or name; default the one in front."),
+        ]),
         AgentOp("run_command", "Run an editor menu command.", [
             AgentParam("id", "string", "Command id.", options: runnableCommands.map(\.id.rawValue)),
         ]),
@@ -334,7 +343,7 @@ public enum AgentPlanner {
         for value in raw.steps ?? [] {
             guard let data = try? JSONEncoder().encode(value),
                   let step = try? JSONDecoder().decode(AgentStep.self, from: data) else { continue }
-            if op(named: step.op) == nil {
+            if op(named: step.op) == nil, SiblingApp.split(tool: step.op) == nil {
                 dropped.append(step.op)
             } else {
                 steps.append(step)
@@ -422,6 +431,7 @@ public enum AgentPlanner {
     - If the goal is ambiguous, contradictory or impossible with these tools, call no tools and ask a short clarifying question.
     - If the user is only chatting or asking about the editor, answer briefly without calling tools.
     - When a picture of the current image is attached, look at it: choose settings that suit this photo (its exposure, colours and subject) rather than generic ones.
+    - Tools whose names start with jammer_ or flimmer_ (when present) act in Glimmer's sibling apps Jämmer (audio) and Flimmer (video), which run separately. Use them only when the user asks for something in that app. To bring Jämmer's sound into the image, use add_waveform.
     """
 
     static let reviewPreamble = """
@@ -466,7 +476,8 @@ public enum AgentPlanner {
 
     /// The conversation: system prompt, earlier turns, then the goal with the editor's state.
     public static func toolMessages(goal: String, context: AgentContext,
-                                    history: [(user: String, reply: String)], image: Data? = nil) -> [[String: Any]] {
+                                    history: [(user: String, reply: String)], image: Data? = nil,
+                                    siblingContext: String? = nil) -> [[String: Any]] {
         var messages: [[String: Any]] = [["role": "system", "content": toolPreamble]]
         for turn in history.suffix(8) {
             messages.append(["role": "user", "content": turn.user])
@@ -477,7 +488,7 @@ public enum AgentPlanner {
         active layer “\(context.activeLayerName)” (\(context.activeLayerKind)), \
         \(context.hasSelection ? "there is a selection" : "no selection").]
         """
-        let text = state + "\n\n" + goal
+        let text = state + (siblingContext.map { "\n" + $0 } ?? "") + "\n\n" + goal
         if let image {
             messages.append(["role": "user", "content": [["type": "text", "text": text], imagePart(image)]])
         } else {
@@ -518,11 +529,12 @@ public enum AgentPlanner {
     }
 
     /// Turns tool calls into a plan, dropping unknown tools and calls with unreadable arguments.
-    public static func plan(from response: OpenRouterClient.ToolResponse) throws -> AgentPlan {
+    /// `extra` are sibling tool names offered with this request.
+    public static func plan(from response: OpenRouterClient.ToolResponse, extra: Set<String> = []) throws -> AgentPlan {
         var steps: [AgentStep] = []
         var dropped: [String] = []
         for call in response.toolCalls {
-            guard op(named: call.name) != nil else {
+            guard op(named: call.name) != nil || extra.contains(call.name) else {
                 dropped.append(call.name)
                 continue
             }
@@ -547,16 +559,20 @@ public enum AgentPlanner {
     }
 
     /// Asks the text model for a plan through tool calling.
+    /// `siblings` are the running sibling apps' operations, offered as extra tools, and
+    /// `siblingContext` names their open documents.
     public static func plan(goal: String, context: AgentContext, history: [(user: String, reply: String)],
-                            image: Data? = nil, client: OpenRouterClient, model: String,
+                            image: Data? = nil, siblings: [SiblingOperation] = [], siblingContext: String? = nil,
+                            client: OpenRouterClient, model: String,
                             onText: (@Sendable (String) -> Void)? = nil) async throws -> (AgentPlan, Double?) {
-        let messages = toolMessages(goal: goal, context: context, history: history, image: image)
+        let messages = toolMessages(goal: goal, context: context, history: history, image: image, siblingContext: siblingContext)
+        let tools = toolSchemas() + siblings.map(\.toolSchema)
         let response = if let onText {
-            try await client.toolCompletionStreaming(model: model, messages: messages, tools: toolSchemas(), onText: onText)
+            try await client.toolCompletionStreaming(model: model, messages: messages, tools: tools, onText: onText)
         } else {
-            try await client.toolCompletion(model: model, messages: messages, tools: toolSchemas())
+            try await client.toolCompletion(model: model, messages: messages, tools: tools)
         }
-        return (try plan(from: response), response.cost)
+        return (try plan(from: response, extra: Set(siblings.map(\.toolName))), response.cost)
     }
 }
 

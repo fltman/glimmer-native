@@ -133,7 +133,10 @@ extension AIController {
         planTask = Task { [weak self] in
             do {
                 let image = await Task.detached { metal.flatMap { Self.snapshotJPEG(state, metal: $0) } }.value
+                // Running siblings (Jämmer, Flimmer) add their operations as tools; found off the main thread.
+                let siblings = await SiblingClient.shared.toolbox()
                 let (plan, _) = try await AgentPlanner.plan(goal: goal, context: context, history: history, image: image,
+                                                            siblings: siblings.tools, siblingContext: siblings.context,
                                                             client: OpenRouterClient(apiKey: key), model: model) { text in
                     Task { @MainActor in
                         guard let self else { return }
@@ -209,6 +212,7 @@ extension AIController {
             } catch {
                 failed = true
                 stepStatus[step.id] = .failed((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+                noteSiblingFailure(error)
             }
         }
         return failed
@@ -441,6 +445,10 @@ extension AIController {
         case "new_layer":
             s.perform(.newLayer)
             if let name = step.string("name"), let id = s.state.activeLayerID { s.rename(id, to: name) }
+        case "add_waveform":
+            try await performAddWaveform(step)
+        case let op where SiblingApp.split(tool: op) != nil:
+            try await performSiblingTool(step)
         case "run_command":
             let id = CommandID(rawValue: step.string("id") ?? "")
             guard AgentPlanner.runnableCommands.contains(where: { $0.id == id }) else { throw StepError("Unknown command.") }

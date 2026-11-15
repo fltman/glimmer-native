@@ -129,6 +129,15 @@ struct DocumentView: View {
             } message: {
                 Text(session.errorMessage ?? "")
             }
+            .alert(Text("\(session.offlineSibling?.displayName ?? "") is not running."), isPresented: Binding(
+                get: { session.offlineSibling != nil },
+                set: { if !$0 { session.offlineSibling = nil } }
+            ), presenting: session.offlineSibling) { app in
+                Button("Open \(app.displayName)") { AIController.launch(app, session: session) }
+                Button("Cancel", role: .cancel) {}
+            } message: { app in
+                Text("The assistant needs \(app.displayName) for this. Open it, then ask again.")
+            }
             .preferredColorScheme(.dark)
             .tint(Theme.accent)
             .focusedSceneValue(\.editorSession, session)

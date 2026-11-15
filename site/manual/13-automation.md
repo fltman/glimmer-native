@@ -126,6 +126,15 @@ Each request with editing steps is one undo step, named **Agent Edit**.
 
 Glimmer's sibling apps, Flimmer and Jämmer, use the same API. Their assistants can ask Glimmer for the same editing steps an agent can use, open an image as a new document, and get the result back. When a sibling changes a document, Glimmer shows **Requested by Flimmer** (or Jämmer) over the canvas for a few seconds, so you know where the change came from. You can undo it like any other edit. The siblings get no extra rights: they follow the same rules as any agent, and paid steps run only if you already confirmed the cost in the app that asked.
 
-Glimmer can't yet ask Flimmer or Jämmer for anything itself.
+### Asking Jämmer and Flimmer
+
+Glimmer's assistant can ask its sibling apps for things too. When you ask the assistant something, Glimmer looks for Jämmer and Flimmer on your Mac. Every free operation a running sibling offers becomes something the assistant can use, alongside Glimmer's own steps. You don't set anything up. If a sibling isn't open, the assistant simply doesn't see its operations.
+
+- **A waveform for a cover.** Ask, for example, "make a waveform of the sound in Jämmer for the cover". Glimmer fetches the waveform of the document in Jämmer and draws it as a new shape layer: bars (the default) or one smooth outline, in the foreground colour, across the middle, top or bottom of the image. It's a solid colour layer with the waveform as its vector mask, so you can recolour it, move it, add a stroke or a shadow, and edit the shape with the pen. The whole request is one undo step.
+- **Changes in the other app.** Ask for something in Jämmer, such as "add a short echo to the episode in Jämmer", and the assistant asks Jämmer to do it. The change happens in Jämmer's window, where you can undo it. Nothing changes in Glimmer.
+
+When you name a document ("the episode called Interview"), the assistant uses that one; otherwise it picks the document in front. If the assistant needs Jämmer and it isn't running, Glimmer says **Jämmer is not running** and offers **Open Jämmer**. Glimmer never opens a sibling unless you click that button.
+
+Glimmer never asks a sibling for anything that costs money, and the siblings get no extra rights from being asked by Glimmer. Everything stays on your Mac.
 
 For the full API, see the [Agent guide](../agents.html).

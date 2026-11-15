@@ -35,6 +35,50 @@
         }
       }
     },
+    "%@ has no open document “%@”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ har inget öppet dokument som heter ”%2$@”."
+          }
+        }
+      }
+    },
+    "%@ has no open document.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ har inget öppet dokument."
+          }
+        }
+      }
+    },
+    "%@ is not running.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ körs inte."
+          }
+        }
+      }
+    },
+    "%@ isn't installed on this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ är inte installerat på den här Macen."
+          }
+        }
+      }
+    },
     "%@: %@": {
       "localizations": {
         "en": {
@@ -539,6 +583,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lägg till text"
+          }
+        }
+      }
+    },
+    "Add Waveform": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till vågform"
           }
         }
       }
@@ -5841,6 +5896,17 @@
         }
       }
     },
+    "Open %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna %@"
+          }
+        }
+      }
+    },
     "Open Image": {
       "localizations": {
         "sv": {
@@ -8616,12 +8682,34 @@
         }
       }
     },
+    "The assistant needs %@ for this. Open it, then ask again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistenten behöver %@ för det här. Öppna appen och fråga igen."
+          }
+        }
+      }
+    },
     "The image already looks balanced. Auto Enhance found nothing to change.": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Bilden ser redan balanserad ut. Autoförbättra hittade inget att ändra."
+          }
+        }
+      }
+    },
+    "The waveform couldn't be read.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vågformen gick inte att läsa."
           }
         }
       }
@@ -8966,6 +9054,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dela upp grupp"
+          }
+        }
+      }
+    },
+    "Unknown step “%@”.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okänt steg ”%@”."
           }
         }
       }
@@ -9605,6 +9704,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "vintagekänsla"
+          }
+        }
+      }
+    },
+    "“%@” costs money in the other app, so Glimmer doesn't ask for it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "”%@” kostar pengar i den andra appen, så Glimmer ber inte om det."
           }
         }
       }

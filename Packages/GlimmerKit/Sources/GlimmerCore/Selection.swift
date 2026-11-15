@@ -42,8 +42,14 @@ public struct Selection: Sendable {
     }
 
     /// A closed polygon (lasso), anti-aliased, even-odd filled.
-    public static func polygon(_ points: [SIMD2<Double>]) -> Selection {
-        guard points.count >= 3 else { return Selection() }
+    public static func polygon(_ points: [SIMD2<Double>]) -> Selection { polygons([points]) }
+
+    /// The union of several polygons (each filled even-odd), rasterized in one pass:
+    /// combining them one by one costs a full selection merge per polygon.
+    public static func polygons(_ list: [[SIMD2<Double>]]) -> Selection {
+        let list = list.filter { $0.count >= 3 }
+        guard !list.isEmpty else { return Selection() }
+        let points = list.flatMap { $0 }
         let xs = points.map(\.x), ys = points.map(\.y)
         let x0 = Int(xs.min()!.rounded(.down)) - 1, y0 = Int(ys.min()!.rounded(.down)) - 1
         let x1 = Int(xs.max()!.rounded(.up)) + 1, y1 = Int(ys.max()!.rounded(.up)) + 1
@@ -58,11 +64,13 @@ public struct Selection: Sendable {
         // Flip so rows run top-down like document space.
         ctx.translateBy(x: 0, y: CGFloat(h))
         ctx.scaleBy(x: 1, y: -1)
-        ctx.beginPath()
-        ctx.move(to: CGPoint(x: points[0].x - Double(x0), y: points[0].y - Double(y0)))
-        for p in points.dropFirst() { ctx.addLine(to: CGPoint(x: p.x - Double(x0), y: p.y - Double(y0))) }
-        ctx.closePath()
-        ctx.fillPath(using: .evenOdd)
+        for polygon in list {
+            ctx.beginPath()
+            ctx.move(to: CGPoint(x: polygon[0].x - Double(x0), y: polygon[0].y - Double(y0)))
+            for p in polygon.dropFirst() { ctx.addLine(to: CGPoint(x: p.x - Double(x0), y: p.y - Double(y0))) }
+            ctx.closePath()
+            ctx.fillPath(using: .evenOdd)
+        }
         guard let data = ctx.data else { return Selection() }
         let bytes = data.assumingMemoryBound(to: UInt8.self)
         let rect = PixelRect(x: x0, y: y0, width: w, height: h)

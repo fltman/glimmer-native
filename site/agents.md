@@ -300,6 +300,20 @@ Add an empty pixel layer.
 |---|---|---|
 | `name` | string | Optional layer name. |
 
+### `add_waveform`
+
+Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolour, move and style.
+
+| Param | Type | Description |
+|---|---|---|
+| `style` | string | Optional. bars (default) or wave (one outline). One of: `bars`, `wave` |
+| `bars` | number | Optional. How many bars, 16–400 (default 64). |
+| `color` | string | Optional. #RRGGBB; default the foreground colour. |
+| `height` | number | Optional. Share of the canvas height, 0.05–1 (default 0.3). |
+| `width` | number | Optional. Share of the canvas width, 0.1–1 (default 0.8). |
+| `position` | string | Optional. center (default), top or bottom. One of: `center`, `top`, `bottom` |
+| `document` | string | Optional. The Jämmer document id or name; default the one in front. |
+
 ### `run_command`
 
 Run an editor menu command.

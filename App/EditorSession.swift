@@ -177,6 +177,8 @@ final class EditorSession {
     var isExporting = false
     var errorMessage: String?
     var isBatchSheetPresented = false
+    /// A sibling app the assistant needed but that isn't running (offers to open it).
+    var offlineSibling: SiblingApp?
     /// A short message shown over the canvas for a few seconds.
     private(set) var toast: String?
     @ObservationIgnored private var toastTask: Task<Void, Never>?

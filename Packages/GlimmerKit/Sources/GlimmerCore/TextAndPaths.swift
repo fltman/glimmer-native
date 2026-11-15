@@ -398,12 +398,7 @@ public struct VectorPath: Codable, Identifiable, Hashable, Sendable {
     }
 
     /// The area enclosed by the path (each subpath filled; overlapping subpaths add).
-    public var asSelection: Selection {
-        let shapes = polygons().filter { $0.count > 2 }.map(Selection.polygon)
-        guard var s = shapes.first else { return Selection() }
-        for o in shapes.dropFirst() { s = s.combined(with: o, .add) }
-        return s
-    }
+    public var asSelection: Selection { Selection.polygons(polygons()) }
 
     /// Bounding box of all anchors and handles.
     public var controlBounds: CGRectLike? {
