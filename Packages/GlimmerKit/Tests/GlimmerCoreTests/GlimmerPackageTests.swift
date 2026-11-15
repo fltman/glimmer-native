@@ -257,6 +257,119 @@ func assertSamePixels(_ a: TileGrid, _ b: TileGrid) {
 
 import ImageIO
 
+@Suite struct UndoSpillStoreTests {
+    /// A layer of pixels that don't compress, so its file is well over the small-file limit.
+    static func noiseLayer(_ name: String, seed: UInt32) -> Layer {
+        var seed = seed
+        let texture = TileTexture.makeTexture()
+        var px = [Float16](repeating: 0, count: TileGeometry.size * TileGeometry.size * 4)
+        for j in px.indices { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
+        px.withUnsafeBytes {
+            texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size), mipmapLevel: 0,
+                            withBytes: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)
+        }
+        return Layer(name: name, content: .raster(TileGrid([TileCoord(0, 0): .texture(TileTexture(texture))])))
+    }
+
+    static func folder() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory.appending(path: "spill-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    static func blobNames(_ dir: URL) -> [String] {
+        ((try? FileManager.default.contentsOfDirectory(atPath: dir.appending(path: "blobs").path)) ?? []).sorted()
+    }
+
+    @Test func stepsThatShareALayerShareItsBytesAndABlobGoesWithItsLastStep() throws {
+        let dir = try Self.folder()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let shared = Self.noiseLayer("Shared", seed: 1), a = Self.noiseLayer("A", seed: 2), b = Self.noiseLayer("B", seed: 3)
+        var first: UndoSnapshot? = UndoSnapshot(DocumentState(width: 256, height: 256, layers: [shared, a], activeLayerID: a.id))
+        var second: UndoSnapshot? = UndoSnapshot(DocumentState(width: 256, height: 256, layers: [shared, b], activeLayerID: b.id))
+        try first?.moveToDisk(in: dir)
+        try second?.moveToDisk(in: dir)
+        // Three different layers in two documents of two layers each: three blobs, not four.
+        let blobs = Self.blobNames(dir)
+        #expect(blobs.count == 3, "\(blobs)")
+        let counts = blobs.map { UndoSpillStore.linkCount(dir.appending(path: "blobs").appending(path: $0)) }.sorted()
+        #expect(counts == [2, 2, 3], "the shared layer has three names: the store's and one per step; \(counts)")
+        // Both read back whole.
+        #expect(try first?.state().layers.map(\.name) == ["Shared", "A"])
+        #expect(try second?.state().layers.map(\.name) == ["Shared", "B"])
+        // The first step goes: its own layer's blob goes, the shared one stays for the second.
+        first = nil
+        #expect(Self.blobNames(dir).count == 2)
+        #expect(try second?.state().layers.map(\.name) == ["Shared", "B"], "the remaining step is untouched")
+        second = nil
+        #expect(Self.blobNames(dir).isEmpty, "a blob is removed when its last step is")
+        let left = (try FileManager.default.contentsOfDirectory(atPath: dir.path)).filter { $0 != "blobs" }
+        #expect(left.isEmpty, "\(left)")
+    }
+
+    @Test func whatAnInterruptedWriteLeftIsNeverReadAndIsSweptAway() throws {
+        let dir = try Self.folder()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let fm = FileManager.default
+        // A good step.
+        let layer = Self.noiseLayer("Kept", seed: 4)
+        let good = UndoSnapshot(DocumentState(width: 256, height: 256, layers: [layer], activeLayerID: layer.id))
+        try good.moveToDisk(in: dir)
+        // What a crash can leave: a blob written but not linked, a blob still under its temporary
+        // name, and a package that never got its final name.
+        let blobs = dir.appending(path: "blobs")
+        try Data(repeating: 7, count: 40_000).write(to: blobs.appending(path: String(repeating: "ab", count: 32)))
+        try Data(repeating: 8, count: 40_000).write(to: blobs.appending(path: String(repeating: "cd", count: 32) + ".tmp-X"))
+        let partial = dir.appending(path: "DEAD.glimmer.partial")
+        try fm.createDirectory(at: partial, withIntermediateDirectories: true)
+        try Data("{}".utf8).write(to: partial.appending(path: "manifest.json"))
+        // Nothing complete carries the unfinished package's name, so nothing reads it.
+        #expect(!fm.fileExists(atPath: dir.appending(path: "DEAD.glimmer").path))
+        UndoSpillStore.sweep(dir)
+        #expect(!fm.fileExists(atPath: partial.path))
+        #expect(Self.blobNames(dir).count == 1, "only the good step's blob is left: \(Self.blobNames(dir))")
+        #expect(try good.state().layers.first?.name == "Kept", "the good step still reads back")
+    }
+
+    @Test func leftoverFoldersOfDeadProcessesAreRemovedAtLaunch() throws {
+        let temp = try Self.folder()
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let fm = FileManager.default
+        let mine = temp.appending(path: UndoSpillStore.folderName())
+        let dead = temp.appending(path: UndoSpillStore.folderName(pid: 99_999_990))
+        let old = temp.appending(path: "undo-" + UUID().uuidString)       // the earlier naming, a week old
+        let recent = temp.appending(path: "undo-" + UUID().uuidString)    // the earlier naming, just made
+        let other = temp.appending(path: "keep-me")
+        for url in [mine, dead, old, recent, other] { try fm.createDirectory(at: url, withIntermediateDirectories: true) }
+        try fm.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -7 * 86_400)], ofItemAtPath: old.path)
+        #expect(UndoSpillStore.isRunning(ProcessInfo.processInfo.processIdentifier))
+        let removed = UndoSpillStore.removeOrphans(in: temp)
+        #expect(removed == 2)
+        #expect(fm.fileExists(atPath: mine.path) && fm.fileExists(atPath: recent.path) && fm.fileExists(atPath: other.path))
+        #expect(!fm.fileExists(atPath: dead.path) && !fm.fileExists(atPath: old.path))
+    }
+
+    @Test func aStoreOnAnotherVolumeIsRefusedCleanly() throws {
+        // Hard links can't cross volumes. This needs two volumes: the temporary folder and the
+        // repository's (they differ on the build Mac; where they don't, there is nothing to test).
+        let fm = FileManager.default
+        let here = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        let volume = { (u: URL) in (try? u.resourceValues(forKeys: [.volumeIdentifierKey]))?.volumeIdentifier as? NSObject }
+        guard let a = volume(fm.temporaryDirectory), let b = volume(here), !a.isEqual(b) else { return }
+        let store = try Self.folder()
+        let elsewhere = here.appending(path: ".spill-volume-test-\(UUID().uuidString)")
+        try fm.createDirectory(at: elsewhere, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: store); try? fm.removeItem(at: elsewhere) }
+        let layer = Self.noiseLayer("L", seed: 5)
+        let wrapper = try GlimmerPackage.fileWrapper(for: DocumentState(width: 256, height: 256, layers: [layer], activeLayerID: layer.id))
+        #expect(throws: UndoSpillStore.SpillError.differentVolume) {
+            _ = try UndoSpillStore.write(wrapper, to: elsewhere.appending(path: "step.glimmer"), store: store)
+        }
+        #expect(try fm.contentsOfDirectory(atPath: elsewhere.path).isEmpty, "nothing is left where the step would have been")
+        #expect(Self.blobNames(store).isEmpty, "and no blob stays without a step")
+    }
+}
+
 @Suite struct UndoSnapshotTests {
     @Test func aFullDiskMakesTheHistoryShorterNotTheDiskFuller() {
         let gb = 1_073_741_824
@@ -398,7 +511,7 @@ import ImageIO
         #expect(snapshot?.isOnDisk == false)
         try snapshot?.moveToDisk(in: dir)
         #expect(snapshot?.isOnDisk == true)
-        let files = try FileManager.default.contentsOfDirectory(atPath: dir.path)
+        let files = try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0 != "blobs" }
         #expect(files.count == 1)
 
         let back = try #require(try snapshot?.state())
@@ -410,6 +523,7 @@ import ImageIO
 
         // Releasing the snapshot removes its file.
         snapshot = nil
-        #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path).isEmpty)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0 != "blobs" }.isEmpty)
+        #expect(((try? FileManager.default.contentsOfDirectory(atPath: dir.appending(path: "blobs").path)) ?? []).isEmpty)
     }
 }

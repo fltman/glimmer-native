@@ -300,6 +300,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSAppleEventManager.shared().setEventHandler(self, andSelector: #selector(handleOpenDocuments(_:withReplyEvent:)),
                                                      forEventClass: AEEventClass(kCoreEventClass), andEventID: AEEventID(kAEOpenDocuments))
         openLog.notice("will finish launching")
+        // Undo steps a crashed or killed Glimmer left on disk are only wasted space.
+        let orphans = UndoSpillStore.removeOrphans(in: FileManager.default.temporaryDirectory)
+        if orphans > 0 { openLog.notice("removed \(orphans) leftover undo folder(s)") }
         // No system Open panel at launch: it only accepts .glimmer documents, and Glimmer
         // shows its Welcome window, Agent Access or its own Open panel instead.
         UserDefaults.standard.register(defaults: ["NSShowAppCentricOpenPanelInsteadOfUntitledFile": false])

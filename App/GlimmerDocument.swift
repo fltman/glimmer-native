@@ -52,7 +52,7 @@ final class GlimmerDocument: Document {
     @ObservationIgnored private var spilling: Set<ObjectIdentifier> = []
     @ObservationIgnored private let spillCache = EncodedLayerCache()
     @ObservationIgnored private let spillDirectory =
-        FileManager.default.temporaryDirectory.appending(path: "undo-\(UUID().uuidString)")
+        FileManager.default.temporaryDirectory.appending(path: UndoSpillStore.folderName())
     /// How many undo steps currently live on disk (shown in the History panel).
     private(set) var stepsOnDisk = 0
     /// Set when the disk was too full to keep the whole undo history: what happened, for the user.
