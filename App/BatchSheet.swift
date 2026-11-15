@@ -1,5 +1,6 @@
 import AppKit
 import GlimmerAI
+import ImageIO
 import GlimmerCore
 import GlimmerRender
 import SwiftUI
@@ -65,6 +66,42 @@ final class BatchRunner {
 
     func cancel() { task?.cancel() }
 
+    // MARK: Rating
+
+    private(set) var ratings: [URL: PhotoQuality.Rating] = [:]
+    private(set) var isRating = false
+    private(set) var rated = 0
+
+    /// Rates the photos on this Mac (aesthetics and sharpness), one at a time.
+    func rate(_ files: [URL]) {
+        guard !isRating, !isRunning else { return }
+        let todo = files.filter { ratings[$0] == nil }
+        guard !todo.isEmpty else { return }
+        isRating = true
+        rated = 0
+        task = Task { [weak self] in
+            for url in todo {
+                if Task.isCancelled { break }
+                let rating = await Task.detached(priority: .userInitiated) { Self.thumbnail(url).map(PhotoQuality.rate) }.value
+                guard let self else { return }
+                if let rating { self.ratings[url] = rating }
+                self.rated += 1
+            }
+            self?.isRating = false
+        }
+    }
+
+    /// A ~1024-pixel copy straight from the file (much faster than decoding it all).
+    nonisolated static func thumbnail(_ url: URL) -> CGImage? {
+        let access = url.startAccessingSecurityScopedResource()
+        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, [
+            kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 1024,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+        ] as CFDictionary)
+    }
+
     nonisolated static func process(_ url: URL, recipe: BatchRecipe, action: SavedAction?, options: ExportOptions,
                                     destination: URL, suffix: String) throws -> URL {
         let access = url.startAccessingSecurityScopedResource()
@@ -129,6 +166,7 @@ struct BatchSheet: View {
                         Spacer()
                         Text("\(files.count) images").foregroundStyle(.secondary).monospacedDigit()
                     }
+                    if !files.isEmpty { ratingBar }
                 } header: {
                     Text("Images")
                 }
@@ -215,7 +253,7 @@ struct BatchSheet: View {
                     runner.start(files: files, recipe: recipe, options: options, destination: destination, suffix: suffix)
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(files.isEmpty || destination == nil || runner.isRunning)
+                .disabled(files.isEmpty || destination == nil || runner.isRunning || runner.isRating)
             }
             .padding()
         }
@@ -236,6 +274,13 @@ struct BatchSheet: View {
                         HStack {
                             Text(url.lastPathComponent).lineLimit(1).truncationMode(.middle)
                             Spacer()
+                            if let r = runner.ratings[url] {
+                                if r.isBlurry { badge("Blurry", .orange) }
+                                if r.isUtility { badge("Document", .secondary) }
+                                Text(String(repeating: "★", count: r.stars) + String(repeating: "☆", count: 5 - r.stars))
+                                    .font(.caption).foregroundStyle(Theme.accent)
+                                    .help("Aesthetics \(String(format: "%.2f", r.aesthetics)), sharpness \(Int(r.sharpness * 100)) %")
+                            }
                             if let o = runner.outcomes.first(where: { $0.source == url }) {
                                 Image(systemName: o.error == nil ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                                     .foregroundStyle(o.error == nil ? .green : .orange)
@@ -252,6 +297,51 @@ struct BatchSheet: View {
             add(urls)
             return true
         } isTargeted: { isTargeted = $0 }
+    }
+
+    private func badge(_ text: LocalizedStringKey, _ color: Color) -> some View {
+        Text(text).font(.caption2.weight(.semibold)).foregroundStyle(color)
+            .padding(.horizontal, 5).padding(.vertical, 1)
+            .overlay(Capsule().strokeBorder(color.opacity(0.6)))
+    }
+
+    /// Rate the photos, then sort them or keep only the best.
+    @ViewBuilder private var ratingBar: some View {
+        let ratedAll = files.allSatisfy { runner.ratings[$0] != nil }
+        HStack {
+            if runner.isRating {
+                ProgressView(value: Double(runner.rated), total: Double(max(files.count, 1)))
+                    .frame(width: 120)
+                Text("Rating…").foregroundStyle(.secondary)
+            } else if !ratedAll {
+                Button("Rate Photos", systemImage: "star.leadinghalf.filled") { runner.rate(files) }
+                    .help("Scores every photo for aesthetics and sharpness on this Mac, so you can keep the best")
+            } else {
+                Button("Best First", systemImage: "arrow.up.arrow.down") {
+                    files.sort { (runner.ratings[$0]?.score ?? -9) > (runner.ratings[$1]?.score ?? -9) }
+                }
+                Menu("Keep") {
+                    Button("Without blurry photos") { files.removeAll { runner.ratings[$0]?.isBlurry == true } }
+                    Button("Without documents and screenshots") { files.removeAll { runner.ratings[$0]?.isUtility == true } }
+                    Divider()
+                    Button("4 stars and up") { files.removeAll { (runner.ratings[$0]?.stars ?? 0) < 4 } }
+                    Button("Best half") { keepBest(fraction: 0.5) }
+                    Button("Best quarter") { keepBest(fraction: 0.25) }
+                }
+                .fixedSize()
+            }
+            Spacer()
+            if ratedAll, !runner.isRating {
+                let blurry = files.filter { runner.ratings[$0]?.isBlurry == true }.count
+                if blurry > 0 { Text("\(blurry) blurry").foregroundStyle(.orange).font(.callout) }
+            }
+        }
+    }
+
+    private func keepBest(fraction: Double) {
+        let keep = max(1, Int((Double(files.count) * fraction).rounded(.up)))
+        let best = Set(files.sorted { (runner.ratings[$0]?.score ?? -9) > (runner.ratings[$1]?.score ?? -9) }.prefix(keep))
+        files.removeAll { !best.contains($0) }
     }
 
     private func addFiles() {

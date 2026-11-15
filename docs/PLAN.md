@@ -423,6 +423,13 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
   - **Smarta lagernamn:** placerade och inklistrade bilder med kamera- eller urklippsnamn ("IMG_1234", "Pasted Layer") får namn efter innehållet från Visions klassificering.
   - **Assistenten** har fått stegen `auto_color` och `select_people`, och omnibaren föreslår Select People, Image Text to Layers och Auto Color när bilden har det.
   - **Lärdom:** den snabba textigenkänningen missar stiliserad text som affischrubriker. Analysen använder den noggranna nivån med en minsta texthöjd, vilket fortfarande tar under en sekund.
+- **Tredje smarta omgången (2026-11-15):**
+  - **Select Sky:** heuristiken (långt bort enligt djupkartan, jämn, ljusare än det som står mot himlen, färgkontinuitet, odlad från överkanten) väljer bara *punkter*: positiva djupt inne i himlen och negativa där utseendet ändras. Segment Anything (samma kodning som Magic Select) ritar sedan konturen. Regionväxning ensam tog med disiga, solbelysta berg. Med SAM blir bergskammar, brokablar och text rätt även på en disig bild.
+  - **Straighten Document:** Visions dokumentsegmentering (med rektangeldetektering som reserv) hittar dokument, skylt, whiteboard eller skärm. CIPerspectiveCorrection rätar upp den i linjärt flyttal, och resultatet öppnas som ett nytt dokument så att originalet lämnas orört.
+  - **Porträttbeskärning:** Suggest Crop ramar in huvud och axlar med ansiktena kring 38 % av höjden, och håller ihop grupper.
+  - **Betygsättning i Batch:** Apples estetikbedömning (`VNCalculateImageAestheticsScoresRequest`, inklusive "utility" för dokument och skärmdumpar) plus ett eget skärpemått. Måttet är Laplace-variansen relativt regionens kontrast i den skarpaste av 4×4 regioner, så en skarp huvudperson mot suddig bakgrund räknas som skarp och en disig bild inte som suddig. Grafik med färre än 200 färger kallas aldrig suddig. Listan går att sortera med bäst först och gallra utan oskarpa bilder, utan dokument, med 4 stjärnor och uppåt, eller med bästa hälften eller fjärdedelen. Miniatyrer läses direkt ur filen.
+  - **Lärdom (fel hittat):** SAM:s maskavkodare tar högst 15 prompt-tokens, alltså 14 punkter plus utfyllnad. Magic Select gav fel vid den femtonde klickpunkten och behåller nu de 14 senaste.
+  - **Lärdom (prestanda):** Select Sky tar runt 0,7 sekunder varmt på en 4K-bild. Första körningen efter start kostar cirka 2 sekunder extra för att Core ML läser in SAM:s prompt- och maskmodeller. Djup och punkter räknas på en kopia med 1 024 pixlar.
 
 ## 4. Teststrategi
 

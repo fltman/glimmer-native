@@ -36,6 +36,16 @@
     },
     "%lld": {},
     "%lld %%": {},
+    "%lld blurry": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld oskarpa"
+          }
+        }
+      }
+    },
     "%lld by %lld pixels, %lld layers, zoom %lld percent": {
       "localizations": {
         "en": {
@@ -181,6 +191,16 @@
       }
     },
     "3:2": {},
+    "4 stars and up": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 stjärnor och uppåt"
+          }
+        }
+      }
+    },
     "4:3": {},
     "4:5": {},
     "4×": {},
@@ -528,6 +548,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "Justeringar"
+          }
+        }
+      }
+    },
+    "Aesthetics %@, sharpness %lld %%": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Aesthetics %1$@, sharpness %2$lld %%"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estetik %@, skärpa %lld %%"
           }
         }
       }
@@ -924,6 +960,36 @@
         }
       }
     },
+    "Best First": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bäst först"
+          }
+        }
+      }
+    },
+    "Best half": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bästa hälften"
+          }
+        }
+      }
+    },
+    "Best quarter": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bästa fjärdedelen"
+          }
+        }
+      }
+    },
     "Bit depth": {
       "localizations": {
         "sv": {
@@ -1054,6 +1120,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Oskärpeverktyg"
+          }
+        }
+      }
+    },
+    "Blurry": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oskarp"
           }
         }
       }
@@ -3168,6 +3244,16 @@
         }
       }
     },
+    "Flattens a document, sign or screen seen at an angle into a new document. Runs on this Mac, free.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rätar upp ett dokument, en skylt eller en skärm som fotograferats snett till ett nytt dokument. Körs på den här Macen, gratis."
+          }
+        }
+      }
+    },
     "Flip Horizontal": {
       "extractionState": "manual",
       "localizations": {
@@ -3550,6 +3636,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Glimmer hittar den bästa kvalitet som ryms och skalar bara ner bilden om det behövs."
+          }
+        }
+      }
+    },
+    "Glimmer found no document, sign or screen to straighten.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer hittade inget dokument, ingen skylt och ingen skärm att räta upp."
+          }
+        }
+      }
+    },
+    "Glimmer found no sky along the top of the image.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer hittade ingen himmel längs bildens överkant."
           }
         }
       }
@@ -4111,6 +4217,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fråga bara"
+          }
+        }
+      }
+    },
+    "Keep": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behåll"
           }
         }
       }
@@ -5985,6 +6101,26 @@
         }
       }
     },
+    "Rate Photos": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betygsätt foton"
+          }
+        }
+      }
+    },
+    "Rating…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betygsätter…"
+          }
+        }
+      }
+    },
     "Real-ESRGAN (on this Mac)": {
       "localizations": {
         "sv": {
@@ -6806,6 +6942,16 @@
         }
       }
     },
+    "Scores every photo for aesthetics and sharpness on this Mac, so you can keep the best": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedömer varje fotos estetik och skärpa på den här Macen, så att du kan behålla de bästa"
+          }
+        }
+      }
+    },
     "Screen": {
       "extractionState": "manual",
       "localizations": {
@@ -6901,6 +7047,16 @@
         }
       }
     },
+    "Select Sky": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera himmel"
+          }
+        }
+      }
+    },
     "Select Subject": {
       "localizations": {
         "sv": {
@@ -6977,6 +7133,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Markerar huvudmotivet. Körs på den här Macen, gratis."
+          }
+        }
+      }
+    },
+    "Selects the sky with the depth map and Segment Anything. Runs on this Mac, free.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markerar himlen med djupkartan och Segment Anything. Körs på den här Macen, gratis."
           }
         }
       }
@@ -7240,6 +7406,17 @@
         }
       }
     },
+    "Sky": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Himmel"
+          }
+        }
+      }
+    },
     "Small": {
       "localizations": {
         "sv": {
@@ -7460,12 +7637,32 @@
         }
       }
     },
+    "Straighten Document": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Räta upp dokument"
+          }
+        }
+      }
+    },
     "Straighten a tilted horizon (on-device)": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Räta upp en lutande horisont (på enheten)"
+          }
+        }
+      }
+    },
+    "Straightened": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uppriktad"
           }
         }
       }
@@ -8392,6 +8589,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bredd och höjd måste vara mellan 1 och %lld pixlar."
+          }
+        }
+      }
+    },
+    "Without blurry photos": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utan oskarpa foton"
+          }
+        }
+      }
+    },
+    "Without documents and screenshots": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utan dokument och skärmdumpar"
           }
         }
       }

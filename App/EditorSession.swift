@@ -425,7 +425,8 @@ final class EditorSession {
             return !layer.isRaster && !layer.isAdjustment
         case .export, .exportPNG:
             return !isExporting
-        case .autoEnhance, .autoStraighten, .suggestCrop, .autoColor, .selectPeople, .copyImageText, .textToLayers:
+        case .autoEnhance, .autoStraighten, .suggestCrop, .autoColor, .selectPeople, .copyImageText, .textToLayers,
+             .selectSky, .straightenDocument:
             return !isUntouchedBlank
         case .exportForWeb:
             return !isExporting
@@ -498,6 +499,8 @@ final class EditorSession {
         case .selectPeople: ai.selectPeople()
         case .copyImageText: ai.copyImageText()
         case .textToLayers: ai.textToLayers()
+        case .selectSky: ai.selectSky()
+        case .straightenDocument: ai.straightenDocument()
         case .exportForWeb:
             var web = ExportOptions.web
             web.colorSpace = .sRGB

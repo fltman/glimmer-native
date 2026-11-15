@@ -76,7 +76,14 @@ public actor MagicSelector {
     }
 
     /// The best of SAM's three candidate masks for `points`, at image size (0...255).
+    /// The mask decoder takes at most 15 prompt tokens (the points plus one padding token).
+    public static let maxPoints = 14
+
+    /// Points beyond `maxPoints`: the latest ones count (later clicks refine earlier ones).
+    static func usable(_ points: [Point]) -> [Point] { Array(points.suffix(maxPoints)) }
+
     public func segment(_ points: [Point]) async throws -> GrayImage {
+        let points = Self.usable(points)
         guard let encoded, !points.isEmpty else { throw CocoaError(.featureUnsupported) }
         let promptEncoder = try await store.load(OnDeviceModel.segmentAnything.packages[1], of: .segmentAnything)
         let decoder = try await store.load(OnDeviceModel.segmentAnything.packages[2], of: .segmentAnything)

@@ -15,6 +15,8 @@ public enum SmartAnalysis {
         /// nil when there is no clear horizon or it is already level.
         public var horizonDegrees: Double?
         public var faceCount: Int
+        /// Faces, normalised (0…1, y down).
+        public var faceRects: [CGRect] = []
         /// Whether the image shows readable text.
         public var hasText: Bool
         /// Union of the salient objects, normalised (0…1, y down).
@@ -79,7 +81,10 @@ public enum SmartAnalysis {
             let union = objects.map(\.boundingBox).reduce(CGRect.null) { $0.union($1) }
             result.salientRect = CGRect(x: union.minX, y: 1 - union.maxY, width: union.width, height: union.height)
         }
-        result.faceCount = faces.results?.count ?? 0
+        result.faceRects = (faces.results ?? []).map { f in
+            CGRect(x: f.boundingBox.minX, y: 1 - f.boundingBox.maxY, width: f.boundingBox.width, height: f.boundingBox.height)
+        }
+        result.faceCount = result.faceRects.count
         let words = (text.results ?? []).filter { ($0.topCandidates(1).first?.confidence ?? 0) > 0.5 }
         result.hasText = words.reduce(0) { $0 + ($1.topCandidates(1).first?.string.count ?? 0) } >= 6
         return result
@@ -181,9 +186,14 @@ public enum SmartAnalysis {
     /// With an aspect that differs from the image's, the largest box of that
     /// aspect slides over the subject; without one, the box tightens around it
     /// at the image's own proportions. nil when the whole image is the best crop.
-    public static func suggestedCrop(salient: CGRect, imageWidth: Int, imageHeight: Int, aspect: Double?) -> CGRect? {
+    /// With `faces`, the crop frames the people instead: heads and shoulders,
+    /// with the faces near the upper third.
+    public static func suggestedCrop(salient: CGRect, imageWidth: Int, imageHeight: Int, aspect: Double?,
+                                     faces: [CGRect] = []) -> CGRect? {
         let w = Double(imageWidth), h = Double(imageHeight)
-        guard w > 0, h > 0, salient.width > 0, salient.height > 0 else { return nil }
+        guard w > 0, h > 0 else { return nil }
+        if !faces.isEmpty { return portraitCrop(faces: faces, width: w, height: h, aspect: aspect) }
+        guard salient.width > 0, salient.height > 0 else { return nil }
         let s = CGRect(x: salient.minX * w, y: salient.minY * h, width: salient.width * w, height: salient.height * h)
         let imageAspect = w / h
         let a = aspect ?? imageAspect
@@ -201,6 +211,25 @@ public enum SmartAnalysis {
         if s.width < bw * 0.5 { cx += (s.midX < w / 2 ? 1 : -1) * bw / 6 * 0.5 }
         if s.height < bh * 0.5 { cy += bh / 6 * 0.5 }  // a little headroom
         let x = min(max(cx - bw / 2, 0), w - bw), y = min(max(cy - bh / 2, 0), h - bh)
+        return CGRect(x: x.rounded(), y: y.rounded(), width: bw.rounded(), height: bh.rounded())
+    }
+
+    static func portraitCrop(faces: [CGRect], width w: Double, height h: Double, aspect: Double?) -> CGRect? {
+        let f = faces.map { CGRect(x: $0.minX * w, y: $0.minY * h, width: $0.width * w, height: $0.height * h) }
+            .reduce(CGRect.null) { $0.union($1) }
+        let fh = faces.map { $0.height * h }.max() ?? f.height, fw = faces.map { $0.width * w }.max() ?? f.width
+        // Head and shoulders around the faces.
+        let want = CGRect(x: f.minX - fw * 0.9, y: f.minY - fh * 0.6, width: f.width + fw * 1.8, height: f.height + fh * 2.4)
+        let a = aspect ?? (w / h)
+        var bw = max(want.width, want.height * a), bh = bw / a
+        // Never larger than the image.
+        let k = min(1, w / bw, h / bh)
+        bw *= k
+        bh *= k
+        guard bw * bh < w * h * 0.92 || aspect != nil else { return nil }
+        // Faces' centre at 38 % of the box height, horizontally centred.
+        let cx = f.midX, top = f.midY - bh * 0.38
+        let x = min(max(cx - bw / 2, 0), w - bw), y = min(max(top, 0), h - bh)
         return CGRect(x: x.rounded(), y: y.rounded(), width: bw.rounded(), height: bh.rounded())
     }
 

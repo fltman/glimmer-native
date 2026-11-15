@@ -90,9 +90,9 @@ extension AIController {
             let s = self.session
             if s.tool != .crop { s.tool = .crop }
             guard var c = s.cropSession else { return }
-            guard let salient = insights.salientRect,
-                  let r = SmartAnalysis.suggestedCrop(salient: salient, imageWidth: s.state.width,
-                                                      imageHeight: s.state.height, aspect: c.aspect) else {
+            guard let r = SmartAnalysis.suggestedCrop(salient: insights.salientRect ?? .zero, imageWidth: s.state.width,
+                                                      imageHeight: s.state.height, aspect: c.aspect,
+                                                      faces: insights.faceRects) else {
                 s.showToast(String(localized: "The whole image already frames the subject well."))
                 return
             }
@@ -151,6 +151,80 @@ extension AIController {
             return Selection.from(mask: mask.values.map { $0 / 255 }, rect: snapshot.bounds)
         }.value
         session.document.edit("Select People", undoManager: session.undoManager) { $0.selection = selection }
+    }
+
+    func selectSky() {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                if try await !self.performSelectSky() {
+                    self.session.showToast(String(localized: "Glimmer found no sky along the top of the image."))
+                }
+            } catch {
+                self.session.report(error)
+            }
+        }
+    }
+
+    /// Select Sky: the depth map and colour continuity find the sky reaching
+    /// the top edge; Segment Anything then draws its exact outline (ridges,
+    /// cables, branches). The image encoding is shared with Magic Select.
+    @discardableResult
+    func performSelectSky() async throws -> Bool {
+        let snapshot = session.state
+        let metal = try self.metal
+        let key = documentKey(snapshot)
+        let selector = selector
+        isSegmenting = true
+        defer { isSegmenting = false }
+        let selection = try await Task.detached(priority: .userInitiated) { () -> Selection? in
+            let image = try ImageExporter.flattenedSRGB(snapshot, context: metal)
+            // Depth and prompts on a small copy (both models work far below 4K anyway).
+            let small = EditorSession.downscaled(image, maxSide: 1024) ?? image
+            let depth = try await DepthEstimator.depth(of: small)
+            let k = Double(image.width) / Double(small.width)
+            guard let points = SkySelection.prompts(image: small, depth: depth)?.map({
+                MagicSelector.Point($0.location * k, positive: $0.positive)
+            }) else { return nil }
+            try await selector.prepare(image, key: key)
+            let mask = try await selector.segment(points)
+            return Selection.from(mask: mask.values.map { $0 / 255 }, rect: snapshot.bounds)
+        }.value
+        guard let selection else { return false }
+        session.document.edit("Select Sky", undoManager: session.undoManager) { $0.selection = selection }
+        return true
+    }
+
+    /// Straighten Document: finds a document, sign, whiteboard or screen and
+    /// opens it flattened to a rectangle as a new document (this one is left alone).
+    func straightenDocument() {
+        let snapshot = session.state
+        guard let metal = try? self.metal else { return }
+        Task { [weak self] in
+            let result = await Task.detached(priority: .userInitiated) { () -> Result<CGImage?, Error> in
+                Result {
+                    let full = try ImageExporter.flatten(snapshot, context: metal)
+                    let probe = try ImageExporter.flattenedSRGB(snapshot, context: metal)
+                    guard let quad = DocumentDetection.quad(in: probe) else { return nil }
+                    return DocumentDetection.corrected(full, quad: quad)
+                }
+            }.value
+            guard let self else { return }
+            switch result {
+            case .success(let image?):
+                do {
+                    let tiles = try ImageImporter.tiles(from: image)
+                    let layer = Layer(name: String(localized: "Straightened"), content: .raster(tiles))
+                    DocumentOpener.shared.createDocument(DocumentState(width: image.width, height: image.height, layers: [layer]))
+                } catch {
+                    self.session.report(error)
+                }
+            case .success(nil):
+                self.session.showToast(String(localized: "Glimmer found no document, sign or screen to straighten."))
+            case .failure(let error):
+                self.session.report(error)
+            }
+        }
     }
 
     /// Reads the text in the image (Live Text, on this Mac).
@@ -219,9 +293,8 @@ extension AIController {
             ids.append(.aiLensBlur)
         }
         if insights.hasText { ids.append(.textToLayers) }
-        if let salient = insights.salientRect,
-           SmartAnalysis.suggestedCrop(salient: salient, imageWidth: session.state.width, imageHeight: session.state.height,
-                                       aspect: nil) != nil {
+        if SmartAnalysis.suggestedCrop(salient: insights.salientRect ?? .zero, imageWidth: session.state.width,
+                                       imageHeight: session.state.height, aspect: nil, faces: insights.faceRects) != nil {
             ids.append(.suggestCrop)
         }
         if insights.enhance.isNoticeable, !ids.contains(.autoEnhance) { ids.append(.autoEnhance) }

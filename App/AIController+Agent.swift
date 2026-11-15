@@ -363,6 +363,8 @@ extension AIController {
             try await performAutoColor()
         case "select_people":
             try await performSelectPeople()
+        case "select_sky":
+            guard try await performSelectSky() else { throw StepError("No sky found along the top of the image.") }
         case "remove_background":
             try ensurePixelLayer()
             removeBackground()

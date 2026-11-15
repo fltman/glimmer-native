@@ -73,6 +73,10 @@ struct AIPanel: View {
                                 .help("Selects the main subject. Runs on this Mac, free.")
                             Button("Select People", systemImage: "person.2") { ai.selectPeople() }
                                 .help("Selects every person, with finer edges than Select Subject. Runs on this Mac, free.")
+                            Button("Select Sky", systemImage: "cloud.sun") { ai.selectSky() }
+                                .help("Selects the sky with the depth map and Segment Anything. Runs on this Mac, free.")
+                            Button("Straighten Document", systemImage: "doc.viewfinder") { ai.straightenDocument() }
+                                .help("Flattens a document, sign or screen seen at an angle into a new document. Runs on this Mac, free.")
                             Button("Image Text to Layers", systemImage: "text.viewfinder") { ai.textToLayers() }
                                 .help("Turns the text in the image into editable text layers. Runs on this Mac, free.")
                             Button("Magic Select Tool (A)", systemImage: "wand.and.sparkles") { session.tool = .magicSelect }
@@ -326,6 +330,7 @@ private struct PlanView: View {
         case "auto_enhance": "Auto Enhance"
         case "auto_color": "Auto Color"
         case "select_people": "Select people"
+        case "select_sky": "Select sky"
         case "remove_background": "Remove background"
         case "select_subject": "Select subject"
         case "inpaint_selection": step.string("mode") == "remove" ? "Remove selected object" : "Fill selection: \(step.string("prompt") ?? "")"

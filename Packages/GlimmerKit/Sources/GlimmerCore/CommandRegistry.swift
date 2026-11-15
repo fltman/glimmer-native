@@ -121,6 +121,8 @@ extension CommandID {
     public static let copyImageText: CommandID = "edit.copyImageText"
     public static let textToLayers: CommandID = "layer.textToLayers"
     public static let exportForWeb: CommandID = "file.exportForWeb"
+    public static let selectSky: CommandID = "select.sky"
+    public static let straightenDocument: CommandID = "image.straightenDocument"
     public static let toggleRulers: CommandID = "view.rulers"
     public static let toggleGrid: CommandID = "view.grid"
     public static let toggleSnap: CommandID = "view.snap"
@@ -291,6 +293,8 @@ public struct CommandRegistry: Sendable {
                           keywords: ["select subject", "person", "object", "ai"]),
         CommandDescriptor(.selectPeople, "People", category: .select,
                           keywords: ["select people", "person", "persons", "human", "portrait", "figure"]),
+        CommandDescriptor(.selectSky, "Sky", category: .select,
+                          keywords: ["select sky", "sky replacement", "clouds", "heaven", "himmel"]),
         CommandDescriptor(.featherSelection, "Feather…", category: .select, keywords: ["soften", "blur selection"]),
         CommandDescriptor(.growSelection, "Expand…", category: .select, keywords: ["grow", "dilate"]),
         CommandDescriptor(.shrinkSelection, "Contract…", category: .select, keywords: ["shrink", "erode"]),
@@ -339,6 +343,8 @@ public struct CommandRegistry: Sendable {
                           keywords: ["white balance", "color cast", "neutral", "tint", "temperature", "fix colors", "auto white"]),
         CommandDescriptor(.autoStraighten, "Auto Straighten", category: .image,
                           keywords: ["level", "horizon", "tilt", "crooked", "rotate", "fix"]),
+        CommandDescriptor(.straightenDocument, "Straighten Document", category: .image,
+                          keywords: ["perspective", "keystone", "scan", "whiteboard", "receipt", "sign", "screen", "deskew"]),
         CommandDescriptor(.suggestCrop, "Suggest Crop", category: .image,
                           keywords: ["smart crop", "auto crop", "frame", "composition", "subject", "reframe"]),
         CommandDescriptor(.flipHorizontal, "Flip Horizontal", category: .image, keywords: ["mirror", "flip canvas", "reverse"]),

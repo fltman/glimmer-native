@@ -97,4 +97,26 @@ import Testing
         let subject = CGRect(x: 0.05, y: 0.05, width: 0.9, height: 0.9)
         #expect(SmartAnalysis.suggestedCrop(salient: subject, imageWidth: 800, imageHeight: 600, aspect: nil) == nil)
     }
+
+    @Test func portraitCropFramesHeadAndShoulders() throws {
+        // A face upper-left in a 4000 × 3000 landscape.
+        let face = CGRect(x: 0.2, y: 0.2, width: 0.08, height: 0.1)
+        let crop = try #require(SmartAnalysis.suggestedCrop(salient: .zero, imageWidth: 4000, imageHeight: 3000,
+                                                           aspect: 4.0 / 5, faces: [face]))
+        #expect(abs(crop.width / crop.height - 0.8) < 0.01)
+        let faceBox = CGRect(x: 800, y: 600, width: 320, height: 300)
+        #expect(crop.contains(faceBox))
+        // Eyes around the upper third, not centred.
+        let rel = (faceBox.midY - crop.minY) / crop.height
+        #expect(rel > 0.3 && rel < 0.45)
+        #expect(crop.width < 4000 * 0.5)  // tight, not the whole frame
+    }
+
+    @Test func portraitCropKeepsAGroupTogether() throws {
+        let faces = [CGRect(x: 0.2, y: 0.3, width: 0.06, height: 0.08), CGRect(x: 0.6, y: 0.32, width: 0.06, height: 0.08)]
+        let crop = try #require(SmartAnalysis.suggestedCrop(salient: .zero, imageWidth: 3000, imageHeight: 2000,
+                                                           aspect: 16.0 / 9, faces: faces))
+        #expect(crop.minX < 0.2 * 3000 && crop.maxX > 0.66 * 3000)
+        #expect(crop.minX >= 0 && crop.maxX <= 3000 && crop.minY >= 0 && crop.maxY <= 2000)
+    }
 }

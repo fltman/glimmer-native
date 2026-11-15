@@ -3,7 +3,7 @@
 A native macOS (Swift, Metal, SwiftUI) port of [Glimmer](https://github.com/fltman/glimmer), the AI-first, layer-based image editor.
 
 - **Standalone.** AI features call OpenRouter directly with your own API key, stored in the Keychain. No server.
-- **On-device where possible.** Cutout, Select Subject, Magic Select, depth and Real-ESRGAN upscaling run locally with Vision and Core ML; Apple Intelligence handles simple assistant requests without a paid call. Auto Enhance and Auto Color (as editable adjustment layers), Auto Straighten, Suggest Crop, Select People and turning the text in a photo into editable text layers come from local image analysis, which also drives the omnibar's suggestions for the open photo.
+- **On-device where possible.** Cutout, Select Subject, Magic Select, depth and Real-ESRGAN upscaling run locally with Vision and Core ML; Apple Intelligence handles simple assistant requests without a paid call. Auto Enhance and Auto Color (as editable adjustment layers), Auto Straighten, Suggest Crop, Select People, Select Sky, Straighten Document, photo rating in Batch Process and turning the text in a photo into editable text layers come from local image analysis, which also drives the omnibar's suggestions for the open photo.
 - **Requires** macOS 27 and Xcode 27.
 
 Architecture and roadmap: [docs/PLAN.md](docs/PLAN.md) (in Swedish).

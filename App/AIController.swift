@@ -611,9 +611,9 @@ final class AIController {
 
     // MARK: Magic Select
 
-    @ObservationIgnored private let selector = MagicSelector()
+    @ObservationIgnored let selector = MagicSelector()
     private(set) var magicPoints: [MagicSelector.Point] = []
-    private(set) var isSegmenting = false
+    var isSegmenting = false
 
     func magicSelect(at point: SIMD2<Double>, positive: Bool) {
         let state = session.state

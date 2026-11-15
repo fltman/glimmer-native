@@ -228,6 +228,7 @@ public enum AgentPlanner {
         ], aiJob: true),
         AgentOp("auto_enhance", "Automatic tone and colour correction (on-device, free, instant) as editable adjustment layers. A good first step for \"fix\", \"improve\" or \"make it look better\" before any creative changes."),
         AgentOp("auto_color", "Neutralise a colour cast (on-device, free) with a Color Balance layer. For \"too yellow/blue/green\", \"fix the white balance\"."),
+        AgentOp("select_sky", "Select the sky (on-device, free). Use before replacing or adjusting the sky."),
         AgentOp("select_people", "Select every person in the image (on-device, free, more precise than select_subject for people)."),
         AgentOp("remove_background", "Cut the main subject out of the active layer onto transparency (adds a mask).", aiJob: true),
         AgentOp("select_subject", "Select the main subject (on-device).", aiJob: true),
