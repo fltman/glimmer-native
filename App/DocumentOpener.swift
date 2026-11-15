@@ -333,6 +333,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // The local API for agents (guide at /glimmer), and the splash that points agents to it.
         MainActor.assumeIsolated { AgentServer.shared.start() }
+        #if DEBUG
+        MainActor.assumeIsolated { IntentSelfTest.runIfAsked() }
+        #endif
         let showsWelcome = !UserDefaults.standard.bool(forKey: WelcomeView.shownKey) && !CommandLine.arguments.contains("-skipWelcome")
         if UserDefaults.standard.bool(forKey: "forceAgentSplash") {
             // `-forceAgentSplash YES` (series rule): Agent Access at launch whatever else applies,

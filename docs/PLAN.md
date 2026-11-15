@@ -443,6 +443,8 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 
 - **Syskonprotokollet (2026-11-15, the-apps/SIBLINGS.md):** `/api/v1/operations` i seriens form (JSON Schema, paid, undoable, startsJob, `call` och `x-in`), och `X-Sibling` loggas och visas som "Requested by …". Assistenten hittar Jämmer och Flimmer i bakgrunden (`SiblingClient`: förstaporten med 1 s timeout, reservintervallet parallellt med 300 ms) och får deras gratisoperationer som verktyg `jammer_*` och `flimmer_*`. Steg körs via `/steps`, operationer med `call` direkt med `x-in`, och jobb följs till slut. `add_waveform` hämtar Jämmers vågform och ritar den som ett formlager (fyllnadslager med vektormask), ett ångringssteg. Kör syskonet inte visas "Jämmer is not running" med en knapp som öppnar det, bara vid klick. **Lärdom:** `VectorPath.asSelection` slog ihop delbanor en i taget (5,7 s för 48 staplar); nu rastreras alla i ett pass (0,45 s). **Lärdom:** en kall första anslutning på en belastad Mac tar mer än 300 ms, så förstaporten fick längre timeout. **Lärdom (test):** i zsh är `log` ett inbyggt kommando; använd `/usr/bin/log show`.
 
+- **Provat 2026-11-15:** Select People på ett porträtt i appen (via agent-API:t; personen markeras med det mesta av håret, 2,7 s). Alla sex Shortcuts-åtgärder via sin egen `perform()` med riktiga parametrar (`-intentSelfTest YES` i debugbyggen, `App/IntentSelfTest.swift`): rätt format ut (JPEG, PNG, HEIC, WebP, TIFF), urklippet har alfa och den sparade åtgärden inverterar. Kvar oprovat är bara överlämningen från själva Genvägar-appen.
+
 ## 4. Teststrategi
 
 - **GlimmerCore:** modell, COW-tiles, undo/redo-invarianter, serialisering (rundtur och versionsmigrering) och `.aips`-import mot riktiga filer från webbappen.
