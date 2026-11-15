@@ -84,7 +84,7 @@ struct GlimmerCommands: Commands {
             Menu("New Adjustment Layer") { items(AdjustmentKind.allCases.map { .newAdjustment($0) }) }
             Menu("New Fill Layer") { items([.newSolidFill, .newGradientFill, .newPatternFill]) }
             Divider()
-            items([.duplicateLayer, .deleteLayer])
+            items([.duplicateLayer, .layerViaCopy, .deleteLayer])
             Divider()
             items([.groupLayers, .ungroupLayers])
             Menu("Arrange") { items([.bringLayerToFront, .bringLayerForward, .sendLayerBackward, .sendLayerToBack]) }

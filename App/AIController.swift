@@ -156,7 +156,9 @@ final class AIController {
             let model = try imageModel()
             let docSize = SIMD2(session.state.width, session.state.height)
             run(String(localized: "Generate “\(String(prompt.prefix(40)))”"), {
-                let r = try await AIPipelines.generate(prompt: prompt, negative: negative, width: width, height: height, model: model)
+                // A fresh seed each time: the result cache keys on it, so the same prompt gives a new picture.
+                let r = try await AIPipelines.generate(prompt: prompt, negative: negative, width: width, height: height,
+                                                       seed: Int.random(in: 1..<Int(Int32.max)), model: model)
                 return (r.image, r.cost)
             }, apply: { [weak self] image in
                 // Fit inside the document, centred.

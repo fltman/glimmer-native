@@ -1,0 +1,2 @@
+# Full-size PNG originals stay local; the repo keeps the JPEG copies.
+*.png

@@ -6,6 +6,22 @@ public enum AIDefaults {
 
     public static let imageModelKey = "ai.imageModel"
     public static let textModelKey = "ai.textModel"
+
+    /// The OpenRouter-compatible API Glimmer talks to. Configurable in Settings › AI,
+    /// so nothing depends on a server Glimmer's makers run.
+    public static let defaultEndpoint = "https://openrouter.ai/api/v1"
+    public static let endpointKey = "ai.endpoint"
+
+    /// The configured endpoint, or OpenRouter when the setting is empty or not an http(s) URL.
+    public static var endpoint: URL { endpoint(from: UserDefaults.standard.string(forKey: endpointKey)) }
+
+    static func endpoint(from text: String?) -> URL {
+        let trimmed = (text ?? "").trimmingCharacters(in: .whitespaces)
+        if let url = URL(string: trimmed), ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host() != nil {
+            return url
+        }
+        return URL(string: defaultEndpoint)!
+    }
 }
 
 public enum OpenRouterError: Error, Equatable, LocalizedError {
@@ -91,7 +107,7 @@ public struct OpenRouterConfiguration: Sendable {
     /// Shown in the OpenRouter dashboard; identifies the app, not the user.
     public var appTitle: String
 
-    public init(baseURL: URL = URL(string: "https://openrouter.ai/api/v1")!, appTitle: String = "Glimmer") {
+    public init(baseURL: URL = AIDefaults.endpoint, appTitle: String = "Glimmer") {
         self.baseURL = baseURL
         self.appTitle = appTitle
     }

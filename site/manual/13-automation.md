@@ -1,0 +1,125 @@
+# Automation
+
+Glimmer can edit images without you clicking through each one. You can use its actions in the Shortcuts app and with Siri, replay a saved assistant action on many photos, run a batch over a folder, or let an AI agent on your Mac drive the app through a local API.
+
+## Shortcuts and Siri
+
+Glimmer adds six actions to the Shortcuts app. They all run in the background: no Glimmer window opens. Each one takes an image file and returns a new image file, so you can chain them with other actions, for example to repeat one over every file in a folder. Your original file is not changed.
+
+Where an action has a **Format** parameter, you can choose PNG, JPEG, HEIC, TIFF or WebP.
+
+### Auto Enhance Image
+
+Corrects tone and color on your Mac, like **Image › Auto Enhance**.
+
+- **Image**: the photo to correct.
+- **Format**: the output format. JPEG by default.
+
+If the image needs nothing, you get it back unchanged in the chosen format.
+
+Siri phrases: "Auto enhance a photo with Glimmer", "Fix a photo with Glimmer".
+
+### Remove Background
+
+Cuts the main subject out of an image on your Mac and returns a PNG with a transparent background. The file name gets " cutout" added.
+
+- **Image**: the photo to cut out.
+
+Siri phrases: "Remove the background with Glimmer", "Cut out an image with Glimmer".
+
+### Apply Glimmer Preset
+
+Applies one of Glimmer's photo looks to an image. The file name gets the preset's name added.
+
+- **Image**: the photo.
+- **Preset**: one of Glimmer's presets.
+- **Format**: JPEG by default.
+
+Siri phrases: "Apply a Glimmer preset", "Apply *preset* in Glimmer", for example "Apply Golden Hour in Glimmer".
+
+### Apply Glimmer Filter
+
+Runs one filter, with its default settings, on an image.
+
+- **Image**: the photo.
+- **Filter**: Gaussian Blur, Lens Blur, Motion Blur, Sharpen, Unsharp Mask, Clarity, Add Noise, Pixelate, Find Edges, Emboss, Oil Paint, Halftone, Vignette or Chromatic Aberration. Vignette by default.
+- **Format**: JPEG by default.
+
+Siri phrase: "Apply a Glimmer filter".
+
+### Run Glimmer Action
+
+Runs an action you saved from the assistant on an image. See [Saving a plan as an action](12-assistant-and-command-palette.md#saving-a-plan-as-an-action).
+
+- **Image**: the photo.
+- **Action**: one of your saved actions.
+- **Format**: JPEG by default.
+
+Siri phrase: "Run a Glimmer action".
+
+### Export Glimmer Document
+
+Flattens a Glimmer document, or converts an image, to another format.
+
+- **Document**: a `.glimmer` document or an image.
+- **Format**: PNG by default.
+
+Siri phrase: "Export with Glimmer".
+
+## Saved actions without the window
+
+When you save a plan as an action, you can run it in the editor, from Shortcuts with **Run Glimmer Action**, and in Batch Process. Outside the editor there is no window, no selection and no OpenRouter call, so only some steps can run.
+
+These steps run in Shortcuts and in a batch:
+
+- adjustment layers,
+- filters, applied to the topmost visible pixel layer,
+- presets,
+- layer styles, applied to the topmost visible pixel layer,
+- text layers (black, unless the step sets a color),
+- Auto Enhance and Auto Color,
+- Remove Background,
+- choosing a layer by name.
+
+Steps that only matter in the window are skipped: select all, deselect, setting the foreground color and adding an empty layer.
+
+Any other step stops the action with an error saying that it needs the Glimmer window or a paid AI job. That includes the smart selections (subject, people, sky), inverting or feathering a selection, filling with a color, menu commands, upscaling, and every step that calls OpenRouter. To use such an action, run it in the editor instead.
+
+## Batch Process
+
+**File › Batch Process…** applies one recipe to many images and writes the results to a folder. The recipe can be Auto Enhance, Remove Background, a preset, one of your saved actions, or nothing (to convert only). Batch Process uses the same code as the Shortcuts actions, so saved actions follow the rules in the previous section. It can also rate your photos on your Mac to help you pick the best ones.
+
+For the details, see [Batch Process](02-documents-and-files.md#batch-process) in Documents and Files.
+
+## The local agent API
+
+Glimmer runs a small web server on your Mac that AI agents, such as Claude, can use to drive the app. Through it, an agent can open images as new documents, see the open documents and their layers, apply editing steps, undo and redo, and export the result. Edits happen in the windows you have open, so you can watch them and undo them.
+
+### Getting started
+
+When Glimmer starts, it shows a window with the heading **For your agent**. It says: "Paste this into Claude or another AI agent. It fetches the guide from Glimmer on this Mac and can then open, edit and export images in your open windows." Below it is a line of text such as:
+
+> Learn all about Glimmer and how to interact with it: fetch and follow this guide http://127.0.0.1:9001/glimmer
+
+Click **Copy** (⇧⌘C) and paste the line into your agent. The agent reads the guide, which explains the API and lists every editing step it can use.
+
+Turn off **Show at launch** to stop the window from appearing. To open it again, choose **Help › Agent Access…**. The first time you start Glimmer, the Welcome window appears instead.
+
+### Address and port
+
+The server listens on 127.0.0.1, port 9001. If that port is taken, it uses the first free port from 9101 to 9119. The line in the **For your agent** window always shows the address Glimmer is using. If all those ports are taken, the window says so.
+
+### Security
+
+The API is built so that only programs on your own Mac can use it, and only on purpose:
+
+- It listens on 127.0.0.1 only. Other computers on your network can't reach it.
+- It only answers requests addressed to 127.0.0.1 or localhost.
+- It refuses requests from web pages. A web page you visit can't use it.
+- Every request that changes something must carry the header `X-Glimmer-Agent: 1`.
+- Steps that call OpenRouter and cost money are refused unless the request explicitly allows paid steps, and you have saved an OpenRouter key in Glimmer.
+- The API never reads or writes files by path. Images travel in the requests and responses.
+
+Each request with editing steps is one undo step, named **Agent Edit**.
+
+For the full API, see the [Agent guide](../agents.html).

@@ -67,6 +67,16 @@ public actor ModelStore {
         self.sourceOverride = ProcessInfo.processInfo.environment["GLIMMER_MODELS_DIR"].map { URL(fileURLWithPath: $0) }
     }
 
+    /// Where models are downloaded from: Hugging Face (Apple's Core ML conversions)
+    /// unless Settings › Models names a mirror with the same paths.
+    public static let defaultSource = "https://huggingface.co"
+    public static let sourceKey = "models.source"
+    public static var source: URL {
+        let text = (UserDefaults.standard.string(forKey: sourceKey) ?? "").trimmingCharacters(in: .whitespaces)
+        if let url = URL(string: text), ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host() != nil { return url }
+        return URL(string: defaultSource)!
+    }
+
     public func isInstalled(_ model: OnDeviceModel) -> Bool {
         model.packages.allSatisfy { FileManager.default.fileExists(atPath: compiledURL($0).path) }
             || (sourceOverride.map { dir in model.packages.allSatisfy { FileManager.default.fileExists(atPath: dir.appending(path: $0).path) } } ?? false)
@@ -112,7 +122,7 @@ public actor ModelStore {
                           progress: (@Sendable (Double) -> Void)?) async throws -> URL {
         let staging = FileManager.default.temporaryDirectory.appending(path: "glimmer-models/\(UUID().uuidString)/\(package)")
         for (i, file) in OnDeviceModel.packageFiles.enumerated() {
-            let url = URL(string: "https://huggingface.co/\(repository)/resolve/main/\(package)/\(file)")!
+            let url = Self.source.appending(path: "\(repository)/resolve/main/\(package)/\(file)")
             let (temp, response) = try await URLSession.shared.download(from: url)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else {
                 throw URLError(.badServerResponse)

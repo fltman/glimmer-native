@@ -130,7 +130,8 @@ import Testing
         let parts = try #require(m[1]["content"] as? [[String: Any]])
         #expect(parts.count == 3 && (parts[0]["text"] as? String)?.contains("add_adjustment") == true)
         let names = AgentPlanner.reviewToolSchemas().compactMap { ($0["function"] as? [String: Any])?["name"] as? String }
-        #expect(names.contains("add_adjustment") && !names.contains("generate_layer") && !names.contains("upscale"))
+        #expect(names.contains("add_adjustment") && !names.contains("generate_layer") && !names.contains("inpaint_selection")
+                && !names.contains("image_edit_composite"))
     }
 
     @Test func streamedChunksAreMerged() throws {

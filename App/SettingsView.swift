@@ -30,6 +30,7 @@ private struct AISettingsView: View {
 
     @AppStorage(AIDefaults.imageModelKey) private var imageModel = AIDefaults.imageModel
     @AppStorage(AIDefaults.textModelKey) private var textModel = AIDefaults.textModel
+    @AppStorage(AIDefaults.endpointKey) private var endpoint = ""
 
     @State private var apiKey = ""
     @State private var savedKey = ""
@@ -60,7 +61,19 @@ private struct AISettingsView: View {
             } header: {
                 Text("OpenRouter")
             } footer: {
-                Text("Glimmer calls OpenRouter directly with your own key. It is stored in your keychain and only sent to openrouter.ai. [Get a key](https://openrouter.ai/keys)")
+                Text("Glimmer calls OpenRouter directly with your own key. It is stored in your keychain and only sent to the service below (openrouter.ai unless you change it). [Get a key](https://openrouter.ai/keys)")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                TextField("Endpoint", text: $endpoint, prompt: Text(verbatim: AIDefaults.defaultEndpoint))
+                if !endpoint.isEmpty, AIDefaults.endpoint.absoluteString != endpoint.trimmingCharacters(in: .whitespaces) {
+                    Text("Not a valid http(s) address; Glimmer uses OpenRouter.").font(.callout).foregroundStyle(.orange)
+                }
+            } header: {
+                Text("Service")
+            } footer: {
+                Text("Any service with OpenRouter's API (chat completions with image output) works. Leave empty for OpenRouter. Your key is sent only to this address.")
                     .foregroundStyle(.secondary)
             }
 
@@ -145,6 +158,7 @@ private struct AISettingsView: View {
 /// On-device models downloaded on first use.
 private struct ModelSettingsView: View {
     @State private var installed: Set<OnDeviceModel> = []
+    @AppStorage(ModelStore.sourceKey) private var source = ""
 
     var body: some View {
         Form {
@@ -170,6 +184,12 @@ private struct ModelSettingsView: View {
                 }
             } footer: {
                 Text("These models run on this Mac. They come from Apple's Core ML conversions on Hugging Face.")
+                    .foregroundStyle(.secondary)
+            }
+            Section {
+                TextField("Download from", text: $source, prompt: Text(verbatim: ModelStore.defaultSource))
+            } footer: {
+                Text("Leave empty for Hugging Face. A mirror must serve the same paths (<repository>/resolve/main/<file>).")
                     .foregroundStyle(.secondary)
             }
         }

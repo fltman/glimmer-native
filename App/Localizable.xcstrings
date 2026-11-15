@@ -6284,6 +6284,17 @@
         }
       }
     },
+    "Port 9001 and ports 9101–9119 are all in use.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Port 9001 och portarna 9101–9119 är alla upptagna."
+          }
+        }
+      }
+    },
     "Portrait": {
       "localizations": {
         "sv": {
@@ -9385,6 +9396,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "klippt"
+          }
+        }
+      }
+    },
+    "corners keep proportions, ⇧ frees them · drag just outside a corner to rotate · click away to apply · ⌘-drag a corner to distort": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hörnen behåller proportionerna, ⇧ frigör dem · dra strax utanför ett hörn för att rotera · klicka utanför för att verkställa · ⌘-dra ett hörn för att förvränga"
           }
         }
       }

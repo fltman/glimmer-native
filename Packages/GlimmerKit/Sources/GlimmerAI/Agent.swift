@@ -230,15 +230,15 @@ public enum AgentPlanner {
         AgentOp("auto_color", "Neutralise a colour cast (on-device, free) with a Color Balance layer. For \"too yellow/blue/green\", \"fix the white balance\"."),
         AgentOp("select_sky", "Select the sky (on-device, free). Use before replacing or adjusting the sky."),
         AgentOp("select_people", "Select every person in the image (on-device, free, more precise than select_subject for people)."),
-        AgentOp("remove_background", "Cut the main subject out of the active layer onto transparency (adds a mask).", aiJob: true),
-        AgentOp("select_subject", "Select the main subject (on-device).", aiJob: true),
+        AgentOp("remove_background", "Cut the main subject out of the active layer onto transparency (adds a mask; on-device, free)."),
+        AgentOp("select_subject", "Select the main subject (on-device, free)."),
         AgentOp("inpaint_selection", "Regenerate or erase the SELECTED region. Requires a selection.", [
             AgentParam("prompt", "string", "What to fill the selection with (may be empty for remove)."),
             AgentParam("mode", "string", "fill replaces with the prompt; remove erases an object.", options: ["fill", "remove"]),
         ], aiJob: true),
         AgentOp("upscale", "Upscale the whole image.", [
-            AgentParam("scale", "number", "2 or 4."),
-        ], aiJob: true),
+            AgentParam("scale", "number", "2 or 4 (on-device Real-ESRGAN, free)."),
+        ], ),
         AgentOp("fill", "Fill the selection (or the whole active layer) with a colour.", [
             AgentParam("color", "string", "#RRGGBB or #RRGGBBAA."),
         ]),

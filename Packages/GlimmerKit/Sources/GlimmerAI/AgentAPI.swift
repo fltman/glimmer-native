@@ -9,10 +9,12 @@ public enum AgentAPI {
     /// without a CORS preflight, which the server never grants).
     public static let agentHeader = "X-Glimmer-Agent"
     public static let preferredPort: UInt16 = 9001
-    public static let portRange: ClosedRange<UInt16> = 9001...9020
+    /// 9001 first, then Glimmer's own fallback range (Flimmer uses 9002 and 9201–9219,
+    /// Jämmer 9003 and 9301–9319), so which app gets which port never depends on launch order.
+    public static let candidatePorts: [UInt16] = [9001] + Array(9101...9119)
 
     /// Steps that call OpenRouter and cost money. Everything else runs on the Mac.
-    public static let paidOps: Set<String> = ["image_edit_composite", "generate_layer", "inpaint_selection"]
+    public static var paidOps: Set<String> { Set(AgentPlanner.ops.filter(\.isAIJob).map(\.name)) }
 
     // MARK: HTTP
 
@@ -196,7 +198,8 @@ public enum AgentAPI {
 
         Glimmer \(appVersion) is a native macOS photo editor with layers, adjustment layers, filters, selections, text and on-device AI (subject, people and sky selection, auto enhance, perspective correction). This page tells an agent how to drive the running app through its local HTTP API.
 
-        - Base URL: `\(base)` (this Mac only; the server listens on loopback).
+        - Base URL: `\(base)` (this Mac only; the server listens on loopback). Glimmer uses port 9001, or the first free port from 9101 to 9119 when 9001 is taken; the address in Glimmer's **Help › Agent Access** window is always the real one.
+        - Check that `app.name` in `GET /api/v1/status` is `"Glimmer"` before you send changes, so you never edit with a different app that happens to listen on the port.
         - Every POST needs the header **`\(agentHeader): 1`**. Without it you get `403 forbidden`.
         - Don't send an `Origin` header: requests that look like they come from a web page are refused.
         - Images travel in request and response bodies. The API never reads or writes file paths.
@@ -210,8 +213,9 @@ public enum AgentAPI {
         ```sh
         BASE=\(base)
 
-        # 1. Is Glimmer there?
+        # 1. Is Glimmer there? Check that app.name is "Glimmer" before you change anything.
         curl -s $BASE/api/v1/status
+        # → {"app": {"name": "Glimmer", "version": "…"}, "api": "v1", "documents": […], …}
 
         # 2. Open an image as a new document. The reply contains its id.
         curl -s -X POST -H '\(agentHeader): 1' -H 'Content-Type: image/jpeg' \\
@@ -241,7 +245,7 @@ public enum AgentAPI {
         | Method | Path | What it does |
         |---|---|---|
         | GET | `/glimmer` | This guide (Markdown). |
-        | GET | `/api/v1/status` | App version, API version and the open documents. |
+        | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port and the open documents. |
         | GET | `/api/v1/operations` | Every step operation with its parameters (JSON). |
         | GET | `/api/v1/documents` | The open documents. |
         | POST | `/api/v1/documents` | Open an image (raw bytes, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\\|"black"\\|"transparent"}`). |

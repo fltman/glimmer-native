@@ -62,14 +62,14 @@ final class AgentServer {
     func start() {
         guard listener == nil else { return }
         Task {
-            for candidate in AgentAPI.portRange {
+            for candidate in AgentAPI.candidatePorts {
                 if let l = await Self.listen(on: candidate) {
                     listener = l
                     port = candidate
                     return
                 }
             }
-            failure = String(localized: "Ports \(String(AgentAPI.portRange.lowerBound))–\(String(AgentAPI.portRange.upperBound)) are all in use.")
+            failure = String(localized: "Port 9001 and ports 9101–9119 are all in use.")
         }
     }
 
@@ -170,7 +170,7 @@ enum AgentRouter {
             return .text(AgentAPI.guide(port: port, appVersion: appVersion))
         case ["api", "v1", "status"]:
             try only("GET")
-            return .json(["app": "Glimmer", "version": appVersion, "api": AgentAPI.version, "port": Int(port),
+            return .json(["app": ["name": "Glimmer", "version": appVersion], "api": AgentAPI.version, "port": Int(port),
                           "documents": AgentRegistry.shared.sessions.map(summary)])
         case ["api", "v1", "operations"]:
             try only("GET")

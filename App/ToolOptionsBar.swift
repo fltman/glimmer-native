@@ -208,7 +208,7 @@ struct ToolOptionsBar: View {
                 numberField("W", t.box.scaleX * 100, suffix: "%") { session.setTransform(scaleXPercent: $0) }
                 numberField("H", t.box.scaleY * 100, suffix: "%") { session.setTransform(scaleYPercent: $0) }
                 numberField("∠", t.box.rotation * 180 / .pi, suffix: "°") { session.setTransform(degrees: $0) }
-                Text("⇧ keeps proportions · drag just outside a corner to rotate · click away to apply · ⌘-drag a corner to distort").foregroundStyle(.secondary)
+                Text("corners keep proportions, ⇧ frees them · drag just outside a corner to rotate · click away to apply · ⌘-drag a corner to distort").foregroundStyle(.secondary)
             } else {
                 Text(t.mode == .skew ? "Drag an edge to slant it" : t.mode == .perspective
                      ? "Drag a corner; its neighbour mirrors it" : "Drag corners freely").foregroundStyle(.secondary)

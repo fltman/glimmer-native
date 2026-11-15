@@ -1,5 +1,7 @@
 # Glimmer Native
 
+[![Support me on Patreon](https://img.shields.io/badge/Patreon-Support%20my%20work-FF424D?style=flat&logo=patreon&logoColor=white)](https://www.patreon.com/AndersBjarby)
+
 A native macOS (Swift, Metal, SwiftUI) port of [Glimmer](https://github.com/fltman/glimmer), the AI-first, layer-based image editor.
 
 - **Standalone.** AI features call OpenRouter directly with your own API key, stored in the Keychain. No server.
@@ -48,6 +50,10 @@ File › Open reads `.aips` projects from the web app, with layers, masks, effec
 ## WebP
 
 ImageIO can't write WebP, so Glimmer has its own encoders in `GlimmerRender`: lossless (VP8L) at 100 % quality and lossy (VP8 key frames) below. The constant tables in `VP8Tables.swift` come from the VP8 specification (RFC 6386).
+
+## License
+
+MIT, see `LICENSE`. Third-party code and models, all permissively licensed, are listed in `THIRD_PARTY_NOTICES.md`.
 
 ## Third-party code
 
