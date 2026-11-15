@@ -58,6 +58,13 @@ struct AIPanel: View {
                     }
                     section("On This Mac", id: "local", symbol: "cpu") {
                         VStack(alignment: .leading, spacing: 8) {
+                            Button("Auto Enhance", systemImage: "wand.and.rays") { ai.autoEnhance() }
+                                .help("Corrects tone and colour as editable adjustment layers. Runs on this Mac, free. ⇧⌘L")
+                            Button("Auto Straighten", systemImage: "level") { ai.autoStraighten() }
+                                .help("Finds a tilted horizon and opens Crop, levelled. Runs on this Mac, free.")
+                            Button("Suggest Crop", systemImage: "crop") { ai.suggestCrop() }
+                                .help("Frames the subject at the crop's aspect ratio. Runs on this Mac, free.")
+                            Divider()
                             Button("Remove Background", systemImage: "person.crop.rectangle") { ai.removeBackground() }
                                 .help("Masks the active layer to its subject. Runs on this Mac, free.")
                             Button("Select Subject", systemImage: "person.and.background.dotted") { ai.selectSubject() }
@@ -310,6 +317,7 @@ private struct PlanView: View {
         case "add_text": "Text “\(step.string("text") ?? "")”"
         case "image_edit_composite": "AI edit: \(step.string("instruction") ?? "")"
         case "generate_layer": "Generate: \(step.string("prompt") ?? "")"
+        case "auto_enhance": "Auto Enhance"
         case "remove_background": "Remove background"
         case "select_subject": "Select subject"
         case "inpaint_selection": step.string("mode") == "remove" ? "Remove selected object" : "Fill selection: \(step.string("prompt") ?? "")"

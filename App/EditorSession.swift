@@ -175,6 +175,22 @@ final class EditorSession {
     var exportOptions = ExportOptions()
     var isExporting = false
     var errorMessage: String?
+    var isBatchSheetPresented = false
+    /// A short message shown over the canvas for a few seconds.
+    private(set) var toast: String?
+    @ObservationIgnored private var toastTask: Task<Void, Never>?
+
+    func showToast(_ message: String) {
+        toast = message
+        NSAccessibility.post(element: NSApp as Any, notification: .announcementRequested,
+                             userInfo: [.announcement: message, .priority: NSAccessibilityPriorityLevel.high.rawValue])
+        toastTask?.cancel()
+        toastTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3.5))
+            guard !Task.isCancelled else { return }
+            self?.toast = nil
+        }
+    }
 
     private(set) var thumbnails: [UUID: CGImage] = [:]
     private(set) var maskThumbnails: [UUID: CGImage] = [:]
@@ -408,6 +424,8 @@ final class EditorSession {
             return !layer.isRaster && !layer.isAdjustment
         case .export, .exportPNG:
             return !isExporting
+        case .autoEnhance, .autoStraighten, .suggestCrop:
+            return !isUntouchedBlank
         case .deselect, .invertSelection, .aiRemoveObject, .featherSelection, .growSelection, .shrinkSelection:
             return state.selection != nil
         case .copy, .cut:
@@ -469,6 +487,10 @@ final class EditorSession {
         case .fillPattern: fillWithPattern()
         case .exportWebProject: exportWebProject()
         case .exportPNG: export(options: ExportOptions(format: .png))
+        case .autoEnhance: ai.autoEnhance()
+        case .autoStraighten: ai.autoStraighten()
+        case .suggestCrop: ai.suggestCrop()
+        case .batchProcess: isBatchSheetPresented = true
         case .newDocument: DocumentOpener.shared.showNewDocumentWindow()
         case .openDocument: DocumentOpener.shared.showOpenPanel()
         case .showLayers, .showPaths, .showChannels, .showHistory:

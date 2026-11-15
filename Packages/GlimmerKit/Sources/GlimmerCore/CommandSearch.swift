@@ -70,9 +70,43 @@ public struct PaletteItem: Identifiable, Sendable, Hashable {
     }
 }
 
+/// How often and how recently a palette item was used.
+public struct CommandUsage: Codable, Sendable, Equatable {
+    public var count: Int
+    public var last: Date
+
+    public init(count: Int = 0, last: Date = .distantPast) {
+        self.count = count
+        self.last = last
+    }
+
+    /// Ranking bonus: grows with use (logarithmically) and halves every two
+    /// weeks without use, so it breaks ties without burying better matches.
+    public func boost(now: Date) -> Double {
+        guard count > 0 else { return 0 }
+        let days = max(0, now.timeIntervalSince(last) / 86_400)
+        return min(3, 1.2 * log2(1 + Double(count))) * pow(0.5, days / 14)
+    }
+
+    /// Records one use in a usage table, dropping the stalest entries past `limit`.
+    public static func record(_ id: String, in table: inout [String: CommandUsage], now: Date = Date(), limit: Int = 200) {
+        var u = table[id] ?? CommandUsage()
+        u.count += 1
+        u.last = now
+        table[id] = u
+        if table.count > limit {
+            for key in table.sorted(by: { $0.value.boost(now: now) < $1.value.boost(now: now) }).prefix(table.count - limit).map(\.key) {
+                table[key] = nil
+            }
+        }
+    }
+}
+
 public enum CommandSearch {
     /// Ranked matches: the title counts most, then the group, then keywords.
-    public static func search(_ query: String, in items: [PaletteItem], limit: Int = 12) -> [(item: PaletteItem, score: Double)] {
+    /// `usage` lifts the things you use often (see `CommandUsage.boost`).
+    public static func search(_ query: String, in items: [PaletteItem], limit: Int = 12,
+                              usage: [String: CommandUsage] = [:], now: Date = Date()) -> [(item: PaletteItem, score: Double)] {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return items.prefix(limit).map { ($0, 0) } }
         var results: [(PaletteItem, Double)] = []
@@ -82,7 +116,7 @@ public enum CommandSearch {
             for k in item.keywords {
                 if let s = FuzzyMatch.score(trimmed, k) { best = max(best ?? -.infinity, s * 0.7) }
             }
-            if let best { results.append((item, best)) }
+            if let best { results.append((item, best + (usage[item.id]?.boost(now: now) ?? 0))) }
         }
         return Array(results.sorted { $0.1 > $1.1 }.prefix(limit))
     }

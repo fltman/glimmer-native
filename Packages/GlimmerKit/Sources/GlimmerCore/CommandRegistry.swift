@@ -112,6 +112,10 @@ extension CommandID {
     public static let rotateRight: CommandID = "image.rotateRight"
     public static let rotateLeft: CommandID = "image.rotateLeft"
     public static let rotate180: CommandID = "image.rotate180"
+    public static let autoEnhance: CommandID = "image.autoEnhance"
+    public static let autoStraighten: CommandID = "image.autoStraighten"
+    public static let suggestCrop: CommandID = "image.suggestCrop"
+    public static let batchProcess: CommandID = "file.batch"
     public static let toggleRulers: CommandID = "view.rulers"
     public static let toggleGrid: CommandID = "view.grid"
     public static let toggleSnap: CommandID = "view.snap"
@@ -237,6 +241,8 @@ public struct CommandRegistry: Sendable {
                           keywords: ["new document", "blank", "create"], isSystemProvided: true),
         CommandDescriptor(.openDocument, "Open…", category: .file, shortcut: KeyShortcut("o"),
                           keywords: ["open image", "open project", "file"], isSystemProvided: true),
+        CommandDescriptor(.batchProcess, "Batch Process…", category: .file,
+                          keywords: ["batch", "folder", "many images", "bulk", "convert", "droplet", "automate"]),
         CommandDescriptor(.exportWebProject, "Export Web Project (.aips)…", category: .file,
                           keywords: ["aips", "glimmer web", "save project", "browser"]),
 
@@ -314,6 +320,12 @@ public struct CommandRegistry: Sendable {
         CommandDescriptor(.freeTransform, "Free Transform", category: .image, shortcut: KeyShortcut("t"),
                           keywords: ["scale", "rotate", "resize layer"]),
         CommandDescriptor(.crop, "Crop", category: .image, keywords: ["trim", "canvas size"]),
+        CommandDescriptor(.autoEnhance, "Auto Enhance", category: .image, shortcut: KeyShortcut("l", [.command, .shift]),
+                          keywords: ["auto tone", "auto color", "auto contrast", "fix", "improve", "magic", "levels"]),
+        CommandDescriptor(.autoStraighten, "Auto Straighten", category: .image,
+                          keywords: ["level", "horizon", "tilt", "crooked", "rotate", "fix"]),
+        CommandDescriptor(.suggestCrop, "Suggest Crop", category: .image,
+                          keywords: ["smart crop", "auto crop", "frame", "composition", "subject", "reframe"]),
         CommandDescriptor(.flipHorizontal, "Flip Horizontal", category: .image, keywords: ["mirror", "flip canvas", "reverse"]),
         CommandDescriptor(.flipVertical, "Flip Vertical", category: .image, keywords: ["mirror", "flip canvas", "upside down"]),
         CommandDescriptor(.rotateRight, "Rotate 90° Clockwise", category: .image, keywords: ["turn", "rotate image", "right"]),

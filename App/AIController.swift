@@ -48,6 +48,10 @@ final class AIController {
     /// Edits proposed for the current image, and whether they're being fetched.
     var suggestions: [AgentPlanner.Suggestion] = []
     var isSuggesting = false
+    /// On-device analysis of the open image (see AIController+Smart).
+    var insights: SmartAnalysis.Insights?
+    @ObservationIgnored var insightsKey: Int?
+    @ObservationIgnored var insightsTask: Task<Void, Never>?
     var savedActions = SavedAction.load() { didSet { SavedAction.store(savedActions) } }
     @ObservationIgnored var agentHistory: [(user: String, reply: String)] = []
     @ObservationIgnored var planTask: Task<Void, Never>?
@@ -82,7 +86,7 @@ final class AIController {
         return OpenRouterImageModel(client: OpenRouterClient(apiKey: key), model: model)
     }
 
-    private var metal: MetalContext {
+    var metal: MetalContext {
         get throws {
             guard let m = MetalContext.shared else { throw RenderError.noMetalDevice }
             return m
@@ -477,7 +481,7 @@ final class AIController {
 
     @ObservationIgnored private var depthCache: (key: Int, depth: [Float])?
 
-    private func documentKey(_ state: DocumentState) -> Int {
+    func documentKey(_ state: DocumentState) -> Int {
         var h = Hasher()
         h.combine(state.width); h.combine(state.height)
         for layer in state.allLayers {

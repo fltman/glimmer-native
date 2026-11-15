@@ -86,6 +86,21 @@ struct DocumentView: View {
             .overlay {
                 if showsStartCard { StartCard(session: session) }
             }
+            .overlay(alignment: .top) {
+                // Brief, non-blocking feedback ("nothing to straighten" and the like).
+                if let toast = session.toast {
+                    Text(toast)
+                        .font(.callout)
+                        .padding(.horizontal, 14)
+                        .frame(height: 30)
+                        .panelSurface(cornerRadius: 15)
+                        .padding(.top, 96)
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                        .id(toast)
+                        .accessibilityAddTraits(.isStaticText)
+                }
+            }
+            .animation(.snappy, value: session.toast)
             .ignoresSafeArea(.container, edges: .top)
             .safeAreaInset(edge: .trailing, spacing: 0) {
                 if session.classicLayout, !session.interfaceHidden {
@@ -102,6 +117,9 @@ struct DocumentView: View {
             }
             .sheet(isPresented: $session.isLayerStylePresented) {
                 LayerStyleSheet(session: session)
+            }
+            .sheet(isPresented: $session.isBatchSheetPresented) {
+                BatchSheet(session: session)
             }
             .alert("Glimmer", isPresented: Binding(
                 get: { session.errorMessage != nil },

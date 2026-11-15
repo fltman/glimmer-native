@@ -54,7 +54,9 @@ struct GlimmerCommands: Commands {
             Menu("Adjustments") {
                 items(AdjustmentKind.allCases.map { .newAdjustment($0) })
             }
-            items([.freeTransform, .crop])
+            items([.autoEnhance, .autoStraighten])
+            Divider()
+            items([.freeTransform, .crop, .suggestCrop])
             Divider()
             items([.rotateRight, .rotateLeft, .rotate180, .flipHorizontal, .flipVertical])
             Divider()

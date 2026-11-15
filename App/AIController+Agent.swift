@@ -56,6 +56,14 @@ extension AIController {
                             hasSelection: state.selection != nil, activeLayerKind: kind, activeLayerName: layer?.name ?? "—")
     }
 
+    /// Palette items the on-device router must never pick for a request.
+    nonisolated static func notRoutable(_ item: PaletteItem) -> Bool {
+        guard case .command(let id) = item.action else { return false }
+        if id == .toggleGammaBlending || id == .batchProcess { return true }
+        guard let category = CommandRegistry.standard.descriptor(for: id)?.category else { return false }
+        return category == .view || category == .file
+    }
+
     func ask(_ text: String) {
         let goal = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !goal.isEmpty, !isPlanning else { return }
@@ -71,8 +79,11 @@ extension AIController {
             isPlanning = true
             planTask = Task { [weak self] in
                 guard let self else { return }
-                // Commands that only open a dialog ("Vignette…") don't carry out a request by themselves.
-                let candidates = CommandSearch.candidates(for: goal, in: Palette.allItems).filter { !$0.title.hasSuffix("…") }.map {
+                // Commands that only open a dialog ("Vignette…") don't carry out a request by themselves,
+                // and settings, views and files never do ("fix the colors" is not "Blend Colors in Gamma Space").
+                let candidates = CommandSearch.candidates(for: goal, in: Palette.allItems).filter {
+                    !$0.title.hasSuffix("…") && !Self.notRoutable($0)
+                }.map {
                     OnDeviceRouter.Candidate(id: $0.id, title: $0.title, subtitle: $0.subtitle)
                 }
                 let decision = (try? await OnDeviceRouter.route(goal, candidates: candidates)) ?? .assistant
@@ -346,6 +357,8 @@ extension AIController {
             editImage(instruction: step.string("instruction") ?? "")
         case "generate_layer":
             generate(prompt: step.string("prompt") ?? "", negative: "", width: s.state.width, height: s.state.height)
+        case "auto_enhance":
+            try await performAutoEnhance()
         case "remove_background":
             try ensurePixelLayer()
             removeBackground()

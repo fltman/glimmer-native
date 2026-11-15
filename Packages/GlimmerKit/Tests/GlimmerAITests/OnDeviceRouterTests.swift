@@ -49,6 +49,20 @@ struct LiveOnDeviceRouterTests {
         #expect(prompt.localizedCaseInsensitiveContains("lighthouse"))
     }
 
+    @Test func aGeneralFixGoesToAutoEnhance() async throws {
+        let options = [
+            OnDeviceRouter.Candidate(id: "image.autoEnhance", title: "Auto Enhance", subtitle: "Image"),
+            OnDeviceRouter.Candidate(id: "layer.adjustment.hue_saturation", title: "Hue/Saturation", subtitle: "Adjustment"),
+            OnDeviceRouter.Candidate(id: "layer.adjustment.vibrance", title: "Vibrance", subtitle: "Adjustment"),
+            OnDeviceRouter.Candidate(id: "layer.adjustment.invert", title: "Invert", subtitle: "Adjustment"),
+        ]
+        for request in ["fix the colors", "improve the photo"] {
+            let d = try await OnDeviceRouter.route(request, candidates: options)
+            print("\(request) → \(d)")
+            #expect(d == .run("image.autoEnhance"))
+        }
+    }
+
     @Test func multiStepEditsGoToTheAssistant() async throws {
         let d = try await OnDeviceRouter.route("make it warmer, add a vignette and remove the person on the left",
                                                candidates: candidates)

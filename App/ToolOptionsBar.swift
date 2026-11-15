@@ -234,6 +234,10 @@ struct ToolOptionsBar: View {
             Text("9:16").tag(9.0 / 16)
         }
         .frame(width: 140)
+        Button("Suggest", systemImage: "sparkles") { session.ai.suggestCrop() }
+            .help("Frame the subject at this aspect ratio (on-device)")
+        Button("Level", systemImage: "level") { session.ai.autoStraighten() }
+            .help("Straighten a tilted horizon (on-device)")
         slider("Straighten", Binding(get: { (session.cropSession?.angle ?? 0) * 180 / .pi },
                                      set: { session.setCropAngle(degrees: $0) }), -45...45,
                display: String(format: "%.1f°", (session.cropSession?.angle ?? 0) * 180 / .pi))

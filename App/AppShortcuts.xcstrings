@@ -40,6 +40,29 @@
         }
       }
     },
+    "Auto enhance a photo with ${applicationName}" : {
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Auto enhance a photo with ${applicationName}",
+              "Fix a photo with ${applicationName}"
+            ]
+          }
+        },
+        "sv" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Förbättra ett foto automatiskt med ${applicationName}",
+              "Fixa ett foto med ${applicationName}"
+            ]
+          }
+        }
+      }
+    },
     "Export with ${applicationName}" : {
       "extractionState" : "extracted_with_value",
       "localizations" : {

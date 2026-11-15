@@ -59,7 +59,7 @@ enum Palette {
             let recents = UserDefaults.standard.stringArray(forKey: recentsKey) ?? []
             return recents.compactMap { id in items.first { $0.id == id } }.map(PaletteRow.item)
         }
-        let results = CommandSearch.search(q, in: items, limit: limit)
+        let results = CommandSearch.search(q, in: items, limit: limit, usage: usage)
         var rows = results.map { PaletteRow.item($0.item) }
         if CommandSearch.looksLikeAssistantRequest(q, bestScore: results.first?.score) {
             rows.insert(.ask(q), at: 0)
@@ -83,11 +83,26 @@ enum Palette {
             ask(q, session: session)
         case .item(let item):
             guard session.runPaletteItem(item) else { NSSound.beep(); return }
-            var recents = UserDefaults.standard.stringArray(forKey: recentsKey) ?? []
-            recents.removeAll { $0 == item.id }
-            recents.insert(item.id, at: 0)
-            UserDefaults.standard.set(Array(recents.prefix(6)), forKey: recentsKey)
+            recordUse(item.id)
         }
+    }
+
+    static let usageKey = "palette.usage"
+
+    /// How often each item was run from the palette or the omnibar.
+    static var usage: [String: CommandUsage] {
+        guard let data = UserDefaults.standard.data(forKey: usageKey) else { return [:] }
+        return (try? JSONDecoder().decode([String: CommandUsage].self, from: data)) ?? [:]
+    }
+
+    static func recordUse(_ id: String) {
+        var recents = UserDefaults.standard.stringArray(forKey: recentsKey) ?? []
+        recents.removeAll { $0 == id }
+        recents.insert(id, at: 0)
+        UserDefaults.standard.set(Array(recents.prefix(6)), forKey: recentsKey)
+        var table = usage
+        CommandUsage.record(id, in: &table)
+        if let data = try? JSONEncoder().encode(table) { UserDefaults.standard.set(data, forKey: usageKey) }
     }
 
     static func symbol(_ item: PaletteItem) -> String {
@@ -240,9 +255,27 @@ struct Omnibar: View {
             if focused, query.isEmpty {
                 // As in the web app: things to generate on an empty canvas, otherwise things to do to the image.
                 let blank = session.isUntouchedBlank
+                let smart = blank ? [] : session.ai.smartSuggestions
                 HStack(spacing: 6) {
                     Text("Try").foregroundStyle(Theme.muted)
-                    ForEach(blank ? Self.generateSuggestions : Self.editSuggestions, id: \.self) { suggestion in
+                    // On-device analysis of this image first (instant and free), then the general ideas.
+                    ForEach(smart, id: \.self) { id in
+                        Button {
+                            finish()
+                            Palette.recordUse(id.rawValue)
+                            session.perform(id)
+                        } label: {
+                            Label(smartTitle(id), systemImage: "wand.and.sparkles").labelStyle(.titleAndIcon)
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Theme.accent)
+                        .padding(.horizontal, 10)
+                        .frame(height: 22)
+                        .overlay { Capsule().strokeBorder(Theme.accent.opacity(0.6)) }
+                        .contentShape(.capsule)
+                        .help("Suggested for this image (analysed on this Mac)")
+                    }
+                    ForEach((blank ? Self.generateSuggestions : Self.editSuggestions).prefix(max(2, 5 - smart.count)), id: \.self) { suggestion in
                         Button(LocalizedStringKey(suggestion)) {
                             finish()
                             Palette.ask(blank ? "generate \(String(localized: String.LocalizationValue(suggestion)))"
@@ -300,6 +333,15 @@ struct Omnibar: View {
             .panelSurface(cornerRadius: 12)
         }
         .frame(width: 720)
+        .onChange(of: focused) { if focused { session.ai.refreshInsights() } }
+    }
+
+    private func smartTitle(_ id: CommandID) -> String {
+        if id == .autoStraighten, let tilt = session.ai.insights?.horizonDegrees {
+            return String(localized: "Straighten \(String(format: "%.1f", abs(tilt)))°")
+        }
+        let title = CommandRegistry.standard.descriptor(for: id)?.title ?? id.rawValue
+        return String(localized: String.LocalizationValue(title))
     }
 
     private static let generateSuggestions = ["a sunset over mountains", "a cute robot mascot", "a watercolor forest cabin",

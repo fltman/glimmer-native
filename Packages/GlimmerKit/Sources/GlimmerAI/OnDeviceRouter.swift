@@ -52,6 +52,7 @@ public enum OnDeviceRouter {
     static let instructions = """
     You route requests typed into the command bar of a photo editor. Decide one action:
     - run: exactly ONE of the listed options fully does what the user asked by itself (for example "invert", "flip horizontal", "new layer", "select all", "black and white", the brush tool). Give its id.
+      A general request to fix, improve, correct or enhance the photo ("fix the colors", "make it look better", "improve the photo", "fixa bilden") is the Auto Enhance option when it is listed.
     - generate: the user wants a brand-new picture created from a description ("a cat astronaut", "make an image of a castle at sunset"), not a change to the current photo. Write a good prompt.
     - assistant: anything else: several steps, specific amounts or settings ("brighten it by 20%", "warmer and with a vignette"), changes to the photo's content ("remove the person", "make it snowy"), or questions.
     When in doubt, answer assistant.

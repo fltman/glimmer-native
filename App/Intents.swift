@@ -30,11 +30,37 @@ enum HeadlessEditor {
             defer { if accessing { url.stopAccessingSecurityScopedResource() } }
             return try GlimmerPackage.state(from: FileWrapper(url: url))
         }
-        let image = try ImageImporter.image(from: file.data)
+        return try document(imageData: file.data, filename: file.filename)
+    }
+
+    /// A document from a file on disk (for batch processing).
+    static func document(contentsOf url: URL) throws -> DocumentState {
+        if url.pathExtension.lowercased() == "glimmer" {
+            return try GlimmerPackage.state(from: FileWrapper(url: url))
+        }
+        return try document(imageData: Data(contentsOf: url), filename: url.lastPathComponent)
+    }
+
+    static func document(imageData: Data, filename: String) throws -> DocumentState {
+        let image = try ImageImporter.image(from: imageData)
         let tiles = try ImageImporter.tiles(from: image)
-        let name = (file.filename as NSString).deletingPathExtension
+        let name = (filename as NSString).deletingPathExtension
         return DocumentState(width: image.width, height: image.height,
                              layers: [Layer(name: name.isEmpty ? "Image" : name, content: .raster(tiles))])
+    }
+
+    /// Auto Enhance as editable adjustment layers. Returns the state unchanged
+    /// when the image needs nothing.
+    static func autoEnhance(_ state: DocumentState) throws -> DocumentState {
+        let image = try ImageExporter.flattenedSRGB(state, context: metal)
+        let recipe = SmartAnalysis.enhanceRecipe(for: image)
+        guard recipe.isNoticeable else { return state }
+        var state = state
+        let children = recipe.adjustments.map { Layer(name: $0.kind.title, content: .adjustment($0)) }
+        state.activeLayerID = state.layers.last?.id
+        state.insertLayerAboveActive(Layer(name: "Auto Enhance", blendMode: .passThrough,
+                                           content: .group(LayerGroup(children: children, isExpanded: false))))
+        return state
     }
 
     /// The topmost visible pixel layer.
@@ -111,6 +137,8 @@ enum HeadlessEditor {
                 text.origin = SIMD2((Double(state.width) - layout.width) / 2, y)
                 state.activeLayerID = state.layers.last?.id
                 state.insertLayerAboveActive(Layer(name: String(text.string.prefix(32)), content: .text(text)))
+            case "auto_enhance":
+                state = try autoEnhance(state)
             case "remove_background":
                 state = try removeBackground(state)
             case "select_all", "deselect", "set_foreground", "new_layer":
@@ -261,6 +289,27 @@ struct RunActionIntent: AppIntent {
     }
 }
 
+struct AutoEnhanceIntent: AppIntent {
+    static let title: LocalizedStringResource = "Auto Enhance Image"
+    static let description = IntentDescription("Corrects tone and colour automatically on this Mac, like Image › Auto Enhance.")
+    static var supportedModes: IntentModes { .background }
+
+    @Parameter(title: "Image", supportedContentTypes: [.image])
+    var image: IntentFile
+
+    @Parameter(title: "Format", default: .jpeg)
+    var format: ImageFormatOption
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Auto enhance \(\.$image)") { \.$format }
+    }
+
+    func perform() async throws -> some IntentResult & ReturnsValue<IntentFile> {
+        let state = try HeadlessEditor.autoEnhance(try HeadlessEditor.document(from: image))
+        return .result(value: try HeadlessEditor.export(state, format: format.format, name: HeadlessEditor.baseName(image)))
+    }
+}
+
 struct RemoveBackgroundIntent: AppIntent {
     static let title: LocalizedStringResource = "Remove Background"
     static let description = IntentDescription("Cuts the main subject out of an image on this Mac and returns a PNG with a transparent background.")
@@ -352,6 +401,9 @@ struct GlimmerShortcuts: AppShortcutsProvider {
         AppShortcut(intent: RemoveBackgroundIntent(),
                     phrases: ["Remove the background with \(.applicationName)", "Cut out an image with \(.applicationName)"],
                     shortTitle: "Remove Background", systemImageName: "person.crop.rectangle")
+        AppShortcut(intent: AutoEnhanceIntent(),
+                    phrases: ["Auto enhance a photo with \(.applicationName)", "Fix a photo with \(.applicationName)"],
+                    shortTitle: "Auto Enhance", systemImageName: "wand.and.sparkles")
         AppShortcut(intent: ApplyPresetIntent(),
                     phrases: ["Apply a \(.applicationName) preset", "Apply \(\.$preset) in \(.applicationName)"],
                     shortTitle: "Apply Preset", systemImageName: "camera.filters")

@@ -3,7 +3,7 @@
 A native macOS (Swift, Metal, SwiftUI) port of [Glimmer](https://github.com/fltman/glimmer), the AI-first, layer-based image editor.
 
 - **Standalone.** AI features call OpenRouter directly with your own API key, stored in the Keychain. No server.
-- **On-device where possible.** Cutout, Select Subject, Magic Select, depth and Real-ESRGAN upscaling run locally with Vision and Core ML; Apple Intelligence handles simple assistant requests without a paid call.
+- **On-device where possible.** Cutout, Select Subject, Magic Select, depth and Real-ESRGAN upscaling run locally with Vision and Core ML; Apple Intelligence handles simple assistant requests without a paid call. Auto Enhance (as editable adjustment layers), Auto Straighten and Suggest Crop come from local image analysis, which also drives the omnibar's suggestions for the open photo.
 - **Requires** macOS 27 and Xcode 27.
 
 Architecture and roadmap: [docs/PLAN.md](docs/PLAN.md) (in Swedish).
@@ -37,7 +37,9 @@ One-time setup:
 
 ## Shortcuts
 
-Glimmer adds Shortcuts actions that work on files without opening a window: Remove Background (on-device), Apply Glimmer Preset, Apply Glimmer Filter, Run Glimmer Action (an action saved from the assistant, for editing many photos the same way) and Export Glimmer Document (PNG, JPEG, HEIC, TIFF or WebP).
+Glimmer adds Shortcuts actions that work on files without opening a window: Auto Enhance Image and Remove Background (both on-device), Apply Glimmer Preset, Apply Glimmer Filter, Run Glimmer Action (an action saved from the assistant, for editing many photos the same way) and Export Glimmer Document (PNG, JPEG, HEIC, TIFF or WebP).
+
+In the app, **File › Batch Process…** runs the same recipes (Auto Enhance, Remove Background, a preset or a saved action) over many images or folders and writes the results to a folder you choose.
 
 ## Projects from Glimmer for the web
 

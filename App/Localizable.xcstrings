@@ -23,6 +23,16 @@
         }
       }
     },
+    "%@: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@: %2$@"
+          }
+        }
+      }
+    },
     "%lld": {},
     "%lld %%": {},
     "%lld by %lld pixels, %lld layers, zoom %lld percent": {
@@ -37,6 +47,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$lld gånger %2$lld pixlar, %3$lld lager, zoom %4$lld procent"
+          }
+        }
+      }
+    },
+    "%lld images": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld bilder"
           }
         }
       }
@@ -78,6 +98,7 @@
       }
     },
     "+ Group": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -88,6 +109,7 @@
       }
     },
     "+ Layer": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -98,6 +120,7 @@
       }
     },
     "+ Mask": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -313,6 +336,16 @@
         }
       }
     },
+    "Add": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till"
+          }
+        }
+      }
+    },
     "Add AI detail": {
       "localizations": {
         "sv": {
@@ -329,6 +362,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lägg till förgrundsfärg"
+          }
+        }
+      }
+    },
+    "Add Images…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till bilder…"
           }
         }
       }
@@ -510,6 +553,7 @@
       }
     },
     "Alpha": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -642,6 +686,7 @@
       }
     },
     "Apply Lens Blur": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -694,6 +739,7 @@
       }
     },
     "Ask for an edit: “moody black & white with a vignette”": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -753,6 +799,47 @@
         }
       }
     },
+    "Auto Enhance": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoförbättra"
+          }
+        }
+      }
+    },
+    "Auto Enhance Image": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoförbättra bild"
+          }
+        }
+      }
+    },
+    "Auto Straighten": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Räta upp automatiskt"
+          }
+        }
+      }
+    },
+    "Auto enhance ${image}": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoförbättra ${image}"
+          }
+        }
+      }
+    },
     "Avoid (optional)": {
       "localizations": {
         "sv": {
@@ -769,6 +856,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bakgrund"
+          }
+        }
+      }
+    },
+    "Batch Process…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Batchbearbeta…"
           }
         }
       }
@@ -843,6 +941,7 @@
       }
     },
     "Black to White": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -1079,6 +1178,7 @@
       }
     },
     "Cancel Magic Select": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -1174,6 +1274,7 @@
       }
     },
     "Channels Panel": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -1234,6 +1335,26 @@
         }
       }
     },
+    "Choose a folder": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj en mapp"
+          }
+        }
+      }
+    },
+    "Choose…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj…"
+          }
+        }
+      }
+    },
     "Chromatic Aberration": {
       "localizations": {
         "sv": {
@@ -1277,6 +1398,7 @@
       }
     },
     "Classic Layout": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -1349,6 +1471,7 @@
       }
     },
     "Click a channel to view it in grey. Channel views don't change the image.": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -1379,6 +1502,7 @@
       }
     },
     "Click an object · ⌥-click to exclude · Return keeps · Esc cancels": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -1645,6 +1769,27 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kopiera"
+          }
+        }
+      }
+    },
+    "Corrects tone and colour as editable adjustment layers. Runs on this Mac, free. ⇧⌘L": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rättar ton och färg som redigerbara justeringslager. Körs på den här Macen, gratis. ⇧⌘L"
+          }
+        }
+      }
+    },
+    "Corrects tone and colour automatically on this Mac, like Image › Auto Enhance.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rättar ton och färg automatiskt på den här Macen, som Bild › Autoförbättra."
           }
         }
       }
@@ -1985,6 +2130,7 @@
       }
     },
     "Discard Path": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -2172,7 +2318,18 @@
         }
       }
     },
+    "Drop images or folders here": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Släpp bilder eller mappar här"
+          }
+        }
+      }
+    },
     "Duplicate": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -2425,6 +2582,7 @@
       }
     },
     "Estimating depth": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -2538,6 +2696,7 @@
       }
     },
     "Export PNG…": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -2548,6 +2707,7 @@
       }
     },
     "Export Web Project (.aips)…": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -2703,6 +2863,7 @@
       }
     },
     "Fill layers, shapes and smart filters are saved as pixels; the web app has no equivalent.": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -2733,6 +2894,7 @@
       }
     },
     "Fill with Background Color": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -2743,6 +2905,7 @@
       }
     },
     "Fill with Foreground Color": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -2753,6 +2916,7 @@
       }
     },
     "Fill with Pattern": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -2835,12 +2999,39 @@
         }
       }
     },
+    "Finds a tilted horizon and opens Crop, levelled. Runs on this Mac, free.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hittar en lutande horisont och öppnar Beskär med bilden uppriktad. Körs på den här Macen, gratis."
+          }
+        }
+      }
+    },
     "Finds photobombers, litter, signs, cables and dust spots to remove.": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Hittar photobombare, skräp, skyltar, kablar och dammfläckar att ta bort."
+          }
+        }
+      }
+    },
+    "Finished %lld of %lld": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Finished %1$lld of %2$lld"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klart: %lld av %lld"
           }
         }
       }
@@ -3030,6 +3221,27 @@
           "stringUnit": {
             "state": "translated",
             "value": "Framåtförvrängning"
+          }
+        }
+      }
+    },
+    "Frame the subject at this aspect ratio (on-device)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rama in motivet i det här bildformatet (på enheten)"
+          }
+        }
+      }
+    },
+    "Frames the subject at the crop's aspect ratio. Runs on this Mac, free.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ramar in motivet i beskärningens bildformat. Körs på den här Macen, gratis."
           }
         }
       }
@@ -3253,6 +3465,16 @@
         }
       }
     },
+    "Glimmer found no tilted horizon to straighten.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer hittade ingen lutande horisont att räta upp."
+          }
+        }
+      }
+    },
     "Gradient": {
       "extractionState": "manual",
       "localizations": {
@@ -3340,6 +3562,7 @@
       }
     },
     "Group": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -3510,6 +3733,7 @@
       }
     },
     "Hide Interface": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -3583,6 +3807,7 @@
       }
     },
     "History Panel": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -3675,6 +3900,16 @@
         }
       }
     },
+    "Images": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilder"
+          }
+        }
+      }
+    },
     "Inner Shadow": {
       "extractionState": "manual",
       "localizations": {
@@ -3751,6 +3986,16 @@
       }
     },
     "JPEG": {},
+    "JPEG has no transparency: the background turns white. Choose PNG, HEIC or WebP to keep it.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JPEG saknar genomskinlighet, så bakgrunden blir vit. Välj PNG, HEIC eller WebP för att behålla den."
+          }
+        }
+      }
+    },
     "Just ask": {
       "localizations": {
         "sv": {
@@ -3772,6 +4017,7 @@
       }
     },
     "Keeps the last %lld steps. Change it in Settings › General.": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -3913,6 +4159,7 @@
       }
     },
     "Layers Panel": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -4001,6 +4248,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Låt assistenten se bilden"
+          }
+        }
+      }
+    },
+    "Level": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Räta upp"
           }
         }
       }
@@ -4134,6 +4391,7 @@
       }
     },
     "Load %@ as selection": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -4523,6 +4781,16 @@
         }
       }
     },
+    "Name suffix": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Namntillägg"
+          }
+        }
+      }
+    },
     "Navigator": {
       "localizations": {
         "sv": {
@@ -4758,6 +5026,16 @@
         }
       }
     },
+    "Nothing (convert only)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget (bara konvertera)"
+          }
+        }
+      }
+    },
     "Nudge": {
       "extractionState": "manual",
       "localizations": {
@@ -4780,6 +5058,7 @@
       }
     },
     "Ocean": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -4934,6 +5213,7 @@
       }
     },
     "Open…": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -4970,6 +5250,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Yttre glöd"
+          }
+        }
+      }
+    },
+    "Output": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utdata"
           }
         }
       }
@@ -5072,6 +5362,7 @@
       }
     },
     "Paths Panel": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -5425,6 +5716,32 @@
         }
       }
     },
+    "Process %lld Images": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bearbeta %lld bilder"
+          }
+        }
+      }
+    },
+    "Processing %lld of %lld…": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Processing %1$lld of %2$lld…"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bearbetar %lld av %lld…"
+          }
+        }
+      }
+    },
     "Pucker": {
       "extractionState": "manual",
       "localizations": {
@@ -5504,6 +5821,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Real-ESRGAN (på den här Macen)"
+          }
+        }
+      }
+    },
+    "Recipe": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recept"
           }
         }
       }
@@ -5708,6 +6035,7 @@
       }
     },
     "Remove Text from Path": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -6048,6 +6376,7 @@
       }
     },
     "Roundness": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -6215,6 +6544,16 @@
         }
       }
     },
+    "Save Here": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara här"
+          }
+        }
+      }
+    },
     "Save as Action": {
       "localizations": {
         "sv": {
@@ -6231,6 +6570,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Spara förgrundsfärgen"
+          }
+        }
+      }
+    },
+    "Save to": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara i"
           }
         }
       }
@@ -6267,6 +6616,7 @@
       }
     },
     "Scatter": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -6308,6 +6658,7 @@
       }
     },
     "Search or ask…": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -6565,6 +6916,16 @@
         }
       }
     },
+    "Show in Finder": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa i Finder"
+          }
+        }
+      }
+    },
     "Show layer": {
       "localizations": {
         "sv": {
@@ -6576,6 +6937,7 @@
       }
     },
     "Show or hide the Layers panel (⌥⌘L)": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -6657,6 +7019,7 @@
       }
     },
     "Size Jitter": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -6804,6 +7167,7 @@
       }
     },
     "Spacing": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -6814,6 +7178,7 @@
       }
     },
     "Spectrum": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -6854,6 +7219,16 @@
         }
       }
     },
+    "Steps that need the window or a paid AI job are not run in a batch.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steg som behöver fönstret eller ett betalt AI-jobb körs inte i en batch."
+          }
+        }
+      }
+    },
     "Stop": {
       "localizations": {
         "sv": {
@@ -6871,6 +7246,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Räta upp"
+          }
+        }
+      }
+    },
+    "Straighten %@°": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Räta upp %@°"
+          }
+        }
+      }
+    },
+    "Straighten a tilted horizon (on-device)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Räta upp en lutande horisont (på enheten)"
           }
         }
       }
@@ -6981,6 +7376,27 @@
         }
       }
     },
+    "Suggest": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föreslå"
+          }
+        }
+      }
+    },
+    "Suggest Crop": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föreslå beskärning"
+          }
+        }
+      }
+    },
     "Suggest Edits": {
       "localizations": {
         "sv": {
@@ -6991,7 +7407,18 @@
         }
       }
     },
+    "Suggested for this image (analysed on this Mac)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föreslaget för den här bilden (analyserat på den här Macen)"
+          }
+        }
+      }
+    },
     "Sunset": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7094,6 +7521,7 @@
       }
     },
     "Text on Path": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7109,6 +7537,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Texturerad"
+          }
+        }
+      }
+    },
+    "The image already looks balanced. Auto Enhance found nothing to change.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilden ser redan balanserad ut. Autoförbättra hittade inget att ändra."
+          }
+        }
+      }
+    },
+    "The whole image already frames the subject well.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hela bilden ramar redan in motivet väl."
           }
         }
       }
@@ -7176,6 +7624,7 @@
       }
     },
     "To transparent": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7395,6 +7844,7 @@
       }
     },
     "Undo steps share unchanged pixels, so each step only costs the tiles it changed. When the history needs more memory than this, the oldest steps are dropped.": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7771,6 +8221,7 @@
       }
     },
     "a cute robot mascot": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7781,6 +8232,7 @@
       }
     },
     "a neon city street at night": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7791,6 +8243,7 @@
       }
     },
     "a sunset over mountains": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7801,6 +8254,7 @@
       }
     },
     "a watercolor forest cabin": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7821,6 +8275,7 @@
       }
     },
     "add curves": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7836,6 +8291,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "klippt"
+          }
+        }
+      }
+    },
+    "e.g. -edited": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "t.ex. -redigerad"
           }
         }
       }
@@ -7892,6 +8357,7 @@
       }
     },
     "make it warmer": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7913,6 +8379,7 @@
     },
     "pt": {},
     "relight": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7923,6 +8390,7 @@
       }
     },
     "remove background": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -7945,6 +8413,7 @@
       }
     },
     "vintage look": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {
@@ -8005,6 +8474,7 @@
       }
     },
     "⇧ constrains": {
+      "extractionState": "stale",
       "localizations": {
         "sv": {
           "stringUnit": {

@@ -226,6 +226,7 @@ public enum AgentPlanner {
         AgentOp("generate_layer", "Generate a new image from a text prompt as a new layer.", [
             AgentParam("prompt", "string", "What to generate."),
         ], aiJob: true),
+        AgentOp("auto_enhance", "Automatic tone and colour correction (on-device, free, instant) as editable adjustment layers. A good first step for \"fix\", \"improve\" or \"make it look better\" before any creative changes."),
         AgentOp("remove_background", "Cut the main subject out of the active layer onto transparency (adds a mask).", aiJob: true),
         AgentOp("select_subject", "Select the main subject (on-device).", aiJob: true),
         AgentOp("inpaint_selection", "Regenerate or erase the SELECTED region. Requires a selection.", [
