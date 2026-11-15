@@ -278,4 +278,25 @@ private func close(_ a: SIMD4<Float>, _ b: SIMD4<Float>, _ tol: Float = 0.004) -
         let px = try renderPixel(state, x: 150, y: 150)
         #expect(px.y > 0.99 && px.z < 0.01)
     }
+
+    @Test func colorOverlayRecoloursFillAndShapeLayers() throws {
+        var effects = LayerEffects()
+        var overlay = ColorOverlayEffect()
+        overlay.color = SRGBColor(0, 1, 0)
+        effects.colorOverlay = overlay
+        // A shape: a blue fill masked to a square.
+        let r = CGRectLike(x0: 100, y0: 100, x1: 200, y1: 200)
+        let shape = Layer(name: "shape", mask: Selection.rectangle(r).asMask, effects: effects, content: .fill(.solid(SRGBColor(0, 0, 1))))
+        let state = doc([gray(1), shape])
+        let inside = try renderPixel(state, x: 150, y: 150)
+        #expect(inside.y > 0.99 && inside.z < 0.01, "the shape takes the overlay colour")
+        #expect(try renderPixel(state, x: 50, y: 50).z > 0.99, "outside the shape nothing changes")
+        // Half opacity mixes the two.
+        var half = effects
+        half.colorOverlay?.opacity = 0.5
+        var soft = shape
+        soft.effects = half
+        let mixed = try renderPixel(doc([gray(1), soft]), x: 150, y: 150)
+        #expect(mixed.y > 0.2 && mixed.z > 0.2 && mixed.x < 0.05)
+    }
 }

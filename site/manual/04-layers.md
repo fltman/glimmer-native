@@ -253,7 +253,7 @@ Covers the layer's content with one color, keeping its shape and transparency.
 | Blend Mode | Any mode except Pass Through | Normal |
 | Opacity | 0 to 100 % | 100 % |
 
-Color Overlay doesn't change fill or shape layers. Change their color in the properties instead.
+Color Overlay works on every kind of layer with a picture: pixels, text, smart objects, and fill and shape layers. On a gradient or pattern fill it covers the gradient or pattern with the overlay color; lower the opacity to let it show through.
 
 ## Arranging layers
 

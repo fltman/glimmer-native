@@ -59,7 +59,7 @@ indirect enum RenderNode {
     }
 
     case pixels(Pixels)
-    case fill(Common, Fill)
+    case fill(Common, Fill, ColorOverlayEffect?)
     case adjustment(Common, Adjustment)
     case group(Common, [RenderNode])
 
@@ -75,7 +75,7 @@ indirect enum RenderNode {
     var common: Common {
         switch self {
         case .pixels(let p): p.common
-        case .fill(let c, _), .adjustment(let c, _), .group(let c, _): c
+        case .fill(let c, _, _), .adjustment(let c, _), .group(let c, _): c
         }
     }
 }
@@ -209,7 +209,7 @@ public final class DocumentCompositor {
                         nodes.append(.pixels(RenderNode.Pixels(common: common, grid: TileGrid(), offset: o, below: styles.below,
                                                                above: [], overlay: nil, effectsOnly: true)))
                     }
-                    nodes.append(.fill(common, fill))
+                    nodes.append(.fill(common, fill, overlay))
                     if !styles.above.isEmpty {
                         nodes.append(.pixels(RenderNode.Pixels(common: common, grid: TileGrid(), offset: o, below: [],
                                                                above: styles.above, overlay: nil, effectsOnly: true)))
@@ -286,8 +286,8 @@ public final class DocumentCompositor {
                     }
                 }
                 h.combine(p.overlay)
-            case .fill(_, let fill):
-                h.combine(1); h.combine(fill)
+            case .fill(_, let fill, let overlay):
+                h.combine(1); h.combine(fill); h.combine(overlay)
                 node.common.mask?.tile(at: coord).combineIdentity(into: &h)
                 visible = true
             case .adjustment(_, let adjustment):
@@ -502,9 +502,13 @@ public final class DocumentCompositor {
                     base = ClipSource(alpha: alpha, mask: maskTexture(c, at: coord), density: c.mask?.density ?? 0)
                 }
 
-            case .fill(_, let fill):
+            case .fill(_, let fill, let overlay):
                 encoder.setRenderPipelineState(pipelines.layer)
                 var u = layerUniforms(c, gamma: gamma, clip: clip, coord: coord)
+                if let overlay {  // a Color Overlay recolours fills and shapes too
+                    u.overlay = SIMD4(overlay.color.linear, Float(overlay.opacity))
+                    u.overlayMode = overlay.blendMode.shaderIndex
+                }
                 var source = pipelines.white
                 var lut = pipelines.white
                 switch fill {
