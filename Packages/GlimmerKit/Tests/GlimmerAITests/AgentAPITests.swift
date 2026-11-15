@@ -50,6 +50,13 @@ import Testing
         #expect(String(decoding: r.serialized.prefix(30), as: UTF8.self).hasPrefix("HTTP/1.1 404 Not Found"))
     }
 
+    @Test func unprocessableCarriesAReason() throws {
+        let r = AgentAPI.Response.error(.unprocessable("nothing_to_undo", "Nothing to undo."))
+        #expect(r.status == 422)
+        let obj = try JSONSerialization.jsonObject(with: r.body) as? [String: [String: String]]
+        #expect(obj?["error"]?["code"] == "unprocessable" && obj?["error"]?["reason"] == "nothing_to_undo")
+    }
+
     @Test func operationsAndGuideComeFromTheAssistantsList() {
         let ops = AgentAPI.operations
         #expect(ops.count == AgentPlanner.ops.count)

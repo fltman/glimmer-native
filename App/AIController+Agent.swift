@@ -224,27 +224,37 @@ extension AIController {
 
     /// Runs steps from the local agent API as one undo step. Stops at the first
     /// failure and reports the rest as skipped.
-    func runAPISteps(_ steps: [AgentStep]) async -> [APIStepResult] {
+    func runAPISteps(_ steps: [AgentStep], progress: ((Int) -> Void)? = nil) async -> [APIStepResult] {
         session.commitLiveEdit()
         session.document.beginTransaction(String(localized: "Agent Edit"))
         defer { session.document.endTransaction(undoManager: session.undoManager) }
         var results: [APIStepResult] = []
-        var failed = false
-        for step in steps {
-            if failed {
-                results.append(APIStepResult(op: step.op, status: "skipped", error: nil))
+        var stopped = false
+        for (i, step) in steps.enumerated() {
+            if stopped || Task.isCancelled {
+                stopped = true
+                results.append(APIStepResult(op: step.op, status: Task.isCancelled ? "cancelled" : "skipped", error: nil))
                 continue
             }
             do {
                 try await execute(step)
                 results.append(APIStepResult(op: step.op, status: "done", error: nil))
+            } catch is CancellationError {
+                stopped = true
+                results.append(APIStepResult(op: step.op, status: "cancelled", error: nil))
             } catch {
-                failed = true
+                stopped = true
                 results.append(APIStepResult(op: step.op, status: "failed",
                                              error: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription))
             }
+            progress?(i + 1)
         }
         return results
+    }
+
+    /// Cancels the AI jobs this window is running (used when an API job is cancelled).
+    func cancelRunningJobs() {
+        for job in jobs where job.status == .running { cancel(job.id) }
     }
 
     /// The quality check: the model compares before and after and may adjust once.

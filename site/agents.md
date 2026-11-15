@@ -49,13 +49,16 @@ Opening a document answers `201 Created`. To start from a blank canvas instead, 
 | Method | Path | What it does |
 |---|---|---|
 | GET | `/glimmer` | This guide (Markdown). |
-| GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port and the open documents. |
+| GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents and the running `jobs`. |
 | GET | `/api/v1/operations` | Every step operation with its parameters (JSON). |
 | GET | `/api/v1/documents` | The open documents. |
 | POST | `/api/v1/documents` | Open an image (raw bytes, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\|"black"\|"transparent"}`). |
 | GET | `/api/v1/documents/{id}` | Size, layers (top first), the active layer and whether there is a selection. |
 | GET | `/api/v1/documents/{id}/image` | The flattened image. Query: `format=png\|jpeg`, `maxSide=<px>`. |
-| POST | `/api/v1/documents/{id}/steps` | Run steps in order. Body: `{"steps": [{"op": "…", "params": {…}}], "allowPaid": false}`. |
+| POST | `/api/v1/documents/{id}/steps` | Run steps in order. Body: `{"steps": [{"op": "…", "params": {…}}], "allowPaid": false, "async": false}`. Answers 200 when done, or 202 with a job (see Long jobs). |
+| GET | `/api/v1/jobs` | Recent jobs (see Long jobs). |
+| GET | `/api/v1/jobs/{id}` | One job: status, progress and, when finished, the result. |
+| DELETE | `/api/v1/jobs/{id}` | Cancel a job that is still running. |
 | POST | `/api/v1/documents/{id}/undo` | Undo the last step (a whole `steps` request counts as one). |
 | POST | `/api/v1/documents/{id}/redo` | Redo. |
 | POST | `/api/v1/documents/{id}/export` | The finished image as bytes. Body: `{"format": "png\|jpeg\|heic\|tiff\|webp", "quality": 0.9, "maxSide": 2048, "maxBytes": 500000}`; all optional (PNG by default). |
@@ -81,6 +84,21 @@ Which layer a step acts on:
 
 Common requests: black and white is `add_adjustment` with `"type": "black_white"`; a vignette is `apply_filter` with `"type": "vignette"`; a finished look is `apply_preset`.
 
+### Long jobs
+
+Steps that call OpenRouter can take a minute, so a `steps` request that contains a paid step always runs as a job, and so does any request with `"async": true`. Such a request answers `202 Accepted` at once:
+
+```json
+{"job": {"id": "C1A2…", "kind": "steps", "document": "8F0C…", "status": "running", "progress": 0}}
+```
+
+Poll `GET /api/v1/jobs/{id}` until `status` is `done`, `failed` or `cancelled` (it starts as `queued` or `running`). `progress` goes from 0 to 1 as steps finish. A finished job carries the same `result` a direct request would have returned (`results` and `document`), and a failed one also has `error` (`{"code": "step_failed", "message": "…", "step": 1}`). `DELETE /api/v1/jobs/{id}` cancels a running job; steps that didn't run are reported as `cancelled`. Running jobs are also listed under `jobs` in `GET /api/v1/status`. Finished jobs are kept for a while (the 50 most recent).
+
+```sh
+JOB=$(curl -s -X POST -H 'X-Glimmer-Agent: 1' -d '{"steps": [{"op": "auto_enhance"}], "async": true}'       $BASE/api/v1/documents/$ID/steps | python3 -c 'import json,sys; print(json.load(sys.stdin)["job"]["id"])')
+curl -s $BASE/api/v1/jobs/$JOB
+```
+
 ### Export size limits
 
 `maxSide` scales the image so its longer side fits. `maxBytes` (JPEG, HEIC and WebP only; PNG and TIFF ignore it) lowers the quality until the file fits, and scales the image down too if even low quality is too big, so the limit is met.
@@ -98,6 +116,7 @@ Errors are JSON: `{"error": {"code": "…", "message": "…"}}`. A failed step a
 | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
 | 413 | `too_large` | Body over 256 MB. |
 | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. |
+| 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`). |
 | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
 ## Operations

@@ -38,6 +38,55 @@ final class AgentRegistry {
     }
 }
 
+// MARK: Jobs
+
+/// Long requests (anything with a paid step, or `"async": true`) run as jobs:
+/// POST answers 202 with the job, GET /api/v1/jobs/{id} reads it, DELETE cancels it.
+/// The same shape as Flimmer's and Jämmer's jobs.
+@MainActor
+final class AgentJobs {
+    static let shared = AgentJobs()
+
+    final class Job {
+        let id = UUID().uuidString
+        let kind: String
+        let documentID: String
+        var status = "queued"  // queued, running, done, failed, cancelled
+        var progress = 0.0
+        var error: [String: Any]?
+        var result: [String: Any]?
+        var finished: Date?
+        var task: Task<Void, Never>?
+
+        init(kind: String, documentID: String) {
+            self.kind = kind
+            self.documentID = documentID
+        }
+
+        var json: [String: Any] {
+            var d: [String: Any] = ["id": id, "kind": kind, "document": documentID, "status": status, "progress": progress]
+            if let error { d["error"] = error }
+            if let result { d["result"] = result }
+            return d
+        }
+    }
+
+    private var jobs: [String: Job] = [:]
+    private var order: [String] = []
+
+    func add(_ job: Job) {
+        jobs[job.id] = job
+        order.append(job.id)
+        // Keep the 50 most recent finished jobs.
+        let finished = order.filter { jobs[$0]?.finished != nil }
+        for id in finished.dropLast(50) { jobs[id] = nil; order.removeAll { $0 == id } }
+    }
+
+    func job(_ id: String) -> Job? { jobs[id] ?? jobs.values.first { $0.id.caseInsensitiveCompare(id) == .orderedSame } }
+    var running: [Job] { order.compactMap { jobs[$0] }.filter { $0.finished == nil } }
+    var all: [Job] { order.compactMap { jobs[$0] } }
+}
+
 // MARK: Server
 
 /// The local HTTP server for agents: the guide at `/glimmer` and the API under
@@ -171,7 +220,8 @@ enum AgentRouter {
         case ["api", "v1", "status"]:
             try only("GET")
             return .json(["app": ["name": "Glimmer", "version": appVersion], "api": AgentAPI.version, "port": Int(port),
-                          "documents": AgentRegistry.shared.sessions.map(summary)])
+                          "documents": AgentRegistry.shared.sessions.map(summary),
+                          "jobs": AgentJobs.shared.running.map(\.json)])
         case ["api", "v1", "operations"]:
             try only("GET")
             return .json(["operations": AgentAPI.operations])
@@ -179,6 +229,19 @@ enum AgentRouter {
             try only("GET", "POST")
             if r.method == "GET" { return .json(["documents": AgentRegistry.shared.sessions.map(summary)]) }
             return try await createDocument(r)
+        case ["api", "v1", "jobs"]:
+            try only("GET")
+            return .json(["jobs": AgentJobs.shared.all.map(\.json)])
+        case let p where p.count == 4 && Array(p.prefix(3)) == ["api", "v1", "jobs"]:
+            try only("GET", "DELETE")
+            guard let job = AgentJobs.shared.job(p[3]) else {
+                throw APIError.notFound("No job with id \(p[3]). Finished jobs are kept for a while; GET /api/v1/jobs lists them.")
+            }
+            if r.method == "DELETE", job.finished == nil {
+                job.task?.cancel()
+                AgentRegistry.shared.session(job.documentID)?.ai.cancelRunningJobs()
+            }
+            return .json(["job": job.json])
         case let p where p.count >= 4 && Array(p.prefix(3)) == ["api", "v1", "documents"]:
             guard let session = AgentRegistry.shared.session(p[3]) else {
                 throw APIError.notFound("No open document with id \(p[3]). GET /api/v1/documents lists them.")
@@ -368,12 +431,31 @@ enum AgentRouter {
             }
             steps.append(decoded)
         }
-        let results = await session.ai.runAPISteps(steps)
-        let list: [[String: Any]] = results.enumerated().map { i, res in
-            var d: [String: Any] = ["index": i, "op": res.op, "status": res.status]
-            if let e = res.error { d["error"] = e }
-            return d
+        // Paid steps take a while: they always run as a job, and so does any request that asks.
+        if obj["async"] as? Bool == true || steps.contains(where: { AgentAPI.paidOps.contains($0.op) }) {
+            let job = AgentJobs.Job(kind: "steps", documentID: session.agentID)
+            AgentJobs.shared.add(job)
+            let total = Double(steps.count)
+            job.task = Task { @MainActor in
+                job.status = "running"
+                let results = await session.ai.runAPISteps(steps) { done in job.progress = Double(done) / total }
+                job.result = ["results": stepList(results), "document": detail(session)]
+                if let failed = results.firstIndex(where: { $0.status == "failed" }) {
+                    job.status = "failed"
+                    job.error = ["code": "step_failed", "step": failed,
+                                 "message": "Step \(failed) (\(results[failed].op)) failed: \(results[failed].error ?? "")"]
+                } else if results.contains(where: { $0.status == "cancelled" }) {
+                    job.status = "cancelled"
+                } else {
+                    job.status = "done"
+                    job.progress = 1
+                }
+                job.finished = Date()
+            }
+            return .json(["job": job.json], status: 202)
         }
+        let results = await session.ai.runAPISteps(steps)
+        let list = stepList(results)
         if let failed = results.firstIndex(where: { $0.status == "failed" }) {
             return .json(["error": ["code": "step_failed", "step": failed,
                                     "message": "Step \(failed) (\(results[failed].op)) failed: \(results[failed].error ?? "")"] as [String: Any],
@@ -382,13 +464,21 @@ enum AgentRouter {
         return .json(["results": list, "document": detail(session)])
     }
 
+    private static func stepList(_ results: [AIController.APIStepResult]) -> [[String: Any]] {
+        results.enumerated().map { i, res in
+            var d: [String: Any] = ["index": i, "op": res.op, "status": res.status]
+            if let e = res.error { d["error"] = e }
+            return d
+        }
+    }
+
     private static func undoRedo(_ session: EditorSession, redo: Bool) throws -> Response {
-        guard let undo = session.undoManager else { throw APIError.notAvailable("The document has no undo history yet.") }
+        guard let undo = session.undoManager else { throw APIError.unprocessable("no_history", "The document has no undo history yet.") }
         if redo {
-            guard undo.canRedo else { throw APIError.notAvailable("Nothing to redo.") }
+            guard undo.canRedo else { throw APIError.unprocessable("nothing_to_redo", "Nothing to redo.") }
             undo.redo()
         } else {
-            guard undo.canUndo else { throw APIError.notAvailable("Nothing to undo.") }
+            guard undo.canUndo else { throw APIError.unprocessable("nothing_to_undo", "Nothing to undo.") }
             undo.undo()
         }
         return .json(["document": detail(session)])
