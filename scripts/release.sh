@@ -1,7 +1,12 @@
 #!/bin/zsh
 # Builds a notarized, stapled Glimmer.dmg signed with Developer ID, plus a Sparkle appcast.
 #
-#   scripts/release.sh [<version>] [--publish]
+#   scripts/release.sh [<version>] [--publish | --dry-run]
+#
+# --dry-run builds, signs with Developer ID and makes the DMG and a local appcast, but
+# skips notarization, uploading and pushing (for rehearsals; the app is not notarized,
+# so Gatekeeper rejects it on other Macs). DOWNLOAD_PREFIX overrides the download URL
+# written into the appcast (default: the GitHub release of that version).
 #
 # With a version (e.g. 0.2.0) it sets that version in project.yml and raises the build
 # number (Sparkle compares build numbers, so every release needs a higher one). It runs
@@ -9,21 +14,26 @@
 # v<version>, pushes, and creates the GitHub release with the DMG and appcast.
 #
 # Notarization goes through Xcode, using the account in Xcode › Settings › Accounts.
-# The first run creates the Sparkle EdDSA key in your login keychain (Sparkle's generate_keys).
+# The Sparkle EdDSA key must already be in your login keychain (Sparkle's generate_keys); the
+# script stops if it isn't, because a new key would break updates for existing users.
+# CREATE_SPARKLE_KEY=1 creates one, for the very first release only.
 # Env: SKIP_SPARKLE=1 builds without update signing.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PUBLISH=0
+DRY_RUN=0
 NEW_VERSION=""
 for arg in "$@"; do
   case "$arg" in
     --publish) PUBLISH=1 ;;
+    --dry-run) DRY_RUN=1 ;;
     [0-9]*.[0-9]*) NEW_VERSION="$arg" ;;
     *) echo "Unknown argument: $arg"; exit 1 ;;
   esac
 done
 
+if [[ $PUBLISH == 1 && $DRY_RUN == 1 ]]; then echo "--publish and --dry-run don't go together."; exit 1; fi
 if [[ $PUBLISH == 1 && -n "$(git status --porcelain)" ]]; then
   echo "Commit or stash your changes before publishing."; exit 1
 fi
@@ -54,6 +64,13 @@ else
   # generate_keys -p prints its error to stdout, so only trust the output on success.
   PUBKEY=$("$SPARKLE_BIN/generate_keys" -p 2>/dev/null) || PUBKEY=""
 fi
+if [[ -z "$PUBKEY" && "${SKIP_SPARKLE:-0}" != 1 && "${CREATE_SPARKLE_KEY:-0}" != 1 ]]; then
+  # A new key would lock out everyone on an earlier version: their app only trusts the old one.
+  echo "The Sparkle signing key isn't in this Mac's login keychain (Sparkle's generate_keys -p found nothing)."
+  echo "Import the existing key (generate_keys -f <file>) before releasing. Only for the very first release:"
+  echo "CREATE_SPARKLE_KEY=1 $0 $*"
+  exit 1
+fi
 if [[ -z "$PUBKEY" && "${SKIP_SPARKLE:-0}" != 1 ]]; then
   echo "▸ Creating the Sparkle signing key (stored in your login keychain)"
   "$SPARKLE_BIN/generate_keys" >/dev/null
@@ -66,6 +83,22 @@ xcodebuild archive -project Glimmer.xcodeproj -scheme Glimmer -configuration Rel
   -derivedDataPath build/DerivedData -archivePath "$OUT/Glimmer.xcarchive" \
   SPARKLE_PUBLIC_KEY="$PUBKEY" -quiet
 
+if [[ $DRY_RUN == 1 ]]; then
+  # Rehearsal: sign with Developer ID locally, no notarization upload.
+  cat > "$OUT/ExportOptions.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>method</key><string>developer-id</string>
+  <key>destination</key><string>export</string>
+  <key>teamID</key><string>V783A2L763</string>
+  <key>signingStyle</key><string>automatic</string>
+</dict></plist>
+PLIST
+  echo "▸ Exporting (dry run: Developer ID signature, no notarization)"
+  xcodebuild -exportArchive -archivePath "$OUT/Glimmer.xcarchive" -exportPath "$OUT/export" \
+    -exportOptionsPlist "$OUT/ExportOptions.plist" -allowProvisioningUpdates -quiet
+else
 # Xcode uploads the app for notarization with the Apple ID signed in under Xcode › Settings › Accounts.
 cat > "$OUT/ExportOptions.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -86,8 +119,15 @@ for i in {1..90}; do
   (( i == 90 )) && { echo "Notarization didn't finish in 30 minutes."; exit 1; }
   sleep 20
 done
+fi
 APP="$OUT/export/Glimmer.app"
-xcrun stapler validate "$APP"
+if [[ $DRY_RUN == 1 ]]; then
+  codesign --verify --deep --strict "$APP"
+  SIGNATURE=$(codesign -dvv "$APP" 2>&1)
+  [[ "$SIGNATURE" == *"Authority=Developer ID Application: Brattoo AB"* ]] || { echo "Not signed with Developer ID"; exit 1; }
+else
+  xcrun stapler validate "$APP"
+fi
 BUILT=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" -c "Print CFBundleVersion" "$APP/Contents/Info.plist" | tr '\n' ' ')
 [[ "$BUILT" == "$VERSION $BUILD " ]] || { echo "The app says version $BUILT, expected $VERSION $BUILD"; exit 1; }
 
@@ -104,7 +144,15 @@ if [[ "${SKIP_SPARKLE:-0}" == 1 ]]; then echo "✔ $DMG (no appcast)"; exit 0; f
 echo "▸ Sparkle appcast"
 mkdir -p "$OUT/updates"
 cp "$DMG" "$OUT/updates/"
-"$SPARKLE_BIN/generate_appcast" --download-url-prefix "https://github.com/fltman/glimmer-native/releases/download/v$VERSION/" "$OUT/updates"
+# Release notes: docs/release-notes/<version>.html, shown in Sparkle's update window.
+if [[ -f "docs/release-notes/$VERSION.html" ]]; then
+  cp "docs/release-notes/$VERSION.html" "$OUT/updates/Glimmer-$VERSION.html"
+else
+  echo "  (no docs/release-notes/$VERSION.html: the update window will show no release notes)"
+fi
+"$SPARKLE_BIN/generate_appcast" --download-url-prefix "${DOWNLOAD_PREFIX:-https://github.com/fltman/glimmer-native/releases/download/v$VERSION/}" "$OUT/updates"
+# The app reads its feed from glimmer.brattoo.com (SUFeedURL); this file must be hosted there.
+echo "▸ Appcast: $OUT/updates/appcast.xml (host it at $(/usr/libexec/PlistBuddy -c 'Print SUFeedURL' "$APP/Contents/Info.plist"))"
 
 if [[ $PUBLISH == 1 ]]; then
   if [[ -n "$(git status --porcelain project.yml)" ]]; then
@@ -116,4 +164,8 @@ if [[ $PUBLISH == 1 ]]; then
 fi
 
 echo "✔ $DMG"
-spctl --assess --type execute -v "$APP"
+if [[ $DRY_RUN == 1 ]]; then
+  echo "  Dry run: not notarized (Gatekeeper will reject it on other Macs), nothing uploaded or pushed."
+else
+  spctl --assess --type execute -v "$APP"
+fi
