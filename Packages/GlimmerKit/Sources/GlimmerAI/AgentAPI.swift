@@ -169,6 +169,15 @@ public enum AgentAPI {
         /// 422 for a request (not a step batch) whose precondition isn't met, such as nothing to undo.
         public static func unprocessable(_ reason: String, _ m: String) -> APIError { APIError(422, "unprocessable", m, reason: reason) }
 
+        /// The error body of a failed step in a step batch (or job). Always `step_failed`, as in
+        /// SIBLINGS.md; a step that refused for a known reason adds `reason`
+        /// (`would_rasterize_text`, `bad_corners`, `group_has_mask`…).
+        public static func stepFailedBody(step: Int, op: String, message: String, reason: String?) -> [String: Any] {
+            var e: [String: Any] = ["code": "step_failed", "step": step, "message": "Step \(step) (\(op)) failed: \(message)"]
+            if let reason { e["reason"] = reason }
+            return e
+        }
+
         public static func badRequest(_ m: String) -> APIError { APIError(400, "bad_request", m) }
         public static func notFound(_ m: String) -> APIError { APIError(404, "not_found", m) }
         public static func forbidden(_ m: String) -> APIError { APIError(403, "forbidden", m) }
@@ -384,7 +393,7 @@ public enum AgentAPI {
         | 404 | `not_found` | No such document, path or operation. |
         | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
         | 413 | `too_large` | Body over 256 MB. |
-        | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. |
+        | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `group_has_mask`, `cannot_transform`). |
         | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`). |
         | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 

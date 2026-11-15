@@ -57,6 +57,17 @@ import Testing
         #expect(obj?["error"]?["code"] == "unprocessable" && obj?["error"]?["reason"] == "nothing_to_undo")
     }
 
+    @Test func aRefusedStepIsStepFailedWithAReason() {
+        // SIBLINGS.md: inside /steps a refusal is always step_failed; unprocessable is only for other calls.
+        let refused = AgentAPI.APIError.stepFailedBody(step: 1, op: "transform_layer", message: "Would rasterize.", reason: "bad_corners")
+        #expect(refused["code"] as? String == "step_failed")
+        #expect(refused["reason"] as? String == "bad_corners")
+        #expect(refused["step"] as? Int == 1)
+        let plain = AgentAPI.APIError.stepFailedBody(step: 0, op: "crop", message: "No such layer.", reason: nil)
+        #expect(plain["code"] as? String == "step_failed" && plain["reason"] == nil)
+        #expect(AgentAPI.guide(port: 9001, appVersion: "1").contains("`error.reason` says which (`would_rasterize_text`"))
+    }
+
     @Test func operationsAndGuideComeFromTheAssistantsList() {
         let ops = AgentAPI.operations
         #expect(ops.filter { $0["call"] == nil }.count == AgentPlanner.ops.count)

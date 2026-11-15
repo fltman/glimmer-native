@@ -374,7 +374,7 @@ extension AIController {
 
     struct StepError: LocalizedError {
         let errorDescription: String?
-        /// A machine-readable reason (the API answers 422 unprocessable with it).
+        /// A machine-readable reason (the API adds it to its 422 step_failed answer).
         var reason: String?
         init(_ message: String, reason: String? = nil) {
             errorDescription = message

@@ -562,13 +562,10 @@ enum AgentRouter {
         return .json(["results": list, "document": detail(session)])
     }
 
-    /// A failed step: `unprocessable` with a `reason` when the step refused for a known reason
-    /// (would_rasterize_text, bad_corners, group_has_mask…), otherwise `step_failed`.
+    /// A failed step: always `step_failed`, with a `reason` when the step refused for a known reason.
     private static func stepFailure(_ results: [AIController.APIStepResult], _ failed: Int) -> [String: Any] {
-        var e: [String: Any] = ["code": results[failed].reason == nil ? "step_failed" : "unprocessable", "step": failed,
-                                "message": "Step \(failed) (\(results[failed].op)) failed: \(results[failed].error ?? "")"]
-        if let reason = results[failed].reason { e["reason"] = reason }
-        return e
+        AgentAPI.APIError.stepFailedBody(step: failed, op: results[failed].op, message: results[failed].error ?? "",
+                                         reason: results[failed].reason)
     }
 
     private static func stepList(_ results: [AIController.APIStepResult]) -> [[String: Any]] {
