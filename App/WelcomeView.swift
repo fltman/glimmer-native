@@ -20,7 +20,9 @@ struct WelcomeView: View {
                 Image(nsImage: NSApp.applicationIconImage)
                     .resizable()
                     .frame(width: 96, height: 96)
+                    .accessibilityHidden(true)  // the heading names the app
                 Text("Welcome to Glimmer").font(.largeTitle.bold())
+                    .accessibilityAddTraits(.isHeader)
                 Text("A photo editor for the Mac, with AI where it helps.")
                     .foregroundStyle(.secondary)
             }
@@ -31,11 +33,14 @@ struct WelcomeView: View {
                             .font(.title2)
                             .foregroundStyle(.tint)
                             .frame(width: 34)
+                            .accessibilityHidden(true)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(title).font(.headline)
                             Text(text).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                         }
                     }
+                    // One stop per feature: its title, then what it does.
+                    .accessibilityElement(children: .combine)
                 }
             }
             HStack {

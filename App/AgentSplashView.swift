@@ -20,15 +20,18 @@ struct AgentSplashView: View {
                     .resizable()
                     .frame(width: 72, height: 72)
                     .shadow(color: Self.neon.opacity(0.5), radius: 18)
+                    .accessibilityHidden(true)  // the heading names the app
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Glimmer").font(.largeTitle.bold())
                         .shadow(color: Self.neon.opacity(0.6), radius: 10)
+                        .accessibilityAddTraits(.isHeader)
                     Text("A photo editor for the Mac that agents can drive too.")
                         .foregroundStyle(.secondary)
                 }
             }
             VStack(alignment: .leading, spacing: 8) {
                 Text("For your agent").font(.headline)
+                    .accessibilityAddTraits(.isHeader)
                 Text("Paste this into Claude or another AI agent. It fetches the guide from Glimmer on this Mac and can then open, edit and export images in your open windows.")
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -42,16 +45,20 @@ struct AgentSplashView: View {
                             .padding(10)
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color.white.opacity(0.05), in: .rect(cornerRadius: 8))
-                            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Self.neon.opacity(0.55)))
+                            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Self.neon.opacity(0.8)))
+                            // The label names the field; the value is the text itself, so it's read out.
                             .accessibilityLabel("Text for your agent")
+                            .accessibilityValue(Text(verbatim: prompt))
                         Button {
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(prompt, forType: .string)
                             copied = true
+                            AccessibilityNotification.Announcement(String(localized: "Copied")).post()
                             Task { try? await Task.sleep(for: .seconds(2)); copied = false }
                         } label: {
                             Label(copied ? "Copied" : "Copy", systemImage: copied ? "checkmark" : "doc.on.doc")
                                 .frame(minWidth: 70)
+                                .foregroundStyle(Self.ink)  // dark on neon: 5.9 : 1 (white is 3.3 : 1)
                         }
                         .controlSize(.large)
                         .buttonStyle(.borderedProminent)
@@ -62,6 +69,7 @@ struct AgentSplashView: View {
                     Label(failure, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
                 } else {
                     ProgressView().controlSize(.small)
+                        .accessibilityLabel("Starting the server for agents")
                 }
             }
             HStack {

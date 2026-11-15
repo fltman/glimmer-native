@@ -140,7 +140,7 @@ struct DocumentView: View {
                 Text("The assistant needs \(app.displayName) for this. Open it, then ask again.")
             }
             .preferredColorScheme(.dark)
-            .tint(Theme.accent)
+            .tint(Theme.accentFill)  // prominent buttons carry white text
             .focusedSceneValue(\.editorSession, session)
             .onAppear {
                 session.undoManager = undoManager

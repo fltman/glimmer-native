@@ -114,9 +114,10 @@ private struct KeyBanner: View {
         VStack(alignment: .leading, spacing: 6) {
             Label("Add your OpenRouter key", systemImage: "key")
                 .font(.headline)
+                .accessibilityAddTraits(.isHeader)
             Text("Generative tools call OpenRouter with your own key. On-device tools work without one.")
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.primary)  // .secondary is 4.4 : 1 on the yellow
             SettingsLink { Text("Open Settings…") }
                 .simultaneousGesture(TapGesture().onEnded { UserDefaults.standard.set("ai", forKey: SettingsView.tabKey) })
         }
@@ -144,11 +145,15 @@ private struct AssistantView: View {
                     .font(.caption2.weight(.semibold))
                     .kerning(0.6)
                     .padding(.horizontal, 8)
-                    .frame(height: 22)
+                    .frame(minHeight: 22)
                     .foregroundStyle(autoRun ? Theme.ink : Theme.muted)
                     .background(autoRun ? Theme.accent.opacity(0.35) : Theme.raised, in: .rect(cornerRadius: 6))
                     .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(autoRun ? Theme.accent : Theme.edge))
                     .help("Plans that only use the editor's own tools always run straight away. Plans with AI jobs (which cost credits) wait for Run unless this is on.")
+                    .accessibilityLabel("Auto-edit")
+                    .accessibilityValue(autoRun ? Text("On") : Text("Off"))
+                    .accessibilityAddTraits(.isToggle)
+                    .accessibilityHint("Runs plans with paid AI steps without asking first.")
                     .onChange(of: autoRun) { _, on in ai.autoRunAIPlans = on }
             }
             if ai.messages.isEmpty {
@@ -164,12 +169,13 @@ private struct AssistantView: View {
                     Text(message.text)
                         .font(.callout)
                         .textSelection(.enabled)
+                        .accessibilityLabel(message.fromUser ? Text("You: \(message.text)") : Text("Assistant: \(message.text)"))
                     if let plan = message.plan { PlanView(ai: ai, messageID: message.id, plan: plan) }
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .foregroundStyle(message.fromUser ? Color.white : Theme.ink)
-                .background(message.fromUser ? Theme.accent : Theme.raised, in: .rect(cornerRadius: 12))
+                .background(message.fromUser ? Theme.accentFill : Theme.raised, in: .rect(cornerRadius: 12))
                 .padding(message.fromUser ? .leading : .trailing, 28)
                 .frame(maxWidth: .infinity, alignment: message.fromUser ? .trailing : .leading)
             }
@@ -193,7 +199,7 @@ private struct AssistantView: View {
                     Button("Suggest Edits", systemImage: "wand.and.sparkles") { ai.suggestEdits() }
                         .disabled(ai.isSuggesting)
                         .help("Let the assistant look at the image and propose three edits")
-                    if ai.isSuggesting { ProgressView().controlSize(.small) }
+                    if ai.isSuggesting { ProgressView().controlSize(.small).accessibilityLabel("Looking at the image") }
                 }
                 .controlSize(.small)
                 ForEach(ai.suggestions) { suggestion in
@@ -219,6 +225,7 @@ private struct AssistantView: View {
                     ProgressView().controlSize(.small)
                     Text("Planning…").font(.callout).foregroundStyle(.secondary)
                 }
+                .accessibilityElement(children: .combine)
             }
             HStack(alignment: .bottom, spacing: 8) {
                 TextField("e.g. make the sky a warm sunset — or: add a red bird", text: $text, axis: .vertical)
@@ -226,16 +233,17 @@ private struct AssistantView: View {
                     .textFieldStyle(.plain)
                     .padding(10)
                     .background(Theme.background, in: .rect(cornerRadius: 10))
-                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.edge))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.fieldEdge))
                     .focused($focused)
                     .onSubmit(send)
+                    .accessibilityLabel("Message to the assistant")
                 Button("Send", action: send)
                     .buttonStyle(.plain)
                     .font(.callout.weight(.medium))
                     .padding(.horizontal, 14)
-                    .frame(height: 36)
+                    .frame(minHeight: 36)
                     .foregroundStyle(.white)
-                    .background(Theme.accent.opacity(canSend ? 1 : 0.4), in: .rect(cornerRadius: 8))
+                    .background(Theme.accentFill.opacity(canSend ? 1 : 0.4), in: .rect(cornerRadius: 8))
                     .disabled(!canSend)
                     .keyboardShortcut(.return, modifiers: .command)
             }
@@ -267,6 +275,7 @@ private struct PlanView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     statusIcon(ai.stepStatus[step.id] ?? .pending)
                         .frame(width: 14)
+                        .accessibilityLabel(Self.statusName(ai.stepStatus[step.id] ?? .pending))
                     VStack(alignment: .leading, spacing: 1) {
                         Text(Self.describe(step)).font(.callout)
                         if case .failed(let message)? = ai.stepStatus[step.id] {
@@ -276,6 +285,8 @@ private struct PlanView: View {
                         }
                     }
                 }
+                // One stop per step: its status, what it does and why.
+                .accessibilityElement(children: .combine)
             }
             switch ai.planStatus[messageID] {
             case .proposed?:
@@ -313,6 +324,16 @@ private struct PlanView: View {
         case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
         case .failed: Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.red)
         case .skipped: Image(systemName: "minus.circle").foregroundStyle(.tertiary)
+        }
+    }
+
+    static func statusName(_ status: AIController.StepStatus) -> Text {
+        switch status {
+        case .pending: Text("Waiting")
+        case .running: Text("Running")
+        case .done: Text("Done")
+        case .failed: Text("Failed")
+        case .skipped: Text("Skipped")
         }
     }
 
@@ -538,7 +559,7 @@ private struct JobsView: View {
         if !ai.jobs.isEmpty {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    Text("Activity").font(.headline)
+                    Text("Activity").font(.headline).accessibilityAddTraits(.isHeader)
                     Spacer()
                     if ai.totalCost > 0 {
                         Text(ai.totalCost, format: .currency(code: "USD").precision(.fractionLength(3)))
@@ -552,14 +573,16 @@ private struct JobsView: View {
                 }
                 ForEach(ai.jobs) { job in
                     HStack(spacing: 6) {
-                        switch job.status {
-                        case .running: ProgressView().controlSize(.small)
-                        case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                        case .failed: Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                        case .cancelled: Image(systemName: "xmark.circle").foregroundStyle(.secondary)
+                        Group {
+                            switch job.status {
+                            case .running: ProgressView().controlSize(.small).accessibilityLabel("Running")
+                            case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityLabel("Done")
+                            case .failed: Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).accessibilityLabel("Failed")
+                            case .cancelled: Image(systemName: "xmark.circle").foregroundStyle(.secondary).accessibilityLabel("Cancelled")
+                            }
                         }
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(LocalizedStringKey(job.title)).lineLimit(1).font(.callout)
+                            Text(LocalizedStringKey(job.title)).lineLimit(2).font(.callout)
                             if case .failed(let message) = job.status {
                                 Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
                             }

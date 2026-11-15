@@ -93,6 +93,14 @@ private struct AISettingsView: View {
         }
         .formStyle(.grouped)
         .task { load() }
+        // The result of Test Key appears beside the buttons; say it too.
+        .onChange(of: status) { _, new in
+            switch new {
+            case .valid(let detail): AccessibilityNotification.Announcement(detail).post()
+            case .failed(let message): AccessibilityNotification.Announcement(message).post()
+            default: break
+            }
+        }
     }
 
     @ViewBuilder private var statusView: some View {
@@ -100,7 +108,7 @@ private struct AISettingsView: View {
         case .idle:
             EmptyView()
         case .checking:
-            ProgressView().controlSize(.small)
+            ProgressView().controlSize(.small).accessibilityLabel("Checking the key")
         case .valid(let detail):
             Label(detail, systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
@@ -183,6 +191,7 @@ private struct ModelSettingsView: View {
                                     await refresh()
                                 }
                             }
+                            .accessibilityLabel("Remove \(model.title)")
                         }
                     }
                 }
@@ -337,6 +346,14 @@ private struct TabletSettingsView: View {
     @AppStorage(TabletSettings.pressureCurveKey) private var exponent = 1.0
     @AppStorage(TabletSettings.useTiltKey) private var useTilt = true
 
+    /// The slider in words: soft, even or firm, and how far.
+    private var pressureDescription: Text {
+        let x = log2(exponent) / 1.3  // −1…1
+        if abs(x) < 0.05 { return Text("Even") }
+        let amount = Int((abs(x) * 100).rounded())
+        return x < 0 ? Text("Soft, \(amount) %") : Text("Firm, \(amount) %")
+    }
+
     var body: some View {
         Form {
             Section {
@@ -345,6 +362,8 @@ private struct TabletSettingsView: View {
                         Text("Soft").font(.caption).foregroundStyle(.secondary)
                         // Log scale so 1 sits in the middle.
                         Slider(value: Binding(get: { log2(exponent) }, set: { exponent = pow(2, $0) }), in: -1.3...1.3)
+                            .accessibilityLabel("Pressure")
+                            .accessibilityValue(pressureDescription)
                         Text("Firm").font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -364,6 +383,7 @@ private struct TabletSettingsView: View {
                     }
                     .frame(width: 120, height: 120)
                     .accessibilityLabel("Pressure curve")
+                    .accessibilityValue(pressureDescription)
                     Spacer()
                 }
                 Button("Reset") { exponent = 1 }

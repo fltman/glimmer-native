@@ -1047,6 +1047,17 @@
         }
       }
     },
+    "Auto-edit": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Autoredigering"
+          }
+        }
+      }
+    },
     "Avoid (optional)": {
       "localizations": {
         "sv": {
@@ -1490,6 +1501,17 @@
         }
       }
     },
+    "Cancelled": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avbrutet"
+          }
+        }
+      }
+    },
     "Canvas": {
       "localizations": {
         "sv": {
@@ -1623,6 +1645,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Schackmönster"
+          }
+        }
+      }
+    },
+    "Checking the key": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kontrollerar nyckeln"
           }
         }
       }
@@ -2558,6 +2591,17 @@
         }
       }
     },
+    "Done": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klart"
+          }
+        }
+      }
+    },
     "Done: %@ (on this Mac, no AI cost).": {
       "localizations": {
         "sv": {
@@ -2959,6 +3003,17 @@
         }
       }
     },
+    "Even": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jämn"
+          }
+        }
+      }
+    },
     "Evenly": {
       "localizations": {
         "sv": {
@@ -3170,6 +3225,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pipett"
+          }
+        }
+      }
+    },
+    "Failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Misslyckades"
           }
         }
       }
@@ -3469,6 +3535,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hård"
+          }
+        }
+      }
+    },
+    "Firm, %lld %%": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast, %lld %%"
           }
         }
       }
@@ -5156,6 +5233,17 @@
         }
       }
     },
+    "Looking at the image": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tittar på bilden"
+          }
+        }
+      }
+    },
     "Luminosity": {
       "extractionState": "manual",
       "localizations": {
@@ -5355,6 +5443,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Slå ihop grupp"
+          }
+        }
+      }
+    },
+    "Message to the assistant": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meddelande till assistenten"
           }
         }
       }
@@ -5927,6 +6026,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Oljemålning…"
+          }
+        }
+      }
+    },
+    "On": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På"
           }
         }
       }
@@ -6967,6 +7077,17 @@
         }
       }
     },
+    "Remove %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort %@"
+          }
+        }
+      }
+    },
     "Remove All": {
       "localizations": {
         "sv": {
@@ -7507,6 +7628,17 @@
         }
       }
     },
+    "Running": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pågår"
+          }
+        }
+      }
+    },
     "Running the saved action.": {
       "localizations": {
         "sv": {
@@ -7533,6 +7665,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kör en åtgärd som du sparat från Glimmers assistent på en bild. Upprepa över en mapp för att redigera många foton på samma sätt."
+          }
+        }
+      }
+    },
+    "Runs plans with paid AI steps without asking first.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kör planer med betalda AI-steg utan att fråga först."
           }
         }
       }
@@ -8239,6 +8382,17 @@
         }
       }
     },
+    "Skipped": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoppades över"
+          }
+        }
+      }
+    },
     "Sky": {
       "extractionState": "manual",
       "localizations": {
@@ -8355,6 +8509,17 @@
         }
       }
     },
+    "Soft, %lld %%": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mjuk, %lld %%"
+          }
+        }
+      }
+    },
     "Solid Color Fill": {
       "localizations": {
         "sv": {
@@ -8436,6 +8601,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Börja tomt"
+          }
+        }
+      }
+    },
+    "Starting the server for agents": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startar servern för agenter"
           }
         }
       }
@@ -9391,6 +9567,17 @@
         }
       }
     },
+    "Waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Väntar"
+          }
+        }
+      }
+    },
     "Warp": {
       "localizations": {
         "sv": {
@@ -9574,6 +9761,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gula"
+          }
+        }
+      }
+    },
+    "You: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du: %@"
           }
         }
       }

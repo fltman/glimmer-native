@@ -10,6 +10,12 @@ enum Theme {
     static let ink = Color(red: 0xe8 / 255, green: 0xe9 / 255, blue: 0xef / 255)
     static let muted = Color(red: 0x96 / 255, green: 0x9a / 255, blue: 0xa7 / 255)
     static let accent = Color(red: 0x6d / 255, green: 0x7d / 255, blue: 0xff / 255)
+    /// The accent for filled surfaces with white text (prominent buttons, your chat
+    /// messages): 4.8 : 1 with white, where `accent` gives only 3.5 : 1. `accent` stays for
+    /// text, icons and borders on dark surfaces (5.1 : 1 on `panel`).
+    static let accentFill = Color(red: 0x55 / 255, green: 0x63 / 255, blue: 0xe8 / 255)
+    /// Outline of input fields: 3.1 : 1 against `panel`, where `edge` gives 1.3 : 1.
+    static let fieldEdge = Color(red: 0x96 / 255, green: 0x9a / 255, blue: 0xa7 / 255).opacity(0.6)
     /// The canvas surround, as sRGB components.
     static let backgroundRGB: (Double, Double, Double) = (0x0c / 255.0, 0x0d / 255.0, 0x11 / 255.0)
 }
@@ -34,12 +40,12 @@ struct ChromeChip: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 6) {
-                Image(systemName: systemImage).font(.system(size: 12, weight: .medium))
+                Image(systemName: systemImage).font(.callout.weight(.medium)).imageScale(.small)
                 if showsTitle { Text(title).font(.callout) }
             }
             .foregroundStyle(isOn ? Theme.ink : Theme.muted)
             .padding(.horizontal, 10)
-            .frame(height: 28)
+            .frame(minHeight: 28)  // grows with larger text
             .background(isOn ? Theme.accent.opacity(0.35) : Theme.panel.opacity(0.96), in: .rect(cornerRadius: 8))
             .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(isOn ? Theme.accent : Theme.edge, lineWidth: 1))
             .contentShape(.rect)

@@ -6,6 +6,11 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 
+/// A small window (Welcome, Agent Access) that closes with Esc, wherever the focus is.
+final class EscapeClosingWindow: NSWindow {
+    override func cancelOperation(_ sender: Any?) { performClose(sender) }
+}
+
 /// Creates new documents and opens files.
 ///
 /// Images are never opened *as* documents: autosave would overwrite the
@@ -45,7 +50,7 @@ final class DocumentOpener {
             welcomeWindow.makeKeyAndOrderFront(nil)
             return
         }
-        let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView],
+        let window = EscapeClosingWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView],
                               backing: .buffered, defer: false)
         window.titlebarAppearsTransparent = true
         window.title = String(localized: "Welcome to Glimmer")
@@ -66,7 +71,7 @@ final class DocumentOpener {
             agentWindow.makeKeyAndOrderFront(nil)
             return
         }
-        let window = NSWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView],
+        let window = EscapeClosingWindow(contentRect: .zero, styleMask: [.titled, .closable, .fullSizeContentView],
                               backing: .buffered, defer: false)
         window.titlebarAppearsTransparent = true
         window.title = String(localized: "Agent Access")
