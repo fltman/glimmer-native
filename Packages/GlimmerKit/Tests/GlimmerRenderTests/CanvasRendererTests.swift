@@ -87,6 +87,16 @@ enum Reference {
         case .saturation: setLum(setSat(b, sat(s)), lum(b))
         case .color: setLum(s, lum(b))
         case .luminosity: setLum(b, lum(s))
+        case .vividLight: each(b, s) { b, s in
+            func burn(_ b: Float, _ s: Float) -> Float { b >= 1 ? 1 : (s <= 0 ? 0 : 1 - min(1, (1 - b) / s)) }
+            func dodge(_ b: Float, _ s: Float) -> Float { b == 0 ? 0 : (s >= 1 ? 1 : min(1, b / (1 - s))) }
+            return s <= 0.5 ? burn(b, 2 * s) : dodge(b, 2 * (s - 0.5))
+        }
+        case .linearLight: simd_clamp(b + 2 * s - 1, .zero, SIMD3(repeating: 1))
+        case .pinLight: each(b, s) { b, s in s <= 0.5 ? min(b, 2 * s) : max(b, 2 * s - 1) }
+        case .hardMix: each(b, s) { b, s in b + s >= 1 ? 1 : 0 }
+        case .subtract: simd_max(b - s, .zero)
+        case .divide: each(b, s) { b, s in s <= 0 ? (b > 0 ? 1 : 0) : min(1, b / s) }
         }
     }
 

@@ -8,7 +8,8 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
     case darken, multiply, colorBurn = "color-burn", linearBurn = "linear-burn"
     case lighten, screen, colorDodge = "color-dodge", linearDodge = "linear-dodge"
     case overlay, softLight = "soft-light", hardLight = "hard-light"
-    case difference, exclusion
+    case vividLight = "vivid-light", linearLight = "linear-light", pinLight = "pin-light", hardMix = "hard-mix"
+    case difference, exclusion, subtract, divide
     case hue, saturation, color, luminosity
 
     /// Stable index used by the blend shader. Must match `blendColor` in Tiles.metal.
@@ -32,6 +33,12 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
         case .saturation: 15
         case .color: 16
         case .luminosity: 17
+        case .vividLight: 18
+        case .linearLight: 19
+        case .pinLight: 20
+        case .hardMix: 21
+        case .subtract: 22
+        case .divide: 23
         }
     }
 
@@ -50,8 +57,14 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
         case .overlay: "Overlay"
         case .softLight: "Soft Light"
         case .hardLight: "Hard Light"
+        case .vividLight: "Vivid Light"
+        case .linearLight: "Linear Light"
+        case .pinLight: "Pin Light"
+        case .hardMix: "Hard Mix"
         case .difference: "Difference"
         case .exclusion: "Exclusion"
+        case .subtract: "Subtract"
+        case .divide: "Divide"
         case .hue: "Hue"
         case .saturation: "Saturation"
         case .color: "Color"
@@ -64,10 +77,22 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
         [.normal],
         [.darken, .multiply, .colorBurn, .linearBurn],
         [.lighten, .screen, .colorDodge, .linearDodge],
-        [.overlay, .softLight, .hardLight],
-        [.difference, .exclusion],
+        [.overlay, .softLight, .hardLight, .vividLight, .linearLight, .pinLight, .hardMix],
+        [.difference, .exclusion, .subtract, .divide],
         [.hue, .saturation, .color, .luminosity],
     ]
+
+    /// The mode a Glimmer for the web project gets: the web app has the W3C modes only, so the
+    /// Photoshop extras map to the nearest one there.
+    public var webMode: BlendMode {
+        switch self {
+        case .passThrough: .normal
+        case .vividLight, .linearLight, .pinLight, .hardMix: .hardLight
+        case .subtract: .difference
+        case .divide: .colorDodge
+        default: self
+        }
+    }
 
     /// All modes the W3C formulas cover (everything except Pass Through).
     public static let pixelModes: [BlendMode] = allCases.filter { $0 != .passThrough }

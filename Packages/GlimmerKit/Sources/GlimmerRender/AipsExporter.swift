@@ -20,7 +20,7 @@ public enum AipsExporter {
             node["visible"] = layer.isVisible
             node["opacity"] = layer.opacity
             // The web app has no pass-through groups.
-            node["blendMode"] = layer.blendMode == .passThrough ? BlendMode.normal.rawValue : layer.blendMode.rawValue
+            node["blendMode"] = layer.blendMode.webMode.rawValue
             node["parentId"] = parent.map { $0.uuidString as Any } ?? NSNull()
             if case .group(let g) = layer.content {
                 node["childrenIds"] = g.children.map(\.id.uuidString)
@@ -245,7 +245,7 @@ public enum AipsExporter {
         }
         if let o = e.colorOverlay {
             fx["colorOverlay"] = ["enabled": o.isEnabled, "color": color(o.color), "opacity": o.opacity,
-                                  "blendMode": o.blendMode.rawValue] as [String: Any]
+                                  "blendMode": o.blendMode.webMode.rawValue] as [String: Any]
         }
         return fx.isEmpty ? nil : fx
     }

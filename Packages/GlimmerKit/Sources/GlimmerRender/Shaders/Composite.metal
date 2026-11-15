@@ -98,6 +98,21 @@ static float softLight(float b, float s) {
                     : b + (2.0 * s - 1.0) * (softLightD(b) - b);
 }
 
+// The Photoshop extras (not in W3C compositing): vivid, linear and pin light, hard mix,
+// subtract and divide, with the source as the light.
+static float vividLight(float b, float s) {
+    return s <= 0.5 ? colorBurn(b, 2.0 * s) : colorDodge(b, 2.0 * (s - 0.5));
+}
+
+static float pinLight(float b, float s) {
+    return s <= 0.5 ? min(b, 2.0 * s) : max(b, 2.0 * s - 1.0);
+}
+
+static float divideBlend(float b, float s) {
+    if (s <= 0.0) return b > 0.0 ? 1.0 : 0.0;
+    return min(1.0, b / s);
+}
+
 /// B(Cb, Cs) for straight colours. `mode` matches BlendMode.shaderIndex.
 static float3 blendColor(float3 cb, float3 cs, int mode) {
     if (mode == 0) return cs;
@@ -121,6 +136,12 @@ static float3 blendColor(float3 cb, float3 cs, int mode) {
         case 15: return setLum(setSat(cb, sat(cs)), lum(cb));
         case 16: return setLum(cs, lum(cb));
         case 17: return setLum(cb, lum(cs));
+        case 18: return float3(vividLight(cb.r, cs.r), vividLight(cb.g, cs.g), vividLight(cb.b, cs.b));
+        case 19: return saturate(cb + 2.0 * cs - 1.0);
+        case 20: return float3(pinLight(cb.r, cs.r), pinLight(cb.g, cs.g), pinLight(cb.b, cs.b));
+        case 21: return step(1.0, cb + cs);
+        case 22: return max(float3(0.0), cb - cs);
+        case 23: return float3(divideBlend(cb.r, cs.r), divideBlend(cb.g, cs.g), divideBlend(cb.b, cs.b));
         default: return cs;
     }
 }

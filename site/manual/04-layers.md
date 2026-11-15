@@ -119,8 +119,8 @@ The blend mode decides how a layer's colors mix with the layers below. Choose it
 | Normal | Normal | The layer covers what is below, according to its opacity |
 | Darken | Darken, Multiply, Color Burn, Linear Burn | The result is darker; white has no effect in Multiply |
 | Lighten | Lighten, Screen, Color Dodge, Linear Dodge (Add) | The result is lighter; black has no effect in Screen |
-| Contrast | Overlay, Soft Light, Hard Light | Darkens the dark parts and lightens the light parts |
-| Difference | Difference, Exclusion | Subtracts colors; useful for comparing and for effects |
+| Contrast | Overlay, Soft Light, Hard Light, Vivid Light, Linear Light, Pin Light, Hard Mix | Darkens the dark parts and lightens the light parts. Vivid Light burns or dodges, Linear Light darkens or lightens by brightness, Pin Light replaces colors, and Hard Mix pushes every channel to full or none, giving flat posterized colors |
+| Difference | Difference, Exclusion, Subtract, Divide | Compares colors; useful for comparing layers and for effects. Subtract takes the layer's colors away from the image, Divide brightens by dividing by them |
 | Color | Hue, Saturation, Color, Luminosity | Takes one quality of color from the layer and the rest from below |
 
 **Pass Through** appears only for groups, at the top of the menu. A Pass Through group doesn't blend as one unit: each layer inside blends straight into what is below the group, and adjustment layers in the group affect the layers below it too. Pick any other mode and the group is first combined on its own, then blended into the image as one layer. New groups use Pass Through.

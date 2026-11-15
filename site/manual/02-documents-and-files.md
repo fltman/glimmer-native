@@ -85,7 +85,7 @@ Open an `.aips` file with **File › Open…** or from Finder. It opens as a new
 
 ### Exporting
 
-Choose **File › Export Web Project (.aips)…** and pick a place. The web app has no fill layers, perspective transforms or smart filters, so those layers are written as plain pixels. Shapes are fill layers in Glimmer, so they become pixels too. Pass-through groups become normal groups. Everything else keeps its settings.
+Choose **File › Export Web Project (.aips)…** and pick a place. The web app has no fill layers, perspective transforms or smart filters, so those layers are written as plain pixels. Shapes are fill layers in Glimmer, so they become pixels too. Pass-through groups become normal groups. The web app doesn't have Vivid Light, Linear Light, Pin Light, Hard Mix, Subtract or Divide, so those layers get its nearest mode (Hard Light for the four lights, Difference for Subtract, Color Dodge for Divide) and may look different there. Everything else keeps its settings.
 
 ## Exporting images
 

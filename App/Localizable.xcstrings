@@ -2582,6 +2582,17 @@
         }
       }
     },
+    "Divide": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dividera"
+          }
+        }
+      }
+    },
     "Document": {
       "localizations": {
         "sv": {
@@ -4367,6 +4378,17 @@
         }
       }
     },
+    "Hard Mix": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hård blandning"
+          }
+        }
+      }
+    },
     "Hardness": {
       "extractionState": "manual",
       "localizations": {
@@ -5201,6 +5223,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Linjär skugga (addera)"
+          }
+        }
+      }
+    },
+    "Linear Light": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Linjärt ljus"
           }
         }
       }
@@ -6515,6 +6548,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fotofilter"
+          }
+        }
+      }
+    },
+    "Pin Light": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Punktljus"
           }
         }
       }
@@ -8892,6 +8936,17 @@
         }
       }
     },
+    "Subtract": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtrahera"
+          }
+        }
+      }
+    },
     "Suggest": {
       "localizations": {
         "sv": {
@@ -9651,6 +9706,17 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vinjett…"
+          }
+        }
+      }
+    },
+    "Vivid Light": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intensivt ljus"
           }
         }
       }
