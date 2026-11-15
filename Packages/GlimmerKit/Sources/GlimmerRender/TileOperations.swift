@@ -98,8 +98,13 @@ public enum TileOperations {
             group.children = try group.children.map { try translate($0, by: offset, context: context) }
             moved.content = .group(group)
         case .text(var text):
-            text.origin += d
-            text.onPath = text.onPath?.map { $0 + d }
+            if let t = text.transform {
+                // A transformed text moves by moving its transform: T(layout) + d.
+                text.transform = GlimmerCore.AffineTransform(tx: d.x, ty: d.y).concatenating(t)
+            } else {
+                text.origin += d
+                text.onPath = text.onPath?.map { $0 + d }
+            }
             moved.content = .text(text)
         case .fill, .adjustment:
             break

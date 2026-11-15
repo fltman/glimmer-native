@@ -9,11 +9,11 @@ Free Transform scales, rotates, moves and distorts the active layer. Choose **Im
 It works on:
 
 - **Pixel layers.** The layer's pixels are resampled when you apply the transform.
-- **Text layers.** The text is transformed as pixels, and the layer becomes a pixel layer when you apply. Undo brings the editable text back. To keep text editable, scale it with the font size instead.
+- **Text layers.** Scaling, rotating and skewing keep the text editable: the transform is stored with the text, and you can still change its words, font and color (the editor shows it turned like the text). Distort and perspective can't keep text editable, so when you apply one, Glimmer asks first, saying how many text layers would become pixels; **Cancel** keeps the box so you can change it. Undo brings the text back.
 - **Shape layers.** The vector shape is transformed, so edges stay sharp.
 - **Smart objects.** Only the placement changes. The original pixels are kept, so you can transform again later without losing quality.
 
-- **Groups.** Every pixel, text, shape and smart object layer inside the group is transformed together with one box, as one undo step: pixels are resampled, text becomes pixels, shapes stay sharp and smart objects keep their original pixels. Adjustment layers and plain fill layers in the group are left as they are, since they have nothing to place. A group with a layer mask on a layer inside can't be transformed yet, because the mask would stay behind; transform those layers one by one.
+- **Groups.** Every pixel, text, shape and smart object layer inside the group is transformed together with one box, as one undo step: pixels are resampled, text stays editable (as above, with the same question for distort and perspective), shapes stay sharp and smart objects keep their original pixels. Adjustment layers and plain fill layers in the group are left as they are, since they have nothing to place. A group with a layer mask on a layer inside can't be transformed yet, because the mask would stay behind; transform those layers one by one.
 
 Adjustment layers and plain fill layers on their own can't be transformed.
 

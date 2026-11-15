@@ -570,8 +570,13 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         guard let id = session.editingText, let layer = session.state.layer(id: id), case .text(let text) = layer.content else {
             return
         }
-        let scale = controller.transform.scale
-        let v = controller.transform.viewPoint(fromDocument: text.origin)
+        // A transformed text is edited where it shows: at its transformed origin, turned and
+        // scaled like it (a skew isn't shown while typing).
+        let t = text.transform ?? .identity
+        let turn = atan2(t.b, t.a) * 180 / .pi
+        let textScale = (t.a * t.a + t.b * t.b).squareRoot()
+        let scale = controller.transform.scale * textScale
+        let v = controller.transform.viewPoint(fromDocument: t.apply(text.origin))
         let origin = CGPoint(x: v.x, y: v.y)  // subview frames use the (flipped) view space
         let font = NSFont(name: text.fontName, size: text.size * scale) ?? .systemFont(ofSize: text.size * scale)
         let editor: NSTextView
@@ -607,6 +612,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
             editor.textContainer?.containerSize = CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
             editor.frame.origin = origin
         }
+        editor.frameRotation = turn  // about the frame's origin, the text's top-left
         fitEditor()
     }
 

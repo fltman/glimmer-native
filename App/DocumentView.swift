@@ -135,6 +135,17 @@ struct DocumentView: View {
             } message: {
                 Text(session.errorMessage ?? "")
             }
+            .alert(Text("Rasterize text?"), isPresented: Binding(
+                get: { session.rasterizeTextConfirmation != nil },
+                set: { if !$0 { session.rasterizeTextConfirmation = nil } }
+            ), presenting: session.rasterizeTextConfirmation) { count in
+                Button("Rasterize", role: .destructive) { session.commitTransform(confirmed: true) }
+                Button("Cancel", role: .cancel) {}
+            } message: { count in
+                count == 1
+                    ? Text("Distort and perspective can't keep text editable: the text layer becomes pixels and can't be edited as text anymore. Undo brings the text back.")
+                    : Text("Distort and perspective can't keep text editable: \(count) text layers become pixels and can't be edited as text anymore. Undo brings the text back.")
+            }
             .alert(Text("\(session.offlineSibling?.displayName ?? "") is not running."), isPresented: Binding(
                 get: { session.offlineSibling != nil },
                 set: { if !$0 { session.offlineSibling = nil } }

@@ -5,6 +5,7 @@ import GlimmerRender
 import Network
 import OSLog
 import UniformTypeIdentifiers
+import simd
 
 // MARK: Open documents
 
@@ -303,9 +304,27 @@ enum AgentRouter {
         return d
     }
 
+    /// Where a layer's content is, in document pixels (nil for adjustments and plain fills).
+    static func layerBounds(_ layer: Layer) -> PixelRect? {
+        switch layer.content {
+        case .raster(let grid): return grid.tileBounds
+        case .text(let t): return t.bounds
+        case .smart(let s):
+            let z = s.sourceSize
+            let c = [SIMD2(0, 0), SIMD2(z.x, 0), z, SIMD2(0, z.y)].map(s.transform.apply)
+            let lo = c.reduce(c[0], simd_min), hi = c.reduce(c[0], simd_max)
+            return PixelRect(x: Int(lo.x.rounded(.down)), y: Int(lo.y.rounded(.down)),
+                             width: Int((hi.x - lo.x).rounded(.up)), height: Int((hi.y - lo.y).rounded(.up)))
+        default:
+            guard let r = layer.vectorMask?.controlBounds else { return nil }
+            return PixelRect(x: Int(r.minX), y: Int(r.minY), width: Int(r.width.rounded(.up)), height: Int(r.height.rounded(.up)))
+        }
+    }
+
     static func describe(_ layer: Layer) -> [String: Any] {
         var d: [String: Any] = ["id": layer.id.uuidString, "name": layer.name, "visible": layer.isVisible,
                                 "opacity": layer.opacity, "blendMode": layer.blendMode.rawValue, "hasMask": layer.mask != nil]
+        if let r = layerBounds(layer) { d["bounds"] = ["x": r.x, "y": r.y, "width": r.width, "height": r.height] }
         switch layer.content {
         case .raster: d["kind"] = "pixels"
         case .adjustment(let a): d["kind"] = "adjustment"; d["adjustment"] = a.kind.rawValue

@@ -2593,6 +2593,28 @@
         }
       }
     },
+    "Distort and perspective can't keep text editable: %lld text layers become pixels and can't be edited as text anymore. Undo brings the text back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förvrängning och perspektiv kan inte behålla texten redigerbar: %lld textlager blir pixlar och går inte längre att redigera som text. Ångra ger tillbaka texten."
+          }
+        }
+      }
+    },
+    "Distort and perspective can't keep text editable: the text layer becomes pixels and can't be edited as text anymore. Undo brings the text back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förvrängning och perspektiv kan inte behålla texten redigerbar: textlagret blir pixlar och går inte längre att redigera som text. Ångra ger tillbaka texten."
+          }
+        }
+      }
+    },
     "Divide": {
       "extractionState": "manual",
       "localizations": {
@@ -7034,12 +7056,34 @@
         }
       }
     },
+    "Rasterize": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rastrera"
+          }
+        }
+      }
+    },
     "Rasterize Layer": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Rastrera lager"
+          }
+        }
+      }
+    },
+    "Rasterize text?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rastrera text?"
           }
         }
       }

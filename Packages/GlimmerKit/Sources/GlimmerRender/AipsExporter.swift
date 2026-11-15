@@ -77,7 +77,8 @@ public enum AipsExporter {
             node["kind"] = "adjustment"
             node["adjustmentType"] = a.kind.rawValue
             node["params"] = params(a)
-        case .text(let t) where layer.mask == nil:
+        case .text(let t) where layer.mask == nil && t.transform == nil:
+            // (Transformed text goes out as pixels: the web app can't rotate or skew text.)
             // (Masked text goes out as pixels: the web app sizes text boxes itself, so a mask wouldn't line up.)
             node["kind"] = "text"
             // The web app draws text with 0.25 em side and 0.1 em top padding inside its box.

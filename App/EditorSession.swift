@@ -206,6 +206,9 @@ final class EditorSession {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in self?.canvas.perform(.fitToWindow) }
     }
 
+    /// Set while asking whether a Free Transform may turn this many text layers into pixels.
+    var rasterizeTextConfirmation: Int?
+
     /// Bumped to move the keyboard focus to the omnibar (/ on the canvas).
     var omnibarFocusRequest = 0
     /// A layer whose name field should open (Return in the Layers panel).

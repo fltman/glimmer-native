@@ -143,25 +143,32 @@ extension EditorSession {
         case pixels(id: UUID, source: TileGrid, size: SIMD2<Int>, offset: SIMD2<Double>)
         case smart(id: UUID, original: GlimmerCore.AffineTransform)
         case shape(id: UUID, original: VectorPath)
+        /// Text keeps its layout and gets the transform, so it stays editable; only a
+        /// non-affine transform (distort, perspective) would turn it into pixels.
+        case text(id: UUID, original: TextLayer)
     }
 
-    /// Free Transform on a group: one box around all its layers' content; every pixel, text,
-    /// shape and smart object layer inside is transformed with it, as one undo step.
-    /// Adjustment layers and plain fills have nothing to place. Pixel masks would stay where
-    /// they are, so a group with one inside is refused rather than transformed wrongly.
-    func beginGroupTransform(_ group: Layer, metal: MetalContext) throws {
+    /// Free Transform on a group (all its layers with content) or on one text layer: one box
+    /// around their content; every pixel, text, shape and smart object layer is transformed with
+    /// it, as one undo step. Adjustment layers and plain fills have nothing to place. Pixel masks
+    /// would stay where they are, so a group with one inside is refused rather than transformed wrongly.
+    func beginMemberTransform(id: UUID, layers: [Layer], metal: MetalContext) throws {
         var members: [GroupMember] = []
         var lo = SIMD2(Double.infinity, Double.infinity), hi = -lo
         func extend(_ a: SIMD2<Double>, _ b: SIMD2<Double>) { lo = simd_min(lo, a); hi = simd_max(hi, b) }
         var pending: [(UUID, TileGrid, PixelRect)] = []
-        for layer in group.subtree.dropFirst() {
-            if layer.mask != nil, layer.vectorMask == nil {
+        for layer in layers {
+            if layer.mask != nil, layer.vectorMask == nil, layers.count > 1 {
                 errorMessage = String(localized: "“\(layer.name)” in this group has a layer mask, which Free Transform can't move with it yet. Transform the layers one by one, or apply the mask first.")
                 return
             }
-            var content = layer.content
-            if case .text(let text) = content { content = .raster(DocumentCompositor.rasterize(text)) }
-            switch content {
+            if case .text(let text) = layer.content {
+                let b = text.bounds
+                extend(SIMD2(Double(b.x), Double(b.y)), SIMD2(Double(b.x + b.width), Double(b.y + b.height)))
+                members.append(.text(id: layer.id, original: text))
+                continue
+            }
+            switch layer.content {
             case .raster(let grid):
                 guard let b = grid.tileBounds.flatMap({ contentBounds(of: grid, within: $0) }) else { continue }
                 pending.append((layer.id, grid, b))
@@ -187,7 +194,7 @@ extension EditorSession {
             let source = try TileOperations.translate(grid, by: SIMD2(-b.x, -b.y), context: metal)
             members.append(.pixels(id: id, source: source, size: SIMD2(b.width, b.height), offset: SIMD2(Double(b.x), Double(b.y)) - lo))
         }
-        var session = TransformSession(layerID: group.id, source: TileGrid(), isSmart: false,
+        var session = TransformSession(layerID: id, source: TileGrid(), isSmart: false,
             box: TransformBox(x: lo.x, y: lo.y, scaleX: 1, scaleY: 1, rotation: 0, sourceSize: hi - lo))
         session.members = members
         session.groupOrigin = lo
@@ -202,8 +209,23 @@ extension EditorSession {
         let docToDoc = t.transform.concatenating(toGroup)  // old document position → new
         var pixels: [UUID: TileGrid] = [:]
         let renderer = try SmartObjectRenderer(context: metal)
+        let affine = docToDoc.isAffine
         for member in t.members {
             switch member {
+            case .text(let id, let original):
+                if affine {
+                    var text = original
+                    text.transform = docToDoc.concatenating(original.transform ?? .identity)
+                    document.state.updateLayer(id) { $0.content = .text(text) }
+                } else {
+                    // Distort or perspective: shown as the pixels it would become.
+                    document.state.updateLayer(id) { $0.content = .text(original) }
+                    let b = original.bounds
+                    let source = try TileOperations.translate(DocumentCompositor.rasterize(original), by: SIMD2(-b.x, -b.y), context: metal)
+                    let smart = SmartObject(source: source, width: b.width, height: b.height,
+                                            transform: docToDoc.concatenating(GlimmerCore.AffineTransform(tx: Double(b.x), ty: Double(b.y))))
+                    pixels[id] = try renderer.render(smart, limit: RegionOps_public.expand(state.bounds, by: 512))
+                }
             case .pixels(let id, let source, let size, let offset):
                 let smart = SmartObject(source: source, width: size.x, height: size.y,
                                         transform: t.transform.concatenating(GlimmerCore.AffineTransform(tx: offset.x, ty: offset.y)))
@@ -232,13 +254,15 @@ extension EditorSession {
         guard let metal, let layer = activeLayer else { return }
         do {
             if layer.isGroup {
-                try beginGroupTransform(layer, metal: metal)
+                try beginMemberTransform(id: layer.id, layers: Array(layer.subtree.dropFirst()), metal: metal)
                 return
             }
-            // Text transforms as its rendered pixels; applying turns it into a pixel layer (undo brings the text back).
-            var content = layer.content
-            if case .text(let text) = content { content = .raster(DocumentCompositor.rasterize(text)) }
-            switch content {
+            if layer.isText {
+                // Text keeps its layout and gets the transform: it stays editable.
+                try beginMemberTransform(id: layer.id, layers: [layer], metal: metal)
+                return
+            }
+            switch layer.content {
             case .raster(let grid):
                 guard let bounds = grid.tileBounds.flatMap({ contentBounds(of: grid, within: $0) }) else { return }
                 let source = try TileOperations.translate(grid, by: SIMD2(-bounds.x, -bounds.y), context: metal)
@@ -317,14 +341,27 @@ extension EditorSession {
         }
     }
 
-    func commitTransform() {
+    /// Text layers a commit would turn into pixels (a distort or perspective box).
+    var textLayersToRasterize: Int {
+        guard let t = transformSession else { return 0 }
+        let toGroup = GlimmerCore.AffineTransform(tx: -t.groupOrigin.x, ty: -t.groupOrigin.y)
+        guard !t.transform.concatenating(toGroup).isAffine else { return 0 }
+        return t.members.filter { if case .text = $0 { true } else { false } }.count
+    }
+
+    /// `confirmed`: the user agreed to text becoming pixels (asked first, see DocumentView).
+    func commitTransform(confirmed: Bool = false) {
         guard let t = transformSession else { return }
+        if !confirmed, textLayersToRasterize > 0 {
+            rasterizeTextConfirmation = textLayersToRasterize  // asks; the box stays until then
+            return
+        }
         transformSession = nil
         if !t.members.isEmpty, let before = originalShapeState {
-            // Smart objects and shapes are already placed; the pixels come from the preview.
+            // Smart objects, shapes and editable text are already placed; pixels come from the preview.
             originalShapeState = nil
             for (id, grid) in overrides.pixels {
-                document.state.updateLayer(id) { $0.content = .raster(grid) }  // text becomes pixels, as for one layer
+                document.state.updateLayer(id) { $0.content = .raster(grid) }
             }
             overrides = .none
             document.commitInteractiveEdit("Free Transform", undoManager: undoManager, before: before)

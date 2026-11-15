@@ -34,6 +34,9 @@ public struct TextLayer: Codable, Hashable, Sendable {
     public var onPathID: UUID?
     /// Envelope warp (Photoshop's Warp Text). Ignored for text on a path.
     public var warp: TextWarp?
+    /// Rotation, scale and skew from Free Transform, applied after layout (document →
+    /// document), so the text stays editable. Always affine; nil when untransformed.
+    public var transform: AffineTransform?
 
     public init(string: String, fontName: String = "HelveticaNeue", size: Double = 72, color: SRGBColor = .black,
                 alignment: TextAlignment = .left, tracking: Double = 0, lineHeight: Double = 1.2,
@@ -83,7 +86,19 @@ public struct TextLayer: Codable, Hashable, Sendable {
         return CGSize(width: ceil(boxWidth ?? fit.width) + 2, height: ceil(fit.height) + 2)
     }
 
+    /// Bounds of the rendered text, after `transform`.
     public var bounds: PixelRect {
+        let b = layoutBounds
+        guard let t = transform, t != .identity else { return b }
+        let x0 = Double(b.x), y0 = Double(b.y), x1 = Double(b.x + b.width), y1 = Double(b.y + b.height)
+        let corners = [SIMD2(x0, y0), SIMD2(x1, y0), SIMD2(x1, y1), SIMD2(x0, y1)].map(t.apply)
+        let lo = corners.reduce(corners[0], simd_min), hi = corners.reduce(corners[0], simd_max)
+        let nx = Int(lo.x.rounded(.down)), ny = Int(lo.y.rounded(.down))
+        return PixelRect(x: nx, y: ny, width: Int(hi.x.rounded(.up)) - nx + 1, height: Int(hi.y.rounded(.up)) - ny + 1)
+    }
+
+    /// Bounds of the laid-out text before `transform`.
+    public var layoutBounds: PixelRect {
         if let line = onPath, line.count > 1 {
             let lo = line.reduce(line[0]) { simd_min($0, $1) }, hi = line.reduce(line[0]) { simd_max($0, $1) }
             let pad = size * 1.3
@@ -104,6 +119,26 @@ public struct TextLayer: Codable, Hashable, Sendable {
 
     /// Renders the text into a straight-alpha sRGB image whose top-left is `bounds` origin.
     public func render() -> CGImage? {
+        if let t = transform, t != .identity {
+            // Lay out and draw as usual, then map the picture through the transform.
+            var plain = self
+            plain.transform = nil
+            guard let image = plain.render() else { return nil }
+            let ub = plain.bounds, tb = bounds
+            guard tb.width > 0, tb.height > 0, tb.width * tb.height < 300_000_000,
+                  let ctx = CGContext(data: nil, width: tb.width, height: tb.height, bitsPerComponent: 8, bytesPerRow: 0,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+            ctx.interpolationQuality = .high
+            ctx.translateBy(x: 0, y: CGFloat(tb.height))  // document space, y down, from tb's corner
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.translateBy(x: CGFloat(-tb.x), y: CGFloat(-tb.y))
+            ctx.concatenate(CGAffineTransform(a: t.a, b: t.b, c: t.c, d: t.d, tx: t.tx, ty: t.ty))
+            ctx.translateBy(x: CGFloat(ub.x), y: CGFloat(ub.y + ub.height))  // draw the image upright
+            ctx.scaleBy(x: 1, y: -1)
+            ctx.draw(image, in: CGRect(x: 0, y: 0, width: ub.width, height: ub.height))
+            return ctx.makeImage()
+        }
         let b = bounds
         guard b.width > 0, b.height > 0, b.width * b.height < 300_000_000,
               let ctx = CGContext(data: nil, width: b.width, height: b.height, bitsPerComponent: 8, bytesPerRow: 0,
