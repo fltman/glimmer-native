@@ -92,6 +92,19 @@ public struct ExportOptions: Equatable, Sendable {
     }
 }
 
+/// A fixed-size export can't get under its byte limit, even at the lowest quality.
+public struct ExportLimitError: Error, LocalizedError, Equatable {
+    public var smallest: Int
+    public var limit: Int
+    public init(smallest: Int, limit: Int) {
+        self.smallest = smallest
+        self.limit = limit
+    }
+    public var errorDescription: String? {
+        "Even at the lowest quality the image is \(smallest) bytes, over the limit of \(limit)."
+    }
+}
+
 public enum ImageExporter {
     /// Flattens the document to a CGImage in linear extended sRGB (Float16, premultiplied).
     public static func flatten(_ state: DocumentState, context: MetalContext) throws -> CGImage {
@@ -169,6 +182,57 @@ public enum ImageExporter {
     /// Encodes `image`, honouring `maxPixelSide` and `maxBytes`. With a byte
     /// limit, the quality is found by bisection; when even a low quality is too
     /// big, the image is scaled down too, so the limit is always met when possible.
+    /// With `keepSize`, the size is fixed (a podcast cover must stay 3000 × 3000):
+    /// only the quality goes down, and `ExportLimitError` says when that isn't enough.
+    public static func encode(_ image: CGImage, options: ExportOptions, keepSize: Bool) throws -> Data {
+        guard keepSize, let limit = options.maxBytes, limit > 0 else { return try encode(image, options: options) }
+        var opts = options
+        opts.maxPixelSide = nil
+        guard options.format.hasQuality else {
+            let data = try encodeOnce(image, options: opts)
+            guard data.count <= limit else { throw ExportLimitError(smallest: data.count, limit: limit) }
+            return data
+        }
+        opts.quality = min(options.quality, 0.98)
+        let first = try encodeOnce(image, options: opts)
+        if first.count <= limit { return first }
+        var lo = 0.05, hi = opts.quality
+        var probe = opts
+        probe.quality = lo
+        var best = try encodeOnce(image, options: probe)
+        guard best.count <= limit else { throw ExportLimitError(smallest: best.count, limit: limit) }
+        for _ in 0..<7 {
+            probe.quality = (lo + hi) / 2
+            let data = try encodeOnce(image, options: probe)
+            if data.count <= limit { best = data; lo = probe.quality } else { hi = probe.quality }
+        }
+        return best
+    }
+
+    /// The centre square of `image`, resampled in linear light to exactly `side` × `side`
+    /// (up or down): cover art for podcasts and albums. `background` fills transparent
+    /// areas, since cover art is opaque.
+    public static func squareCover(_ image: CGImage, side: Int, background: SIMD3<Double>? = nil) throws -> CGImage {
+        let edge = min(image.width, image.height)
+        let crop = CGRect(x: (image.width - edge) / 2, y: (image.height - edge) / 2, width: edge, height: edge)
+        guard side > 0, let square = image.cropping(to: crop),
+              let ctx = CGContext(data: nil, width: side, height: side, bitsPerComponent: 16, bytesPerRow: 0,
+                                  space: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!,
+                                  bitmapInfo: CGBitmapInfo.floatComponents.rawValue | CGBitmapInfo.byteOrder16Little.rawValue
+                                      | CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            throw RenderError.resourceCreationFailed("cover context")
+        }
+        ctx.interpolationQuality = .high
+        let rect = CGRect(x: 0, y: 0, width: side, height: side)
+        if let b = background {
+            ctx.setFillColor(CGColor(srgbRed: b.x, green: b.y, blue: b.z, alpha: 1))
+            ctx.fill(rect)
+        }
+        ctx.draw(square, in: rect)
+        guard let out = ctx.makeImage() else { throw RenderError.resourceCreationFailed("cover image") }
+        return out
+    }
+
     public static func encode(_ image: CGImage, options: ExportOptions) throws -> Data {
         var source = image
         if let side = options.maxPixelSide, side > 0, max(image.width, image.height) > side {

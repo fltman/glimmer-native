@@ -226,7 +226,11 @@ public enum AgentAPI {
         let format: [String: Any] = ["type": "string", "enum": formats, "description": "Optional. Default png."]
         let maxSide: [String: Any] = ["type": "integer", "minimum": 16, "description": "Optional. Scale so the longer side fits, in pixels."]
         return [
-            op("export", "Render the document to an image file and return its bytes (JSON body).", "POST", "export", [
+            op("export", "Render the document to an image file and return its bytes (JSON body). With preset podcast-cover: the centre square at exactly 3000 or 1400 pixels, JPEG or PNG, under maxBytes.", "POST", "export", [
+                "preset": ["type": "string", "enum": ["podcast-cover"],
+                           "description": "Optional. podcast-cover: square cover art in podcast sizes (format jpeg by default, or png)."],
+                "size": ["type": "integer", "enum": [3000, 1400],
+                         "description": "Optional, with preset. Side in pixels. Default 3000, or 1400 when 3000 can't meet maxBytes."],
                 "format": format,
                 "quality": ["type": "number", "minimum": 0.05, "maximum": 1, "description": "Optional. JPEG, HEIC and WebP quality."],
                 "maxSide": maxSide,
@@ -353,6 +357,8 @@ public enum AgentAPI {
 
         ### Export size limits
 
+        **Podcast covers:** `POST /api/v1/documents/{id}/export` with `{"preset": "podcast-cover", "maxBytes": 512000}` returns the centre square of the image at exactly 3000 × 3000 pixels, as an opaque JPEG (or `"format": "png"`). Only the quality goes down to meet `maxBytes`; when 3000 can't, it's 1400 × 1400, and `"size": 3000` or `1400` fixes the size. If the limit can't be met, the answer is `422 unprocessable` with `reason` `over_byte_limit`.
+
         `maxSide` scales the image so its longer side fits. `maxBytes` (JPEG, HEIC and WebP only; PNG and TIFF ignore it) lowers the quality until the file fits, and scales the image down too if even low quality is too big, so the limit is met.
 
         ## Errors
@@ -368,7 +374,7 @@ public enum AgentAPI {
         | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
         | 413 | `too_large` | Body over 256 MB. |
         | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. |
-        | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`). |
+        | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`). |
         | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
         ## Operations

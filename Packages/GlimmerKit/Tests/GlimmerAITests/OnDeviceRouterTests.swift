@@ -32,7 +32,9 @@ import Testing
 }
 
 /// Runs Apple's on-device model; skipped where Apple Intelligence is unavailable.
-@Suite(.enabled(if: OnDeviceRouter.isAvailable))
+/// Serialized: four model sessions at once, beside the rest of the suite, made the
+/// system's content check time out (SensitiveContentAnalysisML error 15).
+@Suite(.enabled(if: OnDeviceRouter.isAvailable), .serialized)
 struct LiveOnDeviceRouterTests {
     let candidates = OnDeviceRouterTests().candidates
 

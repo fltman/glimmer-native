@@ -90,6 +90,10 @@ import Testing
         #expect(Set(AgentAPI.operations.compactMap { $0["call"] == nil ? nil : $0["name"] as? String }) == ["export", "image", "undo", "redo"])
         // It's plain JSON, and paid steps are the ones that start jobs.
         #expect(JSONSerialization.isValidJSONObject(["operations": AgentAPI.operations]))
+        let export = try #require(AgentAPI.operations.first { $0["name"] as? String == "export" })
+        let exportProps = try #require((export["params"] as? [String: Any])?["properties"] as? [String: Any])
+        #expect((exportProps["preset"] as? [String: Any])?["enum"] as? [String] == ["podcast-cover"])
+        #expect((exportProps["size"] as? [String: Any])?["enum"] as? [Int] == [3000, 1400])
         let image = try #require(AgentAPI.operations.first { $0["name"] as? String == "image" })
         let imageProps = try #require((image["params"] as? [String: Any])?["properties"] as? [String: Any])
         #expect((imageProps["maxSide"] as? [String: Any])?["x-in"] as? String == "query")

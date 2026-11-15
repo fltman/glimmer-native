@@ -404,6 +404,10 @@ enum AgentRouter {
 
     private static func export(_ session: EditorSession, _ r: AgentAPI.Request) async throws -> Response {
         let obj = try json(r)
+        if let preset = obj["preset"] {
+            guard preset as? String == "podcast-cover" else { throw APIError.badRequest("preset must be \"podcast-cover\".") }
+            return try await podcastCover(session, obj)
+        }
         var options = ExportOptions(format: try format(obj["format"] as? String))
         if let q = obj["quality"] as? Double {
             guard (0.05...1).contains(q) else { throw APIError.badRequest("quality must be 0.05…1.") }
@@ -412,6 +416,46 @@ enum AgentRouter {
         if let side = obj["maxSide"] as? Int { options.maxPixelSide = max(16, side) }
         if let bytes = obj["maxBytes"] as? Int { options.maxBytes = max(1_000, bytes) }
         return try await render(session, options: options)
+    }
+
+    /// Square cover art in the sizes podcast directories take: the centre square of the
+    /// image at exactly 3000 or 1400 pixels, JPEG or PNG, opaque, under `maxBytes`. Without
+    /// a `size`, 3000 falls back to 1400 when 3000 can't meet the byte limit.
+    private static func podcastCover(_ session: EditorSession, _ obj: [String: Any]) async throws -> Response {
+        let format = try format(obj["format"] as? String ?? "jpeg")
+        guard format == .jpeg || format == .png else { throw APIError.badRequest("A podcast cover is jpeg or png.") }
+        let size = obj["size"] as? Int
+        if let size, ![1400, 3000].contains(size) { throw APIError.badRequest("size must be 3000 or 1400.") }
+        var options = ExportOptions(format: format, quality: 0.92)
+        if let q = obj["quality"] as? Double {
+            guard (0.05...1).contains(q) else { throw APIError.badRequest("quality must be 0.05…1.") }
+            options.quality = q
+        }
+        if let bytes = obj["maxBytes"] as? Int {
+            guard bytes >= 1_000 else { throw APIError.badRequest("maxBytes must be at least 1000.") }
+            options.maxBytes = bytes
+        }
+        guard let metal = MetalContext.shared else { throw APIError.internalError("No Metal GPU available.") }
+        let snapshot = session.state
+        let sides = size.map { [$0] } ?? [3000, 1400]
+        let opts = options
+        do {
+            let data = try await Task.detached(priority: .userInitiated) { () throws -> Data in
+                let flat = try ImageExporter.flatten(snapshot, context: metal)
+                var lastError: Error?
+                for side in sides {
+                    do {
+                        return try ImageExporter.encode(try ImageExporter.squareCover(flat, side: side, background: SIMD3(1, 1, 1)),
+                                                        options: opts, keepSize: true)
+                    } catch let e as ExportLimitError { lastError = e }
+                }
+                throw lastError ?? ExportLimitError(smallest: 0, limit: opts.maxBytes ?? 0)
+            }.value
+            return Response(status: 200, contentType: format.contentType.preferredMIMEType ?? "application/octet-stream", body: data)
+        } catch let e as ExportLimitError {
+            let hint = format == .png ? " Try jpeg." : (size == 3000 ? " Try size 1400." : "")
+            throw APIError.unprocessable("over_byte_limit", "The cover can't get under \(e.limit) bytes: the smallest is \(e.smallest) bytes.\(hint)")
+        }
     }
 
     // MARK: Editing
