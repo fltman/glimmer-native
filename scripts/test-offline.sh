@@ -2,6 +2,7 @@
 # Proves Glimmer runs on its own: no network, no OpenRouter key, no server.
 #
 #   scripts/test-offline.sh
+#   GLIMMER_OFFLINE_CONFIG=Release scripts/test-offline.sh   (the optimized build, built here ad hoc)
 #
 # Makes the no-network copy (scripts/offline-copy.sh: macOS refuses every connection it tries
 # to make), starts it cold through scripts/test-app.sh (GUI lock, no key in its environment),
@@ -11,6 +12,10 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 if [[ -z "${GLIMMER_PORT:-}" ]]; then
+  if [[ "${GLIMMER_OFFLINE_CONFIG:-Debug}" == Release ]]; then
+    xcodebuild -project Glimmer.xcodeproj -scheme Glimmer -configuration Release -derivedDataPath build/DerivedData-release \
+      CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= build 2>&1 | grep -E "error:|BUILD" || true
+  fi
   COPY=$(scripts/offline-copy.sh | tail -1) || exit 1
   GLIMMER_TEST_APP="$COPY" exec scripts/test-app.sh "$0"
 fi
@@ -57,6 +62,22 @@ for step in \
   check "on device: ${name}(${SECS%.*} s)" 'allDone'
   allDone || echo "    $(echo "$R" | python3 -c 'import sys,json;print([r.get("error") for r in json.load(sys.stdin)["results"]])' 2>/dev/null)"
 done
+# The canvas steps and a second image, all on this Mac.
+SECOND=$(curl -s --max-time 60 $H -H 'Content-Type: image/jpeg' -X POST --data-binary @site/source-images/mug.jpg "$B/documents?name=second" | python3 -c 'import sys,json;print(json.load(sys.stdin)["document"]["id"])' 2>/dev/null)
+post "/documents/$ID/layers?fit=contain" "{\"fromDocument\":\"$SECOND\"}"
+check "add a second image as a layer" '[[ $CODE == 201 ]]'
+for step in \
+  '{"op":"set_layer","params":{"opacity":0.6,"blendMode":"screen"}}' \
+  '{"op":"select_rect","params":{"x":100,"y":100,"width":600,"height":400,"shape":"ellipse"}},{"op":"deselect"}' \
+  '{"op":"crop","params":{"aspect":"1:1"}}' \
+  '{"op":"resize_canvas","params":{"aspect":"16:9","anchor":"right","fill":"#1B2A41"}}' \
+  '{"op":"resize_image","params":{"width":1600}}' ; do
+  steps "$step"
+  name=$(echo "$step" | grep -o '"op":"[a-z_]*"' | head -1 | cut -d'"' -f4)
+  check "on device: ${name} (${SECS%.*} s)" 'allDone'
+  allDone || echo "    $(echo "$R" | python3 -c 'import sys,json;print([r.get("error") for r in json.load(sys.stdin)["results"]])' 2>/dev/null)"
+done
+
 # The sky needs a photo with a sky in it.
 SKY=$(curl -s --max-time 60 $H -H 'Content-Type: image/jpeg' -X POST --data-binary @site/source-images/mountain-lake.jpg "$B/documents?name=sky" | python3 -c 'import sys,json;print(json.load(sys.stdin)["document"]["id"])' 2>/dev/null)
 post "/documents/$SKY/steps" '{"steps":[{"op":"select_sky"}]}'

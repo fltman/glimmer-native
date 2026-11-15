@@ -1,5 +1,7 @@
 #!/bin/zsh
 # Makes a copy of the Debug build that can't reach the network, for scripts/test-offline.sh.
+# GLIMMER_OFFLINE_CONFIG=Release copies the Release build instead (build/DerivedData-release,
+# made by scripts/test-offline.sh with ad hoc signing: no identity, no keys, no updater key).
 #
 # The copy is signed ad hoc (no identity, no keys) without the App Sandbox's outgoing-network
 # entitlement, so macOS itself refuses every connection it tries to make, to the internet and
@@ -8,7 +10,8 @@
 # It has its own bundle id (com.brattoo.glimmer.offline.debug): own container and settings.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-SRC="$PWD/build/DerivedData/Build/Products/Debug/Glimmer.app"
+CONFIG="${GLIMMER_OFFLINE_CONFIG:-Debug}"
+if [[ "$CONFIG" == Release ]]; then SRC="$PWD/build/DerivedData-release/Build/Products/Release/Glimmer.app"; else SRC="$PWD/build/DerivedData/Build/Products/Debug/Glimmer.app"; fi
 OUT="$PWD/build/offline/Glimmer.app"
 [[ -d "$SRC" ]] || { echo "Build first: scripts/test.sh"; exit 1; }
 [[ "$OUT" == */build/offline/Glimmer.app ]] || exit 1
@@ -17,7 +20,7 @@ if [[ -d "$OUT" ]]; then mv "$OUT" "$PWD/build/offline/old-$$.app"; fi  # (repla
 cp -R "$SRC" "$OUT"
 # The Quick Look and thumbnail extensions aren't part of this test, and their ids wouldn't match.
 if [[ -d "$OUT/Contents/PlugIns" ]]; then mv "$OUT/Contents/PlugIns" "$PWD/build/offline/PlugIns-unused-$$"; fi
-/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.brattoo.glimmer.offline.debug" "$OUT/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.brattoo.glimmer.offline.${CONFIG:l}" "$OUT/Contents/Info.plist"
 ENT="$PWD/build/offline/offline.entitlements"
 cat > "$ENT" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

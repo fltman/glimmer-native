@@ -15,6 +15,11 @@ public struct ModelDownloadError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         var why = underlying.trimmingCharacters(in: .whitespaces)
+        // The system's "The operation couldn’t be completed." says nothing; keep what follows it.
+        for filler in ["The operation couldn’t be completed.", "The operation couldn't be completed."] where why.hasPrefix(filler) {
+            why = String(why.dropFirst(filler.count)).trimmingCharacters(in: .whitespaces)
+        }
+        if why.isEmpty { why = "no connection" }
         while why.hasSuffix(".") { why.removeLast() }
         return "This needs the model “\(model)”, which Glimmer downloads once, and the download didn't work: \(why). "
             + "Connect to the internet and try again. Everything that doesn't need this model keeps working offline."
