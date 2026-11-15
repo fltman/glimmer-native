@@ -328,7 +328,20 @@ enum AgentRouter {
         switch layer.content {
         case .raster: d["kind"] = "pixels"
         case .adjustment(let a): d["kind"] = "adjustment"; d["adjustment"] = a.kind.rawValue
-        case .text(let t): d["kind"] = "text"; d["text"] = t.string
+        case .text(let t):
+            d["kind"] = "text"
+            d["text"] = t.string
+            if let runs = t.styles, !runs.isEmpty {
+                // In characters (grapheme clusters), like style_text's from and length.
+                d["styles"] = runs.map { run -> [String: Any] in
+                    let c = t.characterRange(of: run.range)
+                    var o: [String: Any] = ["from": c.from, "length": c.length]
+                    if let f = run.fontName { o["fontName"] = f }
+                    if let s = run.size { o["size"] = s }
+                    if let col = run.color { o["color"] = col.hexString }
+                    return o
+                }
+            }
         case .group(let g): d["kind"] = "group"; d["children"] = g.children.reversed().map(describe)
         case .fill: d["kind"] = "fill"
         case .smart: d["kind"] = "smartObject"
@@ -572,6 +585,7 @@ enum AgentRouter {
         results.enumerated().map { i, res in
             var d: [String: Any] = ["index": i, "op": res.op, "status": res.status]
             if let e = res.error { d["error"] = e }
+            if let info = res.info { d["info"] = info }
             return d
         }
     }

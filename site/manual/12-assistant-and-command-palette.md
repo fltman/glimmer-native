@@ -119,7 +119,8 @@ The assistant works through a fixed set of steps. It can:
 - apply filters to a pixel layer, inside the selection if there is one,
 - add layer styles such as a drop shadow, stroke or glow,
 - apply presets,
-- add a text layer at the top, center or bottom,
+- add a text layer at the top, center or bottom, and give single words their own font, boldness, size or color,
+- scale, rotate, skew or distort a layer or a group, like Free Transform,
 - run Auto Enhance and Auto Color,
 - select the subject, people, the sky or everything, invert and feather the selection, and deselect,
 - remove the background,
@@ -130,7 +131,7 @@ The assistant works through a fixed set of steps. It can:
 It can't:
 
 - paint, retouch or draw with the brushes,
-- crop, use Free Transform or Liquify,
+- crop or use Liquify,
 - open, save or export files,
 - open dialogs such as Layer Style or the fill layer dialogs,
 - change Glimmer's settings.

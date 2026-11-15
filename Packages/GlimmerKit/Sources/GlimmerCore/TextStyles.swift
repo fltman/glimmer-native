@@ -191,6 +191,74 @@ extension TextLayer {
         setOverrides(units)
     }
 
+    // MARK: Character ranges (for agents)
+
+    /// The UTF-16 range of `length` characters from character `from`. Characters are Swift
+    /// Characters (grapheme clusters: 👍🏽 or a decomposed å counts as one). nil when outside the text.
+    public func utf16Range(characterFrom from: Int, length: Int) -> NSRange? {
+        let count = string.count
+        guard from >= 0, length > 0, from + length <= count else { return nil }
+        let lo = string.index(string.startIndex, offsetBy: from), hi = string.index(lo, offsetBy: length)
+        return NSRange(lo..<hi, in: string)
+    }
+
+    /// A UTF-16 range as characters from the start (grapheme clusters).
+    public func characterRange(of range: NSRange) -> (from: Int, length: Int) {
+        guard let r = Range(range, in: string) else { return (0, 0) }
+        let from = string.distance(from: string.startIndex, to: r.lowerBound)
+        return (from, string.distance(from: r.lowerBound, to: r.upperBound))
+    }
+
+    /// Where `match` occurs, as UTF-16 ranges, whole characters only (so "a" doesn't match
+    /// inside "å"). Exact text first; if that finds nothing, ignoring case.
+    public func ranges(of match: String, all: Bool) -> [NSRange] {
+        let hay = Array(string), needle = Array(match)
+        guard !needle.isEmpty, needle.count <= hay.count else { return [] }
+        func search(_ same: (Character, Character) -> Bool) -> [Range<Int>] {
+            var found: [Range<Int>] = []
+            var i = 0
+            while i <= hay.count - needle.count {
+                if (0..<needle.count).allSatisfy({ same(hay[i + $0], needle[$0]) }) {
+                    found.append(i..<(i + needle.count))
+                    if !all { break }
+                    i += needle.count
+                } else {
+                    i += 1
+                }
+            }
+            return found
+        }
+        var hits = search { $0 == $1 }
+        if hits.isEmpty { hits = search { $0.lowercased() == $1.lowercased() } }
+        return hits.compactMap { utf16Range(characterFrom: $0.lowerBound, length: $0.count) }
+    }
+
+    /// Whether a font with this PostScript name is installed.
+    public static func fontExists(_ name: String) -> Bool {
+        CTFontCopyPostScriptName(CTFontCreateWithName(name as CFString, 12, nil)) as String == name
+    }
+
+    /// Makes the letters in `range` bold (or not bold) within their own font family. Returns
+    /// false, changing nothing, when a family has no such member.
+    @discardableResult
+    public mutating func setBold(_ bold: Bool, in range: NSRange) -> Bool {
+        var changes: [(NSRange, String)] = []
+        for run in resolvedRuns() {
+            let part = NSIntersectionRange(run.range, range)
+            guard part.length > 0 else { continue }
+            let font = CTFontCreateWithName(run.style.fontName as CFString, run.style.size, nil)
+            let traits = CTFontGetSymbolicTraits(font)
+            guard traits.contains(.traitBold) != bold else { continue }
+            let wanted = bold ? traits.union(.traitBold) : traits.subtracting(.traitBold)
+            guard let other = CTFontCreateCopyWithSymbolicTraits(font, run.style.size, nil, wanted, [.traitBold, .traitItalic]) else {
+                return false
+            }
+            changes.append((part, CTFontCopyPostScriptName(other) as String))
+        }
+        for (part, name) in changes { setStyle(in: part, fontName: name) }
+        return true
+    }
+
     /// The largest font size in the text.
     public var largestSize: Double { (styles ?? []).compactMap(\.size).reduce(size, max) }
 

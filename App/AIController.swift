@@ -59,6 +59,8 @@ final class AIController {
     var isBusy: Bool { jobs.contains { $0.status == .running } }
 
     @ObservationIgnored unowned let session: EditorSession
+    /// What the step being run reports in its API result (`info`); reset before each step.
+    @ObservationIgnored var stepInfo: [String: Any]?
 
     init(session: EditorSession) {
         self.session = session

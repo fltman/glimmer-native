@@ -347,6 +347,8 @@ private struct PlanView: View {
                                 "stroke": "Stroke", "colorOverlay": "Color Overlay"][step.string("type") ?? ""] ?? "Effect")
         case "apply_preset": "Preset: \(step.string("name") ?? "")"
         case "add_text": "Text “\(step.string("text") ?? "")”"
+        case "style_text": step.string("match").map { "Style “\($0)”" } ?? "Style text"
+        case "transform_layer": "Transform layer"
         case "image_edit_composite": "AI edit: \(step.string("instruction") ?? "")"
         case "generate_layer": "Generate: \(step.string("prompt") ?? "")"
         case "auto_enhance": "Auto Enhance"

@@ -225,6 +225,8 @@ extension AIController {
         let status: String  // done, failed, skipped
         let error: String?
         var reason: String? = nil
+        /// Facts a step reports about what it did (style_text: matches and ranges).
+        var info: [String: Any]? = nil
     }
 
     /// Runs steps from the local agent API as one undo step. Stops at the first
@@ -242,8 +244,9 @@ extension AIController {
                 continue
             }
             do {
+                stepInfo = nil
                 try await execute(step)
-                results.append(APIStepResult(op: step.op, status: "done", error: nil))
+                results.append(APIStepResult(op: step.op, status: "done", error: nil, info: stepInfo))
             } catch is CancellationError {
                 stopped = true
                 results.append(APIStepResult(op: step.op, status: "cancelled", error: nil))
@@ -456,6 +459,8 @@ extension AIController {
             try await performAddWaveform(step)
         case "transform_layer":
             try performTransformLayer(step)
+        case "style_text":
+            try performStyleText(step)
         case let op where SiblingApp.split(tool: op) != nil:
             try await performSiblingTool(step)
         case "run_command":

@@ -82,6 +82,17 @@ Which layer a step acts on:
 - Filters, `fill` and `remove_background` need a pixel layer. If the active layer isn't one, Glimmer uses the topmost visible pixel layer, so `add_adjustment` followed by `apply_filter` still filters the photo.
 - Use `select_layer` with a name or id from `GET /api/v1/documents/{id}` to pick a layer yourself.
 
+A step may also return `info`, facts about what it did. `style_text` returns `{"matches": 2, "ranges": [{"from": 6, "length": 5}, …]}`, the ranges it actually styled.
+
+**Styling words:** to make one word stand out, add the text, then style the word in the same request (one undo step):
+
+```json
+{"steps": [{"op": "add_text", "params": {"text": "Summer sale today", "position": "center"}},
+           {"op": "style_text", "params": {"match": "sale", "bold": true, "color": "#E0303A"}}]}
+```
+
+Prefer `match`. `from` and `length` count characters as grapheme clusters (Swift Characters), not code points or UTF-16 units: 👍🏽, 🇸🇪 and an å written as a + ring each count as 1, while JavaScript's `length` counts them as 4, 4 and 2. A text layer with styled words lists them under `styles` in `GET /api/v1/documents/{id}`, in the same units: `[{"from": 7, "length": 4, "fontName": "HelveticaNeue-Bold", "color": "#E0303A"}]`. Without `match` or `from`, the whole text is styled. Refusals come as `step_failed` with `reason` `not_text`, `no_match`, `bad_range` or `unknown_font` (and `bad_color`, `bad_size` or `nothing_to_style` for parameters that don't make sense).
+
 Common requests: black and white is `add_adjustment` with `"type": "black_white"`; a vignette is `apply_filter` with `"type": "vignette"`; a finished look is `apply_preset`.
 
 ### Long jobs
@@ -121,7 +132,7 @@ Errors are JSON: `{"error": {"code": "…", "message": "…"}}`. A failed step a
 | 404 | `not_found` | No such document, path or operation. |
 | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
 | 413 | `too_large` | Body over 256 MB. |
-| 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `group_has_mask`, `cannot_transform`). |
+| 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `group_has_mask`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`). |
 | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`). |
 | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
@@ -316,6 +327,22 @@ Scale, rotate, skew or distort a layer or a group, like Free Transform. Text sta
 | `skewY` | number | Optional. Vertical skew in degrees. |
 | `corners` | points | Optional. Four corners in document pixels, top-left, top-right, bottom-right, bottom-left, for distort or perspective (replaces scale, rotation and skew). |
 | `allowRasterize` | boolean | Optional. Let corners turn text layers into pixels (default false). |
+
+### `style_text`
+
+Give words in a text layer their own font, boldness, size or colour (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters. Stays editable text; one undo step. The step's info says which ranges changed.
+
+| Param | Type | Description |
+|---|---|---|
+| `target` | string | Optional. The text layer's name or id; default the active layer. |
+| `match` | string | Optional. The word or phrase to style (exact text, or ignoring case if the exact text isn't there). Preferred over from/length. |
+| `occurrence` | string | Optional. Which matches to style (default all). One of: `all`, `first` |
+| `from` | number | Optional, instead of match. Start, in characters from 0. Characters are grapheme clusters: 👍🏽 or å counts as 1. |
+| `length` | number | Optional, with from. How many characters (grapheme clusters). |
+| `fontName` | string | Optional. PostScript font name, e.g. HelveticaNeue-Bold. |
+| `bold` | boolean | Optional. true for the bold member of each word's font family, false for the regular one. |
+| `size` | number | Optional. Font size in document pixels. |
+| `color` | string | Optional. #RRGGBB. |
 
 ### `add_waveform`
 

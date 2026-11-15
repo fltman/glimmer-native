@@ -265,6 +265,17 @@ public enum AgentPlanner {
             AgentParam("corners", "points", "Optional. Four corners in document pixels, top-left, top-right, bottom-right, bottom-left, for distort or perspective (replaces scale, rotation and skew)."),
             AgentParam("allowRasterize", "boolean", "Optional. Let corners turn text layers into pixels (default false)."),
         ]),
+        AgentOp("style_text", "Give words in a text layer their own font, boldness, size or colour (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters. Stays editable text; one undo step. The step's info says which ranges changed.", [
+            AgentParam("target", "string", "Optional. The text layer's name or id; default the active layer."),
+            AgentParam("match", "string", "Optional. The word or phrase to style (exact text, or ignoring case if the exact text isn't there). Preferred over from/length."),
+            AgentParam("occurrence", "string", "Optional. Which matches to style (default all).", options: ["all", "first"]),
+            AgentParam("from", "number", "Optional, instead of match. Start, in characters from 0. Characters are grapheme clusters: 👍🏽 or å counts as 1."),
+            AgentParam("length", "number", "Optional, with from. How many characters (grapheme clusters)."),
+            AgentParam("fontName", "string", "Optional. PostScript font name, e.g. HelveticaNeue-Bold."),
+            AgentParam("bold", "boolean", "Optional. true for the bold member of each word's font family, false for the regular one."),
+            AgentParam("size", "number", "Optional. Font size in document pixels."),
+            AgentParam("color", "string", "Optional. #RRGGBB."),
+        ]),
         AgentOp("add_waveform", "Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolour, move and style.", [
             AgentParam("style", "string", "Optional. bars (default) or wave (one outline).", options: SiblingWaveform.Style.allCases.map(\.rawValue)),
             AgentParam("bars", "number", "Optional. How many bars, 16–400 (default 64)."),
