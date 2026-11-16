@@ -44,6 +44,8 @@ extension AIController {
             ]
             stepStatus = [steps[0].id: .done, steps[1].id: .failed("No font named “Nope” is installed."), steps[2].id: .skipped]
             planStatus = [withPlan.id: .failed]
+            // As the app itself writes them: the plan stopped part-way, and the model had planned a step Glimmer doesn't have.
+            messages[1].text = whatWasDone(steps) + " " + String(localized: "The assistant also planned steps Glimmer doesn't have (\("make_wide")); they are left out.")
         case "waiting":
             // A plan whose step the request doesn't name, and a command the on-device model chose unasked: both wait for Run.
             s.showLayersPanel = true; s.inspectorTab = .ai; s.aiSection = .assistant
