@@ -20,13 +20,21 @@ public enum RawLayer {
     /// The same layer developed with other settings: new pixels, the same RAW file. Everything
     /// else about the layer (mask, opacity, blend mode, effects) stays. Throws for a layer that has no RAW file.
     public static func developed(_ layer: Layer, with settings: RawSettings) throws -> Layer {
+        try developedTimed(layer, with: settings).layer
+    }
+
+    /// The same, with how long the decoder took and how long the picture took to become Glimmer's tiles.
+    public static func developedTimed(_ layer: Layer, with settings: RawSettings) throws -> (layer: Layer, decoderSeconds: Double, tileSeconds: Double) {
         guard let raw = layer.raw else { throw RawDevelopment.Problem(message: "This layer has no RAW file to develop.") }
+        let began = Date()
         let (image, applied) = try RawDevelopment.develop(raw.data, settings: settings)
+        let decoded = Date()
         let tiles = try ImageImporter.tiles(from: image)
+        let tiled = Date()
         var out = layer
         out.content = .raster(tiles)
         out.raw = RawSource(data: raw.data, fileName: raw.fileName, settings: applied, developedSignature: tiles.contentSignature)
-        return out
+        return (out, decoded.timeIntervalSince(began), tiled.timeIntervalSince(decoded))
     }
 
     /// Whether the layer's pixels are still the ones its RAW file was developed to. False

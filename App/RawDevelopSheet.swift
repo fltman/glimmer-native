@@ -64,6 +64,9 @@ final class RawDraftWorker: @unchecked Sendable {
     }
 }
 
+/// Where the last final development spent its time (for the notes and the repeat test; debug route).
+@MainActor enum RawDevelopTrace { static var last = "" }
+
 /// What the Develop sheet shows and changes.
 @MainActor @Observable
 final class RawDevelopModel {
@@ -79,6 +82,8 @@ final class RawDevelopModel {
     private(set) var lastDraftSeconds: Double?
     var problem: String?
     var isDeveloping = false
+    /// The final development that is running, if any. Cleared by Cancel and by the time limit: its result is then thrown away.
+    var developRun: UUID?
     var isPickingNeutral = false
     @ObservationIgnored private var worker: RawDraftWorker?
 
@@ -206,12 +211,17 @@ struct RawDevelopSheet: View {
                 if let problem = model.problem {
                     Label(problem, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
                 }
+                if model.isDeveloping {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small).accessibilityHidden(true)
+                        Text("Developing the picture at full size… Cancel leaves the layer as it was.").font(.callout).fixedSize(horizontal: false, vertical: true)
+                    }
+                }
                 Spacer(minLength: 4)
                 HStack {
                     Button("As Shot") { model.resetToAsShot() }
                     Spacer()
-                    if model.isDeveloping { ProgressView().controlSize(.small).accessibilityLabel("Developing") }
-                    Button("Cancel", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
+                    Button("Cancel", role: .cancel) { cancel(model) }.keyboardShortcut(.cancelAction)
                     Button("Develop") { develop(model) }.keyboardShortcut(.defaultAction).disabled(model.isDeveloping)
                 }
             }
@@ -272,20 +282,53 @@ struct RawDevelopSheet: View {
 
     private func percent(_ value: Double) -> String { (value).formatted(.percent.precision(.fractionLength(0))) }
 
+    /// How long the final development may take before the sheet gives up (a 50-megapixel file took 3 to 15 s when measured).
+    static let developLimit: Duration = .seconds(90)
+
     private func develop(_ model: RawDevelopModel) {
         guard let layer = session.state.layer(id: model.layerID) else { dismiss(); return }
         let settings = model.settings
+        let run = UUID()
+        model.developRun = run
         model.isDeveloping = true
+        model.problem = nil
+        let began = Date()
+        // The limit: the sheet is never held by a development that does not come back. What it was
+        // doing is abandoned (its result is thrown away if it ever arrives) and nothing is changed.
+        Task {
+            try? await Task.sleep(for: Self.developLimit)
+            guard model.developRun == run else { return }
+            model.developRun = nil
+            model.isDeveloping = false
+            model.problem = String(localized: "Developing took too long and was given up. Nothing was changed. You can try again.")
+            RawDevelopTrace.last = "gave up after \(Int(Date().timeIntervalSince(began))) s"
+        }
         Task {
             do {
-                let developed = try await Task.detached(priority: .userInitiated) { try RawLayer.developed(layer, with: settings) }.value
-                session.edit(String(localized: "Develop RAW")) { state in state.updateLayer(model.layerID) { $0 = developed } }
+                let made = try await Task.detached(priority: .userInitiated) { try RawLayer.developedTimed(layer, with: settings) }.value
+                // Cancelled or given up meanwhile: the document stays as it was.
+                guard model.developRun == run else { RawDevelopTrace.last = "finished after being abandoned (\(Int(Date().timeIntervalSince(began))) s)"; return }
+                let beforeEdit = Date()
+                session.edit(String(localized: "Develop RAW")) { state in state.updateLayer(model.layerID) { $0 = made.layer } }
+                let edited = Date()
+                model.developRun = nil
                 dismiss()
+                RawDevelopTrace.last = String(format: "decoder %.2f s, tiles %.2f s, waiting for the main thread %.2f s, undo step %.2f s, in all %.2f s",
+                                              made.decoderSeconds, made.tileSeconds, beforeEdit.timeIntervalSince(began) - made.decoderSeconds - made.tileSeconds,
+                                              edited.timeIntervalSince(beforeEdit), edited.timeIntervalSince(began))
             } catch {
+                guard model.developRun == run else { return }
+                model.developRun = nil
                 model.isDeveloping = false
                 model.problem = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
             }
         }
+    }
+
+    /// Cancel at any moment: a development that is running is abandoned and the document stays as it was.
+    private func cancel(_ model: RawDevelopModel) {
+        model.developRun = nil
+        dismiss()
     }
 }
 #endif

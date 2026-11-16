@@ -258,6 +258,9 @@ enum AgentRouter {
             }
             if let failure { throw APIError.unprocessable("raw_not_developed", (failure as? LocalizedError)?.errorDescription ?? failure.localizedDescription) }
             return .json(["opened": true])
+        case ["api", "v1", "debug", "raw-develop-trace"]:
+            try only("GET")
+            return .json(["last": RawDevelopTrace.last])
         case ["api", "v1", "debug", "raw-draft-timing"]:
             // Measuring only: the draft for the front document's RAW layer, as the Develop sheet makes it
             // (one kept decoder, the real development scaled down), over a run of changed settings.

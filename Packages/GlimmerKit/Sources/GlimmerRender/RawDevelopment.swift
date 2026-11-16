@@ -110,7 +110,10 @@ public enum RawDevelopment {
             output = output.transformed(by: CGAffineTransform(scaleX: s, y: s), highQualityDownsample: true)
         }
         let extent = output.extent.integral
-        guard let image = context.createCGImage(output, from: extent, format: .RGBAh, colorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!) else {
+        // Developed here and now, not when the picture is first drawn. A deferred picture came back in
+        // 0.1 s and was then developed piece by piece while it was cut into tiles: 11 to 44 s for a
+        // 40-megapixel file, and the cause of a Develop that seemed stuck (2026-11-16).
+        guard let image = context.createCGImage(output, from: extent, format: .RGBAh, colorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!, deferred: false) else {
             throw Problem(message: "macOS couldn't develop this RAW file.")
         }
         return (image, applied)

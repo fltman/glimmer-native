@@ -461,3 +461,20 @@ Anders's wish, for all three apps. In Glimmer the icon has a glow in two places:
 Measured in the debug copy with the start card showing (load average 19 from other sessions): the app used 0.00 % of a core over 30 s in front (below what `ps` can resolve, 0.03 %), and 0.10 % over 20 s in the background; no power assertion names Glimmer. Four pictures of the app's own window a second apart show the glow at different strengths (the centre crop's mean blue 45.5 to 48.2) and the icon unchanged. The accessibility read gives the same texts at two moments; the element count is 53 on the very first read after launch and 54 on every read after, with or without time passing, so it is not the animation.
 
 Not verified: Reduce Motion (the code stands still when the system says so and listens for the change; I do not change system settings to try it); the splash's glow, which uses the same view but was not looked at; that the animation is really removed when the window is covered (the code removes it on the occlusion notification; the background CPU figure is consistent with that but does not prove it).
+
+## RAW: the Develop that did not come back, found (2026-11-16)
+
+First the user's side, whatever the cause: the final development now has a progress line ("Developing the picture at full size… Cancel leaves the layer as it was."), Cancel abandons it at any moment (its result is thrown away if it arrives later; the document stays as it was), and after 90 s the sheet gives up by itself, says so, and returns to the settings with nothing changed.
+
+Then the cause. `scripts/test-raw-develop-repeat.sh` runs Develop ten times on one file, with a limit per run, and the app says where each run's time went (decoder call, tiles, waiting for the main thread, the undo step).
+
+| | Runs closed within 45 s | Decoder call | Into tiles | Undo step |
+|---|---|---|---|---|
+| Before (Fujifilm, 40 MP; load 11 to 26) | 7 of 10 (12 to 38 s); 3 not | 0.08 to 0.17 s | 11 to 44 s | 0.00 to 0.10 s |
+| After (same file; load 6 to 8) | 10 of 10 (2.8 to 11.1 s) | 2.2 to 10.4 s | 0.13 to 0.16 s | 0.00 to 0.02 s |
+
+The decoder's picture was a deferred one: it came back in a tenth of a second, undeveloped, and was then developed piece by piece while it was being cut into tiles, far more slowly than developing it once. `RawDevelopment.develop` now asks for the picture to be made at once. Nothing was stuck; it was slow in a place that looked like nothing was happening. In the three runs that passed the limit, Cancel closed the sheet each time.
+
+Consequences for earlier figures in these notes: the "developed in 0.07 to 0.4 s" times in the first RAW table were the deferred call and say nothing; the "as a layer" times (2 to 14 s) included the slow path and are now lower; opening a RAW file is faster for the same reason. The draft figures were always real (they read the pixels out). The two loads differ, so the before and after rows are not a clean comparison of speed; the stage that moved is the finding.
+
+What remains long: 2 to 10 s for the full development of a 40-megapixel file in the debug build, behind a progress line with a working Cancel.

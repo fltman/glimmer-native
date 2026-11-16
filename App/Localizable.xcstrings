@@ -12525,6 +12525,28 @@
           }
         }
       }
+    },
+    "Developing took too long and was given up. Nothing was changed. You can try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framkallningen tog för lång tid och avbröts. Ingenting ändrades. Du kan försöka igen."
+          }
+        }
+      }
+    },
+    "Developing the picture at full size… Cancel leaves the layer as it was.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framkallar bilden i full storlek… Avbryt lämnar lagret som det var."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
