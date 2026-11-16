@@ -90,7 +90,7 @@ A file larger than Glimmer's limit for your Mac is refused, with the same messag
 
 Glimmer reads these files with its own code, written from Adobe's published description of the format. What that has been tried against:
 
-- Files that Glimmer's own tests generate, and fifty small test files from two open-source projects, most of them written by Photoshop.
+- Files that Glimmer's own tests generate, and fifty small test files from two open-source projects, most of them written by Photoshop, and two large layered files (the larger a 228 MB PSB of 3,642 × 2,160 pixels with ten layers, nine of them smart objects).
 - In those files, Glimmer's picture of the layers matches the picture saved in the file for: layers of pixels, groups, shapes filled with one colour, layer masks, half-transparent layers, 16 bits per channel, the large-document form PSB, the Normal, Multiply, Darker Color and Lighter Color blend modes, Levels, Curves and Invert adjustment layers, smart objects (as pixels), and text (as pixels) in most of the files.
 - Text differs slightly along the edges of the letters in a few files (under 1 % of the pixels). That is consistent with a Photoshop setting for how text is blended, which is not stored in the file; it has not been confirmed.
 - The picture differs, and the report says why, for: the Dissolve blend mode, the adjustment layers Glimmer leaves out, layer effects, and vector masks on layers of pixels.
@@ -102,7 +102,7 @@ Two things these files taught Glimmer to say:
 - A Photoshop file saved with **Maximize Compatibility** off carries no flattened picture. Glimmer still reads its layers, and the report says that there was nothing to compare with. If Glimmer can't read the layers of such a file (CMYK, for example), it refuses the file and says why, rather than open a blank page.
 - A shape that has both its outline and a painted mask comes in with the two merged into one mask. It looks the same; the outline can no longer be edited as a path, and the report says so.
 
-What no file from Photoshop has been tried for yet: large files (the largest in the set is 1,890 pixels wide), and files from Photoshop versions other than the few that wrote these. If a Photoshop file opens wrongly, the report is the first place to look, and the Photoshop file itself is untouched.
+The two large files opened in two and six seconds on the Mac they were tried on, with Glimmer's picture matching the file's. What has not been tried: files larger than those, and files from Photoshop versions other than the few that wrote these. If a Photoshop file opens wrongly, the report is the first place to look, and the Photoshop file itself is untouched.
 
 ### Exporting a Photoshop file
 

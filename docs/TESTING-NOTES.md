@@ -387,3 +387,14 @@ Not verified:
 - The other five cameras' files in the app; only the Panasonic file was run.
 - The manual text for RAW is written (Config/site-features.json, "raw") but not on the site: it follows the switch.
 - Not built yet: the RAW file's size in the document's size estimate, the megapixel check shown before decoding, anything in the agent API.
+
+## Large Photoshop files (2026-11-16)
+
+Fetched with Anders's yes: two archives from OpenGameArt, each page giving "License(s): CC0" (pages kept beside the files in `/Volumes/work2/glimmer-samples/psd-large`). Only the PSD and the PSB were unpacked. Which program wrote them is not stated. Opened in the release build (the no-network copy) through the agent API, once each:
+
+| File | Size | Opened in | Result |
+|---|---|---|---|
+| Abandon City layered.psd, 21.9 MB | 2,467 × 1,696, 12 layers | 1.9 s, memory 121 → 304 MB | all 12 layers, no notes, picture matches the file's (mean 0.0009 of 255) |
+| Cloudy Mountains.psb, 227.6 MB | 3,642 × 2,160, 10 layers, 9 of them smart objects | 5.9 s, memory 282 → 625 MB | all 10 layers, 9 notes (smart objects now pixels), picture matches the file's (mean 0.09) |
+
+The memory figures are the process's resident size before and after, with the first document still open during the second. Not tried: anything larger, and these two with their ends cut or bytes changed.
