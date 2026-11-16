@@ -478,3 +478,14 @@ The decoder's picture was a deferred one: it came back in a tenth of a second, u
 Consequences for earlier figures in these notes: the "developed in 0.07 to 0.4 s" times in the first RAW table were the deferred call and say nothing; the "as a layer" times (2 to 14 s) included the slow path and are now lower; opening a RAW file is faster for the same reason. The draft figures were always real (they read the pixels out). The two loads differ, so the before and after rows are not a clean comparison of speed; the stage that moved is the finding.
 
 What remains long: 2 to 10 s for the full development of a 40-megapixel file in the debug build, behind a progress line with a working Cancel.
+
+### The glow, when it must stand still (2026-11-16, picture pairs 1.3 s apart of the app's own windows)
+
+| State | Mean colour difference between the two pictures (of 255) |
+|---|---|
+| Start card seen, app in front | 0.39 to 0.41 (breathing) |
+| App in the background (Finder in front) | 0.000 |
+| The document window covered by an opaque window of the same size (debug fixture "cover") | 0.000, both windows |
+| Agent Access splash, in front | 0.34 (breathing); looked at: the glow sits round the icon, nothing else moves |
+
+So the covered and background cases are shown, not only coded. Reduce Motion is still not tried.

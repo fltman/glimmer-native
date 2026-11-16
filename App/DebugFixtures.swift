@@ -1,4 +1,5 @@
 #if DEBUG
+import AppKit
 import Foundation
 import GlimmerAI
 import GlimmerCore
@@ -75,6 +76,14 @@ extension AIController {
             s.healWarning = "The area is 203 px across at its thickest. Heal Selection gives good results up to about 120 px; beyond that the fill may smear or repeat."
         case "error":
             s.errorMessage = "Couldn't save photo.png: The file “photo.png” couldn’t be opened because you don’t have permission to view it."
+        case "cover":
+            // An opaque window of this app laid exactly over the document's window, to see that
+            // what only moves while it is seen (the icon's glow) stands still when covered.
+            guard let frame = s.canvasWindow?.frame else { return false }
+            let cover = NSWindow(contentRect: frame, styleMask: [.borderless], backing: .buffered, defer: false)
+            cover.isOpaque = true; cover.backgroundColor = .black; cover.isReleasedWhenClosed = false
+            cover.setFrame(frame, display: true)
+            cover.orderFront(nil)
         case "rawDevelop":
             #if GLIMMER_RAW
             guard s.activeLayer?.raw != nil else { return false }
