@@ -84,6 +84,9 @@ public enum LocalModelEvaluation {
         public let got: String
         /// A known gap: shown in the report, left out of the verdict.
         public var knownGap = false
+        /// Whether the answer would have passed as the model wrote it, before the figures check took anything out.
+        /// (`passed` is as the person gets it, which is what the verdict counts.)
+        public var passedAsWritten = false
     }
 
     public struct Report: Sendable {
@@ -100,6 +103,12 @@ public enum LocalModelEvaluation {
         public var slowest: Double { scored.map(\.seconds).max() ?? 0 }
         public var median: Double { let s = scored.map(\.seconds).sorted(); return s.isEmpty ? 0 : s[s.count / 2] }
         /// "known gaps: 0 of 1 held" for the report's last line.
+        /// How many of the counted answers were right as the model wrote them, before the figures check.
+        public var passedAsWritten: Int { scored.filter(\.passedAsWritten).count }
+        /// " As the model wrote them: 18 of 18; as the person gets them: 16 of 18." when the two differ, else nothing.
+        public var bothWaysLine: String {
+            passedAsWritten == passed ? "" : " As the model wrote them: \(passedAsWritten) of \(scored.count); as the person gets them: \(passed) of \(scored.count)."
+        }
         public var gapLine: String { gaps.isEmpty ? "" : " Known gaps (not counted): \(gaps.filter(\.passed).count) of \(gaps.count) held." }
 
         /// At least five in six right, overall and in each language (15 of 18, 9 of 10 in English,
@@ -160,12 +169,16 @@ public enum LocalModelEvaluation {
         var outcomes: [Outcome] = []
         for test in cases {
             let start = Date()
-            var passed = false, got: String
+            var passed = false, asWritten = false, got: String
             do {
                 var context = context
                 if test.rawLayer { context.activeLayerKind = "raw"; context.activeLayerName = "IMG_0042" }
                 let (plan, _) = try await AgentPlanner.plan(goal: test.goal, context: context, history: [], model: model)
                 passed = judge(plan, test)
+                // The same answer judged as the model wrote it: what the figures check took out counted as not taken.
+                var written = plan
+                written.removedFigures = []
+                asWritten = judge(written, test)
                 got = plan.steps.isEmpty ? "no tool call" + (plan.message.map { ": \($0.prefix(240))" } ?? "")
                     : plan.steps.map { s in "\(s.op)(" + s.params.filter { $0.key != "rationale" }.map { "\($0.key): \($0.value.display)" }.sorted().joined(separator: ", ") + ")" }.joined(separator: " ")
                 if plan.filledFromRequest > 0 { got += " | type filled in from the request" }
@@ -181,7 +194,7 @@ public enum LocalModelEvaluation {
             } catch {
                 got = "error: " + String(((error as? LocalizedError)?.errorDescription ?? "\(error)").prefix(120))
             }
-            let outcome = Outcome(goal: test.goal, language: test.language, seconds: Date().timeIntervalSince(start), passed: passed, got: got, knownGap: test.knownGap)
+            let outcome = Outcome(goal: test.goal, language: test.language, seconds: Date().timeIntervalSince(start), passed: passed, got: got, knownGap: test.knownGap, passedAsWritten: asWritten)
             outcomes.append(outcome)
             progress?(outcome)
         }

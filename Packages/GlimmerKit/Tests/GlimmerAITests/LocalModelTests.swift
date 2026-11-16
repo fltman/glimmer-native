@@ -112,7 +112,7 @@ extension ChatAdapterTests {
                 say("EVAL \(name) | \(o.knownGap ? (o.passed ? "gap+" : "gap-") : o.passed ? "ok  " : "FAIL") | \(String(format: "%5.1f", o.seconds)) s | \(o.language) | \(o.goal) -> \(o.got)")
             }
             let en = report.passed(language: "en"), sv = report.passed(language: "sv")
-            say("EVAL \(name): \(report.passed) of \(report.scored.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "PASSES" : "does not pass")")
+            say("EVAL \(name): \(report.passed) of \(report.scored.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "PASSES" : "does not pass")\(report.bothWaysLine)")
             if !report.gapLine.isEmpty { say("EVAL \(name):\(report.gapLine)") }
             // Ollama keeps the model loaded (several GB) for minutes; Apple's on-device model then gets no memory. Unload it.
             await OllamaTextModel.unload(name)

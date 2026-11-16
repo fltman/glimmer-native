@@ -732,3 +732,9 @@ Local evaluation after the change (qwen3:8b, the same 18 cases, GUI lock and mod
 - Fixtures for each of these, beside the earlier five.
 
 Local evaluation with the tighter form (qwen3:8b, the same 18, both locks): **18 of 18**, median 2.9 s, slowest 26.9 s; no figure removed in any answer; the known gap 0 of 1. It cost the local model nothing.
+
+**Both ways.** The evaluation counts each answer twice: as the model wrote it (what the figures check took out counted as not taken) and as the person gets it, which is what the verdict uses. When the two differ the result line says so: "As the model wrote them: 18 of 18; as the person gets them: 16 of 18." The manual's Assistant chapter lists, in plain words, what counts as a given figure.
+
+Read against SIBLINGS.md, "Siffror i assistentens svar" (the coordinator's wording of the rule, from this build), two sentences there say a little more than the code does:
+- Point 3 names an operation by its "menu title in either language". The code uses the tool name, the stems by which a request names the operation in English or Swedish, the parameters' names and the kinds' stems; it does not look up menu titles.
+- "A statement about the user's own document is backed only by 2 and 4, never by 3." The code holds the megapixels to the word and the shape to the written ratio, and gives an operation's figures only where the operation is named; it does not otherwise decide that a sentence is "about the document". So a sentence that names an operation and also states something about the document may keep a figure from that operation's description.

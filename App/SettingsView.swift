@@ -862,7 +862,7 @@ private struct TextModelTrial: View {
                 }
             }
             let en = report.passed(language: "en"), sv = report.passed(language: "sv")
-            verdict = "\(report.model): \(report.passed) of \(report.scored.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "passes" : "does not pass").\(report.gapLine) The cost is on \(provider.name)'s usage page; this service's answers carry no cost."
+            verdict = "\(report.model): \(report.passed) of \(report.scored.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "passes" : "does not pass").\(report.bothWaysLine)\(report.gapLine) The cost is on \(provider.name)'s usage page; this service's answers carry no cost."
             // The second group: requests about a layer opened from a camera's RAW file. Counted by themselves, not in the verdict:
             // a model that is only sent the short tool list is not offered develop_raw and cannot pass the first two.
             lines.append("— RAW layer (a second group, not in the verdict above) —")

@@ -100,6 +100,15 @@ By default, every request includes a small copy of the image, at most 1,024 pixe
 
 A language model can state a number that sounds right and is made up. So Glimmer checks the assistant's text before you see it: a sentence with a number that Glimmer didn't give the model, that you didn't write yourself and that isn't in the plan's own steps is left out, and the answer ends with **Glimmer left out a figure it could not verify.** Prices are treated the same way: what a request costs is shown by Glimmer from the service's own answer, never by the assistant. If you ask how big the document is and the model gets it wrong, Glimmer writes the size and layer count itself.
 
+A number counts as given, and stays, when it is:
+
+- in what you wrote, or in what Glimmer told the model about the document (its size, its layer count, the active layer's name);
+- something Glimmer itself works out from the document's size before it reads the answer: half, double and four times each side; the other side when you name an aspect ratio (2400 × 1350 for 16:9 of a 2400 × 1600 image); the megapixels; the size as a ratio in lowest terms (3:2); and a percentage you name, of each side;
+- in the description of an operation, but only in a sentence that names that operation or what it does ("I can upscale it 2× or 4×");
+- 0, 1 or a number up to the count of the plan's steps, as in "2 steps" or a numbered list.
+
+So the assistant may do the sum, and a correct one stays. What it says about your own document is held to the document: "a 4:3 image" for an image that is 3:2 is left out. And whatever the arithmetic, a sentence about money, how long something takes, a file's size on disk, quality or a service keeps a figure only if you or Glimmer gave it.
+
 The check sees numbers, not claims. If the assistant says that something is free, that is the model talking; the price is the one your service lists.
 
 ### Suggest Edits
