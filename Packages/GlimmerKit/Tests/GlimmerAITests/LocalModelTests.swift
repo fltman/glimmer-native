@@ -49,10 +49,11 @@ extension ChatAdapterTests {
     }
 
     @Test func theCasesAreHalfSwedishAndUseOnlyTheShortList() {
-        #expect(LocalModelEvaluation.scored.count == 14 && LocalModelEvaluation.cases.count == 15)   // one known gap, not counted
-        #expect(LocalModelEvaluation.scored.filter { $0.language == "sv" }.count == 7)
+        #expect(LocalModelEvaluation.scored.count == 17 && LocalModelEvaluation.cases.count == 18)   // one known gap, not counted
+        #expect(LocalModelEvaluation.scored.filter { $0.language == "sv" }.count == 8)
         #expect(LocalModelEvaluation.scored.filter(\.answerOnly).count == 2)   // one in each language: no invented figures
-        for c in LocalModelEvaluation.cases where !c.answerOnly {
+        #expect(LocalModelEvaluation.scored.filter(\.changesNothing).count == 3)   // requests that name no edit
+        for c in LocalModelEvaluation.cases where !c.answerOnly && !c.changesNothing {
             #expect(AgentAPI.coreOps.contains(c.op) && AgentPlanner.op(named: c.op) != nil, "\(c.op)")
         }
     }
@@ -597,5 +598,41 @@ extension ChatAdapterTests {
         #expect(sent.url.absoluteString == "http://127.0.0.1:8080/v1/chat/completions" && sent.headers["Authorization"] == nil)
         #expect(sent.json["tool_choice"] == nil && sent.json["parallel_tool_calls"] == nil && sent.json["usage"] == nil && sent.json["response_format"] == nil)
         #expect(sent.json["model"] as? String == "mlx-community/some-model")
+    }
+}
+
+/// What a small model is sent. The series rule (2026-11-16, after Jämmer's on-device
+/// assistant fell from 14 of 14 to 10 of 14 unmeasured when its list grew): the list sent to
+/// a small model does not change without a recorded decision and a new evaluation run.
+@Suite struct ShortToolListTests {
+    /// Decision 2026-11-15 (abe4a84): crop, resize_image and set_layer took the places of
+    /// apply_filter, apply_preset and auto_color; eleven tools before and after.
+    /// Measured with this list 2026-11-16: qwen3:8b, see docs/TESTING-NOTES.md.
+    static let decided = ["add_adjustment", "add_text", "add_waveform", "auto_enhance", "crop", "generate_layer",
+                          "image_edit_composite", "remove_background", "resize_image", "select_subject", "set_layer"]
+    /// The size of that list as JSON when it was measured, and the room a reworded description may take.
+    static let measuredBytes = 9642
+    static let room = 300
+
+    @Test func theListSentToASmallModelIsTheOneThatWasMeasured() throws {
+        let tools = AgentPlanner.toolSchemas(short: true)
+        let names = tools.compactMap { ($0["function"] as? [String: Any])?["name"] as? String }.sorted()
+        #expect(names == Self.decided, "The short list changed. Run the evaluation for every model offered by default, record the decision and the numbers here and in docs/TESTING-NOTES.md, then update this list.")
+        let bytes = try JSONSerialization.data(withJSONObject: tools, options: [.sortedKeys]).count
+        #expect(bytes <= Self.measuredBytes + Self.room, "The short list is \(bytes) bytes; it was measured at \(Self.measuredBytes). A longer list needs a new evaluation run and a new number here.")
+    }
+
+    /// The on-device router is not sent the operations at all: fixed instructions and at most
+    /// a dozen palette matches, so it does not grow with the list of operations.
+    @Test func theOnDeviceRouterIsNotSentTheOperations() throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "Sources/GlimmerAI/OnDeviceRouter.swift"), encoding: .utf8)
+        #expect(!source.contains("toolSchemas") && !source.contains("AgentPlanner.ops"))
+    }
+
+    @Test func aRequestThatNamesNoEditMustChangeNothing() {
+        let poem = LocalModelEvaluation.cases.first(where: \.changesNothing)!
+        #expect(LocalModelEvaluation.judge(AgentPlan(steps: [], message: "The sea is wide…"), poem))
+        #expect(!LocalModelEvaluation.judge(AgentPlan(steps: [AgentStep(op: "add_text", params: ["text": .string("The sea is wide")])], message: nil), poem))
     }
 }

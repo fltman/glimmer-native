@@ -17,6 +17,9 @@ public enum LocalModelEvaluation {
         /// A question to answer in words: no step may be planned, and the answer may hold no
         /// figure that the editor state didn't give (`AssistantNumbers`).
         public var answerOnly = false
+        /// A request that names no edit ("write a poem about the sea"): whatever is answered,
+        /// no step may be planned, because nothing in the document was asked to change.
+        public var changesNothing = false
         /// A known gap, measured and not counted in the verdict: the check sees figures, not
         /// claims, so "it is free" gets through. Held when the answer doesn't call a paid
         /// feature free, cheap or expensive, and points to Settings or says that it costs.
@@ -42,6 +45,9 @@ public enum LocalModelEvaluation {
         Case(goal: "Markera motivet", language: "sv", op: "select_subject", params: [:]),
         Case(goal: "How big is this document, in pixels?", language: "en", op: "", params: [:], answerOnly: true),
         Case(goal: "Hur många lager har dokumentet och vad kostar det att förstora det?", language: "sv", op: "", params: [:], answerOnly: true),
+        Case(goal: "Write a poem about the sea", language: "en", op: "", params: [:], changesNothing: true),
+        Case(goal: "Berätta ett skämt", language: "sv", op: "", params: [:], changesNothing: true),
+        Case(goal: "Thanks, that looks good", language: "en", op: "", params: [:], changesNothing: true),
         // Generating goes to a paid service, so "free" would be wrong. (Upscaling was the first
         // question here, and it is in fact done on the Mac at no cost: a bad test of the gap.)
         Case(goal: "Is generating a new image free?", language: "en", op: "", params: [:], answerOnly: true, knownGap: true),
@@ -74,7 +80,8 @@ public enum LocalModelEvaluation {
         /// "known gaps: 0 of 1 held" for the report's last line.
         public var gapLine: String { gaps.isEmpty ? "" : " Known gaps (not counted): \(gaps.filter(\.passed).count) of \(gaps.count) held." }
 
-        /// At least five in six right, overall and in each language (12 of 14, 6 of 7), and none slower than a minute.
+        /// At least five in six right, overall and in each language (15 of 17, 8 of 9 in English,
+        /// 7 of 8 in Swedish), and none slower than a minute.
         public var passes: Bool {
             let en = passed(language: "en"), sv = passed(language: "sv")
             return passed * 6 >= scored.count * 5 && en.0 * 6 >= en.1 * 5 && sv.0 * 6 >= sv.1 * 5 && slowest <= LocalModelEvaluation.slowestAllowed
@@ -93,6 +100,7 @@ public enum LocalModelEvaluation {
             let pointsOrPaid = ["settings", "inställningar", "costs money", "costs credits", "paid", "kostar pengar", "not free", "inte gratis"].contains { lower.contains($0) }
             return plan.steps.isEmpty && plan.removedFigures.isEmpty && !AssistantNumbers.claimsACost(lower.replacingOccurrences(of: "not free", with: "").replacingOccurrences(of: "inte gratis", with: "")) && pointsOrPaid
         }
+        if test.changesNothing { return plan.steps.isEmpty && plan.droppedOps.isEmpty }
         if test.answerOnly { return plan.steps.isEmpty && plan.droppedOps.isEmpty && plan.removedFigures.isEmpty }
         guard plan.droppedOps.isEmpty, let step = plan.steps.first(where: { $0.op == test.op }) else { return false }
         // Every step must be a real operation with only parameters that operation has.
@@ -125,7 +133,7 @@ public enum LocalModelEvaluation {
             do {
                 let (plan, _) = try await AgentPlanner.plan(goal: test.goal, context: context, history: [], model: model)
                 passed = judge(plan, test)
-                got = plan.steps.isEmpty ? "no tool call" + (plan.message.map { ": \($0.prefix(60))" } ?? "")
+                got = plan.steps.isEmpty ? "no tool call" + (plan.message.map { ": \($0.prefix(240))" } ?? "")
                     : plan.steps.map { s in "\(s.op)(" + s.params.filter { $0.key != "rationale" }.map { "\($0.key): \($0.value.display)" }.sorted().joined(separator: ", ") + ")" }.joined(separator: " ")
                 if !plan.removedFigures.isEmpty { got += " | figures nobody gave it: \(plan.removedFigures.joined(separator: ", "))" }
                 if !plan.droppedOps.isEmpty { got += " | made-up tools: \(plan.droppedOps.joined(separator: ", "))" }

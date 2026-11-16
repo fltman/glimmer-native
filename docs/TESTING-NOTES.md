@@ -118,7 +118,7 @@ So the model sits at the line: right often enough, and the one miss that repeats
 
 Everything below is built from the services' documentation and tested against made-up answers in the documented form. None has had a real call. Use a debug build, started with the launch arguments shown; keys are entered in Settings › AI by hand.
 
-Text, one service at a time: `-ai.showUntried YES`, then Settings › AI › Service lists the untried ones as "(not tried yet)". Save the key, choose a model from the service's own list, and press **Run Glimmer's Test of This Model…**. It asks first, sends fourteen requests (each carries the list of operations, a few thousand tokens, and gets a short answer), and shows each outcome and the verdict by the same rule as for local models (five in six overall and per language: 12 of 14 and 6 of 7; none over 60 s). That result decides whether the service is offered.
+Text, one service at a time: `-ai.showUntried YES`, then Settings › AI › Service lists the untried ones as "(not tried yet)". Save the key, choose a model from the service's own list, and press **Run Glimmer's Test of This Model…**. It asks first, sends eighteen requests (seventeen counted and one known gap; each carries the list of operations, a few thousand tokens, and gets a short answer), and shows each outcome and the verdict by the same rule as for local models (five in six overall and per language: 15 of 17, 8 of 9 in English, 7 of 8 in Swedish; none over 60 s). That result decides whether the service is offered.
 
 | Service | Built on | Notes for the test |
 |---|---|---|
@@ -139,7 +139,7 @@ Images, one service at a time: with `-ai.showUntried YES`, Settings › AI has a
 | fal | data URIs in the request, the result asked for as a data URI | If fal answers with a link instead, Glimmer refuses to fetch it and says so: then that model can't be used this way. |
 | Hedra | bytes uploaded to Hedra (private handle, one hour), a job, a signed download | Only pictures of yourself, by Hedra's rules. |
 
-Costs: Berget's and Grunden's lists give prices per million tokens (about €0.15–0.50 in), so a fourteen-request run is a fraction of a euro cent. For the others no figure is given here, because their text prices were not read; the image prices per service are in `the-apps/research/providers-glimmer.md` and Flimmer's notes.
+Costs: Berget's and Grunden's lists give prices per million tokens (about €0.15–0.50 in), so an eighteen-request run is a fraction of a euro cent. For the others no figure is given here, because their text prices were not read; the image prices per service are in `the-apps/research/providers-glimmer.md` and Flimmer's notes.
 
 ## Accessibility is read with content in place
 
@@ -168,3 +168,20 @@ Scripts: `test-offline.sh` and now `test-accessibility.sh` run a copy that macOS
 A key stays with its service: every request that carries a key refuses a redirect to another host or down to plain http (`KeyStaysHome`), so the redirect becomes the answer. The one address Glimmer takes from a service's answer and fetches is Hedra's signed download: https only, fetched without the key. Hedra's job id goes into a path of requests with the key and must be a plain identifier.
 
 Added 2026-11-16, all hidden: streaming for Anthropic and OpenAI (the Assistant's text arrives as it is written; xAI's pages name no stream events for its Responses API, so its reply stays whole), and MLX (`mlx_lm.server` on 127.0.0.1:8080, the plainest chat-completions request, no key). MLX is built from one documented fact, its endpoint; `mlx_lm` is not installed on this Mac, so it has made no call at all and has not run the evaluation. In a debug copy with `-ai.showUntried YES` it is listed under Service as "MLX (not tried yet)", with the test button.
+
+## What a small model is sent, and requests that name no edit (2026-11-16)
+
+Series rule: the evaluation is run whenever an operation is added, removed or reworded, for every model offered by default, and the list sent to a small model does not change without a recorded decision.
+
+- The short list for local models (the planner's operations that are also "core"): 11 tools before this week's additions and 11 after. On 2026-11-15 (abe4a84) crop, resize_image and set_layer took the places of apply_filter, apply_preset and auto_color. As JSON it is 9,642 bytes today; the system prompt is 1,790 bytes. `ShortToolListTests` pins the eleven names and the size (300 bytes of room for a reworded description).
+- The full list for cloud models went from 25 operations to 33 this week, 25,211 bytes today. No evaluation has been run with it: the default cloud model costs money, so that run is on Anders's list.
+- The on-device router (Apple's model) is not sent the operations at all: fixed instructions (974 characters) and at most a dozen palette matches. It does not grow with the list.
+- Nothing was measured before this week: the evaluation was written on 2026-11-16, after the swap. Today's numbers are the baseline.
+
+Baseline, `qwen3:8b`, the short list above, seventeen counted cases (three new ones that name no edit: "Write a poem about the sea", "Berätta ett skämt", "Thanks, that looks good", which pass only when no step is planned): 16 of 17 (English 9 of 9, Swedish 7 of 8), median 2.8 s, slowest 28.9 s, passes. The miss is the known one ("Gör bilden svartvit", an adjustment without its type). All three no-edit requests got an answer in words and no step. The known gap ("Is generating a new image free?") under the changed rule: not held, 0 of 1; the answer began "No, generating a new image using the `generate_layer` tool i…" and the log cut it there, so why the rule rejected it is not known. The log now keeps 240 characters.
+
+The on-device router's four live tests were red in the same hour (FoundationModels, "SensitiveContentAnalysisML error 15"), with Ollama's model unloaded and swap at 15.2 of 16 GB; they fail in 0.03 s, before any answer. So unloading Ollama is not the whole explanation, and there is no on-device number for today.
+
+What Glimmer does with a plan today: a plan whose steps are all the editor's own (no paid AI step) runs at once, as one undo step named after the request; a plan with a paid step waits for Run unless "run AI plans automatically" is on. A single command picked by the on-device router also runs at once. So a model that answered "write a poem" with add_text would have changed the document without asking; it would be one Undo to take back.
+
+Later the same hour, under the series' model lock (`scripts/evaluate-models.sh on-device`, one model at a time for all three apps): the on-device router's four live tests passed, 4.6 s in all. The red run above coincided with Jämmer running an evaluation of its own at the same moment, which is what the lock now prevents. Evaluations go through `scripts/evaluate-models.sh` (`ollama <model>` or `on-device`): model lock, supervisor, a time limit, and Ollama's model unloaded at the end and on interruption. The ordinary package test run still includes the four live on-device tests whenever Apple's model is available, outside the lock.
