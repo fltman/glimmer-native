@@ -295,3 +295,27 @@ Per file, Glimmer's picture of the layers against the picture saved in the file:
 | gradient-fill | 32 bits per channel: opened as the file's flattened picture, and said |
 
 Every difference is one the report names. Still not met by any real file: text layers, smart objects, the vector mask's flag bits when set, PSB, CMYK and Lab.
+
+## RAW files from cameras (2026-11-16)
+
+Eight files from raw.pixls.us, fetched with Anders's yes; each file's row in the site's own table gives "Creative Commons 0 - Public Domain". 224 MB in `/Volumes/work2/glimmer-samples/raw`, outside the repository. Run: `GLIMMER_RAW_SAMPLES=<folder> GLIMMER_RAW_OUT=<folder> swift test --filter RawRealFiles` (under the supervisor). The developed previews for Anders to look at are in `/Volumes/work2/glimmer-samples/raw-developed`: 39 JPEGs, each named after its file and its settings (as shot, exposure +1 and −1, cooler, warmer, shadows lifted, lens correction switched).
+
+| File | Size | Result |
+|---|---|---|
+| Apple iPhone 12 Pro, DNG | 3024 × 4032 | develops; processes 6 to 9 (DNG); no lens correction |
+| Google Pixel 8 Pro, DNG | 8144 × 6128 | develops; lens correction supported and on |
+| Canon EOS R10, CR3 | 4000 × 6000 | develops; processes 7, 8 |
+| Fujifilm X-T50, RAF (X-Trans) | 7728 × 5152 | develops; processes 7 to 9 |
+| OM System OM-5, ORF | 5184 × 3888 | develops; lens correction supported and on |
+| Panasonic S5 II, RW2 | 6000 × 4000 | develops; lens correction supported and on |
+| Nikon Z f, NEF ("8bit lossy compressed") | – | refused: macOS's decoder gives no picture for this file |
+| Sony A7 IV, ARW ("APS-C raw compressed (lossy)") | – | refused, the same |
+
+Times on this Mac while other sessions were building: reading the header 0.04 to 0.4 s; developing 0.3 to 4.5 s; making the layer (the developed picture into Glimmer's tiles) 0.2 to 8 s, the 50-megapixel file the slowest. Each file cut at five lengths: refused or only its header read, no crash.
+
+What the camera files showed that the tests' own DNG could not:
+- The decoder's "native size" is the sensor's; a picture taken upright comes out turned. The size Glimmer reports and checks is now the developed picture's.
+- With the decoder's own scale setting and draft mode, the phone DNG came back cropped (the top-left quarter at full size) instead of scaled. Drafts are now made by developing and then scaling down. That is correct, and slower: a draft costs about what a full development does (up to about 4 s for the largest files), which is too slow for following a slider as it moves. To be solved before the Develop sheet feels right; not solved.
+- Two cameras' files in lossy-compressed modes are not supported by macOS. The message says which cameras work is decided by macOS; it does not say that another mode of the same camera may work.
+
+Not verified: the developed pictures have been looked at by me at small size (they are landscapes and plants and look right: no colour cast, no crop, right way up), not yet by Anders, whose look is the condition for the switch. Lens correction on and off gave the same centre colour, as expected, but I have not compared the corners.

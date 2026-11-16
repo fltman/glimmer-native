@@ -1,5 +1,6 @@
 import CoreGraphics
 import Foundation
+import ImageIO
 import Testing
 @testable import GlimmerCore
 @testable import GlimmerRender
@@ -231,4 +232,70 @@ enum DNGTestWriter {
 
 private extension LayerContent {
     var isEmptyRaster: Bool { if case .raster(let grid) = self { grid.isEmpty } else { true } }
+}
+
+/// Camera files (fetched with Anders's yes, kept outside the repository): GLIMMER_RAW_SAMPLES=<folder>.
+/// Each is developed as shot and with a few settings changed; previews go to GLIMMER_RAW_OUT for a person to look at.
+@Suite(.enabled(if: ProcessInfo.processInfo.environment["GLIMMER_RAW_SAMPLES"] != nil), .serialized)
+struct RawRealFiles {
+    static func writePreview(_ image: CGImage, to url: URL, maxSide: Int = 1600) {
+        let scale = min(1, Double(maxSide) / Double(max(image.width, image.height)))
+        let w = max(1, Int(Double(image.width) * scale)), h = max(1, Int(Double(image.height) * scale))
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return }
+        ctx.interpolationQuality = .high
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+        guard let small = ctx.makeImage(), let dest = CGImageDestinationCreateWithURL(url as CFURL, "public.jpeg" as CFString, 1, nil) else { return }
+        CGImageDestinationAddImage(dest, small, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
+        CGImageDestinationFinalize(dest)
+    }
+
+    @Test func everyCameraFileDevelops() throws {
+        let env = ProcessInfo.processInfo.environment
+        let folder = URL(fileURLWithPath: env["GLIMMER_RAW_SAMPLES"]!)
+        let out = env["GLIMMER_RAW_OUT"].map { URL(fileURLWithPath: $0) }
+        if let out { try FileManager.default.createDirectory(at: out, withIntermediateDirectories: true) }
+        let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+            .filter { !["txt", "md"].contains($0.pathExtension.lowercased()) && !$0.lastPathComponent.hasPrefix(".") }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+        #expect(!files.isEmpty)
+        for url in files {
+            let name = url.deletingPathExtension().lastPathComponent
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            do {
+                var start = Date()
+                let info = try RawDevelopment.info(data)
+                let headerTime = Date().timeIntervalSince(start)
+                print("RAWREAL \(url.lastPathComponent) | \(data.count / 1_048_576) MB | \(info.width)×\(info.height) | header \(String(format: "%.2f", headerTime)) s | processes \(info.processes.joined(separator: ",")) | as shot \(Int(info.temperature)) K tint \(Int(info.tint)) | lens \(info.supportsLensCorrection) (on: \(info.lensCorrection)) highlights \(info.supportsHighlightRecovery) noise \(info.supportsLuminanceNoise)/\(info.supportsColorNoise) sharp \(info.supportsSharpness) contrast \(info.supportsContrast)")
+                start = Date()
+                let draft = try RawDevelopment.develop(data, settings: RawSettings(), scale: 0.25)
+                let draftTime = Date().timeIntervalSince(start)
+                start = Date()
+                let (full, applied) = try RawDevelopment.develop(data, settings: RawSettings())
+                let fullTime = Date().timeIntervalSince(start)
+                let centre = RawDevelopmentTests.colour(full, x: full.width / 2, y: full.height / 2, size: 16)
+                print("RAWREAL    developed \(full.width)×\(full.height) in \(String(format: "%.2f", fullTime)) s (draft \(draft.image.width)×\(draft.image.height) in \(String(format: "%.2f", draftTime)) s), process \(applied.process ?? "-"), centre \(Int(centre.r)),\(Int(centre.g)),\(Int(centre.b))")
+                if let out { Self.writePreview(full, to: out.appending(path: "\(name) - 1 as shot.jpg")) }
+                var variants: [(String, RawSettings)] = []
+                var s = RawSettings(); s.exposure = 1; variants.append(("2 exposure +1", s))
+                s = RawSettings(); s.exposure = -1; variants.append(("3 exposure -1", s))
+                s = RawSettings(); s.temperature = info.temperature * 0.7; variants.append(("4 cooler (\(Int(info.temperature * 0.7)) K)", s))
+                s = RawSettings(); s.temperature = info.temperature * 1.4; variants.append(("5 warmer (\(Int(info.temperature * 1.4)) K)", s))
+                s = RawSettings(); s.shadows = 1.8; variants.append(("6 shadows lifted (1.8)", s))
+                if info.supportsLensCorrection { s = RawSettings(); s.lensCorrection = !info.lensCorrection; variants.append(("7 lens correction \(info.lensCorrection ? "off" : "on")", s)) }
+                for (label, settings) in variants {
+                    let image = try RawDevelopment.develop(data, settings: settings, scale: 0.5).image
+                    let c = RawDevelopmentTests.colour(image, x: image.width / 2, y: image.height / 2, size: 16)
+                    print("RAWREAL    \(label): centre \(Int(c.r)),\(Int(c.g)),\(Int(c.b))")
+                    if let out { Self.writePreview(image, to: out.appending(path: "\(name) - \(label).jpg")) }
+                }
+                // The layer: made, and its picture the same after saving and reading back.
+                start = Date()
+                let made = try RawLayer.make(from: data, fileName: url.lastPathComponent)
+                print("RAWREAL    as a layer in \(String(format: "%.2f", Date().timeIntervalSince(start))) s; cut short at 5 lengths: \([0.1, 0.3, 0.5, 0.7, 0.9].map { (try? RawDevelopment.info(data.prefix(Int(Double(data.count) * $0)))) == nil ? "refused" : "header read" })")
+                #expect(made.width == info.width && made.height == info.height)
+            } catch {
+                print("RAWREAL \(url.lastPathComponent) | REFUSED: \((error as? LocalizedError)?.errorDescription ?? "\(error)")")
+            }
+        }
+    }
 }

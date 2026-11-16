@@ -36,7 +36,12 @@ public enum RawDevelopment {
     /// file larger than this Mac handles is refused here, before the first decode.
     public static func info(_ data: Data, maxPixels: Int = DocumentLimits.maxCanvasPixels()) throws -> RawInfo {
         let f = try filter(data)
-        let width = Int(f.nativeSize.width), height = Int(f.nativeSize.height)
+        // The size of the picture as it will be developed: turned the way the camera was held.
+        // (The decoder's "native size" is the sensor's; a portrait shot has the two swapped.)
+        var width = Int(f.nativeSize.width), height = Int(f.nativeSize.height)
+        if let extent = f.outputImage?.extent, !extent.isInfinite, extent.width >= 1, extent.height >= 1 {
+            width = Int(extent.width.rounded()); height = Int(extent.height.rounded())
+        }
         let (pixels, overflow) = width.multipliedReportingOverflow(by: height)
         guard !overflow, pixels <= maxPixels, width <= DocumentManifest.maxDimension, height <= DocumentManifest.maxDimension else {
             throw Problem(message: DocumentLimits.refusal(width: width, height: height) ?? "This RAW file is \(width) × \(height) pixels, more than this Mac handles.")
@@ -84,12 +89,18 @@ public enum RawDevelopment {
     /// smaller draft for while a control is being moved.
     public static func develop(_ data: Data, settings: RawSettings, scale: Double = 1, maxPixels: Int = DocumentLimits.maxCanvasPixels()) throws -> (image: CGImage, applied: RawSettings) {
         let (f, applied) = try configured(data, settings, maxPixels: maxPixels)
-        if scale < 1 {
-            f.scaleFactor = Float(min(max(scale, 0.02), 1))
-            f.isDraftModeEnabled = true
+        guard var output = f.outputImage, !output.extent.isInfinite, output.extent.width >= 1, output.extent.height >= 1 else {
+            throw Problem(message: "macOS couldn't develop this RAW file.")
         }
-        guard let output = f.outputImage, !output.extent.isInfinite, output.extent.width >= 1, output.extent.height >= 1,
-              let image = context.createCGImage(output, from: output.extent, format: .RGBAh, colorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!) else {
+        if scale < 1 {
+            // The picture is made smaller after developing, not by the decoder's own scale
+            // setting: with that setting some DNG files came back cropped instead of scaled
+            // (a phone file, 2026-11-16).
+            let s = min(max(scale, 0.02), 1)
+            output = output.transformed(by: CGAffineTransform(scaleX: s, y: s), highQualityDownsample: true)
+        }
+        let extent = output.extent.integral
+        guard let image = context.createCGImage(output, from: extent, format: .RGBAh, colorSpace: CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!) else {
             throw Problem(message: "macOS couldn't develop this RAW file.")
         }
         return (image, applied)
@@ -100,7 +111,8 @@ public enum RawDevelopment {
     public static func whiteBalance(for data: Data, settings: RawSettings, neutralAt point: CGPoint, maxPixels: Int = DocumentLimits.maxCanvasPixels()) throws -> (temperature: Double, tint: Double) {
         let (f, _) = try configured(data, settings, maxPixels: maxPixels)
         // The decoder counts from the bottom left.
-        f.neutralLocation = CGPoint(x: min(max(point.x, 0), f.nativeSize.width - 1), y: min(max(f.nativeSize.height - 1 - point.y, 0), f.nativeSize.height - 1))
+        let size = f.outputImage.map { $0.extent.isInfinite ? f.nativeSize : $0.extent.size } ?? f.nativeSize
+        f.neutralLocation = CGPoint(x: min(max(point.x, 0), size.width - 1), y: min(max(size.height - 1 - point.y, 0), size.height - 1))
         return (Double(f.neutralTemperature), Double(f.neutralTint))
     }
 
