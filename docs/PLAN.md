@@ -477,3 +477,9 @@ Fal och Replicate, konton, credits och fakturering, multiplayer, plugin-API, PSD
 3. **Identitet:** `com.brattoo.glimmer`, team Brattoo AB (V783A2L763).
 4. **Git:** ja, pushat till `fltman/glimmer-native`.
 5. **AI flyttas fram:** ja, AI är nu fas 3–4, direkt efter lagerträdet.
+
+## 8. Tillägg efter planen
+
+- **Laga markering (2026-11-16):** fyller en markerad yta med bild från omgivningen, på Macen och utan modell (Redigera › Laga markering, knappen Laga i markeringsfältet, agentens `heal_selection`). Två klassiska metoder skrivna från artiklarna: fast marching för tunna ytor och jämna underlag, exemplarfyllning för textur. Byggd och verifierad i debugbygget. **Avstängd i releasebyggen** med brytaren `GLIMMER_HEAL` i `Config/Features.xcconfig` tills Anders har sett resultaten; manualen, FAQ:n och guiden följer brytaren. Reglerna koden håller sig till, och patenten bakom dem, står i `PATENTS.md`.
+- **Modell för objektborttagning:** parkerad. Underlaget står i `FILL-MODEL-RESEARCH.md`; det hänger på en juristfråga om Places2.
+- **Spara bara ändrade lager:** undersökt och inte byggt (`TESTING-NOTES.md`).
