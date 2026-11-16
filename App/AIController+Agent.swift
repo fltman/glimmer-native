@@ -187,6 +187,7 @@ extension AIController {
     private func receive(_ plan: AgentPlan, goal: String) {
         let summary = plan.message ?? (plan.steps.isEmpty ? "I'm not sure how to do that." : "Here's the plan.")
         var text = summary
+        if !plan.removedFigures.isEmpty { text += " " + String(localized: "Glimmer left out a figure it could not verify.") }
         if !plan.droppedOps.isEmpty {
             text += " (Skipped steps the editor can't do: \(plan.droppedOps.joined(separator: ", ")).)"
         }

@@ -706,11 +706,11 @@ private struct TextModelTrial: View {
         Task {
             let report = await LocalModelEvaluation.run(model) { outcome in
                 Task { @MainActor in
-                    lines.append("\(outcome.passed ? "ok  " : "FAIL") \(String(format: "%5.1f s", outcome.seconds))  \(outcome.language)  \(outcome.goal) → \(outcome.got)")
+                    lines.append("\(outcome.knownGap ? (outcome.passed ? "gap+" : "gap-") : outcome.passed ? "ok  " : "FAIL") \(String(format: "%5.1f s", outcome.seconds))  \(outcome.language)  \(outcome.goal) → \(outcome.got)")
                 }
             }
             let en = report.passed(language: "en"), sv = report.passed(language: "sv")
-            verdict = "\(report.model): \(report.passed) of \(report.outcomes.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "passes" : "does not pass"). The cost is on \(provider.name)'s usage page; this service's answers carry no cost."
+            verdict = "\(report.model): \(report.passed) of \(report.scored.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "passes" : "does not pass").\(report.gapLine) The cost is on \(provider.name)'s usage page; this service's answers carry no cost."
             running = false
         }
     }

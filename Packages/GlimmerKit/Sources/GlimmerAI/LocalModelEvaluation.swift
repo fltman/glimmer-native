@@ -17,7 +17,14 @@ public enum LocalModelEvaluation {
         /// A question to answer in words: no step may be planned, and the answer may hold no
         /// figure that the editor state didn't give (`AssistantNumbers`).
         public var answerOnly = false
+        /// A known gap, measured and not counted in the verdict: the check sees figures, not
+        /// claims, so "it is free" gets through. Held when the answer doesn't call a paid
+        /// feature free, cheap or expensive, and points to Settings or says that it costs.
+        public var knownGap = false
     }
+
+    /// The cases the verdict counts.
+    public static var scored: [Case] { cases.filter { !$0.knownGap } }
 
     public static let cases: [Case] = [
         Case(goal: "Make the photo black and white", language: "en", op: "add_adjustment", params: ["type": "black_white"]),
@@ -35,6 +42,9 @@ public enum LocalModelEvaluation {
         Case(goal: "Markera motivet", language: "sv", op: "select_subject", params: [:]),
         Case(goal: "How big is this document, in pixels?", language: "en", op: "", params: [:], answerOnly: true),
         Case(goal: "Hur många lager har dokumentet och vad kostar det att förstora det?", language: "sv", op: "", params: [:], answerOnly: true),
+        // Generating goes to a paid service, so "free" would be wrong. (Upscaling was the first
+        // question here, and it is in fact done on the Mac at no cost: a bad test of the gap.)
+        Case(goal: "Is generating a new image free?", language: "en", op: "", params: [:], answerOnly: true, knownGap: true),
     ]
 
     public struct Outcome: Sendable {
@@ -44,23 +54,30 @@ public enum LocalModelEvaluation {
         public let passed: Bool
         /// What the model did, for the report.
         public let got: String
+        /// A known gap: shown in the report, left out of the verdict.
+        public var knownGap = false
     }
 
     public struct Report: Sendable {
         public let model: String
         public let outcomes: [Outcome]
-        public var passed: Int { outcomes.filter(\.passed).count }
+        /// What the verdict counts, and the known gaps beside it.
+        public var scored: [Outcome] { outcomes.filter { !$0.knownGap } }
+        public var gaps: [Outcome] { outcomes.filter(\.knownGap) }
+        public var passed: Int { scored.filter(\.passed).count }
         public func passed(language: String) -> (Int, Int) {
-            let some = outcomes.filter { $0.language == language }
+            let some = scored.filter { $0.language == language }
             return (some.filter(\.passed).count, some.count)
         }
-        public var slowest: Double { outcomes.map(\.seconds).max() ?? 0 }
-        public var median: Double { let s = outcomes.map(\.seconds).sorted(); return s.isEmpty ? 0 : s[s.count / 2] }
+        public var slowest: Double { scored.map(\.seconds).max() ?? 0 }
+        public var median: Double { let s = scored.map(\.seconds).sorted(); return s.isEmpty ? 0 : s[s.count / 2] }
+        /// "known gaps: 0 of 1 held" for the report's last line.
+        public var gapLine: String { gaps.isEmpty ? "" : " Known gaps (not counted): \(gaps.filter(\.passed).count) of \(gaps.count) held." }
 
         /// At least five in six right, overall and in each language (12 of 14, 6 of 7), and none slower than a minute.
         public var passes: Bool {
             let en = passed(language: "en"), sv = passed(language: "sv")
-            return passed * 6 >= outcomes.count * 5 && en.0 * 6 >= en.1 * 5 && sv.0 * 6 >= sv.1 * 5 && slowest <= LocalModelEvaluation.slowestAllowed
+            return passed * 6 >= scored.count * 5 && en.0 * 6 >= en.1 * 5 && sv.0 * 6 >= sv.1 * 5 && slowest <= LocalModelEvaluation.slowestAllowed
         }
     }
 
@@ -68,6 +85,14 @@ public enum LocalModelEvaluation {
 
     /// Whether `plan` answers `test`: the right operation with the right values, and nothing made up.
     public static func judge(_ plan: AgentPlan, _ test: Case) -> Bool {
+        if test.knownGap {
+            let said = plan.message ?? ""
+            // Held: no step, no figure, no "free"/"cheap"/"expensive", and it either points to
+            // Settings or says that it costs (which Glimmer's own list of operations states).
+            let lower = said.lowercased()
+            let pointsOrPaid = ["settings", "inställningar", "costs money", "costs credits", "paid", "kostar pengar", "not free", "inte gratis"].contains { lower.contains($0) }
+            return plan.steps.isEmpty && plan.removedFigures.isEmpty && !AssistantNumbers.claimsACost(lower.replacingOccurrences(of: "not free", with: "").replacingOccurrences(of: "inte gratis", with: "")) && pointsOrPaid
+        }
         if test.answerOnly { return plan.steps.isEmpty && plan.droppedOps.isEmpty && plan.removedFigures.isEmpty }
         guard plan.droppedOps.isEmpty, let step = plan.steps.first(where: { $0.op == test.op }) else { return false }
         // Every step must be a real operation with only parameters that operation has.
@@ -107,7 +132,7 @@ public enum LocalModelEvaluation {
             } catch {
                 got = "error: " + String(((error as? LocalizedError)?.errorDescription ?? "\(error)").prefix(120))
             }
-            let outcome = Outcome(goal: test.goal, language: test.language, seconds: Date().timeIntervalSince(start), passed: passed, got: got)
+            let outcome = Outcome(goal: test.goal, language: test.language, seconds: Date().timeIntervalSince(start), passed: passed, got: got, knownGap: test.knownGap)
             outcomes.append(outcome)
             progress?(outcome)
         }

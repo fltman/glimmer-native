@@ -11502,6 +11502,17 @@
           }
         }
       }
+    },
+    "Glimmer left out a figure it could not verify.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer utelämnade en siffra som inte gick att kontrollera."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

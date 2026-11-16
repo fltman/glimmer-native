@@ -58,7 +58,7 @@ If you run [Ollama](https://ollama.com) on your Mac, the Assistant can use a mod
 What to expect, plainly:
 
 - It is slower than a service. An answer usually takes a few seconds, and can take up to a minute on a busy Mac.
-- The model takes memory while it runs, about 6 GB for `qwen3:8b`.
+- The model takes memory, about 6 GB for `qwen3:8b`, and Ollama keeps it loaded for some minutes after the last answer (that timing is Ollama's own setting). On a Mac with 16 GB, other work and Glimmer's on-device features can get slower meanwhile.
 - It gets most everyday requests right. A Swedish request for an adjustment ("Gör bilden svartvit") can come back incomplete; the same request in English works. If a plan calls a tool that doesn't exist, Glimmer drops that step and tells you.
 - `qwen3:8b` can't take pictures, so the Assistant plans without looking at the document, and Suggest Edits and Find Distractions are not offered with it.
 - Local models get a shorter list of Glimmer's operations (the everyday ones), because a long list makes small models lose their way. For anything outside it, use a service or do it by hand.

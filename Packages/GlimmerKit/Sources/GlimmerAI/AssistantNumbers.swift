@@ -25,6 +25,23 @@ public enum AssistantNumbers {
         return found
     }
 
+    /// Said once in an answer that lost a sentence, so it doesn't just read oddly.
+    public static let notice = "Glimmer left out a figure it could not verify."
+
+    /// `text` with `notice` after it when something was removed (once, however many sentences went).
+    public static func noted(_ text: String?, removed: Bool) -> String? {
+        guard removed else { return text }
+        return [text, notice].compactMap { $0 }.joined(separator: " ")
+    }
+
+    /// Words of a claim about cost that carries no figure ("it is free"): nothing the model
+    /// can know. The evaluation measures it as a known gap; nothing is removed for it.
+    public static func claimsACost(_ text: String) -> Bool {
+        let lower = text.lowercased()
+        return ["free", "gratis", "no cost", "no charge", "costs nothing", "kostar inget", "kostar ingenting", "kostnadsfri", "cheap", "billig", "expensive", "dyr"]
+            .contains { lower.contains($0) }
+    }
+
     private static let money = ["$", "€", "£", "kr", "sek", "usd", "eur", "cent", "credit", "dollar", "euro", "kronor", "öre"]
 
     private static func sentences(_ text: String) -> [String] {
@@ -44,7 +61,9 @@ public enum AssistantNumbers {
     /// `text` without the sentences that state a number not in `given`, and those numbers.
     /// `given`: every text Glimmer or the person supplied. `steps`: how many steps the plan
     /// has, so "step 2" and "3 steps" are allowed.
-    public static func checked(_ text: String, given: [String], steps: Int = 0) -> (text: String?, removed: [String]) {
+    /// `pricesOnly`: for text that proposes an edit ("crop to 4:5"), whose numbers are the
+    /// proposal itself; only a sentence about money with a figure goes.
+    public static func checked(_ text: String, given: [String], steps: Int = 0, pricesOnly: Bool = false) -> (text: String?, removed: [String]) {
         var backed = Set(given.flatMap(numbers(in:)))
         // A share given as 0.5 may be said as 50 (percent).
         for n in backed where n > 0 && n <= 1 { backed.insert((n * 100).rounded()) }
@@ -53,11 +72,11 @@ public enum AssistantNumbers {
         for sentence in sentences(text) {
             let stated = numbers(in: sentence)
             let unbacked = stated.filter { n in !backed.contains { abs($0 - n) <= max(0.005, abs(n) * 0.005) } }
-            if unbacked.isEmpty {
+            let lower = sentence.lowercased()
+            let about = money.contains { lower.contains($0) } ? "price" : "number"
+            if unbacked.isEmpty || (pricesOnly && about != "price") {
                 kept.append(sentence)
             } else {
-                let lower = sentence.lowercased()
-                let about = money.contains { lower.contains($0) } ? "price" : "number"
                 removed.append(contentsOf: unbacked.map { "\(about) \($0 == $0.rounded() ? String(Int($0)) : String($0))" })
             }
         }

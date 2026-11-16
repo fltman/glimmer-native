@@ -115,6 +115,16 @@ public struct OllamaTextModel: TextModel {
     }
 
     /// What Ollama says a model can do (`/api/show`): tools and pictures.
+    /// Asks Ollama to let go of `model` now (`keep_alive: 0`), for tests and evaluations: left
+    /// loaded it holds several GB for minutes. The app itself keeps Ollama's own timing.
+    public static func unload(_ model: String, baseURL: URL = URL(string: "http://127.0.0.1:11434")!, session: URLSession = .shared) async {
+        var request = URLRequest(url: baseURL.appending(path: "api/generate"))
+        request.httpMethod = "POST"
+        request.httpBody = try? JSONSerialization.data(withJSONObject: ["model": model, "keep_alive": 0])
+        request.timeoutInterval = 20
+        _ = try? await session.data(for: request)
+    }
+
     public static func abilities(of model: String, baseURL: URL = URL(string: "http://127.0.0.1:11434")!, session: URLSession = .shared) async throws -> (tools: Bool, vision: Bool, contextLength: Int?) {
         var request = URLRequest(url: baseURL.appending(path: "api/show"))
         request.httpMethod = "POST"

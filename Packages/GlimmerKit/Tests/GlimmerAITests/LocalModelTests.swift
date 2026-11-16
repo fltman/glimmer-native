@@ -49,9 +49,9 @@ extension ChatAdapterTests {
     }
 
     @Test func theCasesAreHalfSwedishAndUseOnlyTheShortList() {
-        #expect(LocalModelEvaluation.cases.count == 14)
-        #expect(LocalModelEvaluation.cases.filter { $0.language == "sv" }.count == 7)
-        #expect(LocalModelEvaluation.cases.filter(\.answerOnly).count == 2)   // one in each language: no invented figures
+        #expect(LocalModelEvaluation.scored.count == 14 && LocalModelEvaluation.cases.count == 15)   // one known gap, not counted
+        #expect(LocalModelEvaluation.scored.filter { $0.language == "sv" }.count == 7)
+        #expect(LocalModelEvaluation.scored.filter(\.answerOnly).count == 2)   // one in each language: no invented figures
         for c in LocalModelEvaluation.cases where !c.answerOnly {
             #expect(AgentAPI.coreOps.contains(c.op) && AgentPlanner.op(named: c.op) != nil, "\(c.op)")
         }
@@ -107,10 +107,13 @@ extension ChatAdapterTests {
             let thinks = env["GLIMMER_LOCAL_EVAL_THINK"] == "1"
             say("EVAL \(name): think \(thinks)")
             let report = await LocalModelEvaluation.run(OllamaTextModel(model: name, thinks: thinks)) { o in
-                say("EVAL \(name) | \(o.passed ? "ok  " : "FAIL") | \(String(format: "%5.1f", o.seconds)) s | \(o.language) | \(o.goal) -> \(o.got)")
+                say("EVAL \(name) | \(o.knownGap ? (o.passed ? "gap+" : "gap-") : o.passed ? "ok  " : "FAIL") | \(String(format: "%5.1f", o.seconds)) s | \(o.language) | \(o.goal) -> \(o.got)")
             }
             let en = report.passed(language: "en"), sv = report.passed(language: "sv")
-            say("EVAL \(name): \(report.passed) of \(report.outcomes.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "PASSES" : "does not pass")")
+            say("EVAL \(name): \(report.passed) of \(report.scored.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "PASSES" : "does not pass")")
+            if !report.gapLine.isEmpty { say("EVAL \(name):\(report.gapLine)") }
+            // Ollama keeps the model loaded (several GB) for minutes; Apple's on-device model then gets no memory. Unload it.
+            await OllamaTextModel.unload(name)
         }
     }
 }
@@ -447,5 +450,34 @@ extension ChatAdapterTests {
         #expect(!LocalModelEvaluation.judge(plan, test))
         #expect(LocalModelEvaluation.judge(AgentPlan(steps: [], message: "2400 × 1600 pixels."), test))
         #expect(!LocalModelEvaluation.judge(AgentPlan(steps: [AgentStep(op: "resize_image")], message: nil), test))
+    }
+}
+
+extension AssistantNumbersTests {
+    @Test func anAnswerThatLostASentenceSaysSoOnce() {
+        #expect(AssistantNumbers.noted("Sure.", removed: true) == "Sure. Glimmer left out a figure it could not verify.")
+        #expect(AssistantNumbers.noted(nil, removed: true) == AssistantNumbers.notice && AssistantNumbers.noted("Sure.", removed: false) == "Sure.")
+        let reply = #"{"distractions":[{"id":"a","label":"sign","rationale":"It takes 40 % of the frame. It is bright.","severity":"high","box":{"x":0.1,"y":0.1,"width":0.2,"height":0.2}}],"message":"Removing it costs $0.02. Found one."}"#
+        let parsed = AIPipelines.parseDistractions(reply)
+        #expect(parsed.items.first?.rationale == "It is bright.")
+        #expect(parsed.message == "Found one. Glimmer left out a figure it could not verify.")
+    }
+
+    @Test func aSuggestionKeepsItsProposalButNeverAPrice() {
+        let reply = #"{"suggestions":[{"title":"Crop 4:5","goal":"Crop to 4:5 around the face."},{"title":"Upscale","goal":"Upscale it for only $0.05."}]}"#
+        #expect(AgentPlanner.parseSuggestions(reply).map(\.title) == ["Crop 4:5"])
+    }
+
+    @Test func aCostClaimWithoutAFigureIsTheKnownGap() {
+        let gap = LocalModelEvaluation.cases.first(where: \.knownGap)!
+        #expect(!LocalModelEvaluation.judge(AgentPlan(steps: [], message: "Yes, generating is free."), gap))
+        #expect(LocalModelEvaluation.judge(AgentPlan(steps: [], message: "The `generate_layer` function is an AI job that costs money."), gap))
+        #expect(LocalModelEvaluation.judge(AgentPlan(steps: [], message: "No, it is not free."), gap))
+        #expect(LocalModelEvaluation.judge(AgentPlan(steps: [], message: "Prices are the service's; the model and its price are shown in Settings › AI."), gap))
+        // The verdict leaves it out.
+        let outcomes = (0..<12).map { _ in LocalModelEvaluation.Outcome(goal: "g", language: "en", seconds: 1, passed: true, got: "") }
+            + [LocalModelEvaluation.Outcome(goal: "gap", language: "en", seconds: 1, passed: false, got: "", knownGap: true)]
+        let report = LocalModelEvaluation.Report(model: "m", outcomes: outcomes)
+        #expect(report.passed == 12 && report.scored.count == 12 && report.gapLine.contains("0 of 1"))
     }
 }

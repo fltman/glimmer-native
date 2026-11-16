@@ -248,17 +248,24 @@ extension AIPipelines {
         guard let json = jsonObject(in: text) else { return ([], "The model's reply couldn't be read.") }
         let raw = json["distractions"] as? [[String: Any]] ?? []
         var items: [Distraction] = []
+        var leftOut = false
         for (i, d) in raw.enumerated() {
             guard let b = d["box"] as? [String: Any] else { continue }
             func n(_ k: String) -> Double { (b[k] as? NSNumber)?.doubleValue ?? 0 }
             let x = min(max(n("x"), 0), 1), y = min(max(n("y"), 0), 1)
             let w = min(max(n("width"), 0), 1 - x), h = min(max(n("height"), 0), 1 - y)
             guard w > 0.001, h > 0.001 else { continue }
+            // The reason is the model's own text: a sentence with a figure nobody gave it goes (`AssistantNumbers`).
+            let reason = (d["rationale"] as? String).map { AssistantNumbers.checked($0, given: []) }
+            if reason?.removed.isEmpty == false { leftOut = true }
             items.append(Distraction(id: d["id"] as? String ?? "d\(i + 1)", label: d["label"] as? String ?? "distraction",
-                                     rationale: d["rationale"] as? String, severity: d["severity"] as? String ?? "medium",
+                                     rationale: reason?.text, severity: d["severity"] as? String ?? "medium",
                                      box: (x, y, w, h)))
         }
-        return (items, json["message"] as? String)
+        // How many were found is Glimmer's own count, so the summary may say it.
+        let said = (json["message"] as? String).map { AssistantNumbers.checked($0, given: ["\(items.count) \(raw.count)"]) }
+        if said?.removed.isEmpty == false { leftOut = true }
+        return (items, AssistantNumbers.noted(said?.text, removed: leftOut))
     }
 
     public static func findDistractions(_ image: RGBAImage, model: any TextModel)

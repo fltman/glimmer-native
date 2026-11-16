@@ -93,6 +93,12 @@ The quality check is one more request to the text model. To turn it off, turn of
 
 By default, every request includes a small copy of the image, at most 1,024 pixels on the long side, so the assistant can choose settings that suit the photo. It also knows the canvas size, the number of layers, the active layer and whether there is a selection. To send only the text, turn off **Let the assistant see the image** in **Glimmer › Settings › General**.
 
+### Numbers in the assistant's answers
+
+A language model can state a number that sounds right and is made up. So Glimmer checks the assistant's text before you see it: a sentence with a number that Glimmer didn't give the model, that you didn't write yourself and that isn't in the plan's own steps is left out, and the answer ends with **Glimmer left out a figure it could not verify.** Prices are treated the same way: what a request costs is shown by Glimmer from the service's own answer, never by the assistant. If you ask how big the document is and the model gets it wrong, Glimmer writes the size and layer count itself.
+
+The check sees numbers, not claims. If the assistant says that something is free, that is the model talking; the price is the one your service lists.
+
 ### Suggest Edits
 
 When you have an OpenRouter key, the Assistant section has a **Suggest Edits** button. The assistant looks at the image and proposes three different edits for this photo, for example one correction, one mood and one bold change, in the language the app runs in. Click a suggestion to send it as a request. Suggest Edits is one request to the text model.

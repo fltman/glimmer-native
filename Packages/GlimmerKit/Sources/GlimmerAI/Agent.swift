@@ -364,6 +364,7 @@ public enum AgentPlanner {
     - When unsure about a param, send {} (or omit it) to get sensible defaults rather than guessing exotic numbers.
     - If the goal is ambiguous, contradictory or impossible with these ops, return an empty "steps" array and put a short clarifying question in "message".
     - If the user is only chatting or asking a question about the editor, answer briefly in "message" with no steps.
+    - If asked what something costs or whether it is free, don't assert it: say that prices are the service's and that the model and its price are shown in Settings › AI.
     - Never state a number you were not given. Sizes, layer counts and other facts about the document come only from the editor state in the request; never state a price, a cost or how long something takes.
     - Keep each step's "rationale" to one short sentence.
 
@@ -485,6 +486,9 @@ public enum AgentPlanner {
             guard let title = item.title?.trimmingCharacters(in: .whitespacesAndNewlines), !title.isEmpty,
                   let goal = item.goal?.trimmingCharacters(in: .whitespacesAndNewlines), !goal.isEmpty,
                   seen.insert(title).inserted else { return nil }
+            // A suggestion's numbers are its proposal ("crop to 4:5"); a price is never the model's to state.
+            guard let goal = AssistantNumbers.checked(goal, given: [], pricesOnly: true).text,
+                  let title = AssistantNumbers.checked(title, given: [], pricesOnly: true).text else { return nil }
             return Suggestion(title: title, goal: goal)
         }.prefix(3).map { $0 }
     }
