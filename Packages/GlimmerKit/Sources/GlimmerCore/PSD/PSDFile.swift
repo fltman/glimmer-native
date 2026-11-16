@@ -53,6 +53,12 @@ public struct PSDFile: Sendable {
         /// each `rect.width` × `rect.height` samples of `bytesPerSample` bytes, big-endian as in the file.
         public var planes: [Int: Data]
         public var bytesPerSample: Int
+
+        public init(name: String, rect: Rect, blendKey: String, opacity: UInt8, isClipped: Bool, isVisible: Bool, group: GroupMark, mask: Mask?,
+                    extraKeys: [String], planes: [Int: Data], bytesPerSample: Int) {
+            self.name = name; self.rect = rect; self.blendKey = blendKey; self.opacity = opacity; self.isClipped = isClipped; self.isVisible = isVisible
+            self.group = group; self.mask = mask; self.extraKeys = extraKeys; self.planes = planes; self.bytesPerSample = bytesPerSample
+        }
     }
 
     public var header: Header
@@ -61,6 +67,11 @@ public struct PSDFile: Sendable {
     /// The flattened image the file carries: planes in channel order, when it could be read.
     public var composite: [Data]
     public var iccProfile: Data?
+
+    /// A file from its parts, for the writer.
+    public init(header: Header, layers: [Layer], composite: [Data], iccProfile: Data?) {
+        self.header = header; self.layers = layers; self.composite = composite; self.iccProfile = iccProfile
+    }
 
     public struct Problem: Error, LocalizedError, Equatable, Sendable {
         public let message: String
