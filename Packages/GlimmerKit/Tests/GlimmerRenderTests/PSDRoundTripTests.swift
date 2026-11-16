@@ -141,6 +141,22 @@ import Testing
         #expect(try PSDExport.data(for: try Self.document(), context: try context()).report.gammaDifference == nil)
     }
 
+    /// The other choice for a linear-light document: one merged layer, which looks right in any program.
+    @Test(arguments: [8, 16])
+    func aMergedFileHoldsOneLayerThatLooksLikeTheDocument(depth: Int) throws {
+        let linear = try Self.document(blend: .linear)
+        let (data, report) = try PSDExport.data(for: linear, depth: depth, flattened: true, context: try context())
+        #expect(report.notes.map(\.kind) == [.flattenedByChoice] && report.layersWritten == 1 && report.gammaDifference == nil)
+        let (after, imported) = try PSDImport.document(from: data, limits: Self.limits)
+        #expect(after.layers.map(\.name) == ["Merged"] && imported.notes.isEmpty)
+        let ours = try #require(PSDAppearance.onWhite(try ImageExporter.flattenedSRGB(linear, context: try context())))
+        let back = try #require(PSDAppearance.onWhite(try ImageExporter.flattenedSRGB(after, context: try context())))
+        let trip = PSDAppearance.difference(ours, back)
+        let outside = try #require(PSDAppearance.difference(of: linear, from: data, context: try context()))
+        print("PSD merged file from a linear-light document, \(depth) bit: the document against the layer read back: mean \(trip.mean), visibly different \(trip.shareVisible); against the flattened picture as macOS reads it: mean \(outside.mean), visibly different \(outside.shareVisible)")
+        #expect(trip.mean < 1 && trip.shareVisible == 0 && outside.mean < 1 && outside.shareVisible == 0)
+    }
+
     @Test func aDocumentTooLargeForTheFormatIsRefusedWithWords() throws {
         var huge = DocumentState(width: 30_001, height: 10)
         huge.layers = []
