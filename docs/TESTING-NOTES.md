@@ -643,3 +643,10 @@ Seen and not changed:
 - In Settings › AI, macOS lays its own "Lösenord…" (Passwords) suggestion over the API key field, covering part of the row below.
 - The pictures of the two Settings states show the top of the Settings window; the part the state is about (the model list, the picture service) is further down and not in the picture. The same for the job list, which sits below the conversation in the panel. The reads cover them; the pictures do not.
 - "Sweden" in a provider's place, the model's own words and fixture data remain English, as decided.
+
+**The three left open, closed (same day).**
+- **The Passwords suggestion over the API key field is gone.** Telling macOS the field takes no content type changed nothing. What worked: the three key fields are declared as one-time codes, for which macOS has nothing to suggest, and the first one no longer takes the keyboard by itself when Settings opens. Looked at in Swedish: no suggestion over the row below. Not tried: typing and saving a key afterwards (no key is entered by automation).
+- **A state's subject is scrolled into view before its picture.** `axread --show` moves the scroll bar of the scroll area an element sits in until the element is inside it (the element's own "scroll to visible" does nothing for SwiftUI's forms and lists). The Settings pictures now show the service and model rows they are about, and the job-list picture shows the list.
+- **All 23 Swedish pictures have been looked at.** Nothing is cut except the hint in the link bar ("– ⌘S sparar tillb…"), which is the part meant to give way in a narrow window; "För Flimmer" and "Kan inte spara tillbaka" are whole.
+
+Seen there and not changed: for the picture services that are hidden until tried (shown in the test copy only), the service's note and "(not tried yet)" are English in the Swedish app; they have no Swedish in the catalogue. They would need it before any of those services is offered.

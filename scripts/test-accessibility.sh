@@ -56,6 +56,8 @@ read_state() {
   if ! kill -0 $GLIMMER_PID 2>/dev/null; then bad "$1: the app is gone after being read"; echo "    $seen"; exit 1; fi
   local want; want=$(T "$2")
   if ! echo "$all" | grep -qE -- "$want"; then bad "$1: “$2” was not on screen$([[ $LANG_ == en ]] || echo " (in $LANG_: $(echo "$want" | sed 's/\\//g' | cut -c1-70))"), so this state was not read ($seen)"; return; fi
+  # What the state is about is brought into view first: a picture of the top of a window is not a look at what is further down.
+  perl -e 'alarm 15; exec @ARGV' build/axread $GLIMMER_PID --show any "$(echo "$want" | sed 's/\\\(.\)/\1/g; s/\.\*.*//')" >/dev/null 2>&1; sleep 0.4
   # A picture of each state too (the app's own windows only): a read does not see a sheet that is cut off or a label that wraps.
   shots=$((shots + 1)); build/window-shot $GLIMMER_PID $SHOTS "$(printf '%02d' $shots)-$(echo "$1" | tr -c 'A-Za-z0-9' '-' | cut -c1-48)" >/dev/null 2>&1
   if (( code == 0 )); then ok "$1 ($seen; $(echo "$audit" | tail -1 | cut -d: -f1))"; else bad "$1: $(echo "$audit" | grep -E "UNNAMED|WEAK|OPAQUE|VALUE|SILENT|SAMEID" | head -3 | tr '\n' ' ')"; fi
@@ -100,7 +102,7 @@ alert healWarning "The area is 203 px across at its thickest. Heal Selection giv
 alert firstUse "a small picture of it"
 alert firstUseNoPictures "takes no pictures, so none is sent"
 alert cantSee "This model can't look at pictures"
-alert error "Couldn't save photo.png"
+alert error "Couldn't save photo.png: The file “photo.png” couldn’t be opened because you don’t have permission to view it."
 fixture imageSize && read_state "sheet: Image Size" "Image Size" 1.5 || bad "fixture imageSize"; front; press 53; fixture clear; sleep 0.5
 fixture canvasSize && read_state "sheet: Canvas Size" "Canvas Size" 1.5 || bad "fixture canvasSize"; front; press 53; fixture clear; sleep 0.5
 

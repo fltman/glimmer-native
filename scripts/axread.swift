@@ -7,10 +7,11 @@ import ApplicationServices
 import Foundation
 
 //   axread <pid> --press <role> <name>   → presses the first element of that role with that name (to open a menu to read)
+//   axread <pid> --show <role> <text>    → scrolls the first element with that name, or a text that contains it, into view (before a picture is taken)
 //   axread <pid> --frame <role> <name>   → prints that element's place on screen as "x y width height" (points), for the-apps/tools/safepointer
 let arguments = CommandLine.arguments
-guard arguments.count == 2 || (arguments.count == 5 && ["--press", "--frame"].contains(arguments[2])), let pid = pid_t(arguments[1]) else {
-    print("usage: axread <pid> [--press <role> <name> | --frame <role> <name>]"); exit(2)
+guard arguments.count == 2 || (arguments.count == 5 && ["--press", "--frame", "--show"].contains(arguments[2])), let pid = pid_t(arguments[1]) else {
+    print("usage: axread <pid> [--press <role> <name> | --frame <role> <name> | --show <role> <text>]"); exit(2)
 }
 func attribute(_ element: AXUIElement, _ name: String) -> AnyObject? {
     var value: AnyObject?
@@ -47,6 +48,8 @@ if arguments.count == 5 {
                 names.append(attribute(title as! AXUIElement, kAXValueAttribute as String) as? String)
             }
             if names.contains(arguments[4]) { return element }
+            // To bring something into view, a text that contains the words is enough.
+            if arguments[2] == "--show", let value = attribute(element, kAXValueAttribute as String) as? String, value.contains(arguments[4]) { return element }
         }
         guard depth < 60 else { return nil }
         for child in attribute(element, kAXChildrenAttribute as String) as? [AXUIElement] ?? [] {
@@ -56,6 +59,29 @@ if arguments.count == 5 {
     }
     for window in windows {
         if let hit = find(window, depth: 0) {
+            if arguments[2] == "--show" {
+                // Brought into view through the scroll bar of the scroll area it sits in: the element's own
+                // "scroll to visible" does nothing for SwiftUI's lists and forms.
+                func frame(_ e: AXUIElement) -> CGRect? {
+                    var point = CGPoint.zero, size = CGSize.zero
+                    guard let p = attribute(e, kAXPositionAttribute as String), let z = attribute(e, kAXSizeAttribute as String),
+                          AXValueGetValue(p as! AXValue, .cgPoint, &point), AXValueGetValue(z as! AXValue, .cgSize, &size) else { return nil }
+                    return CGRect(origin: point, size: size)
+                }
+                var area: AXUIElement? = hit
+                while let current = area, attribute(current, kAXRoleAttribute as String) as? String != "AXScrollArea" {
+                    area = attribute(current, kAXParentAttribute as String).map { $0 as! AXUIElement }
+                }
+                guard let area, let bar = attribute(area, kAXVerticalScrollBarAttribute as String), let view = frame(area) else { print("in view (nothing to scroll)"); exit(0) }
+                func inView() -> Bool { frame(hit).map { $0.minY >= view.minY && $0.maxY <= view.maxY } ?? false }
+                if inView() { print("in view"); exit(0) }
+                for step in 0...20 {
+                    AXUIElementSetAttributeValue(bar as! AXUIElement, kAXValueAttribute as CFString, NSNumber(value: Double(step) / 20))
+                    usleep(120_000)
+                    if inView() { print("shown"); exit(0) }
+                }
+                print("found, but it could not be scrolled into view"); exit(1)
+            }
             if arguments[2] == "--frame" {
                 var point = CGPoint.zero, size = CGSize.zero
                 guard let p = attribute(hit, kAXPositionAttribute as String), let z = attribute(hit, kAXSizeAttribute as String),

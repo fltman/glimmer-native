@@ -86,6 +86,8 @@ private struct AISettingsView: View {
         localModels = found
     }
 
+    @FocusState private var keyFieldFocused: Bool
+
     enum KeyStatus: Equatable {
         case idle, checking
         case valid(String)
@@ -96,6 +98,13 @@ private struct AISettingsView: View {
         Form {
             Section {
                 SecureField("API key", text: $apiKey, prompt: Text("sk-or-v1-…"))
+                    // The field does not take the keyboard by itself when Settings opens: with the cursor in a
+                    // secure field macOS lays its Passwords suggestion over the row below (seen in pictures,
+                    // 2026-11-16; turning the suggestion off by content type did nothing). It shows when the
+                    // person clicks into the field, which is the system's own behaviour.
+                    .textContentType(.oneTimeCode)   // (see ProviderKeyField below: not a password saved for a website)
+                    .focused($keyFieldFocused)
+                    .onAppear { DispatchQueue.main.async { keyFieldFocused = false } }
                     .onSubmit(save)
                 HStack {
                     Button("Save", action: save)
@@ -552,6 +561,9 @@ private struct ProviderTextSettings: View {
     var body: some View {
         if provider.needsKey {
             SecureField("\(provider.name) API key", text: $key)
+                // Told to macOS as a one-time code, which it has nothing to suggest for: as a plain secure field it gets
+                // the Passwords suggestion, laid over the row below, and an API key is not a password saved for a website.
+                .textContentType(.oneTimeCode)
                 .onSubmit(save)
             HStack {
                 Button("Save", action: save).disabled(key == savedKey)
@@ -675,6 +687,9 @@ private struct ProviderImageSettings: View {
 
     var body: some View {
         SecureField("\(provider.name) API key", text: $key)
+                // Told to macOS as a one-time code, which it has nothing to suggest for: as a plain secure field it gets
+                // the Passwords suggestion, laid over the row below, and an API key is not a password saved for a website.
+                .textContentType(.oneTimeCode)
             .onSubmit(save)
         HStack {
             Button("Save", action: save).disabled(key == savedKey)
