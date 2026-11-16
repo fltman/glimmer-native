@@ -60,6 +60,7 @@ public enum GlimmerPackage {
                                 clipped: layer.isClipped ? true : nil,
                                 effects: layer.effects.hasEnabled || layer.effects != LayerEffects() ? layer.effects : nil)
             r.vectorMask = layer.vectorMask
+            r.formerText = layer.formerText
             if let mask = layer.mask {
                 r.mask = .init(defaultValue: mask.defaultValue, enabled: mask.isEnabled,
                                density: mask.density, feather: mask.feather)
@@ -166,9 +167,11 @@ public enum GlimmerPackage {
                 mask = LayerMask(tiles: try tiles("\(id).mask.tiles", for: r), defaultValue: m.defaultValue,
                                  isEnabled: m.enabled, density: min(max(m.density, 0), 1), feather: max(0, m.feather))
             }
-            return Layer(id: r.id, name: r.name, isVisible: r.visible, opacity: min(max(r.opacity, 0), 1),
-                         blendMode: r.blendMode, mask: mask, vectorMask: r.vectorMask, isClipped: r.clipped ?? false,
-                         effects: r.effects ?? LayerEffects(), content: content)
+            var made = Layer(id: r.id, name: r.name, isVisible: r.visible, opacity: min(max(r.opacity, 0), 1),
+                             blendMode: r.blendMode, mask: mask, vectorMask: r.vectorMask, isClipped: r.clipped ?? false,
+                             effects: r.effects ?? LayerEffects(), content: content)
+            made.formerText = r.formerText.map { String($0.prefix(10_000)) }
+            return made
         }
 
         let layers = try manifest.layers.map(layer)

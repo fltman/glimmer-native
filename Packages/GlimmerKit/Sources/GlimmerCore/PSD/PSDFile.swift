@@ -73,6 +73,8 @@ public struct PSDFile: Sendable {
         /// The most pixels the canvas may have (Glimmer's own limit for this Mac).
         public var maxCanvasPixels: Int
         public var maxLayers = 8_000
+        /// The longest a file may take to read. A file built to keep the reader busy is given up on.
+        public var seconds: Double = 60
         /// The most bytes of decoded planes for the whole file.
         public var maxDecodedBytes: Int
         public init(maxCanvasPixels: Int = DocumentLimits.maxCanvasPixels(), maxDecodedBytes: Int = DocumentLimits.physicalMemory / 4) {
@@ -114,8 +116,9 @@ public struct PSDFile: Sendable {
         var resources = try r.slice(Int(try r.u32()))             // image resources
         self.iccProfile = Self.iccProfile(in: &resources)
         var budget = limits.maxDecodedBytes
+        let deadline = Date().addingTimeInterval(limits.seconds)
         var section = try r.slice(try r.length(large: header.isLarge))   // layer and mask information
-        self.layers = try Self.readLayers(&section, header: header, limits: limits, budget: &budget)
+        self.layers = try Self.readLayers(&section, header: header, limits: limits, budget: &budget, deadline: deadline)
         // The flattened image. A file may be cut short here and still give its layers.
         self.composite = (try? Self.readComposite(&r, header: header, budget: &budget)) ?? []
     }
@@ -136,7 +139,9 @@ public struct PSDFile: Sendable {
 
     // MARK: Layers
 
-    private static func readLayers(_ section: inout PSDBytes, header: Header, limits: Limits, budget: inout Int) throws -> [Layer] {
+    static let tookTooLong = Problem("This Photoshop file takes too long to read, so Glimmer gave up on it.")
+
+    private static func readLayers(_ section: inout PSDBytes, header: Header, limits: Limits, budget: inout Int, deadline: Date) throws -> [Layer] {
         guard section.remaining > 0 else { return [] }
         let infoLength = try section.length(large: header.isLarge)
         var info = try section.slice(infoLength)
@@ -152,10 +157,14 @@ public struct PSDFile: Sendable {
         let count = abs(Int(try info.i16()))
         guard count <= limits.maxLayers else { throw Problem("This Photoshop file says it has \(count) layers, more than Glimmer reads.") }
         var records: [(layer: Layer, channels: [(id: Int, length: Int)])] = []
-        for _ in 0..<count { records.append(try readRecord(&info, header: header, bytesPerSample: bytesPerSample)) }
+        for _ in 0..<count {
+            guard Date() < deadline else { throw tookTooLong }
+            records.append(try readRecord(&info, header: header, bytesPerSample: bytesPerSample))
+        }
         var layers: [Layer] = []
         for var record in records {
             for channel in record.channels {
+                guard Date() < deadline else { throw tookTooLong }
                 var body = try info.slice(channel.length)
                 let isMask = channel.id == -2 || channel.id == -3
                 let rect = isMask ? record.layer.mask?.rect : record.layer.rect

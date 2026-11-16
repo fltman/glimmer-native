@@ -372,6 +372,8 @@ enum AgentRouter {
         var d: [String: Any] = ["id": layer.id.uuidString, "name": layer.name, "visible": layer.isVisible,
                                 "opacity": layer.opacity, "blendMode": layer.blendMode.rawValue, "hasMask": layer.mask != nil]
         if let r = visibleBounds(layer) { d["bounds"] = ["x": r.x, "y": r.y, "width": r.width, "height": r.height] }
+        // The words of a layer that was text in an imported file and is pixels now.
+        if let words = layer.formerText { d["formerText"] = words }
         switch layer.content {
         case .raster: d["kind"] = "pixels"
         case .adjustment(let a): d["kind"] = "adjustment"; d["adjustment"] = a.kind.rawValue

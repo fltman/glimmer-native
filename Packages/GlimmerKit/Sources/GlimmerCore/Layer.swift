@@ -129,6 +129,9 @@ public struct Layer: Identifiable, Sendable {
     /// Shape layers: the path the mask is rasterized from (kept so the shape
     /// stays editable and scales without losing quality).
     public var vectorMask: VectorPath?
+    /// The words this layer held when it was a text layer in another program's file and came
+    /// in as pixels (saved): what it says stays findable though it can't be edited as text.
+    public var formerText: String?
     /// Clips to the nearest non-clipped sibling below.
     public var isClipped: Bool
     public var effects: LayerEffects

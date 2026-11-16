@@ -60,6 +60,8 @@ public struct LayerRecord: Codable, Sendable {
     public var fill: Fill?
     public var smart: SmartRecord?
     public var text: TextLayer?
+    /// See `Layer.formerText`.
+    public var formerText: String?
     public var expanded: Bool?
     /// Groups only, bottom → top.
     public var children: [LayerRecord]?

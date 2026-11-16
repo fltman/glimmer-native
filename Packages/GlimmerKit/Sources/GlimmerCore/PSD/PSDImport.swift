@@ -186,6 +186,7 @@ public enum PSDImport {
                           blendMode: blendMode(source, isGroup: false, report: &report), isClipped: source.isClipped,
                           content: .raster(TileGrid()))
         layer.mask = mask(source)
+        layer.formerText = text(source)
         noteExtras(source, isGroup: false, report: &report)
         if source.rect.width > 0, source.rect.height > 0 {
             guard let image = image(source, gray: file.header.mode == .grayscale, space: space) else {

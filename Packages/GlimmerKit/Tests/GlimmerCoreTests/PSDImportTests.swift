@@ -201,8 +201,11 @@ import PSDTestSupport
     @Test func aTextLayersWordsAreInTheReport() throws {
         var title = PSDImportTests.pixels("Title")
         title.extraBlocks = [("TySh", PSDTestWriter.typeTool("Hello world"))]
-        let (_, report) = try PSDImport.document(from: PSDImportTests.file([title]), limits: PSDImportTests.limits)
+        let (state, report) = try PSDImport.document(from: PSDImportTests.file([title]), limits: PSDImportTests.limits)
         #expect(report.notes == [.init(.wasText, layer: "Title", detail: "Hello world")])
+        // The words stay on the layer, and are saved with it.
+        #expect(state.layers.first?.formerText == "Hello world")
+        #expect(try GlimmerPackage.state(from: GlimmerPackage.fileWrapper(for: state)).layers.first?.formerText == "Hello world")
         #expect(report.notes[0].what == "It was text (“Hello world”) and is now pixels: the words can't be edited as text.")
     }
 }
@@ -210,4 +213,13 @@ import PSDTestSupport
 private extension LayerContent {
     var theFill: Fill? { if case .fill(let f) = self { f } else { nil } }
     var theAdjustment: Adjustment? { if case .adjustment(let a) = self { a } else { nil } }
+}
+
+@Suite struct PSDTimeLimitTests {
+    @Test func aFileThatTakesTooLongIsGivenUpOn() {
+        var limits = PSDImportTests.limits
+        limits.seconds = -1   // the time is already up
+        #expect(throws: PSDFile.tookTooLong) { _ = try PSDFile(PSDTestWriter.sample().data(), limits: limits) }
+        #expect(PSDFile.tookTooLong.message == "This Photoshop file takes too long to read, so Glimmer gave up on it.")
+    }
 }
