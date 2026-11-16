@@ -24,6 +24,8 @@ read_all() { perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>&1; }
 isfront() { [[ "$(perl -e 'alarm 10; exec @ARGV' osascript -e 'tell application "System Events" to get unix id of first process whose frontmost is true' 2>/dev/null)" == "$GLIMMER_PID" ]]; }
 front() { perl -e 'alarm 15; exec @ARGV' osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to set frontmost to true" >/dev/null 2>&1; sleep 0.5; }
 load() { sysctl -n vm.loadavg | awk '{print $2}'; }
+# Memory beside each run: 40 megapixels at full depth on a Mac with little free memory may be paging, not computing.
+mem() { echo "swap used $(sysctl -n vm.swapusage | sed 's/.*used = \([0-9.]*M\).*/\1/'), free $(memory_pressure -Q 2>/dev/null | awk -F': ' '/free percentage/ {print $2}'), app $(( $(ps -o rss= -p $GLIMMER_PID) / 1024 )) MB"; }
 NAME=$(basename "$GLIMMER_RAW_SAMPLE"); LIMIT=45; stuck=0
 CODE=$(curl -s --max-time 240 -o /dev/null -w '%{http_code}' $H -H 'Content-Type: application/octet-stream' -X POST --data-binary @"$GLIMMER_RAW_SAMPLE" "$B/debug/raw?name=$NAME")
 [[ $CODE == 200 ]] || { echo "✘ $NAME did not open ($CODE)"; exit 1; }
@@ -39,7 +41,7 @@ for run in {1..$RUNS}; do
   while (( EPOCHREALTIME - t0 < LIMIT )); do read_all | grep -qF "Preview of the developed picture" || { closed=1; break; }; sleep 0.5; done
   took=$(printf '%.1f' $(( EPOCHREALTIME - t0 )))
   trace=$(curl -s --max-time 10 $H "$B/debug/raw-develop-trace" | python3 -I -c 'import sys,json;print(json.load(sys.stdin)["last"])' 2>/dev/null)
-  if (( closed )); then echo "✔ run $run: closed after $took s (load $(load)); $trace"
+  if (( closed )); then echo "✔ run $run: closed after $took s (load $(load); $(mem)); $trace"
   else
     stuck=$((stuck + 1)); echo "✘ run $run: NOT closed after $LIMIT s (load $(load)); the app says: ${trace:-nothing yet}"
     sample $GLIMMER_PID 2 -file build/raw-develop-stuck-$run.txt >/dev/null 2>&1 && echo "    where it was: build/raw-develop-stuck-$run.txt"

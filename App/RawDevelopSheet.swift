@@ -14,6 +14,7 @@ final class RawDraftWorker: @unchecked Sendable {
     private var draft: RawDraft?          // touched on `queue` only
     private var wanted: RawSettings?      // behind `lock`
     private var busy = false              // behind `lock`
+    private var stopped = false           // behind `lock`
     private let data: Data
     /// Called on the main thread: a picture with the settings it shows and the time it took, or why there is none.
     private let deliver: @MainActor @Sendable (Result<(image: CGImage, settings: RawSettings, seconds: Double), Error>) -> Void
@@ -23,9 +24,18 @@ final class RawDraftWorker: @unchecked Sendable {
         self.deliver = deliver
     }
 
+    /// Lets the kept decoder go and takes no more requests: called when the final development starts, so
+    /// that two decoders never work on the same file at once (a 40-megapixel file's final development took
+    /// 9 to 13 s with the draft's decoder still alive, against 2 to 3 s for the first runs; 2026-11-16).
+    func stop() {
+        lock.lock(); stopped = true; wanted = nil; lock.unlock()
+        queue.async { [self] in draft = nil }
+    }
+
     /// Asks for a picture with these settings. Returns at once.
     func request(_ settings: RawSettings) {
         lock.lock()
+        if stopped { lock.unlock(); return }
         wanted = settings
         let start = !busy
         if start { busy = true }
@@ -51,8 +61,8 @@ final class RawDraftWorker: @unchecked Sendable {
                     // the decoder is warmed for the first drag.
                     let deliver = deliver
                     DispatchQueue.main.async { MainActor.assumeIsolated { deliver(result) } }
-                    lock.lock(); let idle = wanted == nil; lock.unlock()
-                    if idle { draft!.warmUp(from: settings) }
+                    lock.lock(); let idle = wanted == nil && !stopped; lock.unlock()
+                    if idle { draft?.warmUp(from: settings) }
                     continue
                 }
             } catch {
@@ -86,6 +96,7 @@ final class RawDevelopModel {
     var developRun: UUID?
     var isPickingNeutral = false
     @ObservationIgnored private var worker: RawDraftWorker?
+    @ObservationIgnored private var deliver: @MainActor @Sendable (Result<(image: CGImage, settings: RawSettings, seconds: Double), Error>) -> Void = { _ in }
 
     init?(layer: Layer) {
         guard let raw = layer.raw, let info = try? RawDevelopment.info(raw.data) else { return nil }
@@ -94,7 +105,7 @@ final class RawDevelopModel {
         self.info = info
         pixelsChanged = !RawLayer.pixelsAreAsDeveloped(layer)
         settings = raw.settings
-        worker = RawDraftWorker(data: raw.data) { [weak self] result in
+        deliver = { [weak self] result in
             guard let self else { return }
             switch result {
             case .success(let made):
@@ -103,11 +114,19 @@ final class RawDevelopModel {
                 problem = PersonMessage.text(for: error)
             }
         }
+        worker = RawDraftWorker(data: raw.data, deliver: deliver)
         // Started when the sheet opens, before any control is touched: the first render is the slow one.
         askForDraft()
     }
 
     private func askForDraft() { worker?.request(settings) }
+
+    /// The draft's decoder is let go while the final development runs, and made again if that is cancelled or fails.
+    func stopDrafts() { worker?.stop() }
+    func resumeDrafts() {
+        worker = RawDraftWorker(data: source.data, deliver: deliver)
+        askForDraft()
+    }
 
     /// True while the picture on screen is not yet the one the controls say.
     var isBehind: Bool { shown != settings }
@@ -292,6 +311,7 @@ struct RawDevelopSheet: View {
         model.developRun = run
         model.isDeveloping = true
         model.problem = nil
+        model.stopDrafts()   // one decoder at a time on this file
         let began = Date()
         // The limit: the sheet is never held by a development that does not come back. What it was
         // doing is abandoned (its result is thrown away if it ever arrives) and nothing is changed.
@@ -301,6 +321,7 @@ struct RawDevelopSheet: View {
             model.developRun = nil
             model.isDeveloping = false
             model.problem = String(localized: "Developing took too long and was given up. Nothing was changed. You can try again.")
+            model.resumeDrafts()
             RawDevelopTrace.last = "gave up after \(Int(Date().timeIntervalSince(began))) s"
         }
         Task {
@@ -321,6 +342,7 @@ struct RawDevelopSheet: View {
                 model.developRun = nil
                 model.isDeveloping = false
                 model.problem = PersonMessage.text(for: error)
+                model.resumeDrafts()
             }
         }
     }

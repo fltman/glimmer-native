@@ -660,3 +660,32 @@ Seen there and not changed: for the picture services that are hidden until tried
 
 Not done, because it cannot be without him or a quiet Mac: the RAW draft and the Fujifilm file's final development as figures to rely on; the paid tests; the signed update rehearsal; Reduce Motion.
 - **Apple's on-device router, live** (`scripts/evaluate-models.sh on-device`, under the GUI lock and the model lock): its four tests pass after the day's changes to plans and operations (a single command, a new picture, a general fix to Auto Enhance, a multi-step edit to the Assistant).
+
+## RAW on a quiet Mac (2026-11-16, 21:19; Anders said go, the coordinator held Flimmer and Jämmer)
+
+Both locks held; load average 3.6 to 4.2 during the draft run; busiest other processes were system services and this session's own tool, nothing building.
+
+**The draft** (`scripts/measure-raw-draft.sh`, once), 15 changes per file after the warm-up:
+
+| File | First picture | 15 changes | Over 100 ms |
+|---|---|---|---|
+| iPhone 12 Pro, 12 MP | 117 ms | 8 to 19 ms | 0 |
+| Canon R10, 24 MP | 395 ms | 10 to 11 ms | 0 |
+| OM-5, 20 MP | 1,612 ms | 13 to 17 ms | 0 |
+| Panasonic S5 II, 24 MP | 1,332 ms | 31 to 36 ms | 0 |
+| Fujifilm X-T50, 40 MP | 1,518 ms | 34 to 44 ms | 0 |
+| Pixel 8 Pro, 50 MP | 1,876 ms | 97 to 811 ms, median 593 | 13 of 15 |
+
+The requirement (a change shown within about a tenth of a second) is **met on five of six files, measured on a quiet Mac**. It is **not met on the 50-megapixel file, and the quiet Mac did not help**: it is the file's size, not the load. The sheet's "catching up" line is what a person sees there, and the manual says so.
+
+**The Fujifilm file's final development** (`scripts/test-raw-develop-repeat.sh`, ten runs): all ten closed. Runs 1 and 2 took 2.6 and 3.1 s; runs 3 to 10 took 8.5 to 13.0 s. The whole of it is the decoder call (tiles 0.13 to 0.17 s, the undo step 0.00 to 0.03 s). The load average rose from 3.8 to about 10 during the ten runs although nothing else was building, so the load was at least partly this test's own. Why the later runs are four times slower than the first two is **not known**. One candidate in Glimmer's own code: when Develop is pressed the sheet's draft decoder is still alive, and may still be warming, so two decoders work on the same 40-megapixel file at once. Not tested.
+
+**The suspicion tried, and what the memory figures say (21:40, after the window).** The sheet now lets its draft decoder go when the final development starts (`RawDraftWorker.stop`), and makes it again if the development is cancelled, fails or gives up; one decoder at a time on a file. Ten runs again, this time with swap and memory beside each. It was not a clean test: the other sessions had started building again and the load average climbed from 2.6 to 71 during the ten runs.
+
+| Runs | Load | Swap used | Decoder call |
+|---|---|---|---|
+| 2 and 3 | 7.6 | 15.5 GB | 1.6 and 1.9 s |
+| 1 | 6.5 | 14.9 GB | 7.1 s |
+| 4 to 10 | 21 to 71 | 16 to 21 GB | 8.6 to 24 s |
+
+What can be said: the file itself costs about 2 s (four runs across two sessions now, 1.6 to 2.3 s). Every slower run was on a Mac under load, and this Mac has 15 to 21 GB in swap on 16 GB of memory; in the slow runs the app's own resident memory had fallen to 30 to 300 MB, which is an app being paged out, not one computing. So the slowness is the machine's memory and load, as far as these figures go. Whether two decoders at once made it worse was **not settled**: the change is in because it halves what the sheet holds of a 40-megapixel file, not because it was shown to help. The earlier "four times slower from run 3" in the quiet window is still unexplained; the load rose to 10 then with the siblings quiet, and I do not know what from.
