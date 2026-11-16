@@ -4,10 +4,20 @@ import SwiftUI
 
 /// The import report in the person's language. (The core has the same in English for the agent API.)
 extension PSDImportReport {
+    /// "RGB, 8 bits per channel" as the report keeps it, said in the person's language: it is Glimmer describing the file.
+    var localizedSource: String {
+        source.components(separatedBy: ", ").map { part in
+            if let bits = Int(part.prefix { $0.isNumber }), part.hasSuffix("per channel") {
+                return bits == 1 ? String(localized: "1 bit per channel") : String(localized: "\(bits) bits per channel")
+            }
+            return PersonMessage.text(part)   // the colour mode's name, or "large document format"
+        }.joined(separator: ", ")
+    }
+
     var summaryLine: String {
-        if flattened { return String(localized: "Opened as one layer: the file's own flattened picture (\(source)).") }
-        if notes.isEmpty { return String(localized: "Everything came through: \(layersKept) layers, \(groupsKept) of them groups (\(source)).") }
-        return String(localized: "\(layersKept) of \(layersInFile) layers came through as layers (\(source)). These things did not come through as they were:")
+        if flattened { return String(localized: "Opened as one layer: the file's own flattened picture (\(localizedSource)).") }
+        if notes.isEmpty { return String(localized: "Everything came through: \(layersKept) layers, \(groupsKept) of them groups (\(localizedSource)).") }
+        return String(localized: "\(layersKept) of \(layersInFile) layers came through as layers (\(localizedSource)). These things did not come through as they were:")
     }
 
     var pictureLine: String? {
@@ -21,7 +31,14 @@ extension PSDImportReport {
 
 extension PSDImportReport.Note {
     var localized: String {
-        let detail = detail ?? ""
+        // The particular: an adjustment's or blend mode's name, a kind of fill, the file's colour mode. Glimmer's own
+        // names for these are said in the person's language; the words of a text layer are the file's and stay as they are.
+        var detail = detail ?? ""
+        switch kind {
+        case .adjustmentLeftOut, .fillLeftOut, .blendModeBecameNormal: detail = PersonMessage.text(detail)
+        case .layersNotRead: detail = PSDImportReport(source: detail).localizedSource
+        default: break
+        }
         return switch kind {
         case .wasText: detail.isEmpty ? String(localized: "It was text and is now pixels: the words can't be edited as text.")
                                       : String(localized: "It was text (“\(detail)”) and is now pixels: the words can't be edited as text.")

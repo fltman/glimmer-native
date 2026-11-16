@@ -303,7 +303,7 @@ private struct PlanView: View {
                         if case .failed(let message)? = ai.stepStatus[step.id] {
                             Text(message).font(.caption).foregroundStyle(.red)
                         } else if let r = step.rationale {
-                            Text(r).font(.caption).foregroundStyle(.secondary)
+                            Text(verbatim: Self.note(r)).font(.caption).foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -359,35 +359,50 @@ private struct PlanView: View {
         }
     }
 
+    /// A step's name in the plan, in the person's language. Where the step is something the menus
+    /// have, it is called what the menu calls it (the same catalogue entry), so "Crop" in a plan
+    /// reads as the menu item does. What the model wrote (a text, a prompt) is shown as it is.
     static func describe(_ step: AgentStep) -> String {
-        func title(_ s: String?) -> String { (s ?? "").replacingOccurrences(of: "_", with: " ").capitalized }
-        return switch step.op {
-        case "add_adjustment": AdjustmentKind(rawValue: step.string("type") ?? "")?.title ?? "Adjustment"
-        case "apply_filter": FilterKind(rawValue: step.string("type") ?? "")?.title ?? "Filter"
-        case "add_layer_effect":
-            "Layer style: " + (["dropShadow": "Drop Shadow", "innerShadow": "Inner Shadow", "outerGlow": "Outer Glow",
-                                "stroke": "Stroke", "colorOverlay": "Color Overlay"][step.string("type") ?? ""] ?? "Effect")
-        case "apply_preset": "Preset: \(step.string("name") ?? "")"
-        case "add_text": "Text “\(step.string("text") ?? "")”"
-        case "style_text": step.string("match").map { "Style “\($0)”" } ?? "Style text"
-        case "transform_layer": "Transform layer"
-        case "image_edit_composite": "AI edit: \(step.string("instruction") ?? "")"
-        case "generate_layer": "Generate: \(step.string("prompt") ?? "")"
-        case "auto_enhance": "Auto Enhance"
-        case "auto_color": "Auto Color"
-        case "select_people": "Select people"
-        case "select_sky": "Select sky"
-        case "select_layer": "Select layer “\(step.string("name") ?? "")”"
-        case "remove_background": "Remove background"
-        case "select_subject": "Select subject"
-        case "inpaint_selection": step.string("mode") == "remove" ? "Remove selected object" : "Fill selection: \(step.string("prompt") ?? "")"
-        case "upscale": "Upscale \(Int(step.number("scale") ?? 2))×"
-        case "fill": "Fill with \(step.string("color") ?? "")"
-        case "set_foreground": "Foreground \(step.string("color") ?? "")"
-        case "run_command":
-            CommandRegistry.standard.descriptor(for: CommandID(rawValue: step.string("id") ?? ""))?.title ?? title(step.string("id"))
-        default: title(step.op)
+        /// A title as the menus and panels show it: the catalogue's text for it, without the dots of a menu item.
+        func menu(_ title: String) -> String {
+            String(localized: String.LocalizationValue(title)).replacingOccurrences(of: "…", with: "")
         }
+        func plain(_ s: String?) -> String { menu((s ?? "").replacingOccurrences(of: "_", with: " ").capitalized) }
+        let effects = ["dropShadow": "Drop Shadow", "innerShadow": "Inner Shadow", "outerGlow": "Outer Glow", "stroke": "Stroke", "colorOverlay": "Color Overlay"]
+        let menuTitles = ["crop": "Crop", "resize_image": "Image Size…", "resize_canvas": "Canvas Size…", "auto_enhance": "Auto Enhance", "auto_color": "Auto Color",
+                          "select_people": "Select People", "select_sky": "Select Sky", "select_subject": "Select Subject", "remove_background": "Remove Background",
+                          "transform_layer": "Free Transform", "heal_selection": "Heal Selection", "develop_raw": "Develop…", "add_waveform": "Add Waveform", "deselect": "Deselect"]
+        switch step.op {
+        case "add_adjustment": return AdjustmentKind(rawValue: step.string("type") ?? "").map { menu($0.title) } ?? String(localized: "Adjustment")
+        case "apply_filter": return FilterKind(rawValue: step.string("type") ?? "").map { menu($0.title) } ?? String(localized: "Filter")
+        case "add_layer_effect":
+            let effect = effects[step.string("type") ?? ""].map(menu) ?? String(localized: "Effect")
+            return String(localized: "Layer style: \(effect)")
+        case "apply_preset": return String(localized: "Preset: \(step.string("name") ?? "")")
+        case "add_text": return String(localized: "Text “\(step.string("text") ?? "")”")
+        case "style_text": return step.string("match").map { String(localized: "Style “\($0)”") } ?? String(localized: "Style text")
+        case "image_edit_composite": return String(localized: "AI edit: \(step.string("instruction") ?? "")")
+        case "generate_layer": return String(localized: "Generate: \(step.string("prompt") ?? "")")
+        case "select_layer": return String(localized: "Select layer “\(step.string("name") ?? "")”")
+        case "inpaint_selection":
+            return step.string("mode") == "remove" ? String(localized: "Remove selected object") : String(localized: "Fill selection: \(step.string("prompt") ?? "")")
+        case "upscale": return String(localized: "Upscale \(Int(step.number("scale") ?? 2))×")
+        case "fill": return String(localized: "Fill with \(step.string("color") ?? "")")
+        case "set_foreground": return String(localized: "Foreground \(step.string("color") ?? "")")
+        case "run_command":
+            return CommandRegistry.standard.descriptor(for: CommandID(rawValue: step.string("id") ?? "")).map { menu($0.title) } ?? plain(step.string("id"))
+        default:
+            return menuTitles[step.op].map(menu) ?? plain(step.op)
+        }
+    }
+
+    /// A step's note with Glimmer's own remarks in the person's language. The rest of it is the model's words, shown as they are.
+    static func note(_ rationale: String) -> String {
+        var text = rationale
+        for own in [StepParameters.strayNote, StepParameters.uncheckedNote, PlanCheck.filledNote] {
+            text = text.replacingOccurrences(of: own, with: PersonMessage.text(own))
+        }
+        return text
     }
 }
 

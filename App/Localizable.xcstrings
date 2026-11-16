@@ -12910,6 +12910,369 @@
           }
         }
       }
+    },
+    "Adjustment": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Justering"
+          }
+        }
+      }
+    },
+    "Effect": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effekt"
+          }
+        }
+      }
+    },
+    "Layer style: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagerstil: %@"
+          }
+        }
+      }
+    },
+    "Preset: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förinställning: %@"
+          }
+        }
+      }
+    },
+    "Text “%@”": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text ”%@”"
+          }
+        }
+      }
+    },
+    "Style “%@”": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formatera ”%@”"
+          }
+        }
+      }
+    },
+    "Style text": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Formatera text"
+          }
+        }
+      }
+    },
+    "AI edit: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI-redigering: %@"
+          }
+        }
+      }
+    },
+    "Generate: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generera: %@"
+          }
+        }
+      }
+    },
+    "Select layer “%@”": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera lagret ”%@”"
+          }
+        }
+      }
+    },
+    "Remove selected object": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort markerat objekt"
+          }
+        }
+      }
+    },
+    "Fill selection: %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll markeringen: %@"
+          }
+        }
+      }
+    },
+    "Fill with %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll med %@"
+          }
+        }
+      }
+    },
+    "Foreground %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förgrund %@"
+          }
+        }
+      }
+    },
+    "asks for a setting that doesn't exist": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ber om en inställning som inte finns"
+          }
+        }
+      }
+    },
+    "type taken from your request": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "typen togs från din förfrågan"
+          }
+        }
+      }
+    },
+    "Glimmer could not check these settings before running: the other app doesn't say which value chooses them, in": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer kunde inte kontrollera inställningarna före körning: den andra appen säger inte vilket värde som väljer dem, i"
+          }
+        }
+      }
+    },
+    "1 bit per channel": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 bit per kanal"
+          }
+        }
+      }
+    },
+    "%lld bits per channel": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld bitar per kanal"
+          }
+        }
+      }
+    },
+    "large document format": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "format för stora dokument"
+          }
+        }
+      }
+    },
+    "Grayscale": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gråskala"
+          }
+        }
+      }
+    },
+    "Indexed colour": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indexerad färg"
+          }
+        }
+      }
+    },
+    "Multichannel": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flerkanal"
+          }
+        }
+      }
+    },
+    "Duotone": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Duplex"
+          }
+        }
+      }
+    },
+    "Bitmap": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitmapp"
+          }
+        }
+      }
+    },
+    "CMYK": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CMYK"
+          }
+        }
+      }
+    },
+    "Lab": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lab"
+          }
+        }
+      }
+    },
+    "Color Lookup": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färguppslag"
+          }
+        }
+      }
+    },
+    "Dissolve": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lös upp"
+          }
+        }
+      }
+    },
+    "Selective Color": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selektiv färg"
+          }
+        }
+      }
+    },
+    "gradient": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "övertoning"
+          }
+        }
+      }
+    },
+    "pattern": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mönster"
+          }
+        }
+      }
+    },
+    "solid colour": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "enfärgad"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
