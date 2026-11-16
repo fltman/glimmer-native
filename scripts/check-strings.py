@@ -61,6 +61,13 @@ for path in sorted(glob.glob(os.path.join(root, "Packages/GlimmerKit/Sources/Gli
         # A figure or a name in the message is "%@" in its catalogue entry (PersonMessage finds it by its fixed words).
         text = "".join("%@" if piece is None else piece for piece in (parts(text) or [text]))
         if "sv" not in (catalog.get(text, {}).get("localizations") or {}): missing.append(f"{os.path.basename(path)} (a refusal shown to a person): {text[:90]}")
+# What Settings says about a service (its note about terms and where pictures go) and what a picture service's
+# adapter says when an answer is not usable: shown to a person, so each needs Swedish, also for the services that
+# are still hidden until they have been tried.
+for name, pattern in (("Providers.swift", r'termsNote\s*=\s*"((?:[^"\\]|\\.)*)"'), ("ImageProviders.swift", r'message:\s*"((?:[^"\\]|\\.)*)"')):
+    for match in re.finditer(pattern, open(os.path.join(root, "Packages/GlimmerKit/Sources/GlimmerAI", name)).read()):
+        text = "".join("%@" if piece is None else piece for piece in (parts(match.group(1)) or [match.group(1)]))
+        if "sv" not in (catalog.get(text, {}).get("localizations") or {}): missing.append(f"{name} (said about a service): {text[:90]}")
 numbered = [k for k in keys if re.search(r"%\d+\$", k)]
 for k in numbered: missing.append(f"catalogue key with a numbered placeholder (never found at run time): {k[:90]}")
 for line in sorted(set(missing)): print("✘", line)

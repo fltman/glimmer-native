@@ -146,7 +146,7 @@ private struct AISettingsView: View {
                     // For Anders's paid tests: services that are built but not offered yet (`-ai.showUntried YES`).
                     if UserDefaults.standard.bool(forKey: "ai.showUntried") {
                         ForEach(AIProvider.all.filter { $0.built.contains(.text) && !$0.offers(.text) }) { provider in
-                            Text(verbatim: "\(provider.name) (not tried yet)").tag(provider.slug)
+                            Text("\(provider.name) (not tried yet)").tag(provider.slug)
                         }
                     }
                     #endif
@@ -188,7 +188,7 @@ private struct AISettingsView: View {
                 Section {
                     Picker("Service", selection: Binding(get: { imageProvider }, set: { chooseImageProvider($0) })) {
                         ForEach(imageChoices) { provider in
-                            Text(verbatim: provider.offers(.image) ? provider.name : "\(provider.name) (not tried yet)").tag(provider.slug)
+                            Text(verbatim: provider.offers(.image) ? provider.name : String(localized: "\(provider.name) (not tried yet)")).tag(provider.slug)
                         }
                     }
                     if imageProvider != "openrouter", let provider = AIProvider.named(imageProvider) {

@@ -13416,6 +13416,116 @@
           }
         }
       }
+    },
+    "For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognisable people.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "För yrkes- eller företagsbruk, och för personer som är 18 år eller äldre. Googles regler begränsar bilder av igenkännbara personer."
+          }
+        }
+      }
+    },
+    "fal keeps what you send in its request history for 90 days by default. Glimmer sends your pictures inside the request and gets the result back the same way, so nothing is placed on fal's file storage, which is public by default.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fal behåller det du skickar i sin förfrågningshistorik i 90 dagar som standard. Glimmer skickar dina bilder inuti förfrågan och får tillbaka resultatet på samma sätt, så ingenting läggs i fals fillagring, som är offentlig som standard."
+          }
+        }
+      }
+    },
+    "Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a licence to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladda bara upp bilder på dig själv: Hedras regler förbjuder media av andra personer. Hedra får en licens till det du skapar med tjänsten. Dina bilder laddas upp till Hedra för jobbet; uppladdningen upphör efter en timme."
+          }
+        }
+      }
+    },
+    "%@ (not tried yet)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (inte prövad ännu)"
+          }
+        }
+      }
+    },
+    "The answer wasn't in the form Glimmer expects.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svaret hade inte den form som Glimmer förväntar sig."
+          }
+        }
+      }
+    },
+    "fal returned a link instead of the picture itself. Glimmer asked for the picture in the answer and doesn't fetch stored results.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "fal svarade med en länk i stället för själva bilden. Glimmer bad om bilden i svaret och hämtar inte lagrade resultat."
+          }
+        }
+      }
+    },
+    "Hedra didn't return a handle for the uploaded picture.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedra svarade inte med någon referens till den uppladdade bilden."
+          }
+        }
+      }
+    },
+    "Hedra didn't return a job to wait for.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedra svarade inte med något jobb att vänta på."
+          }
+        }
+      }
+    },
+    "Hedra's job didn't finish in time.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hedras jobb blev inte klart i tid."
+          }
+        }
+      }
+    },
+    "The job failed at Hedra.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jobbet misslyckades hos Hedra."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -650,3 +650,5 @@ Seen and not changed:
 - **All 23 Swedish pictures have been looked at.** Nothing is cut except the hint in the link bar ("– ⌘S sparar tillb…"), which is the part meant to give way in a narrow window; "För Flimmer" and "Kan inte spara tillbaka" are whole.
 
 Seen there and not changed: for the picture services that are hidden until tried (shown in the test copy only), the service's note and "(not tried yet)" are English in the Swedish app; they have no Swedish in the catalogue. They would need it before any of those services is offered.
+
+**The hidden picture services have their Swedish (2026-11-16).** The notes Settings shows for Google, fal and Hedra, the label "(not tried yet)", and the six messages their adapters give when an answer is not usable have Swedish in the catalogue, and `scripts/check-strings.py` now requires it for every service's note and every adapter message (it found three more of the messages the moment it was added). Not looked at in the app: the services are hidden, and their messages need a real answer from the service to appear, which is a paid test.
