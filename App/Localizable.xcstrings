@@ -12514,6 +12514,17 @@
           }
         }
       }
+    },
+    "Developing %@…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framkallar %@…"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

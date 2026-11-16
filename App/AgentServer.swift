@@ -253,8 +253,40 @@ enum AgentRouter {
             // A RAW file from the request's body opened as File › Open… would (debug builds only, for the
             // GUI checks: a sandboxed test copy can't read the sample folder). Not part of the agent API.
             try only("POST")
-            try DocumentOpener.shared.openRawFile(r.body, fileName: r.query["name"] ?? "sample.dng")
+            let failure: Error? = await withCheckedContinuation { done in
+                DocumentOpener.shared.openRawFile(r.body, fileName: r.query["name"] ?? "sample.dng") { done.resume(returning: $0) }
+            }
+            if let failure { throw APIError.unprocessable("raw_not_developed", (failure as? LocalizedError)?.errorDescription ?? failure.localizedDescription) }
             return .json(["opened": true])
+        case ["api", "v1", "debug", "raw-draft-timing"]:
+            // Measuring only: the draft for the front document's RAW layer, as the Develop sheet makes it
+            // (one kept decoder, the real development scaled down), over a run of changed settings.
+            try only("POST")
+            guard let raw = (AgentRegistry.shared.front ?? AgentRegistry.shared.sessions.first)?.activeLayer?.raw else {
+                throw APIError.unprocessable("no_raw_layer", "The front document's active layer has no RAW file.")
+            }
+            let data = raw.data
+            let measured: (decoder: Double, changes: [Double], draft: String, full: String) = try await Task.detached(priority: .userInitiated) {
+                var began = Date()
+                let draft = try RawDraft(data)
+                let made = Date().timeIntervalSince(began)
+                let info = try RawDevelopment.info(data)
+                var changes: [Double] = []
+                // The first is the picture when the sheet opens; then the warm-up the sheet does; then a slider dragged: exposure up in steps, then temperature.
+                var warm = 0.0
+                for step in 0..<16 {
+                    if step == 1 { began = Date(); draft.warmUp(from: RawSettings()); warm = (Date().timeIntervalSince(began) * 1000).rounded() }
+                    var s = RawSettings()
+                    if step > 0 { s.exposure = Double(min(step, 8)) * 0.1 }
+                    if step > 8 { s.temperature = info.temperature * (1 + Double(step - 8) * 0.02) }
+                    began = Date()
+                    _ = try draft.picture(s)
+                    changes.append((Date().timeIntervalSince(began) * 1000).rounded())
+                }
+                return ((made * 1000).rounded(), changes + [warm], "\(draft.width)×\(draft.height)", "\(info.width)×\(info.height)")
+            }.value
+            return .json(["decoderMs": measured.decoder, "firstPictureMs": measured.changes[0], "changesMs": Array(measured.changes.dropFirst().dropLast()), "warmUpMs": measured.changes.last ?? 0,
+                          "draft": measured.draft, "full": measured.full])
         #endif
         #endif
         case ["api", "v1", "operations"]:

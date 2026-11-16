@@ -239,9 +239,38 @@ final class DocumentOpener {
     }
 
     /// A RAW file opens as a new document with one layer that keeps the file, so it can be developed again.
-    func openRawFile(_ data: Data, fileName: String) throws {
-        let made = try RawLayer.make(from: data, fileName: fileName)
-        createDocument(DocumentState(width: made.width, height: made.height, layers: [made.layer]))
+    /// Developing takes seconds, so it runs away from the main thread while a small window says
+    /// what is happening; the app stays usable. `finished` gets nil when the document is open,
+    /// or why it is not.
+    func openRawFile(_ data: Data, fileName: String, finished: @escaping @MainActor (Error?) -> Void) {
+        let progress = showRawProgress(fileName)
+        Task {
+            let result = await Task.detached(priority: .userInitiated) { Result { try RawLayer.make(from: data, fileName: fileName) } }.value
+            progress.close()
+            switch result {
+            case .success(let made):
+                createDocument(DocumentState(width: made.width, height: made.height, layers: [made.layer]))
+                finished(nil)
+            case .failure(let error):
+                finished(error)
+            }
+        }
+    }
+
+    private func showRawProgress(_ fileName: String) -> NSWindow {
+        let panel = NSPanel(contentRect: .zero, styleMask: [.titled, .utilityWindow, .hudWindow], backing: .buffered, defer: false)
+        panel.title = String(localized: "Develop RAW")
+        panel.isReleasedWhenClosed = false
+        panel.hidesOnDeactivate = false
+        panel.contentViewController = NSHostingController(rootView:
+            HStack(spacing: 10) {
+                ProgressView().controlSize(.small).accessibilityHidden(true)
+                Text("Developing \(fileName)…").fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(16).frame(width: 360, alignment: .leading))
+        panel.center()
+        panel.orderFront(nil)
+        return panel
     }
     #endif
 
@@ -319,7 +348,7 @@ final class DocumentOpener {
         return nil
     }
 
-    private func openImage(_ url: URL, link: LinkedImage? = nil) {
+    private func openImage(_ url: URL, link: LinkedImage? = nil, asPlainPicture: Bool = false) {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         do {
@@ -336,15 +365,22 @@ final class DocumentOpener {
             #if GLIMMER_RAW
             // A camera's RAW file keeps its RAW in the layer (Layer › Develop…). A file handed over by
             // a sibling stays a plain picture, as for Photoshop files.
-            if link == nil, Self.isRawFile(url) {
-                do {
-                    try openRawFile(try Data(contentsOf: url, options: .mappedIfSafe), fileName: url.lastPathComponent)
-                    NSDocumentController.shared.noteNewRecentDocumentURL(url)
-                    return
-                } catch let problem as RawDevelopment.Problem {
-                    // The decoder gives no picture: macOS's general reader may still have one (a preview). If not, the RAW reason is the one to show.
-                    guard (try? ImageImporter.image(contentsOf: url)) != nil else { throw problem }
+            if link == nil, !asPlainPicture, Self.isRawFile(url) {
+                openRawFile(try Data(contentsOf: url, options: .mappedIfSafe), fileName: url.lastPathComponent) { [weak self] error in
+                    guard let error else { NSDocumentController.shared.noteNewRecentDocumentURL(url); return }
+                    // The decoder gives no picture: macOS's general reader may still have one (a preview
+                    // stored in the file), which opens as an ordinary picture. If not, the RAW reason is the one to show.
+                    let access = url.startAccessingSecurityScopedResource()
+                    let readable = (try? ImageImporter.image(contentsOf: url)) != nil
+                    if access { url.stopAccessingSecurityScopedResource() }
+                    if error is RawDevelopment.Problem, readable {
+                        self?.openImage(url, asPlainPicture: true)
+                    } else {
+                        openLog.error("couldn't develop \(url.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                        NSApp.presentError(error)
+                    }
                 }
+                return
             }
             #endif
             let image = try ImageImporter.image(contentsOf: url)

@@ -398,3 +398,35 @@ Fetched with Anders's yes: two archives from OpenGameArt, each page giving "Lice
 | Cloudy Mountains.psb, 227.6 MB | 3,642 × 2,160, 10 layers, 9 of them smart objects | 5.9 s, memory 282 → 625 MB | all 10 layers, 9 notes (smart objects now pixels), picture matches the file's (mean 0.09) |
 
 The memory figures are the process's resident size before and after, with the first document still open during the second. Not tried: anything larger, and these two with their ends cut or bytes changed.
+
+## RAW: opening in the background, and the draft measured in the app (2026-11-16)
+
+- **Opening no longer freezes the app.** A RAW file is developed away from the main thread while a small window says "Developing <name>…". If macOS gives no developed picture, the preview stored in the file opens as an ordinary picture when there is one; otherwise the RAW reason is shown. `scripts/test-raw-develop.sh` passed with the Canon file (upright, 24 megapixels) after the change. Not looked at as a picture yet: the progress window.
+- **The megapixel check** is already made from the header, before anything is decoded (`RawDevelopment.info`, tested); its message is the same as for other images.
+- **The draft in the app** (`scripts/measure-raw-draft.sh`: opens each file in the debug copy, then times the draft as the sheet makes it; GUI lock then model lock; one run, about 90 s). First run, on a busy Mac (load average 13 to 17, three other builds running), so not the measurement that counts:
+
+| File | First picture | 15 changes, median | Over 100 ms |
+|---|---|---|---|
+| iPhone 12 Pro, 12 MP | 140 ms | 9 ms | 0 of 15 |
+| Canon R10, 24 MP | 405 ms | 11 ms | 3 (376, 287, 1,592 ms) |
+| Fujifilm X-T50, 40 MP | 3,059 ms | 53 ms | 0 |
+| OM-5, 20 MP | 1,193 ms | 17 ms | 1 (268 ms) |
+| Panasonic S5 II, 24 MP | 1,125 ms | 42 ms | 1 (1,705 ms) |
+| Pixel 8 Pro, 50 MP | 1,946 ms | 992 ms | 15 of 15 |
+
+  The slow ones sit at the first change of each kind: the first exposure change, and the first temperature change. So the sheet now warms the decoder when it opens: after the first picture is shown, and unless a control has already moved, it renders a hair's change of exposure, white balance and shadows and throws the pictures away (`RawDraft.warmUp`). Measured below.
+  The 50-megapixel file is about a second per change throughout; warm-up will not help it. For that file the sheet's "catching up" line is what the person sees.
+- **The commit gate** no longer fails on tests that assert a time limit (`PerformanceTests`): they run and a missed limit is a warning with the load average. `scripts/test-performance.sh` runs them as assertions and keeps its last result in `docs/performance-last.txt`; for a quiet Mac, before a release and after changes to the renderer or compositor. Not yet run.
+
+**Second run, with the warm-up, in the window the coordinator called (17:04; load average 4.7 at the start and 7.3 at the end, from a backup and system services, none of ours; both locks held):**
+
+| File | First picture | Warm-up after it | 15 changes | Over 100 ms |
+|---|---|---|---|---|
+| iPhone 12 Pro, 12 MP | 148 ms | 193 ms | 8 to 24 ms | 0 |
+| Canon R10, 24 MP | 847 ms | 296 ms | 10 to 13 ms | 0 |
+| OM-5, 20 MP | 1,483 ms | 308 ms | 14 to 17 ms | 0 |
+| Fujifilm X-T50, 40 MP | 4,887 ms | 172 ms | 31 to 33 ms | 0 |
+| Panasonic S5 II, 24 MP | 1,248 ms | 210 ms | 34 to 52 ms | 0 |
+| Pixel 8 Pro, 50 MP | 1,865 ms | 1,663 ms | 103 to 1,270 ms, median 194 | 15 of 15 |
+
+Status: the requirement (a change shown within about a tenth of a second) is **met on five of the six files**, including the first change of each kind, which the warm-up took care of. It is **not met on the 50-megapixel file**; its best is just over the limit, and whether a quiet Mac would bring it under is not known. The Mac was not quiet, and the run was not repeated. The whole printout is in `build/raw-draft-timing.txt`.

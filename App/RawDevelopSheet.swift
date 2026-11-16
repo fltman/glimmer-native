@@ -42,9 +42,19 @@ final class RawDraftWorker: @unchecked Sendable {
             let began = Date()
             let result: Result<(image: CGImage, settings: RawSettings, seconds: Double), Error>
             do {
-                if draft == nil { draft = try RawDraft(data) }
+                let first = draft == nil
+                if first { draft = try RawDraft(data) }
                 let image = try draft!.picture(settings)
                 result = .success((image, settings, Date().timeIntervalSince(began)))
+                if first {
+                    // The first picture is shown at once; then, unless a control has already moved,
+                    // the decoder is warmed for the first drag.
+                    let deliver = deliver
+                    DispatchQueue.main.async { MainActor.assumeIsolated { deliver(result) } }
+                    lock.lock(); let idle = wanted == nil; lock.unlock()
+                    if idle { draft!.warmUp(from: settings) }
+                    continue
+                }
             } catch {
                 result = .failure(error)
             }

@@ -18,9 +18,23 @@ run() {   # run <name> <command…>
   local name="$1"; shift
   if "$@" > "$LOGS/$name.log" 2>&1; then echo "✔ $name"; else echo "✘ $name failed: $LOGS/$name.log"; tail -5 "$LOGS/$name.log" | sed 's/^/    /'; echo "Nothing was committed."; exit 1; fi
 }
+# Tests that assert a wall-clock limit do not decide a commit: on a Mac where other sessions
+# are building they fail for the machine's reasons, and a gate that does that teaches
+# running it again until it passes. They run here and a missed limit is a warning;
+# scripts/test-performance.sh is where they are real assertions (before a release, and after
+# any change to the renderer or the compositor). The limits themselves are not loosened.
+TIMED="PerformanceTests"
 tests() {
-  swift test --package-path Packages/GlimmerKit 2>&1 | tee "$LOGS/tests-full.log" | grep -E "error:|✘|Test run with" ; 
+  swift test --package-path Packages/GlimmerKit --skip "$TIMED" 2>&1 | tee "$LOGS/tests-full.log" | grep -E "error:|✘|Test run with"
   ! grep -qE "error:|✘ Test run|recorded an issue" "$LOGS/tests-full.log" && [[ $(grep -c "✔ Test run with" "$LOGS/tests-full.log") -ge 5 ]]
+}
+timed_tests() {
+  if swift test --package-path Packages/GlimmerKit --filter "$TIMED" > "$LOGS/timed.log" 2>&1 && ! grep -q "recorded an issue" "$LOGS/timed.log"; then
+    echo "✔ timing tests (not part of the gate)"
+  else
+    echo "⚠ a timing test missed its limit (load average $(sysctl -n vm.loadavg | awk '{print $2}')): $LOGS/timed.log. Not a reason to refuse this commit; run scripts/test-performance.sh on a quiet Mac."
+    grep "recorded an issue" "$LOGS/timed.log" | sed 's/\x1b\[[0-9;]*m//g' | cut -c1-200 | sed 's/^/    /'
+  fi
 }
 debug_build() { xcodebuild -project Glimmer.xcodeproj -scheme Glimmer -configuration Debug -derivedDataPath build/DerivedData build 2>&1 | grep -E "error:|BUILD" | tee /dev/stderr | grep -q "BUILD SUCCEEDED"; }
 release_build() {
@@ -32,6 +46,7 @@ site() { local here="$PWD"; for s in "$PWD/../the-apps/site" "$HOME/Projekt/the-
 run features scripts/apply-features.py --check
 run strings scripts/check-strings.py
 run tests tests
+timed_tests
 run debug-build debug_build
 [[ "${GLIMMER_COMMIT_RELEASE:-0}" == 1 ]] && run release-build release_build
 run site site

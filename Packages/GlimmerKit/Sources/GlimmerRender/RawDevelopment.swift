@@ -170,6 +170,21 @@ public final class RawDraft {
         return bytes
     }
 
+    /// Renders the kinds of change a person makes first (exposure, white balance, shadows), a
+    /// hair away from `settings`, and throws the pictures away. The first change of each kind
+    /// costs far more than the following ones (measured in the app, 2026-11-16: 0.3 to 1.7 s
+    /// against 10 to 60 ms), so the sheet does this when it opens, before a control is touched.
+    public func warmUp(from settings: RawSettings) {
+        var exposure = settings; exposure.exposure += 0.01
+        var balance = settings; balance.temperature = (settings.temperature ?? Double(filter.neutralTemperature)) * 1.002
+        balance.tint = (settings.tint ?? Double(filter.neutralTint)) + 0.5
+        var shadows = settings; shadows.shadows = min(2, settings.shadows + 0.01)
+        for variant in [exposure, balance, shadows, settings] {
+            _ = try? RawDevelopment.apply(variant, to: filter)
+            _ = try? bytes()
+        }
+    }
+
     /// The draft for these settings, in sRGB with 8 bits per channel, for showing.
     public func picture(_ settings: RawSettings) throws -> CGImage {
         _ = try RawDevelopment.apply(settings, to: filter)
