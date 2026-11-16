@@ -555,3 +555,11 @@ Three things the read had passed and the pictures showed:
 - **The export sheet** had the same, and the row it cut was the measured difference. Same line there, over four points.
 
 Not a fault but seen: in these pictures a "Heal Selection…" spinner sits in the status bar from state 10 on. It is the running job of the job-list fixture, which the fixture "clear" does not remove; a real cancelled Heal leaves nothing.
+
+## iPad: what builds today (2026-11-16, tried, not estimated)
+
+In a scratch worktree (removed afterwards), with one change, `.iOS("27.0")` added to the package's platforms:
+
+- All five package targets (GlimmerCore, GlimmerRender with its Metal shaders, GlimmerTools, GlimmerAI, GlimmerHeal: 87 files, about 20,000 lines) **build for iPadOS with no error**, for a device in Debug and Release and for the simulator. None of them uses AppKit.
+- **Not run.** No simulator with iOS 27 is set up on this Mac and I created none; a device is attached and I did not touch it. So "builds" is all that is known: nothing about Metal on an iPad's GPU, memory limits, the RAW decoder or the on-device models there.
+- The app itself (App/, 64 files, 17,553 lines) does not build: the compiler stops at the first `import AppKit`. By reference count, 40 files (8,463 lines) use no AppKit symbol and 24 files (9,090 lines) do; the heaviest are the canvas view (1,404 lines, 106 references: mouse, keyboard, cursor, the text editor), the document opener (587 lines, 47: NSDocumentController, Apple events, panels), then the session, the tool options, the menus. Mac-only by nature: Sparkle, sibling calls and linked files (Apple events between Mac apps), Ollama and MLX servers.
