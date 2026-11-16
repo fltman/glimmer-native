@@ -239,7 +239,8 @@ enum AgentRouter {
         case ["api", "v1", "status"]:
             try only("GET")
             return .json(["app": ["name": "Glimmer", "version": appVersion, "bundleID": AppIdentity.ownBundleID],
-                          "api": AgentAPI.version, "port": Int(port),
+                          // The process answering: a caller that started its own copy checks it is talking to that one.
+                          "api": AgentAPI.version, "port": Int(port), "pid": Int(ProcessInfo.processInfo.processIdentifier),
                           "documents": AgentRegistry.shared.sessions.map(summary),
                           "jobs": AgentJobs.shared.running.map(\.json),
                           // Which services have a key (never the key): paid steps need the one they use.
