@@ -192,6 +192,7 @@ final class DocumentOpener {
     /// Linked images waiting for their window, by the id of the document's first layer.
     private var pendingLinks: [UUID: LinkedImage] = [:]
 
+    #if GLIMMER_PSD
     /// Import reports of Photoshop files waiting for their window, by the id of the document's
     /// first layer, with the file's bytes for measuring the picture against the file's own.
     private var pendingReports: [UUID: (report: PSDImportReport, file: Data)] = [:]
@@ -223,6 +224,7 @@ final class DocumentOpener {
         createDocument(state)
         NSDocumentController.shared.noteNewRecentDocumentURL(url)
     }
+    #endif
 
     /// Called when a document window appears: a handed-over image becomes linked.
     func claimLink(for session: EditorSession) {
@@ -304,11 +306,14 @@ final class DocumentOpener {
         do {
             // A Photoshop file comes in with its layers. (A file handed over by a sibling to edit
             // and save back stays the picture it is: SIBLINGS.md §6 has no PSD.)
+            // Only in builds that have the import (Config/Features.xcconfig); without it the file opens as the picture macOS reads from it.
+            #if GLIMMER_PSD
             if link == nil, let handle = try? FileHandle(forReadingFrom: url), let start = try? handle.read(upToCount: 4), Self.isPhotoshopFile(start) {
                 try? handle.close()
                 try openPhotoshopFile(try Data(contentsOf: url, options: .mappedIfSafe), url: url)
                 return
             }
+            #endif
             let image = try ImageImporter.image(contentsOf: url)
             let name = url.deletingPathExtension().lastPathComponent
             // An empty, untouched document (the one Glimmer opens at launch) becomes the image,

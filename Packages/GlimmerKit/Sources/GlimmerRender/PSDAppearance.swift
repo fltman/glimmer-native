@@ -1,3 +1,4 @@
+#if GLIMMER_PSD   // Config/Features.xcconfig: not in a release until a file from Photoshop has met it
 import CoreGraphics
 import Foundation
 import GlimmerCore
@@ -42,3 +43,4 @@ public enum PSDAppearance {
         return drawn ? bytes : nil
     }
 }
+#endif

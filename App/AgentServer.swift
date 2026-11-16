@@ -318,6 +318,7 @@ enum AgentRouter {
         d["activeLayer"] = st.activeLayer.map { ["id": $0.id.uuidString, "name": $0.name] } ?? NSNull()
         if let sel = st.selection?.bounds(in: st.bounds) { d["selectionBounds"] = ["x": sel.x, "y": sel.y, "width": sel.width, "height": sel.height] }
         // A document made from a Photoshop file says what came through and what did not.
+        #if GLIMMER_PSD
         if let report = session.importReport {
             var r: [String: Any] = ["source": report.source, "layersInFile": report.layersInFile, "layersKept": report.layersKept,
                                     "flattened": report.flattened, "looksTheSame": report.looksTheSame, "summary": report.lines.first ?? "",
@@ -327,6 +328,7 @@ enum AgentRouter {
             }
             d["importReport"] = r
         }
+        #endif
         return d
     }
 
@@ -439,7 +441,9 @@ enum AgentRouter {
             blank.madeByAPI = true
             if let name, !name.isEmpty { blank.setDocumentName(name) }
             showRequester(r, in: blank)
+            #if GLIMMER_PSD
             DocumentOpener.shared.claimImportReport(for: blank)
+            #endif
             return .json(["document": detail(blank)], status: 201)
         }
         let marker = state.layers.first?.id
@@ -450,7 +454,9 @@ enum AgentRouter {
                 session.madeByAPI = true
                 if let name, !name.isEmpty { session.setDocumentName(name) }
                 showRequester(r, in: session)
+                #if GLIMMER_PSD
                 DocumentOpener.shared.claimImportReport(for: session)   // before the answer, so it carries the report
+                #endif
                 return .json(["document": detail(session)], status: 201)
             }
             try await Task.sleep(for: .milliseconds(50))
@@ -461,6 +467,7 @@ enum AgentRouter {
     private static func documentFromImage(_ data: Data, name: String) throws -> DocumentState {
         guard !data.isEmpty else { throw APIError.badRequest("The image body is empty.") }
         // A Photoshop file comes in with its layers; what did not come through is in the answer ("importReport").
+        #if GLIMMER_PSD
         if DocumentOpener.isPhotoshopFile(data) {
             do {
                 let (state, report) = try PSDImport.document(from: data)
@@ -470,6 +477,7 @@ enum AgentRouter {
                 throw APIError.badRequest((error as? LocalizedError)?.errorDescription ?? "Glimmer couldn't read this Photoshop file.")
             }
         }
+        #endif
         do {
             let image = try ImageImporter.image(from: data)
             let tiles = try ImageImporter.tiles(from: image)

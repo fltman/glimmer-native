@@ -7,7 +7,6 @@ Glimmer 0.2.0 is a native macOS photo editor with layers, adjustment layers, fil
 - Every POST needs the header **`X-Glimmer-Agent: 1`**. Without it you get `403 forbidden`.
 - Don't send an `Origin` header: requests that look like they come from a web page are refused.
 - Images travel in request and response bodies. The API never reads or writes file paths.
-- A Photoshop file (PSD or PSB bytes) sent to `POST /api/v1/documents` opens with its layers. The reply's `document.importReport` says what came through: `layersInFile`, `layersKept`, `flattened` (true when only the file's own flattened picture could be used), `notes` (one per thing that did not come through: `layer`, `what`, `changesLook`), `looksTheSame`, and `differenceFromFile` (Glimmer's picture against the one saved in the file: `mean` on a scale of 0 to 255 and `shareVisiblyDifferent` from 0 to 1). Read it before you rely on the layers: text, smart objects, adjustment layers, fill layers and effects are not editable or are left out, and the notes say which. The same report is shown to the person in the window.
 - Edits land in open document windows that the user can see, and can be undone. One `steps` request is one undo step.
 - Steps that cost money (OpenRouter) are refused unless you pass `"allowPaid": true`. Everything else runs on the Mac, free.
 

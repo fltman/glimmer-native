@@ -6,8 +6,11 @@ import PackageDescription
 // package and for the app alike. Debug builds (and so the tests) always compile it.
 let features = (try? String(contentsOfFile: Context.packageDirectory + "/../../Config/Features.xcconfig", encoding: .utf8)) ?? ""
 let releaseHasHeal = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_HEAL=YES" }
-let healSettings: [SwiftSetting] = [.define("GLIMMER_HEAL", .when(configuration: .debug))]
+// Photoshop import is switched the same way (GLIMMER_PSD).
+let releaseHasPSD = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_PSD=YES" }
+let healSettings: [SwiftSetting] = [.define("GLIMMER_HEAL", .when(configuration: .debug)), .define("GLIMMER_PSD", .when(configuration: .debug))]
     + (releaseHasHeal ? [.define("GLIMMER_HEAL", .when(configuration: .release))] : [])
+    + (releaseHasPSD ? [.define("GLIMMER_PSD", .when(configuration: .release))] : [])
 
 let package = Package(
     name: "GlimmerKit",
@@ -26,7 +29,8 @@ let package = Package(
         .target(
             name: "GlimmerRender",
             dependencies: ["GlimmerCore"],
-            resources: [.process("Shaders")]
+            resources: [.process("Shaders")],
+            swiftSettings: healSettings
         ),
         // Interactive tools (brush, selection, transform, ...).
         .target(name: "GlimmerTools", dependencies: ["GlimmerCore", "GlimmerRender"]),

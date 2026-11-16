@@ -260,8 +260,6 @@ public struct CommandRegistry: Sendable {
                           keywords: ["batch", "folder", "many images", "bulk", "convert", "droplet", "automate"]),
         CommandDescriptor(.exportWebProject, "Export Web Project (.aips)…", category: .file,
                           keywords: ["aips", "glimmer web", "save project", "browser"]),
-        CommandDescriptor(.importReport, "Import Report…", category: .file,
-                          keywords: ["psd", "photoshop", "what was lost", "layers", "import"]),
 
         CommandDescriptor(.newLayer, "New Layer", category: .layer,
                           shortcut: KeyShortcut("n", [.command, .shift]), keywords: ["add"]),
@@ -384,6 +382,10 @@ public struct CommandRegistry: Sendable {
 /// Commands of features a release can be built without (Config/Features.xcconfig).
 private var optionalCommands: [CommandDescriptor] {
     var list: [CommandDescriptor] = []
+    #if GLIMMER_PSD
+    list.append(CommandDescriptor(.importReport, "Import Report…", category: .file,
+                                  keywords: ["psd", "photoshop", "what was lost", "layers", "import"]))
+    #endif
     #if GLIMMER_HEAL
     list.append(CommandDescriptor(.healSelection, "Heal Selection", category: .edit,
                                   keywords: ["remove object", "content-aware fill", "erase", "retouch", "spot", "dust", "wire", "cleanup", "fill from surroundings"]))

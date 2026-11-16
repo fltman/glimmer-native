@@ -1,3 +1,4 @@
+#if GLIMMER_PSD   // Config/Features.xcconfig: not in a release until a file from Photoshop has met it
 import CoreGraphics
 import Foundation
 
@@ -270,3 +271,4 @@ public enum PSDImport {
                        space: space, bitmapInfo: info, provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
     }
 }
+#endif

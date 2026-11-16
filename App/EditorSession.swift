@@ -187,7 +187,9 @@ final class EditorSession {
     var isCanvasSizePresented = false
     /// What the import of a Photoshop file kept and lost, for this window. Shown once when the
     /// file opens and again from File › Import Report…. Not saved with the document.
+    #if GLIMMER_PSD
     var importReport: PSDImportReport?
+    #endif
     var isImportReportPresented = false
     var exportOptions = ExportOptions()
     var isExporting = false
@@ -514,7 +516,11 @@ final class EditorSession {
         case .exportForWeb:
             return !isExporting
         case .importReport:
+            #if GLIMMER_PSD
             return importReport != nil
+            #else
+            return false
+            #endif
         case .deselect, .invertSelection, .aiRemoveObject, .featherSelection, .growSelection, .shrinkSelection, .healSelection:
             return state.selection != nil
         case .copy, .cut:
@@ -694,7 +700,9 @@ final class EditorSession {
         case .canvasSize:
             isCanvasSizePresented = true
         case .importReport:
+            #if GLIMMER_PSD
             isImportReportPresented = importReport != nil
+            #endif
         case .toggleRulers:
             edit(state.aids.rulersVisible ? "Hide Rulers" : "Show Rulers") { $0.aids.rulersVisible.toggle() }
         case .toggleGrid:

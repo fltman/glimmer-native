@@ -125,9 +125,11 @@ struct DocumentView: View {
             .sheet(isPresented: $session.isCanvasSizePresented) {
                 CanvasSizeSheet(session: session)
             }
+            #if GLIMMER_PSD
             .sheet(isPresented: $session.isImportReportPresented) {
                 ImportReportSheet(session: session)
             }
+            #endif
             .sheet(isPresented: $session.isImageSizePresented) {
                 ImageSizeSheet(session: session)
             }
@@ -207,7 +209,9 @@ struct DocumentView: View {
                 // Only a session that has a window is offered to agents.
                 AgentRegistry.shared.register(session)
                 DocumentOpener.shared.claimLink(for: session)
+                #if GLIMMER_PSD
                 DocumentOpener.shared.claimImportReport(for: session)
+                #endif
             }
             .onDisappear { AgentRegistry.shared.unregister(session) }
             .onChange(of: activeState) { _, state in if state == .key { AgentRegistry.shared.markFront(session) } }

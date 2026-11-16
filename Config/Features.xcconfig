@@ -8,3 +8,10 @@
 // (docs/PATENTS.md has the rules the code keeps to and why). The menu item, /operations,
 // the guide, the manual and the FAQ follow this (Config/site-features.json).
 GLIMMER_HEAL = NO
+
+// Photoshop files with their layers (File › Open… on a PSD or PSB, the agent API's import,
+// File › Import Report…). NO until a file saved by Photoshop itself has met the reader: every
+// test file so far comes from Glimmer's own writer, which reads Adobe's specification the way
+// the reader does. With NO a release opens a Photoshop file as before, as the flattened
+// picture macOS reads from it. The manual and the agent guide follow this.
+GLIMMER_PSD = NO

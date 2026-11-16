@@ -1,3 +1,4 @@
+#if GLIMMER_PSD   // Config/Features.xcconfig: not in a release until a file from Photoshop has met it
 import Compression
 import Foundation
 
@@ -407,3 +408,4 @@ struct PSDBytes {
         String(decoding: try slice(count).rest, as: UTF8.self)
     }
 }
+#endif

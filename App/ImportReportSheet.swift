@@ -1,3 +1,4 @@
+#if GLIMMER_PSD   // Config/Features.xcconfig: not in a release until a file from Photoshop has met it
 import GlimmerCore
 import SwiftUI
 
@@ -35,3 +36,4 @@ struct ImportReportSheet: View {
         .frame(width: 520)
     }
 }
+#endif

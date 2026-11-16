@@ -15,11 +15,18 @@ public enum PlanCheck {
     static let paid: Set<String> = ["generate_layer", "image_edit_composite", "inpaint_selection"]
 
     /// Word stems, English and Swedish, by which a request names an operation.
-    public static let words: [String: [String]] = [
+    public static let words: [String: [String]] = {
+        var all = common
+        #if GLIMMER_HEAL
+        all["heal_selection"] = ["heal", "remove", "erase", "retouch", "laga", "ta bort", "retusch"]
+        #endif
+        return all
+    }()
+
+    private static let common: [String: [String]] = [
         "auto_enhance": ["enhance", "improve", "fix", "better", "auto", "förbättra", "fixa", "bättre", "snygg"],
         "auto_color": ["color", "colour", "färg", "white balance", "vitbalans", "cast", "stick"],
         "remove_background": ["background", "bakgrund", "cut out", "cutout", "frilägg"],
-        "heal_selection": ["heal", "remove", "erase", "retouch", "laga", "ta bort", "retusch"],
         "upscale": ["upscale", "enlarge", "bigger", "larger", "resolution", "förstora", "större", "upplösning"],
         "fill": ["fill", "fyll"],
         "new_layer": ["layer", "lager"],

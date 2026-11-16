@@ -42,8 +42,13 @@ import Testing
         // The site describes what a release has (Config/Features.xcconfig), not this debug build.
         let features = try String(contentsOf: Self.repo.appending(path: "Config/Features.xcconfig"), encoding: .utf8)
         let releaseHasHeal = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_HEAL=YES" }
-        let guide = AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, heal: releaseHasHeal)
+        let releaseHasPSD = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_PSD=YES" }
+        let guide = AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, heal: releaseHasHeal, psd: releaseHasPSD)
         #expect(guide.contains("heal_selection") == releaseHasHeal)
+        #expect(guide.contains("importReport") == releaseHasPSD)
+        #if GLIMMER_PSD
+        #expect(AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, psd: true).contains("document.importReport"))
+        #endif
         #if GLIMMER_HEAL
         #expect(AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, heal: true).contains("heal_selection"))
         #expect(AgentAPI.operations.contains { $0["name"] as? String == "heal_selection" && $0["tier"] as? String == "advanced" && $0["paid"] as? Bool == false })

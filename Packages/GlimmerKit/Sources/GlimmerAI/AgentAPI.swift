@@ -290,6 +290,25 @@ public enum AgentAPI {
         return "Removing an object from a photo has no free operation: `inpaint_selection` (paid) is the only one. " + patch
     }
 
+    /// Whether this build opens Photoshop files with their layers (Config/Features.xcconfig).
+    public static var hasPSD: Bool {
+        #if GLIMMER_PSD
+        true
+        #else
+        false
+        #endif
+    }
+
+    /// The guide's line about Photoshop files; a build without the import has no text about it.
+    static func photoshopNote(psd: Bool) -> String {
+        #if GLIMMER_PSD
+        if psd {
+            return "- A Photoshop file (PSD or PSB bytes) sent to `POST /api/v1/documents` opens with its layers. The reply's `document.importReport` says what came through: `layersInFile`, `layersKept`, `flattened` (true when only the file's own flattened picture could be used), `notes` (one per thing that did not come through: `layer`, `what`, `changesLook`), `looksTheSame`, and `differenceFromFile` (Glimmer's picture against the one saved in the file: `mean` on a scale of 0 to 255 and `shareVisiblyDifferent` from 0 to 1). Read it before you rely on the layers: text, smart objects, adjustment layers, fill layers and effects are not editable or are left out, and the notes say which. The same report is shown to the person in the window.\n"
+        }
+        #endif
+        return ""
+    }
+
     /// Whether this build has Heal Selection (Config/Features.xcconfig).
     public static var hasHeal: Bool {
         #if GLIMMER_HEAL
@@ -301,7 +320,7 @@ public enum AgentAPI {
 
     /// `heal`: whether the guide describes Heal Selection. The app passes nothing (what it was
     /// built with); the site's copy is written for what a release has.
-    public static func guide(port: UInt16, appVersion: String, heal: Bool = hasHeal) -> String {
+    public static func guide(port: UInt16, appVersion: String, heal: Bool = hasHeal, psd: Bool = hasPSD) -> String {
         let base = "http://127.0.0.1:\(port)"
         var s = """
         # Glimmer: guide for agents
@@ -313,8 +332,7 @@ public enum AgentAPI {
         - Every POST needs the header **`\(agentHeader): 1`**. Without it you get `403 forbidden`.
         - Don't send an `Origin` header: requests that look like they come from a web page are refused.
         - Images travel in request and response bodies. The API never reads or writes file paths.
-        - A Photoshop file (PSD or PSB bytes) sent to `POST /api/v1/documents` opens with its layers. The reply's `document.importReport` says what came through: `layersInFile`, `layersKept`, `flattened` (true when only the file's own flattened picture could be used), `notes` (one per thing that did not come through: `layer`, `what`, `changesLook`), `looksTheSame`, and `differenceFromFile` (Glimmer's picture against the one saved in the file: `mean` on a scale of 0 to 255 and `shareVisiblyDifferent` from 0 to 1). Read it before you rely on the layers: text, smart objects, adjustment layers, fill layers and effects are not editable or are left out, and the notes say which. The same report is shown to the person in the window.
-        - Edits land in open document windows that the user can see, and can be undone. One `steps` request is one undo step.
+        \(photoshopNote(psd: psd))- Edits land in open document windows that the user can see, and can be undone. One `steps` request is one undo step.
         - Steps that cost money (OpenRouter) are refused unless you pass `"allowPaid": true`. Everything else runs on the Mac, free.
 
         ## Quick start
