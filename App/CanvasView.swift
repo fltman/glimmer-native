@@ -1222,7 +1222,7 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
     }
 
     @objc func paste(_ sender: Any?) {
-        if !session.paste() { NSSound.beep() }
+        if !session.paste() { AppSound.beep() }
     }
 
     @objc func copy(_ sender: Any?) { session.perform(.copy) }

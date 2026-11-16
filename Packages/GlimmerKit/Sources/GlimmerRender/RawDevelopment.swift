@@ -136,6 +136,82 @@ public enum RawDevelopment {
     public static var cameras: [String] { CIRAWFilter.supportedCameraModels.sorted() }
 }
 
+/// What a request to develop may change, checked against what the file allows. For the agent
+/// API's `develop_raw`: a value outside its range is refused with the range, never clamped, and
+/// a control the file doesn't have is refused by name.
+public enum RawRequest {
+    public struct Refusal: Error, LocalizedError, Equatable, Sendable {
+        public let reason: String, message: String
+        public var errorDescription: String? { message }
+    }
+
+    public struct Control: Sendable, Equatable {
+        public let name: String
+        public let range: ClosedRange<Double>
+        public let supported: Bool
+        /// The value when nothing has been set: the camera's or the decoder's own.
+        public let asShot: Double
+    }
+
+    /// Every number a request can set, with its range for this file.
+    public static func controls(_ info: RawInfo) -> [Control] {
+        [Control(name: "exposure", range: -5...5, supported: true, asShot: 0),
+         Control(name: "temperature", range: 2_000...50_000, supported: true, asShot: info.temperature),
+         Control(name: "tint", range: -150...150, supported: true, asShot: info.tint),
+         Control(name: "shadows", range: 0...2, supported: true, asShot: 1),
+         Control(name: "contrast", range: 0...1, supported: info.supportsContrast, asShot: info.contrast),
+         Control(name: "sharpness", range: 0...1, supported: info.supportsSharpness, asShot: info.sharpness),
+         Control(name: "luminanceNoise", range: 0...1, supported: info.supportsLuminanceNoise, asShot: info.luminanceNoise),
+         Control(name: "colorNoise", range: 0...1, supported: info.supportsColorNoise, asShot: info.colorNoise)]
+    }
+
+    /// The two switches, with whether the file has them.
+    public static func switches(_ info: RawInfo) -> [(name: String, supported: Bool, asShot: Bool)] {
+        [("highlightRecovery", info.supportsHighlightRecovery, true), ("lensCorrection", info.supportsLensCorrection, info.lensCorrection)]
+    }
+
+    /// `current` with the request's values put in. Only what is given changes; `asShot` first
+    /// goes back to the camera's white balance and the decoder's own values (the process stays).
+    public static func settings(from current: RawSettings, info: RawInfo, numbers: [String: Double], switches flags: [String: Bool], asShot: Bool) throws -> RawSettings {
+        var out = current
+        if asShot { out = RawSettings(); out.process = current.process }
+        let known = controls(info)
+        for (name, value) in numbers.sorted(by: { $0.key < $1.key }) {
+            guard let control = known.first(where: { $0.name == name }) else {
+                throw Refusal(reason: "unknown_control", message: "develop_raw has no control named \(name). It has: \(known.map(\.name).joined(separator: ", ")), highlightRecovery, lensCorrection.")
+            }
+            guard control.supported else {
+                throw Refusal(reason: "unsupported_control", message: "This RAW file has no \(name) control: macOS's decoder doesn't offer it for this camera.")
+            }
+            guard value.isFinite, control.range.contains(value) else {
+                throw Refusal(reason: "out_of_range", message: "\(name) must be \(number(control.range.lowerBound))…\(number(control.range.upperBound)) for this file; \(number(value)) is outside that.")
+            }
+            switch name {
+            case "exposure": out.exposure = value
+            case "temperature": out.temperature = value
+            case "tint": out.tint = value
+            case "shadows": out.shadows = value
+            case "contrast": out.contrast = value
+            case "sharpness": out.sharpness = value
+            case "luminanceNoise": out.luminanceNoise = value
+            default: out.colorNoise = value
+            }
+        }
+        for (name, value) in flags.sorted(by: { $0.key < $1.key }) {
+            guard let known = switches(info).first(where: { $0.name == name }) else {
+                throw Refusal(reason: "unknown_control", message: "develop_raw has no switch named \(name).")
+            }
+            guard known.supported else {
+                throw Refusal(reason: "unsupported_control", message: "This RAW file has no \(name) switch: macOS's decoder doesn't offer it for this camera.")
+            }
+            if name == "highlightRecovery" { out.highlightRecovery = value } else { out.lensCorrection = value }
+        }
+        return out
+    }
+
+    private static func number(_ v: Double) -> String { v == v.rounded() ? String(Int(v)) : String(format: "%.2f", v) }
+}
+
 /// The picture while a control is being moved. One decoder is kept for as long as the Develop
 /// sheet is open: making a new one for every change is what costs (0.3 to 4 s per change on
 /// camera files, 2026-11-16). With it kept, a change is the real development, scaled down

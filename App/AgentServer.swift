@@ -335,6 +335,17 @@ enum AgentRouter {
             case ["layers"]:
                 try only("POST")
                 return try addImage(session, r)
+            #if GLIMMER_RAW
+            case let rest where rest.count == 4 && rest[0] == "layers" && rest[2] == "raw" && rest[3] == "info":
+                try only("GET")
+                let key = rest[1].removingPercentEncoding ?? rest[1]
+                let layers = session.state.allLayers
+                guard let layer = layers.first(where: { $0.id.uuidString.caseInsensitiveCompare(key) == .orderedSame }) ?? layers.first(where: { $0.name == key }) else {
+                    throw APIError.notFound("No layer “\(key)” in this document.")
+                }
+                do { return .json(["raw": try AIController.rawInfo(layer)]) }
+                catch let e as AIController.StepError { throw APIError.unprocessable(e.reason ?? "not_raw", e.errorDescription ?? "This layer has no RAW file.") }
+            #endif
             default:
                 throw APIError.notFound("No such path: \(r.path). See /glimmer.")
             }
@@ -417,6 +428,10 @@ enum AgentRouter {
         if let r = visibleBounds(layer) { d["bounds"] = ["x": r.x, "y": r.y, "width": r.width, "height": r.height] }
         // The words of a layer that was text in an imported file and is pixels now.
         if let words = layer.formerText { d["formerText"] = words }
+        #if GLIMMER_RAW
+        // A layer opened from a camera's RAW file: it can be developed again (`develop_raw`).
+        if let raw = AIController.describeRaw(layer) { d["raw"] = raw }
+        #endif
         switch layer.content {
         case .raster: d["kind"] = "pixels"
         case .adjustment(let a): d["kind"] = "adjustment"; d["adjustment"] = a.kind.rawValue
@@ -454,7 +469,7 @@ enum AgentRouter {
         var state: DocumentState
         var name = r.query["name"]
         if type.hasPrefix("image/") || type == "application/octet-stream" {
-            state = try documentFromImage(r.body, name: name ?? "Image")
+            state = try await documentFromBytes(r.body, name: name ?? "Image")
         } else {
             let obj = try json(r)
             name = obj["name"] as? String ?? name
@@ -462,7 +477,7 @@ enum AgentRouter {
                 guard let data = Data(base64Encoded: b64, options: .ignoreUnknownCharacters) else {
                     throw APIError.badRequest("\"image\" isn't valid base64.")
                 }
-                state = try documentFromImage(data, name: name ?? "Image")
+                state = try await documentFromBytes(data, name: name ?? "Image")
             } else if let w = obj["width"] as? Int, let h = obj["height"] as? Int {
                 guard (1...30_000).contains(w), (1...30_000).contains(h) else {
                     throw APIError.badRequest("width and height must be 1…30000 pixels.")
@@ -507,6 +522,27 @@ enum AgentRouter {
             try await Task.sleep(for: .milliseconds(50))
         }
         throw APIError.internalError("The document window didn't open in time.")
+    }
+
+    /// A camera's RAW file becomes a RAW layer (developed away from the main thread); everything else as before.
+    private static func documentFromBytes(_ data: Data, name: String) async throws -> DocumentState {
+        #if GLIMMER_RAW
+        // By what the bytes are, or, for a camera file the system's reader doesn't know at all, by the name it was sent with.
+        if DocumentOpener.isRawData(data) || DocumentOpener.isRawFile(URL(fileURLWithPath: name)) {
+            // The size is read from the header first: a file too large for this Mac is refused before anything is decoded.
+            do { _ = try RawDevelopment.info(data) } catch let problem as RawDevelopment.Problem {
+                let tooLarge = problem.message.contains("megapixels") || problem.message.contains("more than this Mac")
+                throw APIError.unprocessable(tooLarge ? "too_large" : "raw_not_developed", problem.message)
+            }
+            do {
+                let made = try await Task.detached(priority: .userInitiated) { try RawLayer.make(from: data, fileName: name) }.value
+                return DocumentState(width: made.width, height: made.height, layers: [made.layer])
+            } catch {
+                throw APIError.unprocessable("raw_not_developed", (error as? LocalizedError)?.errorDescription ?? "macOS gives no picture for this RAW file.")
+            }
+        }
+        #endif
+        return try documentFromImage(data, name: name)
     }
 
     private static func documentFromImage(_ data: Data, name: String) throws -> DocumentState {

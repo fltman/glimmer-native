@@ -101,6 +101,29 @@ enum DNGTestWriter {
         #expect(throws: RawDevelopment.Problem.self) { _ = try RawDraft(Data(repeating: 7, count: 4_000)) }
     }
 
+    /// The agent API's rules: only what is given changes, nothing is clamped, nothing unsupported is accepted silently.
+    @Test func aRequestChangesOnlyWhatItNamesAndIsRefusedOutsideWhatTheFileAllows() throws {
+        var info = try RawDevelopment.info(DNGTestWriter.ramp)
+        var current = RawSettings(); current.exposure = 0.5; current.shadows = 1.4; current.process = "9.dng"
+        let changed = try RawRequest.settings(from: current, info: info, numbers: ["temperature": 4_000], switches: [:], asShot: false)
+        #expect(changed.temperature == 4_000 && changed.exposure == 0.5 && changed.shadows == 1.4 && changed.process == "9.dng")
+        // As shot first, then the given value; the process stays.
+        let reset = try RawRequest.settings(from: current, info: info, numbers: ["exposure": 1], switches: [:], asShot: true)
+        #expect(reset.exposure == 1 && reset.shadows == 1 && reset.temperature == nil && reset.process == "9.dng")
+        func refusal(_ numbers: [String: Double], _ flags: [String: Bool] = [:]) -> RawRequest.Refusal? {
+            do { _ = try RawRequest.settings(from: current, info: info, numbers: numbers, switches: flags, asShot: false); return nil } catch { return error as? RawRequest.Refusal }
+        }
+        #expect(refusal(["exposure": 7])?.reason == "out_of_range")
+        #expect(refusal(["exposure": 7])?.message == "exposure must be -5…5 for this file; 7 is outside that.")
+        #expect(refusal(["temperature": 900])?.reason == "out_of_range" && refusal(["shadows": .nan])?.reason == "out_of_range")
+        #expect(refusal(["brightness": 1])?.reason == "unknown_control")
+        // A control the file doesn't have is refused by name, whatever the value.
+        info.supportsContrast = false; info.supportsLensCorrection = false
+        #expect(refusal(["contrast": 0.5])?.message == "This RAW file has no contrast control: macOS's decoder doesn't offer it for this camera.")
+        #expect(refusal([:], ["lensCorrection": true])?.reason == "unsupported_control")
+        #expect(RawRequest.controls(info).first { $0.name == "contrast" }?.supported == false)
+    }
+
     @Test func theHeaderSaysWhatTheFileIsBeforeAnythingIsDeveloped() throws {
         let info = try RawDevelopment.info(DNGTestWriter.ramp)
         #expect(info.width == 640 && info.height == 480 && !info.processes.isEmpty)

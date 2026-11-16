@@ -280,6 +280,11 @@ import ImageIO
         let measured = DocumentLimits.estimatedBytes(textureTiles: 4_100)
         #expect(abs(Double(measured) / Double(Self.gb) - 5.5) < 0.4, "\(measured)")
         #expect(DocumentLimits.comfortNotice(textureTiles: 4_100, memory: mac16) == nil, "5.5 GB of 16 is comfortable")
+        // RAW files kept in the document count too: the same document with 5 GB of them is no longer comfortable.
+        #expect(DocumentLimits.comfortNotice(textureTiles: 4_100, keptBytes: 5 * Self.gb, memory: mac16) != nil)
+        var withRaw = DocumentState(width: 8, height: 8, layers: [Layer(name: "a", content: .raster(TileGrid())), Layer(name: "b", content: .raster(TileGrid()))])
+        withRaw.layers[1].raw = RawSource(data: Data(count: 1_000), fileName: "x.dng", settings: RawSettings())
+        #expect(withRaw.keptRawBytes == 1_000)
         let notice = DocumentLimits.comfortNotice(textureTiles: 8_000, memory: mac16) ?? ""
         #expect(notice.contains("16 GB") && notice.contains("Merging layers") && notice.contains("Image Size"), "\(notice)")
         #expect(DocumentLimits.comfortNotice(textureTiles: 4_100, memory: 8 * Self.gb) != nil, "the same document is too much for 8 GB")

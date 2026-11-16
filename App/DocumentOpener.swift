@@ -238,6 +238,12 @@ final class DocumentOpener {
         UTType(filenameExtension: url.pathExtension)?.conforms(to: .rawImage) == true
     }
 
+    /// Whether these bytes are a camera's RAW file, by what the system's image reader says they are (not by a name).
+    static func isRawData(_ data: Data) -> Bool {
+        guard data.count >= 64, let source = CGImageSourceCreateWithData(data as CFData, nil), let id = CGImageSourceGetType(source) as String? else { return false }
+        return UTType(id)?.conforms(to: .rawImage) == true
+    }
+
     /// A RAW file opens as a new document with one layer that keeps the file, so it can be developed again.
     /// Developing takes seconds, so it runs away from the main thread while a small window says
     /// what is happening; the app stays usable. `finished` gets nil when the document is open,

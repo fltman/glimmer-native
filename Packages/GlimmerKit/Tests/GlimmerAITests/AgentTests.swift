@@ -70,6 +70,21 @@ import Testing
         #expect(required.contains("text") && !required.contains("color") && !required.contains("size"))
     }
 
+    /// `develop_raw` is offered to the assistant only for a RAW layer, and never in the short list.
+    @Test func developRawIsOfferedOnlyForARawLayer() {
+        func names(_ tools: [[String: Any]]) -> [String] { tools.compactMap { ($0["function"] as? [String: Any])?["name"] as? String } }
+        #expect(!names(AgentPlanner.toolSchemas(rawLayer: false)).contains("develop_raw"))
+        #expect(!names(AgentPlanner.toolSchemas(short: true, rawLayer: true)).contains("develop_raw"))
+        #expect(names(AgentPlanner.toolSchemas(rawLayer: true)).contains("develop_raw") == AgentAPI.hasRAW)
+        // The unseen cases are judged as written: the right step for a RAW layer, and never develop_raw for an ordinary one.
+        let brighter = LocalModelEvaluation.rawCases[0], ordinary = LocalModelEvaluation.rawCases[2]
+        let develop = AgentPlan(steps: [AgentStep(op: "develop_raw", params: ["exposure": .number(1)])])
+        let adjust = AgentPlan(steps: [AgentStep(op: "add_adjustment", params: ["type": .string("exposure")])])
+        #expect(LocalModelEvaluation.judge(develop, brighter) && !LocalModelEvaluation.judge(adjust, brighter))
+        #expect(LocalModelEvaluation.judge(adjust, ordinary) && !LocalModelEvaluation.judge(develop, ordinary))
+        #expect(LocalModelEvaluation.cases.allSatisfy { !$0.rawLayer && $0.mustNotUse == nil })   // the scored set is unchanged
+    }
+
     @Test func toolCallsBecomeSteps() throws {
         let response = OpenRouterClient.ToolResponse(text: "Black and white with a vignette.", toolCalls: [
             .init(name: "add_adjustment", arguments: #"{"type":"black_white","params":{},"rationale":"Monochrome."}"#),

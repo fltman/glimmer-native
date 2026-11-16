@@ -43,7 +43,7 @@ final class ScriptedTextModel: TextModel, @unchecked Sendable {
         #expect(cost == nil)
         let asked = try #require(model.asked.first)
         #expect(asked.kind == "tools" && asked.temperature == 0.2 && !asked.streamed)
-        #expect(Set(asked.tools) == Set(AgentPlanner.ops.map(\.name)))
+        #expect(Set(asked.tools) == Set(AgentPlanner.ops.map(\.name)).subtracting(["develop_raw"]))
     }
 
     @Test func thePlannerStreamsWhenAsked() async throws {

@@ -17,6 +17,9 @@ public enum PlanCheck {
     /// Word stems, English and Swedish, by which a request names an operation.
     public static let words: [String: [String]] = {
         var all = common
+        #if GLIMMER_RAW
+        all["develop_raw"] = ["develop", "raw", "exposure", "white balance", "warmer", "cooler", "stop", "framkalla", "exponering", "vitbalans", "varmare", "kallare", "steg"]
+        #endif
         #if GLIMMER_HEAL
         all["heal_selection"] = ["heal", "remove", "erase", "retouch", "laga", "ta bort", "retusch"]
         #endif

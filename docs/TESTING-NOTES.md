@@ -489,3 +489,22 @@ What remains long: 2 to 10 s for the full development of a 40-megapixel file in 
 | Agent Access splash, in front | 0.34 (breathing); looked at: the glow sits round the icon, nothing else moves |
 
 So the covered and background cases are shown, not only coded. Reduce Motion is still not tried.
+
+## RAW through the agent API (2026-11-16, debug builds)
+
+Built as the coordinator approved it. `GLIMMER_RAW_SAMPLES=<folder> scripts/test-raw-api.sh`: 19 checks, all passed, with the Panasonic file (lens data), the iPhone file (none) and the Nikon file (no picture from macOS).
+
+- `POST /documents` with RAW bytes opens a RAW layer (201); the layer has `raw` (file name, bytes, settings, process, whether its pixels are as developed). A file macOS gives no picture for is answered 422 `raw_not_developed` with the app's own reason, also when the system's reader does not recognise the bytes at all (then the name it was sent with decides). The size is read from the header before anything is decoded.
+- `develop_raw`: only what is given changes (exposure kept when temperature is set); a value outside its range is refused with the range (422 `out_of_range`), a control the file lacks by name (`unsupported_control`), a layer without RAW with `not_raw`, a changed layer with `replaces_changes` unless `replaceChanges` is true, nothing given with `nothing_to_set`. One undo step; undo and `asShot` checked on the picture's brightness.
+- `GET …/layers/{layer}/raw/info`: size as developed, lens data, each control with its range and whether the file has it, the settings as they now are.
+- Development ran in 1.5 s for the 24-megapixel file, so it is not a job.
+
+**Found by the test:** a parameter `develop_raw` does not have ("brightness") beside a valid one was passed over and the step ran with the valid value alone. It looked like undo failing. Unknown parameters are now refused by name (`unknown_control`) and nothing is applied.
+
+The assistant: `develop_raw` is offered only when the active layer is a RAW layer, and never in the short tool list (tested). Three unseen requests are written (`LocalModelEvaluation.rawCases`: "Make it a stop brighter" and "Gör bilden varmare" on a RAW layer, and the first again on an ordinary layer, where developing must not be chosen). **Not run on any model:** the local models get the short list, which does not have the operation, and a model with the full list is a paid test. The evaluation of the 18 scored cases was not rerun either: the short list is unchanged (pinned by test), so the local result cannot have moved; a full-list model's can.
+
+The document's size estimate counts kept RAW files (`keptRawBytes`, tested).
+
+### Test copies are silent
+
+The series' rule after sound escaped in the siblings' GUI passes. Glimmer's own sounds are three alert beeps (a paste with nothing to paste, a history state that cannot be restored, a palette item that cannot run). They go through `AppSound`, and `scripts/test-app.sh` always starts its copy with `-quiet YES`, which silences them. Glimmer plays no audio or video. Not covered: the alert sound AppKit itself plays for a key that nothing handles; the scripts send Return and Escape only where a sheet takes them.

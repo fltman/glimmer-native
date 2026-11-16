@@ -43,7 +43,9 @@ import Testing
         let features = try String(contentsOf: Self.repo.appending(path: "Config/Features.xcconfig"), encoding: .utf8)
         let releaseHasHeal = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_HEAL=YES" }
         let releaseHasPSD = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_PSD=YES" }
-        let guide = AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, heal: releaseHasHeal, psd: releaseHasPSD)
+        let releaseHasRAW = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_RAW=YES" }
+        let guide = AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, heal: releaseHasHeal, psd: releaseHasPSD, raw: releaseHasRAW)
+        #expect(guide.contains("develop_raw") == releaseHasRAW)
         #expect(guide.contains("heal_selection") == releaseHasHeal)
         #expect(guide.contains("importReport") == releaseHasPSD)
         // RAW development has nothing in the agent API yet: a command that only opens a sheet is not offered to agents.

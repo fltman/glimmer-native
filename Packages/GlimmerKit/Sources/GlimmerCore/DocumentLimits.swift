@@ -35,14 +35,15 @@ public enum DocumentLimits {
     }
 
     /// About how much memory a document with this many pixel tiles takes while it is open.
-    public static func estimatedBytes(textureTiles: Int) -> Int {
-        textureTiles * TileGeometry.byteCount / 2 * 5 + 400 * 1_048_576
+    /// `keptBytes`: files a document keeps whole beside its pixels (the RAW files of its RAW layers).
+    public static func estimatedBytes(textureTiles: Int, keptBytes: Int = 0) -> Int {
+        textureTiles * TileGeometry.byteCount / 2 * 5 + 400 * 1_048_576 + keptBytes
     }
 
     /// What to tell the person once when a document outgrows this Mac, or nil while it fits
     /// comfortably (under three fifths of the memory).
-    public static func comfortNotice(textureTiles: Int, memory: Int = physicalMemory) -> String? {
-        let need = estimatedBytes(textureTiles: textureTiles)
+    public static func comfortNotice(textureTiles: Int, keptBytes: Int = 0, memory: Int = physicalMemory) -> String? {
+        let need = estimatedBytes(textureTiles: textureTiles, keptBytes: keptBytes)
         guard need > memory / 5 * 3 else { return nil }
         return "This document needs about \(gigabytes(need)) of memory, and this Mac has \(gigabytes(memory)). Glimmer keeps working, but it may get slow. "
             + "Merging layers you no longer need apart, or making the image smaller with Image › Image Size, helps."

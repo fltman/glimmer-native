@@ -330,6 +330,9 @@ public struct DocumentState: Sendable {
     /// Every layer in the tree, depth first.
     public var allLayers: [Layer] { layers.flatMap(\.subtree) }
 
+    /// The bytes of the RAW files this document's layers keep (they are saved with it and held while it is open).
+    public var keptRawBytes: Int { allLayers.reduce(0) { $0 + ($1.raw?.data.count ?? 0) } }
+
     public mutating func updateLayer(_ id: UUID, _ change: (inout Layer) -> Void) {
         guard let path = path(of: id) else { return }
         modifyChildren(of: Array(path.dropLast())) { change(&$0[path.last!]) }

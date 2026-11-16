@@ -44,6 +44,7 @@ extension AIController {
         let state = session.state
         let layer = state.activeLayer
         let kind: String = switch layer?.content {
+        case .raster where layer?.raw != nil: "raw"   // a RAW layer: `develop_raw` is offered for it
         case .raster: "raster"
         case .adjustment: "adjustment"
         case .group: "group"
@@ -557,6 +558,10 @@ extension AIController {
             try performSelectRect(step)
         case "set_layer":
             try performSetLayer(step)
+        #if GLIMMER_RAW
+        case "develop_raw":
+            try await performDevelopRaw(step)
+        #endif
         #if GLIMMER_HEAL
         case "heal_selection":
             try await performHealSelection(step)

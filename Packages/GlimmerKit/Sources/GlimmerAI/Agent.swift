@@ -341,6 +341,23 @@ public enum AgentPlanner {
     /// Operations of features a release can be built without (Config/Features.xcconfig).
     private static var optionalOps: [AgentOp] {
         var list: [AgentOp] = []
+        #if GLIMMER_RAW
+        list.append(AgentOp("develop_raw", "Develop a RAW layer again from its camera file with other settings (on-device, free): brighter or darker, warmer or cooler, lifted shadows. Only for a layer that was opened from a RAW file (its `raw` in the document's layers); for any other layer use add_adjustment. Only the values given change. One undo step. Refused with the allowed range when a value is outside it, and by name for a control the file doesn't have: `GET /documents/{id}/layers/{layer}/raw/info` says what the file allows and what the settings are now.", [
+            AgentParam("target", "string", "Optional. The RAW layer's id or name (default: the active layer)."),
+            AgentParam("exposure", "number", "Optional. Stops added to the file's own exposure, -5…5; 1 is twice as bright."),
+            AgentParam("temperature", "number", "Optional. White balance in kelvin, 2000…50000. A higher number makes the picture warmer (more yellow), a lower one cooler (more blue)."),
+            AgentParam("tint", "number", "Optional. -150…150; negative is greener, positive more magenta."),
+            AgentParam("shadows", "number", "Optional. 0…2; 1 leaves the shadows as they are, more lifts them."),
+            AgentParam("contrast", "number", "Optional. 0…1, where the file has the control."),
+            AgentParam("sharpness", "number", "Optional. 0…1, where the file has the control."),
+            AgentParam("luminanceNoise", "number", "Optional. Noise reduction, 0…1, where the file has the control."),
+            AgentParam("colorNoise", "number", "Optional. Colour noise reduction, 0…1, where the file has the control."),
+            AgentParam("highlightRecovery", "boolean", "Optional. Recover detail in blown highlights (on by default), where the file has the switch."),
+            AgentParam("lensCorrection", "boolean", "Optional. Use the lens correction stored in the file, where there is one. It reshapes the whole picture a little, not only the corners."),
+            AgentParam("asShot", "boolean", "Optional. true first goes back to the camera's white balance and the standard values; other values given in the same step are then applied."),
+            AgentParam("replaceChanges", "boolean", "Optional. A layer that was painted on or filtered after it was developed is refused (replaces_changes) unless this is true: developing again replaces those changes."),
+        ]))
+        #endif
         #if GLIMMER_HEAL
         list.append(AgentOp("heal_selection", "Fill the SELECTED area from what surrounds it, to take out a blemish, a wire or a small object (on-device, free, no model). Requires a selection. Copies existing image, so it suits areas up to about 120 px across on texture or even surfaces; larger areas are refused with reason area_too_large unless allowLarge is true. The step's info gives the method used, the pixels filled, the area's width at its thickest and the layer. One undo step; the selection stays.", [
             AgentParam("method", "string", "Optional. auto (default) picks; smooth suits thin lines and even areas; texture copies patches of the surroundings.", options: ["auto", "smooth", "texture"]),
@@ -556,8 +573,9 @@ public enum AgentPlanner {
 
     /// One function tool per op; the schemas are generated from `ops`.
     /// `short`: only the everyday operations (the API's core tier), for small local models.
-    public static func toolSchemas(short: Bool = false) -> [[String: Any]] {
-        ops.filter { !short || AgentAPI.coreOps.contains($0.name) }.map { op in
+    /// `rawLayer: false` leaves out `develop_raw`: the assistant is offered it only when the active layer is a RAW layer.
+    public static func toolSchemas(short: Bool = false, rawLayer: Bool = true) -> [[String: Any]] {
+        ops.filter { (!short || AgentAPI.coreOps.contains($0.name)) && (rawLayer || $0.name != "develop_raw") }.map { op in
             var parameters = paramsSchema(op)
             var properties = parameters["properties"] as? [String: Any] ?? [:]
             properties["rationale"] = ["type": "string", "description": "One short sentence: why this step."]
@@ -658,7 +676,7 @@ public enum AgentPlanner {
                             model: any TextModel,
                             onText: (@Sendable (String) -> Void)? = nil) async throws -> (AgentPlan, Double?) {
         let messages = toolMessages(goal: goal, context: context, history: history, image: image, siblingContext: siblingContext)
-        let tools = toolSchemas(short: model.prefersShortToolList) + (model.prefersShortToolList ? [] : siblings.map(\.toolSchema))
+        let tools = toolSchemas(short: model.prefersShortToolList, rawLayer: context.activeLayerKind == "raw") + (model.prefersShortToolList ? [] : siblings.map(\.toolSchema))
         // The text is checked while it arrives too: the caller never gets a figure nobody gave the model.
         let given = givenFigures(goal: goal, context: context, history: history, siblingContext: siblingContext)
         var checkedText: (@Sendable (String) -> Void)?

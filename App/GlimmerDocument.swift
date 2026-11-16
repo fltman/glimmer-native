@@ -64,7 +64,7 @@ final class GlimmerDocument: Document {
     /// Says once, without stopping anything, that the document has outgrown this Mac's memory.
     @MainActor
     func noteSize() {
-        guard !saidDocumentIsLarge, let notice = DocumentLimits.comfortNotice(textureTiles: state.textureTileIDs.count) else { return }
+        guard !saidDocumentIsLarge, let notice = DocumentLimits.comfortNotice(textureTiles: state.textureTileIDs.count, keptBytes: state.keptRawBytes) else { return }
         saidDocumentIsLarge = true
         diskNotice = notice
     }
@@ -257,7 +257,7 @@ final class GlimmerDocument: Document {
         undoManager.registerUndo(withTarget: self) { document in
             let current = document.state
             // A snapshot that can't be read back leaves the document as it is.
-            if let restored = try? box.state() { document.state = restored } else { NSSound.beep() }
+            if let restored = try? box.state() { document.state = restored } else { AppSound.beep() }
             document.registerUndo(actionName, undoManager: undoManager, restoring: current)
         }
         // Action names are catalog keys: the Edit menu shows "Undo <localized name>".

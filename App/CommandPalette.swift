@@ -90,7 +90,7 @@ enum Palette {
         case .ask(let q):
             ask(q, session: session)
         case .item(let item):
-            guard session.runPaletteItem(item) else { NSSound.beep(); return }
+            guard session.runPaletteItem(item) else { AppSound.beep(); return }
             recordUse(item.id)
         }
     }

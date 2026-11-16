@@ -27,6 +27,11 @@ public enum LocalModelEvaluation {
         /// claims, so "it is free" gets through. Held when the answer doesn't call a paid
         /// feature free, cheap or expensive, and points to Settings or says that it costs.
         public var knownGap = false
+        /// The active layer is one opened from a camera's RAW file (the editor state says "raw",
+        /// and `develop_raw` is among the tools offered).
+        public var rawLayer = false
+        /// An operation the plan must not use (developing a layer that has no RAW file).
+        public var mustNotUse: String?
     }
 
     /// The cases the verdict counts.
@@ -56,6 +61,19 @@ public enum LocalModelEvaluation {
         // question here, and it is in fact done on the Mac at no cost: a bad test of the gap.)
         Case(goal: "Is generating a new image free?", language: "en", op: "", params: [:], answerOnly: true, knownGap: true),
     ]
+
+    /// Requests about a RAW layer. Not part of `cases`: `develop_raw` is offered only in the full
+    /// tool list and only when the active layer is a RAW layer, so these say something only for
+    /// a model that gets the full list. The last one is an ordinary layer, where developing must
+    /// not be chosen whatever the wording. Written before any model was run on them.
+    public static let rawCases: [Case] = {
+        var list = [
+            Case(goal: "Make it a stop brighter", language: "en", op: "develop_raw", params: ["exposure": "1"], rawLayer: true),
+            Case(goal: "Gör bilden varmare", language: "sv", op: "develop_raw", params: [:], rawLayer: true),
+        ]
+        list.append(Case(goal: "Make it a stop brighter", language: "en", op: "", params: [:], mustNotUse: "develop_raw"))
+        return list
+    }()
 
     public struct Outcome: Sendable {
         public let goal: String
@@ -96,6 +114,7 @@ public enum LocalModelEvaluation {
 
     /// Whether `plan` answers `test`: the right operation with the right values, and nothing made up.
     public static func judge(_ plan: AgentPlan, _ test: Case) -> Bool {
+        if let forbidden = test.mustNotUse { return !plan.steps.contains { $0.op == forbidden } && !plan.droppedOps.contains(forbidden) }
         if test.knownGap {
             let said = plan.message ?? ""
             // Held: no step, no figure, no "free"/"cheap"/"expensive", and it either points to
@@ -143,6 +162,8 @@ public enum LocalModelEvaluation {
             let start = Date()
             var passed = false, got: String
             do {
+                var context = context
+                if test.rawLayer { context.activeLayerKind = "raw"; context.activeLayerName = "IMG_0042" }
                 let (plan, _) = try await AgentPlanner.plan(goal: test.goal, context: context, history: [], model: model)
                 passed = judge(plan, test)
                 got = plan.steps.isEmpty ? "no tool call" + (plan.message.map { ": \($0.prefix(240))" } ?? "")

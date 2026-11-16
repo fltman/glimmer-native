@@ -235,7 +235,7 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
         #expect(sent.headers["Authorization"] == "Bearer bk")
         #expect(sent.json["usage"] == nil)                       // OpenRouter's own field
         #expect(sent.json["tool_choice"] as? String == "auto" && sent.json["reasoning_effort"] == nil)
-        #expect((sent.json["tools"] as? [Any])?.count == AgentPlanner.ops.count)
+        #expect((sent.json["tools"] as? [Any])?.count == AgentPlanner.toolSchemas(rawLayer: false).count)   // an ordinary layer: every tool but develop_raw
     }
 
     @Test func grundenIsAskedToReasonLittle() async throws {

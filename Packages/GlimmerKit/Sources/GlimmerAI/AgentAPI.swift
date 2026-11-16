@@ -320,7 +320,25 @@ public enum AgentAPI {
 
     /// `heal`: whether the guide describes Heal Selection. The app passes nothing (what it was
     /// built with); the site's copy is written for what a release has.
-    public static func guide(port: UInt16, appVersion: String, heal: Bool = hasHeal, psd: Bool = hasPSD) -> String {
+    /// Whether this build develops RAW files (Config/Features.xcconfig).
+    public static var hasRAW: Bool {
+        #if GLIMMER_RAW
+        true
+        #else
+        false
+        #endif
+    }
+
+    static func rawNote(raw: Bool) -> String {
+        #if GLIMMER_RAW
+        if raw {
+            return "- A camera's RAW file (DNG, CR3, RAF, ORF, RW2 and others; the bytes sent to `POST /api/v1/documents`) opens as a layer that keeps the file: the layer has `raw` (`fileName`, `byteCount`, `settings`, `process`, `pixelsAsDeveloped`), and `develop_raw` develops it again with other settings, without loss. `GET /api/v1/documents/{id}/layers/{layer}/raw/info` says what the file allows. If macOS's decoder gives no picture for the file, the answer is 422 `raw_not_developed` with the reason; another recording mode of the same camera may work. To get the developed picture out, export as usual.\n"
+        }
+        #endif
+        return ""
+    }
+
+    public static func guide(port: UInt16, appVersion: String, heal: Bool = hasHeal, psd: Bool = hasPSD, raw: Bool = hasRAW) -> String {
         let base = "http://127.0.0.1:\(port)"
         var s = """
         # Glimmer: guide for agents
@@ -332,7 +350,7 @@ public enum AgentAPI {
         - Every POST needs the header **`\(agentHeader): 1`**. Without it you get `403 forbidden`.
         - Don't send an `Origin` header: requests that look like they come from a web page are refused.
         - Images travel in request and response bodies. The API never reads or writes file paths.
-        \(photoshopNote(psd: psd))- Edits land in open document windows that the user can see, and can be undone. One `steps` request is one undo step.
+        \(photoshopNote(psd: psd))\(rawNote(raw: raw))- Edits land in open document windows that the user can see, and can be undone. One `steps` request is one undo step.
         - Steps that cost money (OpenRouter) are refused unless you pass `"allowPaid": true`. Everything else runs on the Mac, free.
 
         ## Quick start
@@ -469,7 +487,7 @@ public enum AgentAPI {
         These are the `op` values for `steps`, with their `params`. The same list is available as JSON from `GET /api/v1/operations`.
 
         """
-        for op in AgentPlanner.ops where heal || op.name != "heal_selection" {
+        for op in AgentPlanner.ops where (heal || op.name != "heal_selection") && (raw || op.name != "develop_raw") {
             s += "\n### `\(op.name)`\(paidOps.contains(op.name) ? " (paid)" : "")\n\n\(op.description)\n"
             if op.params.isEmpty {
                 s += "\nNo params: `{\"op\": \"\(op.name)\"}`\n"
