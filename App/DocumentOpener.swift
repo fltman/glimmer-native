@@ -126,10 +126,14 @@ final class DocumentOpener {
             } else if url.pathExtension.lowercased() == "aips" {
                 openAips(url)
             } else if requester != nil, let existing = AgentRegistry.shared.sessions.first(where: {
-                $0.linkedImage?.url.resolvingSymlinksInPath().path == url.resolvingSymlinksInPath().path
+                let path = url.resolvingSymlinksInPath().path
+                return $0.linkedImage?.url.resolvingSymlinksInPath().path == path
+                    || $0.brokenLink.map { URL(fileURLWithPath: $0.link.path).resolvingSymlinksInPath().path == path } == true
             }) {
                 // The file is already being edited here (perhaps in a window restored after a
-                // restart): show that window with its work, rather than a second one of the same file.
+                // restart, or one whose file had gone and is back): show that window with its
+                // work, rather than a second one of the same file.
+                existing.refreshLinkedFile()
                 bringForward(existing)
             } else if requester != nil, let kept = Self.keptLinkedDocument(for: url) {
                 // Glimmer quit or crashed while this file was being edited, and the window was not

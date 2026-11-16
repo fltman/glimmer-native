@@ -197,6 +197,29 @@ check "Save explains instead of opening Save As (text fields in the sheet: $PANE
 check "nothing was written where the file was" '[[ ! -e "$FILE" ]]'
 check "the app is still running" 'kill -0 $PID'
 
+echo "== the file is removed, restored and replaced while Glimmer is running"
+cp site/source-images/mug.png "$FILE"
+open -a "$APP" "$FILE"; sleep 3
+L=$(linked); ID=${L##*|}
+check "a hand-over is linked: $(docs | tr '\n' ' ')" '[[ -n "$L" ]]'
+rm "$FILE"; sleep 2.5
+D=$(docs | grep "^photo.png|" | head -1)
+check "2.5 s after the file is removed the document says it can't be saved back: $D" '[[ "$D" == "photo.png|False|Flimmer|"* ]]'
+check "the menu still has Save Back, and no plain Save" 'hasmenu "File" "Save Back to photo.png" && ! hasmenu "File" "Save"'
+menu "File" "Save Back to photo.png" >/dev/null; sleep 1.5
+PANEL=$(perl -e 'alarm 15; exec @ARGV' osascript -e "tell application \"System Events\" to tell (first process whose unix id is $PID) to get (count of (text fields of sheet 1 of window 1))" 2>/dev/null || echo 0)
+SAID=$(perl -e 'alarm 15; exec @ARGV' osascript -e "tell application \"System Events\" to tell (first process whose unix id is $PID) to get value of every static text of sheet 1 of window 1" 2>/dev/null)
+check "Save explains and points to Save a Glimmer Copy… (no Save As panel, no bare error): ${SAID:0:120}" '[[ "$PANEL" == 0 && "$SAID" == *"no longer where it was"*"Save a Glimmer Copy"* ]]'
+check "nothing was written where the file was" '[[ ! -e "$FILE" ]]'
+front; osascript -e "tell application \"System Events\" to tell (first process whose unix id is $PID) to key code 36" >/dev/null 2>&1; sleep 1
+cp site/source-images/mug.png "$FILE"; sleep 2.5
+check "2.5 s after the file is put back the document is linked again: $(docs | tr '\n' ' ')" '[[ -n "$(linked)" ]]'
+check "Save Back writes the restored file" 'saveback'
+cp site/source-images/mug.png "$DIR/new.png"; BEFORE=$(stat -f %i "$FILE"); mv "$DIR/new.png" "$FILE"; sleep 2.5
+check "after the file is replaced by another one (new inode $(stat -f %i "$FILE"), was $BEFORE) the document is still linked" '[[ -n "$(linked)" && "$(stat -f %i "$FILE")" != "$BEFORE" ]]'
+check "Save Back writes the replacing file" 'saveback'
+check "the app is still running" 'kill -0 $PID'
+
 echo "== closing a linked window after saving back asks nothing"
 cp site/source-images/mug.png "$FILE"
 open -a "$APP" "$FILE"; sleep 3

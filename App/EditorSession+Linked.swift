@@ -16,6 +16,60 @@ extension EditorSession {
         document.linkRecord = DocumentLink(bookmark: bookmark, path: image.url.path, requester: image.requester)
         noteLinkChanged()
         watchCloseButton()
+        watchLinkedFile()
+    }
+
+    /// Why the linked file can't be saved back right now, or nil when it can. Looked at on
+    /// disk each time: the sibling may remove, restore or replace its file while Glimmer runs.
+    static func linkTrouble(path: String, name: String, requester: String) -> String? {
+        guard FileManager.default.fileExists(atPath: path) else {
+            return String(localized: "\(name) is no longer where it was, so Glimmer can't save it back to \(requester).")
+        }
+        guard FileManager.default.isWritableFile(atPath: path), (try? FileHandle(forUpdating: URL(fileURLWithPath: path)))?.closeFile() != nil else {
+            return String(localized: "Glimmer is no longer allowed to write \(name), so it can't save it back to \(requester).")
+        }
+        return nil
+    }
+
+    /// Brings the link's state in line with the file as it is now. A file that has gone makes
+    /// the link a broken one (the bar, the menu and the agent API's `available` follow, and
+    /// Save explains instead of failing); a file that is back, or has been replaced by a new
+    /// one at the same place, makes it whole again. Returns true when the file can be saved to.
+    @discardableResult
+    func refreshLinkedFile() -> Bool {
+        if let link = linkedImage {
+            guard let trouble = Self.linkTrouble(path: link.url.path, name: link.fileName, requester: link.requester) else { return true }
+            let record = document.linkRecord ?? DocumentLink(bookmark: nil, path: link.url.path, requester: link.requester)
+            saveLog.notice("the linked file went away while open: \(link.fileName, privacy: .public)")
+            linkedImage = nil
+            brokenLink = (record, trouble)
+            return false
+        }
+        if let broken = brokenLink {
+            let path = broken.link.path
+            guard Self.linkTrouble(path: path, name: broken.link.fileName, requester: broken.link.requester) == nil,
+                  let image = LinkedImage(url: linkAccess?.path == path ? linkAccess! : URL(fileURLWithPath: path), requester: broken.link.requester) else { return false }
+            saveLog.notice("the linked file is back: \(image.fileName, privacy: .public)")
+            brokenLink = nil
+            setLinkedImage(image)
+            return true
+        }
+        return false
+    }
+
+    /// Looks at the linked file once a second while the document is linked (or was, and may be again).
+    func watchLinkedFile() {
+        guard linkWatch == nil else { return }
+        linkWatch = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.linkedImage != nil || self.brokenLink != nil else {
+                    self?.linkWatch?.invalidate()
+                    self?.linkWatch = nil
+                    return
+                }
+                self.refreshLinkedFile()
+            }
+        }
     }
 
     /// After a restart: the document came back from disk with a link. Finds the file again,
@@ -54,6 +108,7 @@ extension EditorSession {
             saveLog.error("linked file not restored: \(reason, privacy: .public)")
             brokenLink = (record, reason)
             setDocumentName(name)
+            watchLinkedFile()   // the file may come back while the window is open
         }
         guard FileManager.default.fileExists(atPath: url.path) else {
             return broken(String(localized: "\(name) is no longer where it was, so Glimmer can't save it back to \(record.requester)."))
@@ -66,6 +121,7 @@ extension EditorSession {
         }
         setLinkedImage(image)
         watchCloseButton()
+        watchLinkedFile()
         setDocumentName(image.fileName)   // the file may have been renamed or moved; the bookmark follows it
         if document.linkRecord?.path != url.path { document.linkRecord?.path = url.path }
         saveLog.notice("linked file restored: \(name, privacy: .public), security scope \(scoped ? "held" : "not needed or not given", privacy: .public)")
@@ -118,6 +174,9 @@ extension EditorSession {
 
     /// File › Save while linked: flatten and write back in place.
     func saveLinkedImage() {
+        // The file is looked at now, not as it was a second ago: a file that has gone gets
+        // the explanation and the way on (Save a Glimmer Copy…), never a bare write error.
+        guard refreshLinkedFile() else { return explainBrokenLink() }
         guard let link = linkedImage else { return }
         guard let metal = MetalContext.shared else {
             errorMessage = String(localized: "No Metal GPU available.")

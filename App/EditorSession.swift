@@ -250,6 +250,8 @@ final class EditorSession {
     @ObservationIgnored var stateGeneration = 0
     @ObservationIgnored var savedBackGeneration: Int?
     @ObservationIgnored var linkedCloser: LinkedWindowCloser?
+    /// Looks at the linked file while the window is open (`watchLinkedFile`).
+    @ObservationIgnored var linkWatch: Timer?
 
     func setLinkedImage(_ image: LinkedImage) { linkedImage = image }
     /// The document's window, set by the canvas.
