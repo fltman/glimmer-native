@@ -49,9 +49,10 @@ extension ChatAdapterTests {
     }
 
     @Test func theCasesAreHalfSwedishAndUseOnlyTheShortList() {
-        #expect(LocalModelEvaluation.cases.count == 12)
-        #expect(LocalModelEvaluation.cases.filter { $0.language == "sv" }.count == 6)
-        for c in LocalModelEvaluation.cases {
+        #expect(LocalModelEvaluation.cases.count == 14)
+        #expect(LocalModelEvaluation.cases.filter { $0.language == "sv" }.count == 7)
+        #expect(LocalModelEvaluation.cases.filter(\.answerOnly).count == 2)   // one in each language: no invented figures
+        for c in LocalModelEvaluation.cases where !c.answerOnly {
             #expect(AgentAPI.coreOps.contains(c.op) && AgentPlanner.op(named: c.op) != nil, "\(c.op)")
         }
     }
@@ -406,5 +407,45 @@ extension ChatAdapterTests {
             #expect(AIProvider.named(slug)?.built.contains(.image) == true && AIProvider.named(slug)?.offers(.image) == false, "\(slug)")
         }
         #expect(AIProvider.offering(.image).map(\.slug) == ["openrouter"])
+    }
+}
+
+/// The Assistant states no figure it wasn't given.
+@Suite struct AssistantNumbersTests {
+    let given = ["How big is it?", "2400 1600 1", "Photo"]
+
+    @Test func readsNumbersHoweverTheyAreWritten() {
+        #expect(AssistantNumbers.numbers(in: "It is 2,400 by 1 600 px, zoom 0,5 and 12.5 %") == [2400, 1600, 0.5, 12.5])
+        #expect(AssistantNumbers.numbers(in: "No figures here.") == [])
+    }
+
+    @Test func aGivenFigureStaysAndAnInventedOneGoesWithItsSentence() {
+        let right = AssistantNumbers.checked("The document is 2400 × 1600 pixels.", given: given)
+        #expect(right.text == "The document is 2400 × 1600 pixels." && right.removed.isEmpty)
+        let wrong = AssistantNumbers.checked("Sure. The document is 3000 × 2000 pixels. Anything else?", given: given)
+        #expect(wrong.text == "Sure. Anything else?" && wrong.removed == ["number 3000", "number 2000"])
+    }
+
+    @Test func aPriceIsNeverTheModelsOwn() {
+        let result = AssistantNumbers.checked("Upscaling costs about $0.04 per image. It has 1 layer.", given: given)
+        #expect(result.text == "It has 1 layer." && result.removed == ["price 0.04"])
+    }
+
+    @Test func stepNumbersAndSharesAreAllowed() {
+        let result = AssistantNumbers.checked("Step 2 sets the layer to 50 % opacity.", given: given + [#"{"opacity":0.5}"#], steps: 3)
+        #expect(result.removed.isEmpty)
+    }
+
+    @Test func whenNothingIsLeftGlimmerStatesWhatItKnows() {
+        let context = AgentContext(width: 2400, height: 1600, layerCount: 1, hasSelection: false, activeLayerKind: "pixel", activeLayerName: "Photo")
+        var plan = AgentPlan(steps: [], message: "It is 4000 by 3000 pixels.")
+        AgentPlanner.checkFigures(&plan, goal: "How big is it?", context: context, history: [], siblingContext: nil)
+        #expect(plan.message == "The document is 2400 × 1600 pixels and has 1 layer.")
+        #expect(plan.removedFigures == ["number 4000", "number 3000"])
+        // The evaluation fails such an answer, and passes one that matches or has no figure.
+        let test = LocalModelEvaluation.cases.first { $0.answerOnly }!
+        #expect(!LocalModelEvaluation.judge(plan, test))
+        #expect(LocalModelEvaluation.judge(AgentPlan(steps: [], message: "2400 × 1600 pixels."), test))
+        #expect(!LocalModelEvaluation.judge(AgentPlan(steps: [AgentStep(op: "resize_image")], message: nil), test))
     }
 }

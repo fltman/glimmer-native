@@ -108,6 +108,8 @@ With the corrected case, three more runs of `qwen3:8b` (reasoning off, as before
 | 2 | 11 of 12 | 6 of 6 | 5 of 6 | 3.1 s | 17.5 s | passes |
 | 3 | 12 of 12 | 6 of 6 | 6 of 6 | 6.4 s | 65.0 s | does not pass (one answer over 60 s; a GUI test was running on the Mac at the time) |
 
+From 2026-11-16 the evaluation has fourteen cases: two questions were added (one per language) that must be answered in words with no figure the editor state didn't give, after Jämmer's assistant stated an invented measurement. The rule is the same share: five in six overall and in each language (12 of 14, 6 of 7). `qwen3:8b`, one run with a GUI-free Mac but high swap use: 14 of 14, median 5.2 s, slowest 33.0 s, passes. The Swedish question also asks what upscaling costs; the judge fails any stated price or figure, but it cannot tell whether a claim without a figure ("it is free") is true.
+
 With reasoning on (`think: true`), one run before the correction: 11 of 12 as judged then, median 23.7 s, slowest 65.3 s. Slower for no clear gain, so reasoning stays off.
 
 So the model sits at the line: right often enough, and the one miss that repeats is "Gör bilden svartvit" answered with an adjustment that lacks its type. Whether Ollama is shown is the coordinator's and Anders's call; until then it is hidden. With every operation as a tool and Ollama's default 4096-token context, the same model had taken two to seven minutes per request and got one of three right. Run it again with `GLIMMER_LOCAL_EVAL=<model> swift test --filter evaluateInstalledModels` (`GLIMMER_LOCAL_EVAL_THINK=1` turns reasoning on).
@@ -116,7 +118,7 @@ So the model sits at the line: right often enough, and the one miss that repeats
 
 Everything below is built from the services' documentation and tested against made-up answers in the documented form. None has had a real call. Use a debug build, started with the launch arguments shown; keys are entered in Settings › AI by hand.
 
-Text, one service at a time: `-ai.showUntried YES`, then Settings › AI › Service lists the untried ones as "(not tried yet)". Save the key, choose a model from the service's own list, and press **Run Glimmer's Test of This Model…**. It asks first, sends twelve requests (each carries the list of operations, a few thousand tokens, and gets a short answer), and shows each outcome and the verdict by the same rule as for local models (10 of 12, 5 of 6 per language, none over 60 s). That result decides whether the service is offered.
+Text, one service at a time: `-ai.showUntried YES`, then Settings › AI › Service lists the untried ones as "(not tried yet)". Save the key, choose a model from the service's own list, and press **Run Glimmer's Test of This Model…**. It asks first, sends fourteen requests (each carries the list of operations, a few thousand tokens, and gets a short answer), and shows each outcome and the verdict by the same rule as for local models (five in six overall and per language: 12 of 14 and 6 of 7; none over 60 s). That result decides whether the service is offered.
 
 | Service | Built on | Notes for the test |
 |---|---|---|
@@ -137,10 +139,14 @@ Images, one service at a time, by launch arguments (there is no picker for them 
 | fal | data URIs in the request, the result asked for as a data URI | If fal answers with a link instead, Glimmer refuses to fetch it and says so: then that model can't be used this way. |
 | Hedra | bytes uploaded to Hedra (private handle, one hour), a job, a signed download | Only pictures of yourself, by Hedra's rules. |
 
-Costs: Berget's and Grunden's lists give prices per million tokens (about €0.15–0.50 in), so a twelve-request run is a fraction of a euro cent. For the others no figure is given here, because their text prices were not read; the image prices per service are in `the-apps/research/providers-glimmer.md` and Flimmer's notes.
+Costs: Berget's and Grunden's lists give prices per million tokens (about €0.15–0.50 in), so a fourteen-request run is a fraction of a euro cent. For the others no figure is given here, because their text prices were not read; the image prices per service are in `the-apps/research/providers-glimmer.md` and Flimmer's notes.
 
 ## Accessibility is read with content in place
 
 `scripts/test-accessibility.sh` puts up each state through the debug build's fixtures (`App/DebugFixtures.swift`, `POST /api/v1/debug/fixture`), then runs `axaudit --strict` and reads every element (`scripts/axread.swift`). Each state names a text that must have been read, so a state that never appeared cannot pass. The first version of the script passed with the side panel closed: the element count was the same in five states, which is how it was caught.
 
 Found this way on 2026-11-16: the crash on reading a message in the Assistant; the same pattern in Agent Access ("Text for your agent"); and the status chip, whose label replaced its whole content, so the document's name, size and link state were never spoken.
+
+## The Assistant states no figure it wasn't given
+
+`AssistantNumbers` (GlimmerAI) takes out of the Assistant's text, and out of each step's reason, every sentence with a number that is not in the editor state sent with the request, in what the person wrote, or in the plan's own steps; a sentence about money goes the same way. The plan records what was removed. When an answer without steps loses everything, Glimmer writes the size and layer count itself. Where the Assistant's text can carry numbers today: the plan's message, each step's reason, and the summaries of Suggest Edits and Find Distractions, which do not go through this check yet. Costs shown in the app (the job list, the total) come from the service's response, never from the model.

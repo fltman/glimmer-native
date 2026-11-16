@@ -14,6 +14,9 @@ public enum LocalModelEvaluation {
         /// Other parameter sets that give the same result (half the size of the 2400 × 1600 test
         /// document is `scale: 0.5`, and it is also `width: 1200`).
         public var alternatives: [[String: String]] = []
+        /// A question to answer in words: no step may be planned, and the answer may hold no
+        /// figure that the editor state didn't give (`AssistantNumbers`).
+        public var answerOnly = false
     }
 
     public static let cases: [Case] = [
@@ -30,6 +33,8 @@ public enum LocalModelEvaluation {
              alternatives: [["width": "1200"], ["height": "800"], ["width": "1200", "height": "800"]]),
         Case(goal: "Make the layer half transparent", language: "en", op: "set_layer", params: ["opacity": "0.5"]),
         Case(goal: "Markera motivet", language: "sv", op: "select_subject", params: [:]),
+        Case(goal: "How big is this document, in pixels?", language: "en", op: "", params: [:], answerOnly: true),
+        Case(goal: "Hur många lager har dokumentet och vad kostar det att förstora det?", language: "sv", op: "", params: [:], answerOnly: true),
     ]
 
     public struct Outcome: Sendable {
@@ -52,7 +57,7 @@ public enum LocalModelEvaluation {
         public var slowest: Double { outcomes.map(\.seconds).max() ?? 0 }
         public var median: Double { let s = outcomes.map(\.seconds).sorted(); return s.isEmpty ? 0 : s[s.count / 2] }
 
-        /// At least 10 of 12 right, at least 5 of 6 in each language, and none slower than a minute.
+        /// At least five in six right, overall and in each language (12 of 14, 6 of 7), and none slower than a minute.
         public var passes: Bool {
             let en = passed(language: "en"), sv = passed(language: "sv")
             return passed * 6 >= outcomes.count * 5 && en.0 * 6 >= en.1 * 5 && sv.0 * 6 >= sv.1 * 5 && slowest <= LocalModelEvaluation.slowestAllowed
@@ -63,6 +68,7 @@ public enum LocalModelEvaluation {
 
     /// Whether `plan` answers `test`: the right operation with the right values, and nothing made up.
     public static func judge(_ plan: AgentPlan, _ test: Case) -> Bool {
+        if test.answerOnly { return plan.steps.isEmpty && plan.droppedOps.isEmpty && plan.removedFigures.isEmpty }
         guard plan.droppedOps.isEmpty, let step = plan.steps.first(where: { $0.op == test.op }) else { return false }
         // Every step must be a real operation with only parameters that operation has.
         for s in plan.steps {
@@ -96,6 +102,7 @@ public enum LocalModelEvaluation {
                 passed = judge(plan, test)
                 got = plan.steps.isEmpty ? "no tool call" + (plan.message.map { ": \($0.prefix(60))" } ?? "")
                     : plan.steps.map { s in "\(s.op)(" + s.params.filter { $0.key != "rationale" }.map { "\($0.key): \($0.value.display)" }.sorted().joined(separator: ", ") + ")" }.joined(separator: " ")
+                if !plan.removedFigures.isEmpty { got += " | figures nobody gave it: \(plan.removedFigures.joined(separator: ", "))" }
                 if !plan.droppedOps.isEmpty { got += " | made-up tools: \(plan.droppedOps.joined(separator: ", "))" }
             } catch {
                 got = "error: " + String(((error as? LocalizedError)?.errorDescription ?? "\(error)").prefix(120))

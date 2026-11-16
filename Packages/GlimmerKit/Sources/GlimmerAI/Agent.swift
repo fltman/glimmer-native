@@ -121,6 +121,8 @@ public struct AgentPlan: Sendable, Equatable {
     public var message: String?
     /// Ops the model invented (dropped).
     public var droppedOps: [String] = []
+    /// Figures the model stated that nobody gave it; their sentences were taken out (`AssistantNumbers`).
+    public var removedFigures: [String] = []
 
     public init(steps: [AgentStep], message: String? = nil, droppedOps: [String] = []) {
         self.steps = steps
@@ -362,6 +364,7 @@ public enum AgentPlanner {
     - When unsure about a param, send {} (or omit it) to get sensible defaults rather than guessing exotic numbers.
     - If the goal is ambiguous, contradictory or impossible with these ops, return an empty "steps" array and put a short clarifying question in "message".
     - If the user is only chatting or asking a question about the editor, answer briefly in "message" with no steps.
+    - Never state a number you were not given. Sizes, layer counts and other facts about the document come only from the editor state in the request; never state a price, a cost or how long something takes.
     - Keep each step's "rationale" to one short sentence.
 
     OUTPUT FORMAT — return ONLY one JSON object, no markdown:
@@ -649,7 +652,41 @@ public enum AgentPlanner {
         let messages = toolMessages(goal: goal, context: context, history: history, image: image, siblingContext: siblingContext)
         let tools = toolSchemas(short: model.prefersShortToolList) + (model.prefersShortToolList ? [] : siblings.map(\.toolSchema))
         let response = try await model.callTools(messages: messages, tools: tools, temperature: 0.2, onText: onText)
-        return (try plan(from: response, extra: Set(siblings.map(\.toolName))), response.cost)
+        var plan = try plan(from: response, extra: Set(siblings.map(\.toolName)))
+        checkFigures(&plan, goal: goal, context: context, history: history, siblingContext: siblingContext)
+        return (plan, response.cost)
+    }
+
+    /// What Glimmer itself says about the document, in the Assistant's place when the model's
+    /// own answer had to be taken out.
+    public static func stateSentence(_ context: AgentContext) -> String {
+        "The document is \(context.width) × \(context.height) pixels and has \(context.layerCount) \(context.layerCount == 1 ? "layer" : "layers")."
+    }
+
+    /// Takes out of the plan's text every sentence with a figure the model was not given
+    /// (`AssistantNumbers`). When nothing is left of an answer without steps, Glimmer states
+    /// what it knows itself.
+    static func checkFigures(_ plan: inout AgentPlan, goal: String, context: AgentContext,
+                             history: [(user: String, reply: String)], siblingContext: String?) {
+        var given = [goal, "\(context.width) \(context.height) \(context.layerCount)", context.activeLayerName, siblingContext ?? ""]
+        given += history.suffix(8).map(\.user)
+        for step in plan.steps {
+            if let data = try? JSONEncoder().encode(step.params), let text = String(data: data, encoding: .utf8) { given.append(text) }
+        }
+        var removed: [String] = []
+        if let message = plan.message {
+            let result = AssistantNumbers.checked(message, given: given, steps: plan.steps.count)
+            plan.message = result.text
+            removed += result.removed
+        }
+        for i in plan.steps.indices {
+            guard let rationale = plan.steps[i].rationale else { continue }
+            let result = AssistantNumbers.checked(rationale, given: given, steps: plan.steps.count)
+            plan.steps[i].rationale = result.text
+            removed += result.removed
+        }
+        plan.removedFigures = removed
+        if plan.steps.isEmpty, plan.message == nil, !removed.isEmpty { plan.message = stateSentence(context) }
     }
 }
 
