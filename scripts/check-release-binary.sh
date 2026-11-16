@@ -14,7 +14,7 @@ TARGET="${1:?usage: check-release-binary.sh <Glimmer.app or binary>}"
 typeset -A MARKERS
 MARKERS[HEAL]="heal_selection|Heal Selection"   # not the command id "edit.heal": that constant is in every build and reaches nothing
 MARKERS[PSD]="8BPS|Import Report|is now pixels|Photoshop file"
-MARKERS[RAW]="gives no picture for this RAW file|develop this RAW file|Develop RAW"
+MARKERS[RAW]="gives no picture for this RAW file|develop this RAW file|Develop RAW|develop_raw|raw_not_developed"
 found=0
 ALL=$(strings -a "$TARGET")
 for feature in ${(k)MARKERS}; do
