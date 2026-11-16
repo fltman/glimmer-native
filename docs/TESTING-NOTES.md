@@ -796,3 +796,9 @@ A mistake of mine the same hour: I wrapped `test-accessibility.sh` in the GUI lo
 What this is and is not: it is the path every picture service shares after its own adapter, run in the app. It is a debug copy, not the release build (a release copy can be given neither a stand-in key without the keychain nor the no-keychain switch), and only OpenRouter's address can be pointed elsewhere, so the other four picture services' adapters are covered by the package test above, not in the app. The paid dialog and the first-use notice were not driven in this pass; they were read in both languages in the accessibility pass (alerts firstUse, firstUseNoPictures, and Settings › AI with the new lists: Pictures with fal.ai chosen, Berget chosen), all passing, pictures looked at for Settings. The open pop-up lists with the seven and five names were not seen as pictures.
 
 Local evaluation after the two assistant rules (qwen3:8b, both locks): **18 of 18**, median 2.6 s, slowest 25.8 s; no figure removed; known gap 0 of 1.
+
+**Completion words.** A sentence that says the work is finished ("All done!", "I have cropped it", "Klart!", "Jag har beskurit bilden") does not stand above steps either: it is shown before they run, so it is replaced by "Here's the plan." The words: done, finished, completed, klart, klar, färdigt, färdig, "I have", "I've", "jag har", as whole words. "Cropped to 16:9." has none of them and stands.
+
+**A re-signed release copy is never started on this Mac under a test while Anders's real keys are in the keychain** (coordinator, 2026-11-16): it has no no-keychain switch, and if it reads a key it stops on the system's question. The outside check uses a fresh user's keychain or none.
+
+A test copy left running holds the agent port: after the interrupted pass an offline copy stayed alive on 9102 and the next copies "didn't start their agent server". Stopped by its pid.

@@ -396,6 +396,17 @@ struct RealSiblingOperations {
         #expect(PlanClaims.shown("The background is removed; the layer keeps its size.", steps: [Self.step("remove_background")], madeUpSteps: false) != nil)
     }
 
+    @Test func aSentenceThatSaysItIsFinishedDoesNotStandAboveSteps() {
+        let crop = Self.step("crop", ["aspect": .string("16:9")])
+        for said in ["All done!", "Done. Cropped to 16:9.", "I have cropped it to 16:9.", "I've cropped it.", "Klart!", "Jag har beskurit bilden.", "Beskärningen är färdig.", "Finished cropping."] {
+            #expect(PlanClaims.shown(said, steps: [crop], madeUpSteps: false) == nil, "\(said)")
+        }
+        // Not completion words inside other words, and a plain statement of the plan stands.
+        for said in ["Cropping to 16:9.", "Beskär till 16:9, klarare blir det inte.", "Abandoned edges are cropped away."] {
+            #expect(PlanClaims.shown(said, steps: [crop], madeUpSteps: false) == said, "\(said)")
+        }
+    }
+
     @Test func nothingStandsAboveNoStepsOrMadeUpSteps() {
         #expect(PlanClaims.shown("VCA Voices removed.", steps: [], madeUpSteps: false) == nil)
         #expect(PlanClaims.shown("Cropped to 16:9.", steps: [Self.step("crop")], madeUpSteps: true) == nil)

@@ -14,8 +14,9 @@ import Foundation
 /// - when a plan stopped part-way, the app's own list of what was done and what was not
 ///   replaces the sentence.
 ///
-/// The check sees the naming of operations, not grammar: a sentence that names nothing
-/// Glimmer knows ("All done!") stands, above a list that shows each step's own state.
+/// The check sees the naming of operations and a small set of completion words, not grammar:
+/// "All done!" above steps goes; "Cropped to 16:9." stands, above a list that shows each
+/// step's own state.
 public enum PlanClaims {
     /// Stems too common to mean an operation by themselves ("layer" is in most sentences about a document).
     static let generic: Set<String> = ["layer", "lager", "text", "size", "storlek", "color", "colour", "färg", "name", "namn", "show", "visa",
@@ -49,9 +50,23 @@ public enum PlanClaims {
         return PlanCheck.kinds.contains { !kinds.contains($0.key) && stray($0.value) }
     }
 
+    /// Words that say the work is finished, English and Swedish. A sentence with one of them above steps
+    /// that have not run ("All done!", "Klart!", "I have cropped it") is a false claim in plain sight.
+    static let completion = ["done", "finished", "completed", "klart", "klar", "färdigt", "färdig", "i have", "i've", "jag har"]
+
+    /// Whether `text` says the work is finished.
+    public static func claimsCompletion(_ text: String) -> Bool {
+        let lower = text.lowercased().replacingOccurrences(of: "’", with: "'")
+        let words = lower.split { !($0.isLetter || $0 == "'") }.map(String.init)
+        let joined = " " + words.joined(separator: " ") + " "
+        return completion.contains { joined.contains(" " + $0 + " ") }
+    }
+
     /// The model's sentence, when it may stand above these steps; nil when the app's own line stands alone.
+    /// The sentence is shown before the steps run (the plan waits for Run, or runs at once and each step
+    /// shows its own state), so one that says the work is finished does not stand either.
     public static func shown(_ message: String?, steps: [AgentStep], madeUpSteps: Bool) -> String? {
-        guard let message, !steps.isEmpty, !madeUpSteps, !claimsMore(message, than: steps) else { return nil }
+        guard let message, !steps.isEmpty, !madeUpSteps, !claimsMore(message, than: steps), !claimsCompletion(message) else { return nil }
         return message
     }
 }
