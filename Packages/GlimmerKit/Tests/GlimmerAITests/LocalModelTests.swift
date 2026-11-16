@@ -229,7 +229,7 @@ extension ChatAdapterTests {
         #expect(AIProvider.named("berget")?.textModel(key: "k", model: "m") is OpenRouterTextModel)
         #expect(AIProvider.named("ollama")?.textModel(key: "", model: "m") is OllamaTextModel)
         #expect(AIProvider.named("anthropic")?.textModel(key: "k", model: "m") is AnthropicTextModel)
-        #expect(AIProvider.named("mlx")?.textModel(key: "", model: "m") == nil)
+        #expect(AIProvider.named("mlx")?.textModel(key: "", model: "m") != nil && AIProvider.named("mlx")?.offers(.text) == false)
         #expect(AIProvider.named("fal")?.textModel(key: "k", model: "m") == nil)
         #expect(AIProvider.named("openrouter")?.imageModel(key: "k", model: "m") == nil && AIProvider.named("berget")?.imageModel(key: "k", model: "m") == nil)
         // Still hidden: only what Anders has decided is offered.
@@ -583,5 +583,19 @@ extension ChatAdapterTests {
         let xai = ResponsesTextModel(provider: try #require(AIProvider.named("xai")), key: "k", model: "m", session: FakeProvider.session)
         let whole = try await xai.callTools(messages: [["role": "user", "content": "x"]], tools: [], temperature: 0.2) { _ in }
         #expect(whole.text == "Done." && FakeProvider.requests.first?.json["stream"] == nil)
+    }
+}
+
+/// MLX's server on this Mac: the plainest chat-completions request, no key.
+extension ChatAdapterTests {
+    @Test func mlxGetsAPlainRequestOnThisMacWithoutAKey() async throws {
+        FakeProvider.script([(200, #"{"choices":[{"message":{"role":"assistant","content":"Done.","tool_calls":[{"id":"c1","type":"function","function":{"name":"crop","arguments":"{\"aspect\":\"1:1\"}"}}]}}]}"#)])
+        let model = try #require(AIProvider.named("mlx")?.textModel(key: "", model: "mlx-community/some-model", session: FakeProvider.session))
+        let (plan, cost) = try await AgentPlanner.plan(goal: "Square", context: context, history: [], model: model)
+        #expect(plan.steps.map(\.op) == ["crop"] && cost == nil)
+        let sent = try #require(FakeProvider.requests.first)
+        #expect(sent.url.absoluteString == "http://127.0.0.1:8080/v1/chat/completions" && sent.headers["Authorization"] == nil)
+        #expect(sent.json["tool_choice"] == nil && sent.json["parallel_tool_calls"] == nil && sent.json["usage"] == nil && sent.json["response_format"] == nil)
+        #expect(sent.json["model"] as? String == "mlx-community/some-model")
     }
 }

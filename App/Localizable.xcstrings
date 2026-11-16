@@ -11579,6 +11579,138 @@
           }
         }
       }
+    },
+    "Choose %@ again in Settings › AI and confirm what is sent to it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj %@ igen i Inställningar › AI och bekräfta vad som skickas dit."
+          }
+        }
+      }
+    },
+    "Generate, Edit with Prompt, Generative Fill and the other picture features send your prompt and the pictures they work on (the document or the selected part of it, and any reference pictures) to %1$@ (%2$@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generera, Redigera med prompt, Generativ fyllning och de andra bildfunktionerna skickar din prompt och bilderna de arbetar med (dokumentet eller den markerade delen av det, och eventuella referensbilder) till %1$@ (%2$@)."
+          }
+        }
+      }
+    },
+    "%@ bills your key for each picture.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ debiterar din nyckel för varje bild."
+          }
+        }
+      }
+    },
+    "Billed by %1$@ at their rates. Glimmer shows no cost for these pictures, because %2$@'s answers carry none.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debiteras av %1$@ enligt deras priser. Glimmer visar ingen kostnad för de här bilderna, eftersom svaren från %2$@ inte innehåller någon."
+          }
+        }
+      }
+    },
+    "Leave empty for the model's id followed by /edit": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lämna tomt för modellens id följt av /edit"
+          }
+        }
+      }
+    },
+    "Pictures": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilder"
+          }
+        }
+      }
+    },
+    "The model's id, as %@ writes it": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modellens id, så som %@ skriver det"
+          }
+        }
+      }
+    },
+    "Use %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd %@"
+          }
+        }
+      }
+    },
+    "Which service makes and edits pictures: Generate, Edit with Prompt, Generative Fill, Expand and the others.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vilken tjänst som skapar och redigerar bilder: Generera, Redigera med prompt, Generativ fyllning, Utöka och de andra."
+          }
+        }
+      }
+    },
+    "Send pictures to %@?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skicka bilder till %@?"
+          }
+        }
+      }
+    },
+    "Model for editing": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modell för redigering"
+          }
+        }
+      }
+    },
+    "Which service answers when the Assistant plans, suggests edits or looks for distractions.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vilken tjänst som svarar när assistenten planerar, föreslår ändringar eller letar efter störande inslag."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

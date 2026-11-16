@@ -143,6 +143,14 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
         {
             var p = AIProvider(slug: "mlx", name: "MLX", kind: .localServer, serves: [.text], textAdapter: .chatCompletions, baseURL: "http://127.0.0.1:8080/v1")
             p.dataNote = "This Mac"
+            // `mlx_lm.server`: an OpenAI-style /v1/chat/completions on port 8080. Built from that
+            // one fact (the-apps/research/providers-glimmer.md); what else its server takes was not
+            // read, so only the plainest request is sent. Experimental and hidden until it has run
+            // Glimmer's evaluation on a Mac that has it (PROVIDERS.md, rule 6).
+            p.dialect.toolChoice = false; p.dialect.parallelToolCalls = false
+            p.dialect.usageInclude = false; p.dialect.jsonObject = false
+            p.built = [.text]
+            p.fromDocumentationOnly = true
             return p
         }(),
     ]

@@ -148,20 +148,38 @@ final class AIController {
     /// Whether a text request can be made at all (a key where one is needed, and a model).
     var hasTextModel: Bool { (try? textModel()) != nil }
 
+    static let imageProviderKey = "ai.imageProvider"
+    static func imageModelKey(_ slug: String) -> String { "ai.imageModel.\(slug)" }
+    static func imageEditModelKey(_ slug: String) -> String { "ai.imageEditModel.\(slug)" }
+    /// Set when the person has agreed to what the picture features send to this service.
+    static func imageToldKey(_ slug: String) -> String { "ai.imageNoticeShown.\(slug)" }
+
+    /// What the picture features send to `provider`, said before it is used (the-apps/PROVIDERS.md, rule 7).
+    static func imageNotice(for provider: AIProvider) -> String {
+        var parts = [String(localized: "Generate, Edit with Prompt, Generative Fill and the other picture features send your prompt and the pictures they work on (the document or the selected part of it, and any reference pictures) to \(provider.name) (\(provider.host)).")]
+        if let note = provider.termsNote { parts.append(note) }
+        parts.append(String(localized: "\(provider.name) bills your key for each picture."))
+        return parts.joined(separator: " ")
+    }
+
     private func imageModel() throws -> ImageModel {
         // Another image service, when one is chosen and offered. All of them are hidden until
         // Anders has tried each with a real call; a debug copy can choose a built one to test:
         // `-ai.imageProvider openai -ai.imageModel.openai <id>` (fal: also `-ai.imageEditModel.fal <id>`).
         let d = UserDefaults.standard
-        if let slug = d.string(forKey: "ai.imageProvider"), slug != "openrouter", let provider = AIProvider.named(slug) {
+        if let slug = d.string(forKey: Self.imageProviderKey), slug != "openrouter", let provider = AIProvider.named(slug) {
             var allowed = provider.offers(.image)
             #if DEBUG
             allowed = allowed || provider.built.contains(.image)
             #endif
             if allowed {
+                // What goes to the service was said, and agreed to, when it was chosen in Settings.
+                guard d.bool(forKey: Self.imageToldKey(slug)) else {
+                    throw TextSetupError(errorDescription: String(localized: "Choose \(provider.name) again in Settings › AI and confirm what is sent to it."))
+                }
                 guard let key = try ProviderKeys.keychain.key(for: slug) else { throw TextSetupError(errorDescription: provider.missingKeyMessage) }
-                guard let id = d.string(forKey: "ai.imageModel.\(slug)"), !id.isEmpty,
-                      let model = provider.imageModel(key: key, model: id, editModel: d.string(forKey: "ai.imageEditModel.\(slug)")) else {
+                guard let id = d.string(forKey: Self.imageModelKey(slug)), !id.isEmpty,
+                      let model = provider.imageModel(key: key, model: id, editModel: d.string(forKey: Self.imageEditModelKey(slug))) else {
                     throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI."))
                 }
                 return model

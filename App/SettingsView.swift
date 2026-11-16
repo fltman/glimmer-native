@@ -34,6 +34,9 @@ private struct AISettingsView: View {
     @AppStorage(AIController.textProviderKey) private var textProvider = "openrouter"
 
     @AppStorage(AIDefaults.imageModelKey) private var imageModel = AIDefaults.imageModel
+    @AppStorage(AIController.imageProviderKey) private var imageProvider = "openrouter"
+    /// The image service being chosen, until what is sent to it has been confirmed.
+    @State private var imageProviderAsked: AIProvider?
     @AppStorage(AIDefaults.textModelKey) private var textModel = AIDefaults.textModel
     @AppStorage(AIDefaults.endpointKey) private var endpoint = ""
 
@@ -42,6 +45,29 @@ private struct AISettingsView: View {
     @State private var status: KeyStatus = .idle
     /// What each running local server has installed; a server that doesn't answer has no entry.
     @State private var localModels: [String: [OllamaTextModel.Installed]] = [:]
+
+    /// The services that can be chosen for pictures: those offered, and in a debug copy with
+    /// `-ai.showUntried YES` those that are built and not tried yet.
+    private var imageChoices: [AIProvider] {
+        var list = AIProvider.offering(.image)
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "ai.showUntried") {
+            list += AIProvider.all.filter { $0.built.contains(.image) && !$0.offers(.image) }
+        }
+        #endif
+        return list
+    }
+
+    /// OpenRouter is chosen at once. Another service is chosen only after what is sent to it has
+    /// been shown and agreed to, once per service.
+    private func chooseImageProvider(_ slug: String) {
+        guard slug != "openrouter", let provider = AIProvider.named(slug),
+              !UserDefaults.standard.bool(forKey: AIController.imageToldKey(slug)) else {
+            imageProvider = slug
+            return
+        }
+        imageProviderAsked = provider
+    }
 
     /// A debug copy may show a service that is built but not offered, for the paid test of it.
     static func untriedAllowed(_ provider: AIProvider) -> Bool {
@@ -110,7 +136,7 @@ private struct AISettingsView: View {
                     #if DEBUG
                     // For Anders's paid tests: services that are built but not offered yet (`-ai.showUntried YES`).
                     if UserDefaults.standard.bool(forKey: "ai.showUntried") {
-                        ForEach(AIProvider.all.filter { $0.built.contains(.text) && !$0.offers(.text) && $0.kind == .cloud }) { provider in
+                        ForEach(AIProvider.all.filter { $0.built.contains(.text) && !$0.offers(.text) }) { provider in
                             Text(verbatim: "\(provider.name) (not tried yet)").tag(provider.slug)
                         }
                     }
@@ -118,7 +144,7 @@ private struct AISettingsView: View {
                 }
                 .task { await findLocalServers() }
                 if let provider = AIProvider.named(textProvider), provider.offers(.text) || Self.untriedAllowed(provider) {
-                    if provider.kind == .localServer {
+                    if provider.slug == "ollama" {
                         LocalTextSettings(provider: provider, models: localModels[provider.slug]) { await findLocalServers() }
                             .id(provider.slug)
                     } else if provider.slug != "openrouter" {
@@ -127,7 +153,7 @@ private struct AISettingsView: View {
                     }
                 }
                 #if DEBUG
-                if let provider = AIProvider.named(textProvider), provider.kind == .cloud, provider.offers(.text) || Self.untriedAllowed(provider) {
+                if let provider = AIProvider.named(textProvider), provider.slug != "ollama", provider.offers(.text) || Self.untriedAllowed(provider) {
                     TextModelTrial(provider: provider)
                 }
                 #endif
@@ -142,8 +168,42 @@ private struct AISettingsView: View {
             } header: {
                 Text("Text (the Assistant)")
             } footer: {
-                Text("Which service answers when the Assistant plans, suggests edits or looks for distractions. Pictures are still made through OpenRouter.")
+                Text(imageProvider == "openrouter"
+                     ? "Which service answers when the Assistant plans, suggests edits or looks for distractions. Pictures are still made through OpenRouter."
+                     : "Which service answers when the Assistant plans, suggests edits or looks for distractions.")
                     .foregroundStyle(.secondary)
+            }
+
+            // Shown only when there is a choice: today OpenRouter is the one service offered for pictures.
+            if imageChoices.count > 1 {
+                Section {
+                    Picker("Service", selection: Binding(get: { imageProvider }, set: { chooseImageProvider($0) })) {
+                        ForEach(imageChoices) { provider in
+                            Text(verbatim: provider.offers(.image) ? provider.name : "\(provider.name) (not tried yet)").tag(provider.slug)
+                        }
+                    }
+                    if imageProvider != "openrouter", let provider = AIProvider.named(imageProvider) {
+                        ProviderImageSettings(provider: provider).id(provider.slug)
+                        DisclosureGroup("What is sent to \(provider.name)") {
+                            Text(verbatim: AIController.imageNotice(for: provider))
+                                .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
+                } header: {
+                    Text("Pictures")
+                } footer: {
+                    Text("Which service makes and edits pictures: Generate, Edit with Prompt, Generative Fill, Expand and the others.")
+                        .foregroundStyle(.secondary)
+                }
+                .confirmationDialog(Text("Send pictures to \(imageProviderAsked?.name ?? "")?"), isPresented: Binding(get: { imageProviderAsked != nil }, set: { if !$0 { imageProviderAsked = nil } }), presenting: imageProviderAsked) { provider in
+                    Button("Use \(provider.name)") {
+                        UserDefaults.standard.set(true, forKey: AIController.imageToldKey(provider.slug))
+                        imageProvider = provider.slug
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: { provider in
+                    Text(verbatim: AIController.imageNotice(for: provider))
+                }
             }
 
             Section("Models") {
@@ -596,6 +656,80 @@ private struct ProviderTextSettings: View {
             if !chosen.isEmpty { choose(chosen) }   // refresh what the list says about the chosen model
         } catch {
             listError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+}
+
+/// The key and the model of an image service. The model is typed in by its id: the services'
+/// lists of image models were not read, so Glimmer doesn't claim to know them.
+private struct ProviderImageSettings: View {
+    let provider: AIProvider
+
+    @State private var key = ""
+    @State private var savedKey = ""
+    @State private var keyError: String?
+    @State private var model = ""
+    @State private var editModel = ""
+
+    private var store: any SecretStore { ProviderKeys.keychain.store(for: provider.slug) }
+
+    var body: some View {
+        SecureField("\(provider.name) API key", text: $key)
+            .onSubmit(save)
+        HStack {
+            Button("Save", action: save).disabled(key == savedKey)
+            if !savedKey.isEmpty { Button("Remove", role: .destructive) { key = ""; save() } }
+            Spacer()
+            if let keyError {
+                Label(keyError, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).lineLimit(2)
+            } else if !savedKey.isEmpty {
+                Label("Saved in your keychain", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+            }
+        }
+        VStack(alignment: .leading, spacing: 4) {
+            if let note = provider.termsNote { Text(LocalizedStringKey(note)) }
+            Text("Glimmer's support for \(provider.name) is built from its documentation and has not been tried with a real call yet. If it answers with an error, Glimmer shows it as it came.")
+            Text("Your key is stored in your keychain and sent only to \(provider.host).")
+            HStack(spacing: 12) {
+                if let url = provider.keysURL.flatMap(URL.init) { Link("Get a key", destination: url) }
+                if let url = provider.termsURL.flatMap(URL.init) { Link("Terms", destination: url) }
+                if let url = provider.pricesURL.flatMap(URL.init) { Link("Prices", destination: url) }
+            }
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+
+        TextField("Model", text: $model, prompt: Text("The model's id, as \(provider.name) writes it"))
+            .onChange(of: model) { _, id in UserDefaults.standard.set(id.trimmingCharacters(in: .whitespaces), forKey: AIController.imageModelKey(provider.slug)) }
+        if provider.slug == "fal" {
+            TextField("Model for editing", text: $editModel, prompt: Text("Leave empty for the model's id followed by /edit"))
+                .onChange(of: editModel) { _, id in
+                    let trimmed = id.trimmingCharacters(in: .whitespaces)
+                    if trimmed.isEmpty { UserDefaults.standard.removeObject(forKey: AIController.imageEditModelKey(provider.slug)) }
+                    else { UserDefaults.standard.set(trimmed, forKey: AIController.imageEditModelKey(provider.slug)) }
+                }
+        }
+        Text("Billed by \(provider.name) at their rates. Glimmer shows no cost for these pictures, because \(provider.name)'s answers carry none.")
+            .font(.callout).foregroundStyle(.secondary)
+            .task { load() }
+    }
+
+    private func load() {
+        savedKey = ((try? ProviderKeys.keychain.key(for: provider.slug)) ?? nil) ?? ""
+        key = savedKey
+        model = UserDefaults.standard.string(forKey: AIController.imageModelKey(provider.slug)) ?? ""
+        editModel = UserDefaults.standard.string(forKey: AIController.imageEditModelKey(provider.slug)) ?? ""
+    }
+
+    private func save() {
+        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            if trimmed.isEmpty { try store.delete() } else { try store.write(trimmed) }
+            key = trimmed
+            savedKey = trimmed
+            keyError = nil
+        } catch {
+            keyError = error.localizedDescription
         }
     }
 }

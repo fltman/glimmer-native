@@ -15,7 +15,8 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 if [[ -z "${GLIMMER_PORT:-}" ]]; then
   xcrun swiftc -O -o build/axread scripts/axread.swift 2>/dev/null || { echo "Couldn't build scripts/axread.swift"; exit 1; }
-  ARGS="-ai.textProvider berget -ai.textModel.berget glimmer-test/not-a-model ${GLIMMER_ARGS:-}"
+  # The picture services are hidden until each has been tried; the test copy shows them, with fal chosen and agreed to.
+  ARGS="-ai.textProvider berget -ai.textModel.berget glimmer-test/not-a-model -ai.showUntried YES -ai.imageProvider fal -ai.imageNoticeShown.fal YES ${GLIMMER_ARGS:-}"
   if [[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]]; then
     # NETWORK TEST, on purpose: Settings › AI is read with Berget's public model list loaded (no key).
     GLIMMER_ARGS="$ARGS" exec scripts/test-app.sh "$0"
@@ -110,5 +111,8 @@ echo "– the model list from the service is a network test: GLIMMER_NETWORK_TES
 fi
 
 echo
+# The picture service chosen in Settings › AI (hidden in release builds until a service is offered).
+read_state "Settings › AI, Pictures with fal chosen" "Model for editing"
+
 MODE=$([[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]] && echo "NETWORK TEST (Berget's public model list was fetched)" || echo "no network (a copy that can make no connection)")
 if (( fails == 0 )); then echo "All accessibility checks passed. Run: $MODE."; else echo "$fails accessibility check(s) failed."; exit 1; fi
