@@ -261,13 +261,13 @@ extension AIPipelines {
         return (items, json["message"] as? String)
     }
 
-    public static func findDistractions(_ image: RGBAImage, client: OpenRouterClient, model: String)
+    public static func findDistractions(_ image: RGBAImage, model: any TextModel)
         async throws -> (items: [Distraction], message: String?, cost: Double?) {
         let png = image.limited(toMaxSide: 1536).pngData()
-        let reply = try await client.textCompletion(
-            model: model, system: distractionSystemPrompt,
+        let reply = try await model.reply(
+            system: distractionSystemPrompt,
             user: "Analyze this image and return the JSON object of distracting elements now.",
-            images: [png], jsonMode: true)
+            images: [png], imageType: "image/png", json: true, temperature: 0.2)
         let parsed = parseDistractions(reply.text)
         return (parsed.items, parsed.message, reply.cost)
     }

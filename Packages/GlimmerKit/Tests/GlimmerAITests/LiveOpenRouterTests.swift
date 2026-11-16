@@ -35,7 +35,7 @@ struct LiveOpenRouterTests {
                                    activeLayerKind: "raster", activeLayerName: "Photo")
         let (plan, cost) = try await AgentPlanner.plan(goal: "Make it black and white and add a vignette",
                                                        context: context, history: [],
-                                                       client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel)
+                                                       model: OpenRouterTextModel(client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel))
         print("Plan: \(plan.steps.map { "\($0.op) \($0.params)" }), message: \(plan.message ?? "-"), cost \(cost ?? -1)")
         #expect(plan.steps.contains { $0.op == "add_adjustment" && $0.string("type") == "black_white" })
         #expect(plan.steps.contains { ($0.op == "apply_filter" && $0.string("type") == "vignette") || $0.op == "apply_preset" })
@@ -59,7 +59,7 @@ struct LiveOpenRouterTests {
         let (plan, _) = try await AgentPlanner.plan(
             goal: "What single colour fills this image? Answer with the colour name only, call no tools.",
             context: context, history: [], image: try jpeg(230, 20, 20),
-            client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel) { text in seen.add(text) }
+            model: OpenRouterTextModel(client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel)) { text in seen.add(text) }
         print("Vision answer: \(plan.message ?? "-"), streamed updates: \(seen.count)")
         #expect(plan.steps.isEmpty)
         #expect(plan.message?.localizedCaseInsensitiveContains("red") == true)
@@ -68,7 +68,7 @@ struct LiveOpenRouterTests {
 
     @Test func suggestsEditsForAnImage() async throws {
         let s = try await AgentPlanner.suggestions(image: try jpeg(40, 40, 60), language: "sv",
-                                                   client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel)
+                                                   model: OpenRouterTextModel(client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel))
         print("Suggestions: \(s.map { "\($0.title): \($0.goal)" })")
         #expect(s.count == 3)
     }
@@ -78,12 +78,12 @@ struct LiveOpenRouterTests {
         let steps = [AgentStep(op: "add_adjustment", params: ["type": .string("exposure"), "params": .object(["exposure": .number(1)])])]
         let plan = try await AgentPlanner.review(goal: "Make the image much darker", steps: steps,
                                                  before: try jpeg(120, 120, 120), after: try jpeg(220, 220, 220),
-                                                 client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel)
+                                                 model: OpenRouterTextModel(client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel))
         print("Review: \(plan.steps.map { "\($0.op) \($0.params)" }) — \(plan.message ?? "-")")
         #expect(!plan.steps.isEmpty)
         let ok = try await AgentPlanner.review(goal: "Make the image much darker", steps: steps,
                                                before: try jpeg(220, 220, 220), after: try jpeg(60, 60, 60),
-                                               client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel)
+                                               model: OpenRouterTextModel(client: OpenRouterClient(apiKey: key), model: AIDefaults.textModel))
         print("Review of a good result: \(ok.steps.count) steps — \(ok.message ?? "-")")
         #expect(ok.steps.isEmpty)
     }

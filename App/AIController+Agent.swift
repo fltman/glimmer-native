@@ -117,11 +117,10 @@ extension AIController {
 
     /// Sends the goal to the text model for a plan.
     private func planWithOpenRouter(_ goal: String) {
-        guard let key = (try? Self.apiKey()) ?? nil else {
+        guard let model = try? textModel() else {
             messages.append(Message(fromUser: false, text: "Add your OpenRouter API key in Settings › AI to use the assistant."))
             return
         }
-        let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
         let context = agentContext
         let history = agentHistory
         let state = session.state
@@ -137,7 +136,7 @@ extension AIController {
                 let siblings = await SiblingClient.shared.toolbox()
                 let (plan, _) = try await AgentPlanner.plan(goal: goal, context: context, history: history, image: image,
                                                             siblings: siblings.tools, siblingContext: siblings.context,
-                                                            client: OpenRouterClient(apiKey: key), model: model) { text in
+                                                            model: model) { text in
                     Task { @MainActor in
                         guard let self else { return }
                         if let i = self.messages.firstIndex(where: { $0.id == messageID }) {
@@ -270,9 +269,8 @@ extension AIController {
     /// The quality check: the model compares before and after and may adjust once.
     private func review(goal: String, steps: [AgentStep], before: DocumentState) async {
         guard reviewsResults, !goal.isEmpty, let metal = MetalContext.shared,
-              let key = (try? Self.apiKey()) ?? nil else { return }
+              let model = try? textModel() else { return }
         let after = session.state
-        let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
         isPlanning = true
         defer { isPlanning = false }
         let images = await Task.detached {
@@ -280,7 +278,7 @@ extension AIController {
         }.value
         guard let b = images.0, let a = images.1,
               let plan = try? await AgentPlanner.review(goal: goal, steps: steps, before: b, after: a,
-                                                        client: OpenRouterClient(apiKey: key), model: model),
+                                                        model: model),
               !Task.isCancelled else { return }
         guard !plan.steps.isEmpty else {
             // Approved: nothing to add to the conversation.
@@ -299,8 +297,7 @@ extension AIController {
 
     /// Asks the model to look at the image and propose three edits.
     func suggestEdits() {
-        guard !isSuggesting, let metal = MetalContext.shared, let key = (try? Self.apiKey()) ?? nil else { return }
-        let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
+        guard !isSuggesting, let metal = MetalContext.shared, let model = try? textModel() else { return }
         let state = session.state
         let language = Locale.current.language.languageCode?.identifier ?? "en"
         isSuggesting = true
@@ -309,7 +306,7 @@ extension AIController {
             var found: [AgentPlanner.Suggestion] = []
             if let image {
                 found = (try? await AgentPlanner.suggestions(image: image, language: language,
-                                                             client: OpenRouterClient(apiKey: key), model: model)) ?? []
+                                                             model: model)) ?? []
             }
             self?.suggestions = found
             self?.isSuggesting = false

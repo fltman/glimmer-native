@@ -80,6 +80,16 @@ final class AIController {
         return nil
     }
 
+    /// The model every text request goes to (the Assistant, suggestions, Find Distractions).
+    /// The one place a text provider is chosen; nothing else constructs one.
+    func textModel() throws -> any TextModel {
+        guard let key = try Self.apiKey() else {
+            throw OpenRouterError.missingAPIKey
+        }
+        let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
+        return OpenRouterTextModel(client: OpenRouterClient(apiKey: key), model: model)
+    }
+
     private func imageModel() throws -> ImageModel {
         guard let key = try Self.apiKey() else {
             throw OpenRouterError.missingAPIKey
@@ -431,13 +441,12 @@ final class AIController {
 
     func findDistractions() {
         do {
-            guard let key = try Self.apiKey() else { throw OpenRouterError.missingAPIKey }
-            let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
+            let model = try textModel()
             let source = try composite(session.state)
             distractions = []
             distractionMessage = nil
             run("Find distractions", {
-                let r = try await AIPipelines.findDistractions(source, client: OpenRouterClient(apiKey: key), model: model)
+                let r = try await AIPipelines.findDistractions(source, model: model)
                 return ((r.items, r.message), r.cost)
             }, apply: { [weak self] result in
                 self?.distractions = result.0

@@ -487,10 +487,9 @@ public enum AgentPlanner {
     }
 
     /// Looks at the image (JPEG) and proposes three edits.
-    public static func suggestions(image: Data, language: String, client: OpenRouterClient, model: String) async throws -> [Suggestion] {
-        let response = try await client.textCompletion(model: model, system: nil,
-                                                       user: String(format: suggestionPrompt, language),
-                                                       images: [image], imageType: "image/jpeg", jsonMode: true, temperature: 0.7)
+    public static func suggestions(image: Data, language: String, model: any TextModel) async throws -> [Suggestion] {
+        let response = try await model.reply(system: nil, user: String(format: suggestionPrompt, language),
+                                             images: [image], imageType: "image/jpeg", json: true, temperature: 0.7)
         return parseSuggestions(response.text)
     }
 
@@ -601,10 +600,9 @@ public enum AgentPlanner {
 
     /// Asks the model to judge the result; returns corrective steps (possibly none).
     public static func review(goal: String, steps: [AgentStep], before: Data, after: Data,
-                              client: OpenRouterClient, model: String) async throws -> AgentPlan {
-        let response = try await client.toolCompletion(model: model,
-                                                       messages: reviewMessages(goal: goal, steps: steps, before: before, after: after),
-                                                       tools: reviewToolSchemas())
+                              model: any TextModel) async throws -> AgentPlan {
+        let response = try await model.callTools(messages: reviewMessages(goal: goal, steps: steps, before: before, after: after),
+                                                 tools: reviewToolSchemas(), temperature: 0.2, onText: nil)
         var plan = try plan(from: response)
         plan.steps = Array(plan.steps.filter { op(named: $0.op)?.isAIJob == false }.prefix(3))
         return plan
@@ -612,7 +610,7 @@ public enum AgentPlanner {
 
     /// Turns tool calls into a plan, dropping unknown tools and calls with unreadable arguments.
     /// `extra` are sibling tool names offered with this request.
-    public static func plan(from response: OpenRouterClient.ToolResponse, extra: Set<String> = []) throws -> AgentPlan {
+    public static func plan(from response: TextToolReply, extra: Set<String> = []) throws -> AgentPlan {
         var steps: [AgentStep] = []
         var dropped: [String] = []
         for call in response.toolCalls {
@@ -645,15 +643,11 @@ public enum AgentPlanner {
     /// `siblingContext` names their open documents.
     public static func plan(goal: String, context: AgentContext, history: [(user: String, reply: String)],
                             image: Data? = nil, siblings: [SiblingOperation] = [], siblingContext: String? = nil,
-                            client: OpenRouterClient, model: String,
+                            model: any TextModel,
                             onText: (@Sendable (String) -> Void)? = nil) async throws -> (AgentPlan, Double?) {
         let messages = toolMessages(goal: goal, context: context, history: history, image: image, siblingContext: siblingContext)
         let tools = toolSchemas() + siblings.map(\.toolSchema)
-        let response = if let onText {
-            try await client.toolCompletionStreaming(model: model, messages: messages, tools: tools, onText: onText)
-        } else {
-            try await client.toolCompletion(model: model, messages: messages, tools: tools)
-        }
+        let response = try await model.callTools(messages: messages, tools: tools, temperature: 0.2, onText: onText)
         return (try plan(from: response, extra: Set(siblings.map(\.toolName))), response.cost)
     }
 }
