@@ -74,7 +74,7 @@ for _ in {1..80}; do
 done
 [[ -n "$PID" && -n "$PORT" ]] || { echo "The test copy didn't start its agent server."; exit 1; }
 # A key in the environment is allowed in one case only: the one that is no key, in a copy pointed at the stand-in on this Mac.
-ENVKEYS=$(ps eww -p "$PID" | grep -o "OPENROUTER_API_KEY=[^ ]*" | sort -u)
+ENVKEYS=$( (ps eww -p "$PID" | grep -o "OPENROUTER_API_KEY=[^ ]*" || true) | sort -u)
 if [[ -n "$ENVKEYS" ]]; then
   if [[ -n "${GLIMMER_FAKE_SERVICE:-}" && "$ENVKEYS" == "OPENROUTER_API_KEY=not-a-key-for-the-stand-in" && "$(ps -o command= -p "$PID")" == *"-ai.endpoint http://127.0.0.1:"* ]]; then :
   else echo "The test copy has an OpenRouter key in its environment."; exit 1; fi

@@ -802,3 +802,11 @@ Local evaluation after the two assistant rules (qwen3:8b, both locks): **18 of 1
 **A re-signed release copy is never started on this Mac under a test while Anders's real keys are in the keychain** (coordinator, 2026-11-16): it has no no-keychain switch, and if it reads a key it stops on the system's question. The outside check uses a fresh user's keychain or none.
 
 A test copy left running holds the agent port: after the interrupted pass an offline copy stayed alive on 9102 and the next copies "didn't start their agent server". Stopped by its pid.
+
+**Seen as pictures (2026-11-16, 23:3x), English and Swedish:** the Assistant panel with the app's own lines for a plan that stopped part-way ("Done: Black & White. Not done: Text “Hello” and Crop. The assistant also planned steps Glimmer doesn't have (make_wide); they are left out." / "Gjort: Svartvitt. Inte gjort: Text ”Hello” och Beskär. …"), whole and not cut; and the two open Service lists in Settings › AI: OpenRouter, OpenAI, Anthropic, xAI, Google, Berget, Grunden, Ollama (on this Mac) for text; OpenRouter, OpenAI, Google, fal.ai, Hedra for pictures. Names alone, no label. The line "Nothing was done. Not done: …" and the line for a plan made only of steps Glimmer doesn't have have not been seen as pictures (no fixture shows them). The accessibility pass passes in both languages (25 states each).
+
+Two faults of mine found by that pass and mended: the key check I had added to test-app.sh ended the script silently when no key was in the environment (the ordinary case), so two passes "failed" with empty logs; and a test copy left from an interrupted run held the agent port. Also noted: the probe copy for the pop-up pictures was the ordinary test copy, not the one without network, and with Berget chosen it fetched Berget's public model list (no key, nothing of Anders's sent).
+
+Local evaluation after the completion words (qwen3:8b, both locks): see the line below.
+    EVAL qwen3:8b: 18 of 18 (English 10/10, Swedish 8/8), median 3.0 s, slowest 31.2 s: PASSES
+    EVAL qwen3:8b: Known gaps (not counted): 0 of 1 held.

@@ -47,6 +47,8 @@ if arguments.count == 5 {
             if let title = attribute(element, kAXTitleUIElementAttribute as String) {
                 names.append(attribute(title as! AXUIElement, kAXValueAttribute as String) as? String)
             }
+            // A pop-up can also be named by what it shows now: two pop-ups with the same label are told apart so.
+            if attribute(element, kAXRoleAttribute as String) as? String == "AXPopUpButton" { names.append(attribute(element, kAXValueAttribute as String) as? String) }
             if names.contains(arguments[4]) { return element }
             // To bring something into view, a text that contains the words is enough.
             if arguments[2] == "--show", let value = attribute(element, kAXValueAttribute as String) as? String, value.contains(arguments[4]) { return element }
