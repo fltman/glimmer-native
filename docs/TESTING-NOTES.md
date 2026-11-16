@@ -430,3 +430,26 @@ The memory figures are the process's resident size before and after, with the fi
 | Pixel 8 Pro, 50 MP | 1,865 ms | 1,663 ms | 103 to 1,270 ms, median 194 | 15 of 15 |
 
 Status: the requirement (a change shown within about a tenth of a second) is **met on five of the six files**, including the first change of each kind, which the warm-up took care of. It is **not met on the 50-megapixel file**; its best is just over the limit, and whether a quiet Mac would bring it under is not known. The Mac was not quiet, and the run was not repeated. The whole printout is in `build/raw-draft-timing.txt`.
+
+## RAW: the controls used in the app, all six files (2026-11-16)
+
+`scripts/test-raw-develop.sh` now also drags the Exposure slider (through safepointer), ticks the grey-point box and clicks the middle of the picture, presses As Shot, and after Develop runs a filter on the layer and opens the sheet again to see the warning. Each state is saved as a picture of the app's own windows (`build/raw-shots`). `scripts/axread.swift` learned to print what a slider says its value is (the words VoiceOver speaks) and to give an element's place on screen.
+
+All six files that develop passed every check (debug build, load average 11 to 24 from other sessions):
+
+| File | Opens | Exposure dragged | Grey point by click | Develop |
+|---|---|---|---|---|
+| iPhone 12 Pro | 2.3 s | 0 → +1.59 stops | 5,201 → 5,226 K | passed |
+| Canon R10 | 9.3 s | same | 5,062 → 3,673 K | passed |
+| OM-5 | – | same | 5,376 → 4,180 K | passed |
+| Panasonic S5 II | 4.1 s | same | 4,872 → 4,077 K | passed |
+| Fujifilm X-T50 | 12.9 s | same | 5,045 → 4,431 K | 14 s |
+| Pixel 8 Pro | 5.2 s | same | 6,019 → 2,778 K | 3 s |
+
+As Shot went back to 0 stops and the camera's temperature on all six. The warning for a changed layer showed on all six, and the layer was still a RAW layer after the filter.
+
+Looked at as pictures (the OM-5 run): the sheet after the drag and the grey-point click, and the sheet with the warning while its first picture was still developing: whole, nothing cut, progress shown from the moment the sheet opens. Not looked at: the small "Developing <name>…" window while a file opens, and the other files' pictures.
+
+**One failure not explained.** In one of three runs with the Fujifilm file (load average 24 to 32), Develop had not closed the sheet after 60 s; the app was still running, nothing crashed. The two other runs took 14 s. An earlier run of the same file did not open within 120 s at load 32. Whether those were only the load or something that can stick is not known; it has to be watched for when the Mac is quiet.
+
+Still before the switch: Anders's look at the developed pictures; the RAW's size in the document's size estimate; the agent API; the evaluation with the new operation.
