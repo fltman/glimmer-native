@@ -1,4 +1,5 @@
 import CoreGraphics
+import CoreImage
 import Foundation
 import ImageIO
 import Testing
@@ -81,6 +82,23 @@ enum DNGTestWriter {
         for i in 0..<(size * size) { r += Double(bytes[i * 4]); g += Double(bytes[i * 4 + 1]); b += Double(bytes[i * 4 + 2]) }
         let n = Double(size * size)
         return (r / n, g / n, b / n)
+    }
+
+    /// The draft is the real development: what is shown while a control moves is what is kept on release.
+    @Test func theDraftIsTheFinishedPictureAtEverySetting() throws {
+        let draft = try RawDraft(DNGTestWriter.ramp)
+        #expect(draft.width == 640 && draft.height == 480 && draft.scale == 1)
+        for exposure in [0.0, 1.0, -1.0, 0.4] {   // the same decoder, one setting after another, back and forth
+            var settings = RawSettings(); settings.exposure = exposure
+            let shown = try draft.picture(settings), finished = try RawDevelopment.develop(DNGTestWriter.ramp, settings: settings).image
+            let a = Self.colour(shown, x: 300, y: 200), b = Self.colour(finished, x: 300, y: 200)
+            #expect(abs(a.r - b.r) < 1.5 && abs(a.g - b.g) < 1.5 && abs(a.b - b.b) < 1.5, "exposure \(exposure): \(a) against \(b)")
+        }
+        // A smaller draft keeps the proportions.
+        let small = try RawDraft(DNGTestWriter.ramp, maxSide: 320)
+        #expect(small.width == 320 && small.height == 240)
+        #expect(try small.picture(RawSettings()).width == 320)
+        #expect(throws: RawDevelopment.Problem.self) { _ = try RawDraft(Data(repeating: 7, count: 4_000)) }
     }
 
     @Test func theHeaderSaysWhatTheFileIsBeforeAnythingIsDeveloped() throws {
@@ -288,6 +306,38 @@ struct RawRealFiles {
                     print("RAWREAL    \(label): centre \(Int(c.r)),\(Int(c.g)),\(Int(c.b))")
                     if let out { Self.writePreview(image, to: out.appending(path: "\(name) - \(label).jpg")) }
                 }
+                // The draft that follows a slider: one decoder kept, each change rendered into bytes.
+                let draft2 = try RawDraft(data)
+                var times: [Double] = []
+                var last: CGImage?
+                for e in [0.0, 0.25, 0.5, 0.75, 1.0, 0.6, 0.3] {
+                    var d = RawSettings(); d.exposure = e; d.temperature = info.temperature * (1 + e / 10)
+                    let t = Date(); last = try draft2.picture(d); times.append(Date().timeIntervalSince(t) * 1000)
+                }
+                // Against the finished development at the last settings, scaled the same way.
+                var final = RawSettings(); final.exposure = 0.3; final.temperature = info.temperature * 1.03
+                let finished = try RawDevelopment.develop(data, settings: final, scale: draft2.scale).image
+                var jump = -1.0
+                if let last, let a = PSDAppearance.onWhite(last), let b = PSDAppearance.onWhite(finished), a.count == b.count { jump = PSDAppearance.difference(a, b).mean }
+                print("RAWREAL    draft \(draft2.width)×\(draft2.height): first \(Int(times[0])) ms, then \(times.dropFirst().map { String(Int($0)) }.joined(separator: " ")) ms; differs from the finished picture by \(String(format: "%.2f", jump)) of 255 on average")
+                #expect(jump >= 0 && jump < 1.5)
+                // Lens correction on and off, where the file has the data: the corners move, the centre does not.
+                if info.supportsLensCorrection, let out {
+                    var on = RawSettings(); on.lensCorrection = true
+                    var off = RawSettings(); off.lensCorrection = false
+                    let a = try RawDevelopment.develop(data, settings: on).image, b = try RawDevelopment.develop(data, settings: off).image
+                    func part(_ image: CGImage, _ x: Int, _ y: Int, _ side: Int) -> [UInt8] {
+                        guard let crop = image.cropping(to: CGRect(x: x, y: y, width: side, height: side)) else { return [] }
+                        return PSDAppearance.onWhite(crop) ?? []
+                    }
+                    let side = 400
+                    let corner = PSDAppearance.difference(part(a, 0, 0, side), part(b, 0, 0, side))
+                    let centre = PSDAppearance.difference(part(a, a.width / 2 - side / 2, a.height / 2 - side / 2, side), part(b, b.width / 2 - side / 2, b.height / 2 - side / 2, side))
+                    print("RAWREAL    lens correction on against off (\(a.width)×\(a.height) and \(b.width)×\(b.height)): top-left corner differs by \(String(format: "%.1f", corner.mean)) of 255 on average, the centre by \(String(format: "%.1f", centre.mean))")
+                    for (label, image) in [("on", a), ("off", b)] {
+                        if let crop = image.cropping(to: CGRect(x: 0, y: 0, width: 900, height: 900)) { Self.writePreview(crop, to: out.appending(path: "\(name) - 8 corner, lens correction \(label).jpg"), maxSide: 900) }
+                    }
+                }
                 // The layer: made, and its picture the same after saving and reading back.
                 start = Date()
                 let made = try RawLayer.make(from: data, fileName: url.lastPathComponent)
@@ -295,6 +345,69 @@ struct RawRealFiles {
                 #expect(made.width == info.width && made.height == info.height)
             } catch {
                 print("RAWREAL \(url.lastPathComponent) | REFUSED: \((error as? LocalizedError)?.errorDescription ?? "\(error)")")
+            }
+        }
+    }
+}
+
+/// Measuring only (GLIMMER_RAW_DRAFT=1 with GLIMMER_RAW_SAMPLES): how fast a draft can follow a slider.
+@Suite(.enabled(if: ProcessInfo.processInfo.environment["GLIMMER_RAW_DRAFT"] != nil && ProcessInfo.processInfo.environment["GLIMMER_RAW_SAMPLES"] != nil), .serialized)
+struct RawDraftMeasurements {
+    @Test func howFastADraftFollows() throws {
+        let folder = URL(fileURLWithPath: ProcessInfo.processInfo.environment["GLIMMER_RAW_SAMPLES"]!)
+        let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)
+            .filter { !["txt", "md"].contains($0.pathExtension.lowercased()) && !$0.lastPathComponent.hasPrefix(".") }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+        let linear = CGColorSpace(name: CGColorSpace.extendedLinearSRGB)!
+        let ctx = CIContext(options: [.workingColorSpace: linear])
+        func ms(_ body: () -> Void) -> Double { let s = Date(); body(); return Date().timeIntervalSince(s) * 1000 }
+        func render(_ image: CIImage) -> CGImage? { ctx.createCGImage(image, from: image.extent.integral, format: .RGBA8, colorSpace: CGColorSpace(name: CGColorSpace.sRGB)!) }
+        func mean(_ a: CGImage, _ b: CGImage) -> Double {
+            guard let x = PSDAppearance.onWhite(a), let y = PSDAppearance.onWhite(b), x.count == y.count else { return -1 }
+            return PSDAppearance.difference(x, y).mean
+        }
+        for url in files {
+            let data = try Data(contentsOf: url, options: .mappedIfSafe)
+            guard let f = CIRAWFilter(imageData: data, identifierHint: nil), let full = f.outputImage, !full.extent.isInfinite else { print("RAWDRAFT \(url.lastPathComponent): not developed"); continue }
+            let fullSize = full.extent.size
+            let scale = min(1, 1600 / max(fullSize.width, fullSize.height))
+            // A: the decoder's own scale, one filter kept alive.
+            f.scaleFactor = Float(scale); f.isDraftModeEnabled = true
+            let scaled = f.outputImage!.extent.size
+            let proportionsHold = abs(scaled.width / scaled.height - fullSize.width / fullSize.height) < 0.02 && abs(scaled.width - fullSize.width * scale) < fullSize.width * scale * 0.05
+            var aTimes: [Double] = []
+            var aLast: CGImage?
+            for e: Float in [0, 0.2, 0.4, 0.6, 0.8, 1.0] { f.exposure = e; aTimes.append(ms { aLast = render(f.outputImage!) }) }
+            // B: full development, scaled afterwards, the same filter kept alive.
+            f.scaleFactor = 1; f.isDraftModeEnabled = false
+            var bTimes: [Double] = []
+            var bLast: CGImage?
+            for e: Float in [0, 0.2, 0.4, 0.6, 0.8, 1.0] {
+                f.exposure = e
+                bTimes.append(ms { bLast = render(f.outputImage!.transformed(by: CGAffineTransform(scaleX: scale, y: scale), highQualityDownsample: true)) })
+            }
+            // C: developed once with neutral settings, kept small; exposure as an ordinary multiplication.
+            f.exposure = 0
+            var base: CIImage?
+            let prepare = ms {
+                let small = f.outputImage!.transformed(by: CGAffineTransform(scaleX: scale, y: scale), highQualityDownsample: true)
+                if let cg = ctx.createCGImage(small, from: small.extent.integral, format: .RGBAh, colorSpace: linear) { base = CIImage(cgImage: cg) }
+            }
+            var cTimes: [Double] = []
+            var cLast: CGImage?
+            if let base {
+                for e: Double in [0.2, 0.4, 0.6, 0.8, 1.0] {
+                    let gain = CGFloat(pow(2, e))
+                    let adjusted = base.applyingFilter("CIColorMatrix", parameters: ["inputRVector": CIVector(x: gain, y: 0, z: 0, w: 0), "inputGVector": CIVector(x: 0, y: gain, z: 0, w: 0), "inputBVector": CIVector(x: 0, y: 0, z: gain, w: 0)])
+                    cTimes.append(ms { cLast = render(adjusted) })
+                }
+            }
+            func line(_ t: [Double]) -> String { "first \(Int(t.first ?? 0)) ms, then \(t.dropFirst().map { String(Int($0)) }.joined(separator: " "))" }
+            print("RAWDRAFT \(url.lastPathComponent) \(Int(fullSize.width))×\(Int(fullSize.height)) → draft \(Int(fullSize.width * scale))×\(Int(fullSize.height * scale))")
+            print("RAWDRAFT    A decoder scale: gives \(Int(scaled.width))×\(Int(scaled.height)), proportions hold: \(proportionsHold); \(line(aTimes))")
+            print("RAWDRAFT    B scaled after: \(line(bTimes))")
+            print("RAWDRAFT    C neutral copy: prepared in \(Int(prepare)) ms; \(line(cTimes))")
+            if let aLast, let bLast, let cLast {
+                print("RAWDRAFT    at exposure +1, mean difference from B (the real development, scaled): A \(aLast.width == bLast.width && aLast.height == bLast.height ? String(format: "%.1f", mean(aLast, bLast)) : "other size \(aLast.width)×\(aLast.height) vs \(bLast.width)×\(bLast.height)"), C \(String(format: "%.1f", mean(cLast, bLast))) of 255")
             }
         }
     }

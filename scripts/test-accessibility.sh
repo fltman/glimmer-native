@@ -117,4 +117,9 @@ echo
 read_state "Settings › AI, Pictures with fal chosen" "Model for editing"
 
 MODE=$([[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]] && echo "NETWORK TEST (Berget's public model list was fetched)" || echo "no network (a copy that can make no connection)")
+# What was read is the debug build, which has every switched feature. A release has only those
+# set to YES in Config/Features.xcconfig; what is read here beyond them does not ship yet.
+SHIP=$(grep -E '^GLIMMER_[A-Z]+ *= *YES' Config/Features.xcconfig | sed 's/GLIMMER_//; s/ *=.*//' | tr '\n' ' ')
+HELD=$(grep -E '^GLIMMER_[A-Z]+ *= *NO' Config/Features.xcconfig | sed 's/GLIMMER_//; s/ *=.*//' | tr '\n' ' ')
+echo "Switched features in the build that was read: all on (debug). In a release: on: ${SHIP:-none}; off: ${HELD:-none}."
 if (( fails == 0 )); then echo "All accessibility checks passed. Run: $MODE."; else echo "$fails accessibility check(s) failed."; exit 1; fi

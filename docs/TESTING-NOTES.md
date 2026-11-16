@@ -331,3 +331,25 @@ Decided by the coordinator on Anders's rule ("on when the fetched files open rig
 - **Looked at as pictures** (`build/window-shot`, the app's own windows only; `build/psd-shots`): the import report (both kinds) is whole. The export sheet was not: in a small window its last sentence was cut to "the layers have not been tri…", the one sentence that must stay. The accessibility read had passed it, because the whole text is there for VoiceOver. Fixed; looked at again.
 
 Not done: the full populated accessibility pass (`scripts/test-accessibility.sh`) cannot run on a release build, because its states come from debug fixtures; the two sheets that are new in a release were read in the release build by the import script instead. Not yet looked at as pictures: the first-use notices, the Heal question, the link bar's three states, the offer under a plan.
+
+## RAW: the draft that follows a control (2026-11-16)
+
+Requirement from the coordinator: while a slider moves, the picture follows within about a tenth of a second on the sample files. Measured on the six camera files that develop, draft 1,600 pixels on the long side, pixels read out each time (not a deferred picture). The Mac was shared with other sessions' builds and model runs throughout, and the numbers moved a lot between runs.
+
+- **What cost before:** a new decoder for every change (0.3 to 4 s). `RawDraft` keeps one decoder for as long as the sheet is open.
+- **Chosen:** the real development on the kept decoder, scaled down afterwards. The draft differs from the finished picture at the same settings by 0.02 to 0.06 of 255 on average on all six: nothing jumps on release.
+- **Idea 1, the decoder's own scale setting: rejected by measurement.** Against scaling afterwards it differed on every file: 1.6 (Canon), 4.2 (OM), and 75 to 127 on the other four, where it is a crop, not a smaller picture. With draft mode as well it is 1 to 7 off where it is not cropped.
+- **Idea 2, a neutral copy with ordinary operations:** exposure as a plain multiplication matched the two DNG files exactly and was 8 to 12 of 255 off on the four camera-maker formats at +1 stop. Not built: it would make the picture jump on release for most cameras.
+- **Speed, once warm:** 11 to 20 ms per change (iPhone, Canon, OM), 32 to 60 ms (Panasonic, Fujifilm 40 megapixels). **The requirement is met there.**
+- **Not met:** the 50-megapixel Pixel file took 0.1 to 1.9 s per change, differently in every run. And "once warm" took between one and five changes, each up to several seconds (worst: the Fujifilm, five changes of 4 to 8 s in one run, none in the run before). I do not know whether that is the decoder, Core Image compiling its kernels, or the other sessions' use of the GPU; it has to be measured again in the app on a quiet Mac.
+- **Consequence for the sheet:** it must never wait for a draft. Drafts are rendered off the main thread, only the latest setting is rendered, and a line says when the picture is behind. That is idea 3 as the floor, with the fast path on top when the file allows it.
+
+Lens correction on against off, on the three files that carry the data (a 400-pixel square): Pixel 8 Pro corner 1.7 and centre 1.7 of 255; OM-5 corner 24.0, centre 19.2; Panasonic corner 8.0, centre 8.4. The centre moves as much as the corner on the two cameras, so the correction rescales the whole picture, not only its edges. A pair of corner crops per file is in the folder for Anders ("8 corner, lens correction on/off").
+
+The refusal for the two files macOS gives no picture for now reads: "macOS gives no picture for this RAW file. Which cameras and recording modes work is decided by macOS; another recording mode of the same camera may work."
+
+The per-file licences were read from the data file the site's table loads (https://raw.pixls.us/json/getrepository.php?set=all, 2026-11-16), not from the rendered page: the browser extension was not connected.
+
+### Photoshop files still to fetch (candidates found by a reading subagent, nothing downloaded)
+
+Covering text, smart objects, PSB, CMYK and Lab; each fetch needs Anders's yes. Best: more files from psd-tools' tests (MIT, same folder as before: type-layer, text.psd/.psb, smartobject-layer, placedLayer, smart-object-slice, the colormodes folder), and EmilDohne/PhotoshopAPI's test documents (BSD-3-Clause; its README says they were made with Photoshop 2022: ten text files, two smart-object files, CMYK PSB). Large: nothing verified; two CC0 OpenGameArt archives (92.6 MB and 14 MB) of unknown writer, and PhotoshopAPI's benchmark files, which are the right size but carry no licence. Rejected: ag-psd (licence excludes its images), OpenImageIO ("Origin unknown"), Krita (GPL), psd-tools' third-party-psds (one file, no licence note).
