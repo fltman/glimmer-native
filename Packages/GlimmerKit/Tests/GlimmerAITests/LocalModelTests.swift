@@ -1,4 +1,5 @@
 import Foundation
+import GlimmerCore
 import Testing
 @testable import GlimmerAI
 
@@ -677,5 +678,65 @@ extension ChatAdapterTests {
         #expect(PlanCheck.namesCommand("fix the colors", title: "Auto Enhance", keywords: ["fix", "improve"]))
         #expect(!PlanCheck.namesCommand("write a poem about the sea", title: "Flatten Image", keywords: ["merge"]))
         #expect(!PlanCheck.namesCommand("tack, det ser bra ut", title: "Invert", keywords: []))
+    }
+}
+
+/// A kind the model left out is taken from the request, when the request can mean only one.
+extension PlanCheckTests {
+    private static let adjustments = AdjustmentKind.allCases.map(\.rawValue), filters = FilterKind.allCases.map(\.rawValue)
+    private func complete(_ op: String, _ params: [String: JSONValue], _ request: String) -> (type: String?, filled: Int, rationale: String?) {
+        let result = PlanCheck.completed(AgentPlan(steps: [AgentStep(op: op, params: params, rationale: "Why.")]), request: request, adjustments: Self.adjustments, filters: Self.filters)
+        return (result.plan.steps[0].string("type"), result.filled, result.plan.steps[0].rationale)
+    }
+
+    @Test func aMissingKindIsFilledInWhenTheRequestNamesExactlyOne() {
+        let bw = complete("add_adjustment", [:], "Make it black and white")
+        #expect(bw.type == "black_white" && bw.filled == 1 && bw.rationale == "Why. (type taken from your request)")
+        #expect(complete("add_adjustment", [:], "Gör bilden svartvit").type == "black_white")
+        #expect(complete("add_adjustment", ["type": .string("monochrome")], "Make it black and white").type == "black_white")   // a kind that doesn't exist
+        #expect(complete("add_adjustment", [:], "invert the colours").type == nil)        // "colour" names two more: nothing is guessed
+        #expect(complete("add_adjustment", [:], "invert it").type == "invert")
+        #expect(complete("apply_filter", [:], "add a vignette").type == "vignette")
+        // The filled-in step is then one the request names, so the plan runs at once.
+        let fixed = PlanCheck.completed(AgentPlan(steps: [AgentStep(op: "add_adjustment")]), request: "Make it black and white", adjustments: Self.adjustments, filters: Self.filters).plan
+        #expect(PlanCheck.runsAtOnce(fixed, request: "Make it black and white"))
+    }
+
+    @Test func nothingIsFilledInWhenTheRequestFitsSeveralKindsOrNone() {
+        #expect(complete("add_adjustment", [:], "make it brighter").type == nil)          // Brightness/Contrast and Exposure
+        #expect(complete("add_adjustment", [:], "make it warmer").type == nil)            // Color Balance and Photo Filter
+        #expect(complete("apply_filter", [:], "blur it").type == nil)                     // two kinds of blur
+        #expect(complete("add_adjustment", [:], "write a poem about the sea").filled == 0)
+        // A kind the model gave, and that exists, is never changed.
+        #expect(complete("add_adjustment", ["type": .string("levels")], "Make it black and white").type == "levels")
+        #expect(complete("crop", [:], "Make it black and white").filled == 0)
+    }
+}
+
+/// An unasked-for extra that stands by itself is held back, and what was asked runs.
+extension PlanCheckTests {
+    @Test func autoEnhanceBesideWhatWasAskedIsOfferedAndTheRestRuns() throws {
+        let padded = plan(("auto_enhance", [:]), ("add_adjustment", ["type": .string("black_white")]))
+        let split = try #require(PlanCheck.withoutExtras(padded, request: "Make it black and white"))
+        #expect(split.runs.steps.map(\.op) == ["add_adjustment"] && split.offered.map(\.op) == ["auto_enhance"])
+        #expect(PlanCheck.runsAtOnce(split.runs, request: "Make it black and white"))
+        // The evaluation's must-run-at-once case accepts that, and still wants the right step.
+        let found = LocalModelEvaluation.cases.first { $0.mustRunAtOnce }
+        let test = try #require(found)
+        #expect(LocalModelEvaluation.judge(padded, test))
+        #expect(!LocalModelEvaluation.judge(plan(("auto_enhance", [:]), ("add_adjustment", ["type": .string("levels")])), test))
+    }
+
+    @Test func anythingElseUnaskedKeepsTheWholePlanWaiting() {
+        // Another unnamed step: no split.
+        #expect(PlanCheck.withoutExtras(plan(("crop", ["aspect": .string("1:1")]), ("add_adjustment", ["type": .string("black_white")])), request: "Make it black and white") == nil)
+        // Only the extra, nothing that was asked: it waits as a plan, it is not run and not split.
+        #expect(PlanCheck.withoutExtras(plan(("auto_enhance", [:])), request: "Write a poem about the sea") == nil)
+        #expect(PlanCheck.withoutExtras(plan(("auto_enhance", [:]), ("select_subject", [:])), request: "select the subject") == nil)
+        // A plan that is named throughout has nothing to split.
+        #expect(PlanCheck.withoutExtras(plan(("auto_enhance", [:])), request: "Improve the photo") == nil)
+        // The no-edit cases still require that nothing changes without confirmation.
+        let poem = LocalModelEvaluation.cases.first(where: \.changesNothing)!
+        #expect(LocalModelEvaluation.judge(plan(("auto_enhance", [:])), poem))
     }
 }

@@ -11975,6 +11975,17 @@
           }
         }
       }
+    },
+    "The assistant also suggests %@, which you didn't ask for. Run it now on the picture as it is?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistenten föreslår också %@, som du inte bad om. Köra det nu på bilden som den är?"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

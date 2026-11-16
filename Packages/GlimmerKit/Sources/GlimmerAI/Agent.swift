@@ -121,6 +121,8 @@ public struct AgentPlan: Sendable, Equatable {
     public var message: String?
     /// Ops the model invented (dropped).
     public var droppedOps: [String] = []
+    /// How many steps got a missing kind from the request's own words (`PlanCheck.completed`).
+    public var filledFromRequest = 0
     /// Figures the model stated that nobody gave it; their sentences were taken out (`AssistantNumbers`).
     public var removedFigures: [String] = []
 
@@ -365,6 +367,7 @@ public enum AgentPlanner {
     - If the goal is ambiguous, contradictory or impossible with these ops, return an empty "steps" array and put a short clarifying question in "message".
     - If the user is only chatting or asking a question about the editor, answer briefly in "message" with no steps.
     - If asked what something costs or whether it is free, don't assert it: say that prices are the service's and that the model and its price are shown in Settings › AI.
+    - Plan only what the request asks for. Don't add auto_enhance, auto_color or any other improvement the user didn't ask for.
     - Never state a number you were not given. Sizes, layer counts and other facts about the document come only from the editor state in the request; never state a price, a cost or how long something takes.
     - Keep each step's "rationale" to one short sentence.
 
@@ -663,6 +666,10 @@ public enum AgentPlanner {
         }
         let response = try await model.callTools(messages: messages, tools: tools, temperature: 0.2, onText: checkedText)
         var plan = try plan(from: response, extra: Set(siblings.map(\.toolName)))
+        // A kind the model left out is taken from the request when its words name exactly one (PlanCheck).
+        let completed = PlanCheck.completed(plan, request: goal, adjustments: AdjustmentKind.allCases.map(\.rawValue), filters: FilterKind.allCases.map(\.rawValue))
+        plan = completed.plan
+        plan.filledFromRequest = completed.filled
         checkFigures(&plan, goal: goal, context: context, history: history, siblingContext: siblingContext)
         return (plan, response.cost)
     }

@@ -228,7 +228,16 @@ extension AIController {
             text += " (Skipped steps the editor can't do: \(plan.droppedOps.joined(separator: ", ")).)"
         }
         // A plan runs at once only when the request names every step that changes the document.
-        let named = PlanCheck.runsAtOnce(plan, request: goal, commandTitle: Self.commandTitle)
+        var plan = plan
+        var named = PlanCheck.runsAtOnce(plan, request: goal, commandTitle: Self.commandTitle)
+        // An extra that stands by itself (Auto Enhance beside what was asked) is held back as
+        // an offer, and what was asked runs.
+        var offered: [AgentStep] = []
+        if !named, let split = PlanCheck.withoutExtras(plan, request: goal, commandTitle: Self.commandTitle) {
+            plan = split.runs
+            offered = split.offered
+            named = true
+        }
         if !named, !plan.usesAI { text += " " + String(localized: "Some of these steps aren't named in what you asked, so the plan waits for Run.") }
         let message = Message(fromUser: false, text: text, plan: plan.steps.isEmpty ? nil : plan)
         messages.append(message)
@@ -237,6 +246,16 @@ extension AIController {
         for step in plan.steps { stepStatus[step.id] = .pending }
         planStatus[message.id] = .proposed
         if named, !plan.usesAI || autoRunAIPlans { runPlan(message.id) }
+        // Each held extra is a plan of its own that waits: it is run only if the person says so,
+        // and then on the picture as it is by then.
+        for step in offered {
+            let title = AgentPlanner.op(named: step.op).map { $0.name.replacingOccurrences(of: "_", with: " ").capitalized } ?? step.op
+            let offer = Message(fromUser: false, text: String(localized: "The assistant also suggests \(title), which you didn't ask for. Run it now on the picture as it is?"),
+                                plan: AgentPlan(steps: [step]))
+            messages.append(offer)
+            stepStatus[step.id] = .pending
+            planStatus[offer.id] = .proposed
+        }
     }
 
     func runPlan(_ messageID: UUID) {

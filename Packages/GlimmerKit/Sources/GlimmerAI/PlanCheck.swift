@@ -98,6 +98,61 @@ public enum PlanCheck {
         }
     }
 
+    /// Operations that stand by themselves: no selection, no settings, nothing later needs them.
+    /// When one of these is the only thing in a plan the request didn't ask for, it is held
+    /// back as an offer and the rest of the plan runs. (A local model adds Auto Enhance to
+    /// "make it black and white" every time; telling it not to in the prompt changed nothing.)
+    public static let selfContained: Set<String> = ["auto_enhance", "auto_color"]
+
+    /// The plan without its unasked-for extras, and the extras, when that split is safe: every
+    /// unnamed step is self-contained and what is left still changes the document. Nil when
+    /// the plan is named throughout (nothing to split) or holds another unnamed step (it waits whole).
+    public static func withoutExtras(_ plan: AgentPlan, request: String, commandTitle: (String) -> String? = { _ in nil }) -> (runs: AgentPlan, offered: [AgentStep])? {
+        let extras = unnamed(plan, request: request, commandTitle: commandTitle)
+        guard !extras.isEmpty, extras.allSatisfy({ selfContained.contains($0.op) }) else { return nil }
+        var rest = plan
+        rest.steps.removeAll { step in extras.contains { $0.id == step.id } }
+        guard rest.steps.contains(where: { !harmless.contains($0.op) }) else { return nil }
+        return (rest, extras)
+    }
+
+    /// The kinds of adjustment or filter that the request's words name.
+    static func kindsNamed(by request: String, among valid: [String]) -> [String] {
+        let request = request.lowercased()
+        return valid.filter { kind in
+            if let stems = kinds[kind], has(request, anyOf: stems) { return true }
+            let own = kind.split(separator: "_").map(String.init).filter { $0.count >= 4 }
+            return !own.isEmpty && own.allSatisfy { request.contains($0) }
+        }
+    }
+
+    /// Said in a step whose missing value was taken from the request.
+    public static let filledNote = "type taken from your request"
+
+    /// A step that needs a kind and came without one (or with one that doesn't exist) gets it
+    /// from the request, when the request's words name exactly one kind. "Make it black and
+    /// white" with an adjustment and no type means Black & White. Two kinds that fit ("bright"
+    /// is Brightness/Contrast and Exposure) fill in nothing: the step then fails as it would.
+    /// The step says where its type came from. Returns the plan and how many steps were filled in.
+    public static func completed(_ plan: AgentPlan, request: String, adjustments: [String], filters: [String]) -> (plan: AgentPlan, filled: Int) {
+        var plan = plan, filled = 0
+        for i in plan.steps.indices {
+            let valid: [String]
+            switch plan.steps[i].op {
+            case "add_adjustment": valid = adjustments
+            case "apply_filter": valid = filters
+            default: continue
+            }
+            if let given = plan.steps[i].string("type"), valid.contains(given) { continue }
+            let named = kindsNamed(by: request, among: valid)
+            guard named.count == 1 else { continue }
+            plan.steps[i].params["type"] = .string(named[0])
+            plan.steps[i].rationale = [plan.steps[i].rationale, "(\(filledNote))"].compactMap { $0 }.joined(separator: " ")
+            filled += 1
+        }
+        return (plan, filled)
+    }
+
     /// Whether a plan may run without being shown first: every step that changes the document
     /// is named by the request. (A plan with a paid step waits anyway.)
     public static func runsAtOnce(_ plan: AgentPlan, request: String, commandTitle: (String) -> String? = { _ in nil }) -> Bool {

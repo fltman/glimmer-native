@@ -50,9 +50,13 @@ extension AIController {
             planned.plan = AgentPlan(steps: [step], message: nil)
             var command = Message(fromUser: false, text: "I think you mean Flatten Image. You didn't name it, so it waits for you.")
             command.pendingCommand = "image.flatten"
-            messages = [Message(fromUser: true, text: "Write a poem about the sea"), planned, Message(fromUser: true, text: "tidy up"), command]
-            stepStatus = [step.id: .pending]
-            planStatus = [planned.id: .proposed]
+            // An extra the model added beside what was asked: offered, and it waits.
+            let extra = AgentStep(op: "auto_enhance")
+            var offer = Message(fromUser: false, text: "The assistant also suggests Auto Enhance, which you didn't ask for. Run it now on the picture as it is?")
+            offer.plan = AgentPlan(steps: [extra])
+            messages = [Message(fromUser: true, text: "Write a poem about the sea"), planned, Message(fromUser: true, text: "tidy up"), command, offer]
+            stepStatus = [step.id: .pending, extra.id: .pending]
+            planStatus = [planned.id: .proposed, offer.id: .proposed]
         case "jobs":
             s.showLayersPanel = true; s.inspectorTab = .ai
             showFixtureJobs()

@@ -70,6 +70,7 @@ fixture panel:history && read_state "the History tab with steps" "Agent Edit" ||
 fixture assistant && read_state "the Assistant: requests, a plan with a failed and a skipped step, an error, a refusal" "Claude declined this request (cyber). Nothing was changed." || bad "fixture assistant"
 read_state "the plan's failed step says why" "No font named “Nope” is installed."
 fixture waiting && read_state "a plan and a command that wait for Run, because the request didn't name them" "I think you mean Flatten Image. You didn't name it, so it waits for you." || bad "fixture waiting"
+read_state "an extra step the model added, offered and waiting" "The assistant also suggests Auto Enhance, which you didn't ask for. Run it now on the picture as it is?"
 fixture jobs && read_state "the job list: running, failed, done with a cost, cancelled" "OpenRouter rejected the API key." || bad "fixture jobs"
 
 # The link bar.

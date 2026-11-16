@@ -106,7 +106,13 @@ public enum LocalModelEvaluation {
         }
         // Nothing may change without confirmation: no step, or a plan that waits for Run.
         if test.changesNothing { return plan.droppedOps.isEmpty && (plan.steps.isEmpty || !PlanCheck.runsAtOnce(plan, request: test.goal)) }
-        if test.mustRunAtOnce, !PlanCheck.runsAtOnce(plan, request: test.goal) { return false }
+        // What was asked for must run at once: the whole plan, or the plan without a self-contained
+        // extra that is held back as an offer. The step that runs is the one judged below.
+        var plan = plan
+        if test.mustRunAtOnce, !PlanCheck.runsAtOnce(plan, request: test.goal) {
+            guard let split = PlanCheck.withoutExtras(plan, request: test.goal) else { return false }
+            plan = split.runs
+        }
         if test.answerOnly { return plan.steps.isEmpty && plan.droppedOps.isEmpty && plan.removedFigures.isEmpty }
         guard plan.droppedOps.isEmpty, let step = plan.steps.first(where: { $0.op == test.op }) else { return false }
         // Every step must be a real operation with only parameters that operation has.
@@ -141,6 +147,10 @@ public enum LocalModelEvaluation {
                 passed = judge(plan, test)
                 got = plan.steps.isEmpty ? "no tool call" + (plan.message.map { ": \($0.prefix(240))" } ?? "")
                     : plan.steps.map { s in "\(s.op)(" + s.params.filter { $0.key != "rationale" }.map { "\($0.key): \($0.value.display)" }.sorted().joined(separator: ", ") + ")" }.joined(separator: " ")
+                if plan.filledFromRequest > 0 { got += " | type filled in from the request" }
+                if !PlanCheck.runsAtOnce(plan, request: test.goal), !plan.steps.isEmpty {
+                    got += PlanCheck.withoutExtras(plan, request: test.goal).map { " | runs at once without \($0.offered.map(\.op).joined(separator: ", ")), which is offered" } ?? " | waits for Run"
+                }
                 if !plan.removedFigures.isEmpty { got += " | figures nobody gave it: \(plan.removedFigures.joined(separator: ", "))" }
                 if !plan.droppedOps.isEmpty { got += " | made-up tools: \(plan.droppedOps.joined(separator: ", "))" }
             } catch {
