@@ -18,6 +18,9 @@ import Foundation
 /// as a ratio) is backed only by the document's facts and the worked set, each kind of figure
 /// only where it is said as that kind: "a 4:3 image" for a 3:2 document goes.
 ///
+/// A figure given in words counts as given: "one and a half" in the request backs "1.5" in
+/// the answer (`numbersInWords`; Jämmer lost true sentences that way, 2026-11-16).
+///
 /// Free as before: 0, 1 and the numbers up to the count of the plan's steps ("2 steps", a
 /// numbered list of the steps), and counting words written as words.
 ///
@@ -132,6 +135,68 @@ public enum AssistantNumbers {
         return extra
     }
 
+    // MARK: Figures given in words
+
+    private static let units: [String: Double] = [
+        "zero": 0, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+        "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+        "noll": 0, "en": 1, "ett": 1, "två": 2, "tre": 3, "fyra": 4, "fem": 5, "sex": 6, "sju": 7, "åtta": 8, "nio": 9, "tio": 10,
+        "elva": 11, "tolv": 12, "tretton": 13, "fjorton": 14, "femton": 15, "sexton": 16, "sjutton": 17, "arton": 18, "aderton": 18, "nitton": 19,
+    ]
+    private static let tens: [String: Double] = [
+        "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "sixty": 60, "seventy": 70, "eighty": 80, "ninety": 90,
+        "tjugo": 20, "trettio": 30, "fyrtio": 40, "femtio": 50, "sextio": 60, "sjuttio": 70, "åttio": 80, "nittio": 90,
+    ]
+    private static let hundreds: Set<String> = ["hundred", "hundra"], thousands: Set<String> = ["thousand", "tusen"]
+    private static let halves: Set<String> = ["half", "halv", "halva", "halvt", "hälften", "halvera", "halve"]
+    private static let quarters: Set<String> = ["quarter", "kvart", "fjärdedel"]
+    private static let doubles: [String: Double] = ["double": 2, "twice": 2, "dubbel": 2, "dubbla": 2, "dubbelt": 2, "triple": 3, "tredubbla": 3, "tredubbel": 3]
+
+    /// One number word, also a Swedish one written together ("tjugofem", "tvåhundra").
+    private static func wordValue(_ token: String) -> Double? {
+        if let v = units[token] ?? tens[token] { return v }
+        for (ten, value) in tens where token.hasPrefix(ten) && token.count > ten.count {
+            if let unit = units[String(token.dropFirst(ten.count))], unit >= 1, unit <= 9 { return value + unit }
+        }
+        for hundred in hundreds where token.hasSuffix(hundred) && token.count > hundred.count {
+            if let unit = units[String(token.dropLast(hundred.count))], unit >= 1, unit <= 9 { return unit * 100 }
+        }
+        return nil
+    }
+
+    /// The figures a text gives in words, English and Swedish: "one and a half" (1.5), "minus arton" (18, as the
+    /// digits are read, without a sign), "twenty-five", "tvåhundra", "half" (0.5), "a quarter" (0.25), "double" (2).
+    /// Used for what was GIVEN only: a figure said in words in the request backs the same figure in digits in the
+    /// answer. Words in the answer are not figures to check.
+    public static func numbersInWords(in text: String) -> [Double] {
+        let tokens = text.lowercased().split { !$0.isLetter }.map(String.init)
+        var found: [Double] = []
+        var i = 0
+        while i < tokens.count {
+            let token = tokens[i]
+            if halves.contains(token) { found.append(0.5); i += 1; continue }
+            if quarters.contains(token) { found.append(0.25); i += 1; continue }
+            if let d = doubles[token] { found.append(d); i += 1; continue }
+            guard var value = wordValue(token) else { i += 1; continue }
+            i += 1
+            // "twenty five", "two hundred (and) fifty", "three thousand".
+            if value >= 20, value < 100, value.truncatingRemainder(dividingBy: 10) == 0, i < tokens.count, let unit = units[tokens[i]], unit >= 1, unit <= 9 { value += unit; i += 1 }
+            if i < tokens.count, hundreds.contains(tokens[i]) {
+                value *= 100; i += 1
+                if i < tokens.count, ["and", "och"].contains(tokens[i]), i + 1 < tokens.count, wordValue(tokens[i + 1]) != nil { i += 1 }
+                if i < tokens.count, let rest = wordValue(tokens[i]), rest < 100 {
+                    value += rest; i += 1
+                    if rest >= 20, rest.truncatingRemainder(dividingBy: 10) == 0, i < tokens.count, let unit = units[tokens[i]], unit >= 1, unit <= 9 { value += unit; i += 1 }
+                }
+            }
+            if i < tokens.count, thousands.contains(tokens[i]) { value *= 1000; i += 1 }
+            // "one and a half", "en och en halv", "ett och ett halvt".
+            if i + 2 < tokens.count, ["and", "och"].contains(tokens[i]), ["a", "en", "ett", "one"].contains(tokens[i + 1]), halves.contains(tokens[i + 2]) { value += 0.5; i += 3 }
+            found.append(value)
+        }
+        return found
+    }
+
     private static func sentences(_ text: String) -> [String] {
         var parts: [String] = [], current = ""
         let characters = Array(text)
@@ -171,7 +236,8 @@ public enum AssistantNumbers {
     /// proposal itself; only a sentence about money with a figure goes.
     /// `extra`: what counts as given besides `given`, each kind only where it belongs (see `Extra`).
     public static func checked(_ text: String, given: [String], steps: Int = 0, pricesOnly: Bool = false, extra: Extra = .none) -> (text: String?, removed: [String]) {
-        var backed = Set(given.flatMap(numbers(in:)))
+        // What was given in digits, and what was given in words ("one and a half seconds" backs "1.5").
+        var backed = Set(given.flatMap(numbers(in:))).union(given.flatMap(numbersInWords(in:)))
         // A share given as 0.5 may be said as 50 (percent).
         for n in backed where n > 0 && n <= 1 { backed.insert((n * 100).rounded()) }
         // 0, 1 and the numbers up to the count of the plan's steps are free: "2 steps", a numbered list of the steps.

@@ -766,3 +766,17 @@ Decided (coordinator, 2026-11-16): `develop_raw` stays offered to the assistant;
 Asked which further services he wanted to offer, Anders answered "låt alla synas så går vi vidare", and when told the untried ones would be marked "(not tried yet)" in the list: "ta bort märkningen". So: every cloud service that is built is offered in every build, by its name alone. For text: OpenRouter, OpenAI, Anthropic, xAI, Google, Berget, Grunden (and Ollama while it runs). For pictures: OpenRouter, OpenAI, Google, fal.ai, Hedra. MLX stays out: a local server is shown once a model on it has passed Glimmer's evaluation, and none has.
 
 This replaces "hidden until Anders has made a paid test" (PROVIDERS.md). It is his decision in this window; it is not a result. **Tried with a real call: OpenRouter and Berget (text). Nothing else.** OpenAI, Anthropic, xAI, Google, Grunden, fal.ai and Hedra have never answered a request from Glimmer; the picture services cost per picture. The list no longer says so; the line under the key field ("built from its documentation and has not been tried with a real call yet") and the manual's table still do, as fact. The `-ai.showUntried` switch is gone.
+
+## Two assistant rules from Jämmer's evaluation (2026-11-16, late)
+
+Built on the coordinator's word, since seven more models can now answer.
+
+**A figure given in words counts as given.** "One and a half" in the request backs "1.5" in the answer; "minus arton" backs 18; also "twenty-five", "tjugofem", "two hundred and fifty", "tvåhundra", "three thousand", "half" (0.5, and so 50 %), "a quarter", "double". English and Swedish. Only what was given is read this way; words in the answer are not figures to check. A figure nobody gave still goes.
+
+**A sentence saying something was done must not stand when it was not** (`PlanClaims`).
+- An answer in words with no step planned is the model's own and stands as before.
+- Above steps, the model's sentence stands only if it names no operation beyond those steps, told by the words a request names an operation by. "Cropped to 16:9 and removed the background" above a plan that only crops is replaced by "Here's the plan."; the list of steps says the rest.
+- When the model planned only steps Glimmer doesn't have, or the plan is refused for a setting that doesn't exist, the model's sentence is not shown: the app's line stands alone.
+- When a plan stops part-way (a step fails, or it is cancelled), the sentence is replaced by the app's own list: "Done: … Not done: …".
+- **Limits, said plainly.** The check sees which operations a sentence names, not grammar: "All done!" above a plan still waiting for Run stands, beside steps that show their own state. Some forty words too common to mean an operation ("layer", "size", "color" …) are not counted, so "and changed the colour" beside a crop is not caught. And a sentence that uses an uncommon word of another operation innocently loses its place to "Here's the plan.": true, but plainer.
+- Not seen as pictures yet: the three new lines in the panel (steps Glimmer doesn't have; Done/Not done).

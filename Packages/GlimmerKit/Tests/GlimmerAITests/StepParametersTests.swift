@@ -348,3 +348,57 @@ struct RealSiblingOperations {
         #expect(AssistantNumbers.worked(width: 0, height: 0, request: "x").sizes.isEmpty)
     }
 }
+
+/// A figure the request gives in words backs the same figure in digits in the answer.
+@Suite struct FiguresInWordsTests {
+    @Test func wordsAreReadInEnglishAndSwedish() {
+        #expect(AssistantNumbers.numbersInWords(in: "one and a half seconds") == [1.5])
+        #expect(AssistantNumbers.numbersInWords(in: "minus arton") == [18])
+        #expect(AssistantNumbers.numbersInWords(in: "twenty-five percent, then two hundred and fifty") == [25, 250])
+        #expect(AssistantNumbers.numbersInWords(in: "tjugofem procent och tvåhundra pixlar") == [25, 200])
+        #expect(AssistantNumbers.numbersInWords(in: "en och en halv gång, tre tusen") == [1.5, 3000])
+        #expect(AssistantNumbers.numbersInWords(in: "half as large, a quarter, double it") == [0.5, 0.25, 2])
+        #expect(AssistantNumbers.numbersInWords(in: "Remove the background") == [])
+    }
+
+    @Test func aFigureGivenInWordsBacksTheDigits() {
+        func check(_ text: String, request: String) -> [String] { AssistantNumbers.checked(text, given: [request, "2400 1600 1"], steps: 1).removed }
+        #expect(check("Blurred with a radius of 18.", request: "Blur it by eighteen") == [])
+        #expect(check("Oskärpa med radie 18.", request: "Gör den suddig, radie arton") == [])
+        #expect(check("Rotated 1.5 degrees.", request: "Rotate it one and a half degrees") == [])
+        #expect(check("Scaled to 25 %.", request: "Scale it to a quarter") == [])        // a share may be said as a percentage
+        // A figure nobody gave still goes, in words or not.
+        #expect(check("Blurred with a radius of 19.", request: "Blur it by eighteen") == ["number 19"])
+        #expect(check("Rotated 2.5 degrees.", request: "Rotate it one and a half degrees") == ["number 2.5"])
+    }
+}
+
+/// A sentence saying something was done must not stand when it was not.
+@Suite struct PlanClaimsTests {
+    static func step(_ op: String, _ params: [String: JSONValue] = [:]) -> AgentStep { AgentStep(op: op, params: params) }
+
+    @Test func aSentenceStandsOnlyAboveTheStepsItNames() {
+        let crop = Self.step("crop", ["aspect": .string("16:9")])
+        #expect(PlanClaims.shown("Cropped to 16:9.", steps: [crop], madeUpSteps: false) == "Cropped to 16:9.")
+        #expect(PlanClaims.shown("Beskär bilden till 16:9.", steps: [crop], madeUpSteps: false) != nil)
+        // It names something no step does.
+        #expect(PlanClaims.shown("Cropped to 16:9 and removed the background.", steps: [crop], madeUpSteps: false) == nil)
+        #expect(PlanClaims.shown("Beskuren, och bakgrunden är borttagen.", steps: [crop], madeUpSteps: false) == nil)
+        #expect(PlanClaims.shown("Cropped and sharpened.", steps: [crop], madeUpSteps: false) == nil)
+        // With both steps it stands.
+        let sharpen = Self.step("apply_filter", ["type": .string("sharpen")])
+        #expect(PlanClaims.shown("Cropped and sharpened.", steps: [crop, sharpen], madeUpSteps: false) != nil)
+        // A kind of adjustment other than the one planned.
+        let bw = Self.step("add_adjustment", ["type": .string("black_white")])
+        #expect(PlanClaims.shown("Made it black and white.", steps: [bw], madeUpSteps: false) != nil)
+        #expect(PlanClaims.shown("Made it black and white with a vignette.", steps: [bw], madeUpSteps: false) == nil)
+        // Words too common to mean an operation don't take a sentence down.
+        #expect(PlanClaims.shown("The background is removed; the layer keeps its size.", steps: [Self.step("remove_background")], madeUpSteps: false) != nil)
+    }
+
+    @Test func nothingStandsAboveNoStepsOrMadeUpSteps() {
+        #expect(PlanClaims.shown("VCA Voices removed.", steps: [], madeUpSteps: false) == nil)
+        #expect(PlanClaims.shown("Cropped to 16:9.", steps: [Self.step("crop")], madeUpSteps: true) == nil)
+        #expect(PlanClaims.shown(nil, steps: [Self.step("crop")], madeUpSteps: false) == nil)
+    }
+}

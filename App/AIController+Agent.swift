@@ -222,13 +222,8 @@ extension AIController {
     }
 
     private func receive(_ plan: AgentPlan, goal: String) {
-        let summary = plan.message ?? (plan.steps.isEmpty ? "I'm not sure how to do that." : "Here's the plan.")
-        var text = summary
-        if !plan.removedFigures.isEmpty { text += " " + String(localized: "Glimmer left out a figure it could not verify.") }
-        if !plan.droppedOps.isEmpty {
-            text += " (Skipped steps the editor can't do: \(plan.droppedOps.joined(separator: ", ")).)"
-        }
         // A plan runs at once only when the request names every step that changes the document.
+        let received = plan
         var plan = plan
         var named = PlanCheck.runsAtOnce(plan, request: goal, commandTitle: Self.commandTitle)
         // An extra that stands by itself (Auto Enhance beside what was asked) is held back as
@@ -242,16 +237,36 @@ extension AIController {
         // A step with a parameter its operation doesn't have would be refused part-way: the plan is shown and none of it runs.
         let own = plan.steps.lazy.compactMap { StepParameters.stray(in: $0) }.first
         let refused = plan.strayParameters.first ?? own?.message
+        // A sentence saying something was done must not stand when it was not (`PlanClaims`). An answer in
+        // words, with no step planned, is the model's own and stands. Above steps, the model's sentence stands
+        // only if it names nothing beyond them; when no step is left, or the plan is refused, the app speaks alone.
+        let madeUp = !received.droppedOps.isEmpty
+        let summary: String
+        if received.steps.isEmpty && !madeUp {
+            summary = received.message ?? String(localized: "I'm not sure how to do that.")
+        } else if refused != nil || plan.steps.isEmpty {
+            summary = ""
+        } else {
+            summary = PlanClaims.shown(received.message, steps: plan.steps, madeUpSteps: madeUp) ?? String(localized: "Here's the plan.")
+        }
+        var text = summary
+        if !plan.removedFigures.isEmpty, !summary.isEmpty, summary == received.message { text += " " + String(localized: "Glimmer left out a figure it could not verify.") }
+        if madeUp {
+            let list = received.droppedOps.joined(separator: ", ")
+            text += (text.isEmpty ? "" : " ") + (plan.steps.isEmpty
+                ? String(localized: "The assistant planned steps Glimmer doesn't have (\(list)), so nothing was done.")
+                : String(localized: "The assistant also planned steps Glimmer doesn't have (\(list)); they are left out."))
+        }
         if refused != nil {
             // Said for a person; the API's exact words are kept under the message for whoever wants them.
             let subject = plan.straySubject ?? own?.subject ?? "", name = plan.strayName ?? own?.name ?? ""
             let what = String(localized: String.LocalizationValue(subject))
-            text += " " + String(localized: "The plan asks \(what) for a setting it doesn't have (\(name)), so it can't run. Nothing was changed. Ask again, perhaps in other words.")
+            text += (text.isEmpty ? "" : " ") + String(localized: "The plan asks \(what) for a setting it doesn't have (\(name)), so it can't run. Nothing was changed. Ask again, perhaps in other words.")
         } else if !named, !plan.usesAI { text += " " + String(localized: "Some of these steps aren't named in what you asked, so the plan waits for Run.") }
         var message = Message(fromUser: false, text: text, plan: plan.steps.isEmpty ? nil : plan)
         message.exactWords = refused
         messages.append(message)
-        agentHistory.append((goal, summary + (plan.steps.isEmpty ? "" : " Steps: " + plan.steps.map(\.op).joined(separator: ", "))))
+        agentHistory.append((goal, (received.message ?? summary) + (plan.steps.isEmpty ? "" : " Steps: " + plan.steps.map(\.op).joined(separator: ", "))))
         guard !plan.steps.isEmpty else { return }
         if refused != nil {
             for step in plan.steps { stepStatus[step.id] = .skipped }
@@ -287,8 +302,21 @@ extension AIController {
             defer { self.session.document.endTransaction(undoManager: self.session.undoManager) }
             let failed = await self.run(plan.steps)
             self.planStatus[messageID] = Task.isCancelled ? .cancelled : (failed ? .failed : .finished)
+            // A plan that stopped part-way: the app's own list of what was done and what was not takes the sentence's place.
+            if failed || Task.isCancelled, let i = self.messages.firstIndex(where: { $0.id == messageID }) {
+                self.messages[i].text = self.whatWasDone(plan.steps)
+            }
             if !failed, !Task.isCancelled { await self.review(goal: goal, steps: plan.steps, before: before) }
         }
+    }
+
+    /// The app's own account of a plan that stopped part-way, from each step's state.
+    func whatWasDone(_ steps: [AgentStep]) -> String {
+        let done = steps.filter { stepStatus[$0.id] == .done }.map(PlanView.describe)
+        let not = steps.filter { stepStatus[$0.id] != .done }.map(PlanView.describe)
+        let notList = not.formatted(.list(type: .and))
+        guard !done.isEmpty else { return String(localized: "Nothing was done. Not done: \(notList).") }
+        return String(localized: "Done: \(done.formatted(.list(type: .and))). Not done: \(notList).")
     }
 
     /// Runs steps in order; returns true when one failed (the rest are skipped).

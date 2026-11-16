@@ -13537,6 +13537,72 @@
           }
         }
       }
+    },
+    "Here's the plan.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Här är planen."
+          }
+        }
+      }
+    },
+    "I'm not sure how to do that.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jag är inte säker på hur det ska göras."
+          }
+        }
+      }
+    },
+    "The assistant planned steps Glimmer doesn't have (%@), so nothing was done.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistenten planerade steg som Glimmer inte har (%@), så ingenting gjordes."
+          }
+        }
+      }
+    },
+    "The assistant also planned steps Glimmer doesn't have (%@); they are left out.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistenten planerade också steg som Glimmer inte har (%@); de är utelämnade."
+          }
+        }
+      }
+    },
+    "Nothing was done. Not done: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingenting gjordes. Inte gjort: %@."
+          }
+        }
+      }
+    },
+    "Done: %@. Not done: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gjort: %1$@. Inte gjort: %2$@."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

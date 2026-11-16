@@ -286,7 +286,7 @@ private struct AssistantView: View {
 }
 
 /// The assistant's plan as a checklist, with Run / Stop.
-private struct PlanView: View {
+struct PlanView: View {
     let ai: AIController
     let messageID: UUID
     let plan: AgentPlan
