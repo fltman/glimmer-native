@@ -468,7 +468,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 
 ## 6. Medvetet utanför (för nu)
 
-Fal och Replicate, konton, credits och fakturering, multiplayer, plugin-API, PSD med lager, RAW-framkallning utöver grundläget, video, iPad. Allt i `docs/INNOVATION_ROADMAP.md` som inte byggts i webben ligger också utanför, men registret och agentarkitekturen gör dem enkla att lägga till senare.
+Replicate, konton, credits och fakturering, multiplayer, plugin-API, PSD med lager, RAW-framkallning utöver grundläget, video, iPad. Allt i `docs/INNOVATION_ROADMAP.md` som inte byggts i webben ligger också utanför, men registret och agentarkitekturen gör dem enkla att lägga till senare.
 
 ## 7. Besvarade frågor (2026-11-13)
 
@@ -483,3 +483,7 @@ Fal och Replicate, konton, credits och fakturering, multiplayer, plugin-API, PSD
 - **Laga markering (2026-11-16):** fyller en markerad yta med bild från omgivningen, på Macen och utan modell (Redigera › Laga markering, knappen Laga i markeringsfältet, agentens `heal_selection`). Två klassiska metoder skrivna från artiklarna: fast marching för tunna ytor och jämna underlag, exemplarfyllning för textur. Byggd och verifierad i debugbygget. **Avstängd i releasebyggen** med brytaren `GLIMMER_HEAL` i `Config/Features.xcconfig` tills Anders har sett resultaten; manualen, FAQ:n och guiden följer brytaren. Reglerna koden håller sig till, och patenten bakom dem, står i `PATENTS.md`.
 - **Modell för objektborttagning:** parkerad. Underlaget står i `FILL-MODEL-RESEARCH.md`; det hänger på en juristfråga om Places2.
 - **Spara bara ändrade lager:** undersökt och inte byggt (`TESTING-NOTES.md`).
+- **Länkad redigering överlever omstart (2026-11-16):** ett dokument som redigeras åt Flimmer eller Jämmer behåller sin länk genom avslut, krasch och omstart (`scripts/test-linked-restart.sh`).
+- **Flera AI-tjänster (2026-11-16):** ett register (`Providers.swift`, slugs enligt the-apps/PROVIDERS.md) styr nycklar, modellistor, Inställningar och manualens tabell. Erbjuds för text: OpenRouter, Berget, Grunden och Ollama (lokalt, efter utvärdering med tolv uppdrag). Byggda från dokumentationen och dolda tills Anders har provat var och en med ett riktigt anrop: text hos Google, OpenAI, xAI och Anthropic; bild hos OpenAI, Google, fal och Hedra samt OpenRouters nya bildväg. Listan över proven står i `TESTING-NOTES.md`. Det ersätter punkten om fal under 6. Ingen kodagent byggs in: man kopplar sin egen genom agent-API:t.
+- **Tillgänglighet läses med innehåll (2026-11-16):** `scripts/test-accessibility.sh` läser varje panel, ark och varning med innehåll på plats, efter en krasch som bara syntes med ett meddelande i assistenten.
+- **Känt och inte åtgärdat:** tre ställen avslutar appen om grafikminnet tar slut (`Tile.makeTexture` och två i `DocumentCompositor`). Gränsen per dokument (`DocumentLimits`) gäller en duk, inte summan av lager och öppna dokument.
