@@ -84,3 +84,19 @@ public final class InMemorySecretStore: SecretStore, @unchecked Sendable {
     public func write(_ value: String) throws { lock.withLock { self.value = value } }
     public func delete() throws { lock.withLock { value = nil } }
 }
+
+/// Keys kept in memory for one run of a test copy (`-ai.noKeychain YES`, debug builds only).
+final class MemorySecrets: @unchecked Sendable {
+    private let lock = NSLock()
+    private var items: [String: String] = [:]
+    func get(_ account: String) -> String? { lock.withLock { items[account] } }
+    func set(_ account: String, _ value: String?) { lock.withLock { items[account] = value } }
+}
+
+struct MemorySecretStore: SecretStore {
+    let secrets: MemorySecrets
+    let account: String
+    func read() throws -> String? { secrets.get(account) }
+    func write(_ value: String) throws { secrets.set(account, value) }
+    func delete() throws { secrets.set(account, nil) }
+}

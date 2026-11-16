@@ -239,7 +239,21 @@ public struct ProviderKeys: Sendable {
     public init(store: @escaping @Sendable (String) -> any SecretStore) { self.store = store }
 
     /// The user's keychain, under this build's own bundle id.
-    public static let keychain = ProviderKeys { KeychainSecretStore(service: AppIdentity.glimmerBundleID, account: $0) }
+    ///
+    /// A debug copy started with `-ai.noKeychain YES` keeps keys in memory for that run and never
+    /// touches the keychain. Every test copy is started so (scripts/test-app.sh): a copy signed
+    /// otherwise than the app that saved a key makes macOS ask for the keychain's password, and
+    /// the window waits on that question (found 2026-11-16, the evening Anders saved his first
+    /// real key: the accessibility pass found no Settings window).
+    public static let keychain: ProviderKeys = {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "ai.noKeychain") {
+            let memory = MemorySecrets()
+            return ProviderKeys { MemorySecretStore(secrets: memory, account: $0) }
+        }
+        #endif
+        return ProviderKeys { KeychainSecretStore(service: AppIdentity.glimmerBundleID, account: $0) }
+    }()
 
     public func store(for slug: String) -> any SecretStore { store(slug) }
 

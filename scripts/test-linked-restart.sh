@@ -63,7 +63,7 @@ start() {  # sets PID and PORT; with a file: a cold start for that file
     # (Through NSWorkspace, as a sibling does: `open -n app file --args …` doesn't deliver the file as an open event.)
     env -u OPENROUTER_API_KEY "$HANDOVER" "$APP" "$1" -skipWelcome -skipAgentSplash -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer || exit 1
   else
-    env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -ApplePersistenceIgnoreState NO -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer
+    env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -ai.noKeychain YES -ApplePersistenceIgnoreState NO -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer
   fi
   for _ in {1..80}; do
     if [[ -z "$PID" ]]; then for p in $(running); do [[ "$before" != *" $p "* ]] && PID=$p; done; fi

@@ -293,6 +293,55 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
         }
     }
 
+    /// Every service that is offered, one by one (they are all shown since 2026-11-16, most of them never called):
+    /// what the service answers in refusal reaches the person word for word with its status, and an answer that
+    /// can't be used is an error, never a plan or a picture.
+    @Test func everyOfferedServiceShowsARefusalWordForWordAndMakesNothingOfAnUnusableAnswer() async throws {
+        let words = "This request cannot be served: the account is restricted (ref 7Q-ZETA)."
+        let refusal = #"{"error":{"message":"\#(words)","type":"restricted"}}"#
+        let texts = AIProvider.offering(.text).filter { $0.kind == .cloud }
+        #expect(texts.map(\.slug) == ["openrouter", "openai", "anthropic", "xai", "google", "berget", "grunden"])
+        for p in texts {
+            let model = try #require(p.textModel(key: "k", model: "m", session: FakeProvider.session), "\(p.slug)")
+            FakeProvider.script([(422, refusal)])
+            do {
+                _ = try await AgentPlanner.plan(goal: "Crop it", context: context, history: [], model: model)
+                Issue.record("\(p.slug): a refusal became a plan")
+            } catch {
+                let said = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+                // OpenRouter's errors are put in Glimmer's own words around the service's (tried since long); the others carry the status.
+                #expect(said.contains(words) && (said.contains("422") || p.slug == "openrouter"), "\(p.slug): \(said)")
+            }
+            FakeProvider.script([(200, "<html><body>Gateway says hello</body></html>")])
+            do {
+                let (plan, _) = try await AgentPlanner.plan(goal: "Crop it", context: context, history: [], model: model)
+                #expect(plan.steps.isEmpty, "\(p.slug): an unusable answer became steps")
+            } catch {}
+        }
+        var images: [(String, any ImageModel)] = [("openrouter", OpenRouterImageModel(
+            client: OpenRouterClient(apiKey: "k", configuration: AIProvider.openRouter.chatConfiguration(), session: FakeProvider.session),
+            model: "m", route: .chat, cacheDirectory: nil))]
+        for p in AIProvider.offering(.image) where p.slug != "openrouter" {
+            images.append((p.slug, try #require(p.imageModel(key: "k", model: "m", editModel: "e", session: FakeProvider.session), "\(p.slug)")))
+        }
+        #expect(images.map(\.0) == ["openrouter", "openai", "google", "fal", "hedra"])
+        for (slug, model) in images {
+            FakeProvider.script([(422, refusal)])
+            do {
+                _ = try await model.generate(prompt: "a red ball", images: [], seed: nil)
+                Issue.record("\(slug): a refusal became a picture")
+            } catch {
+                let said = (error as? LocalizedError)?.errorDescription ?? "\(error)"
+                #expect(said.contains(words) && (said.contains("422") || slug == "openrouter"), "\(slug): \(said)")
+            }
+            FakeProvider.script([(200, #"{"ok":true}"#), (200, #"{"ok":true}"#), (200, #"{"ok":true}"#)])
+            do {
+                _ = try await model.generate(prompt: "a red ball", images: [], seed: nil)
+                Issue.record("\(slug): an answer with no picture in it became a picture")
+            } catch {}
+        }
+    }
+
     @Test func aCloudProviderWithoutAKeyIsNotCalled() async {
         FakeProvider.script([(200, Self.toolAnswer)])
         await #expect(throws: OpenRouterError.missingAPIKey) {

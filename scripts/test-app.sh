@@ -50,7 +50,7 @@ cleanup() {  # stops only this test copy; with-gui-lock.sh releases the lock
 trap cleanup EXIT INT TERM
 
 BEFORE=" $( (pgrep -x Glimmer || true) | tr "\n" " ") "
-env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -quiet YES -ApplePersistenceIgnoreState YES ${=GLIMMER_ARGS:-}
+env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -quiet YES -ai.noKeychain YES -ApplePersistenceIgnoreState YES ${=GLIMMER_ARGS:-}
 PORT=""
 for _ in {1..80}; do
   if [[ -z "$PID" ]]; then

@@ -780,3 +780,13 @@ Built on the coordinator's word, since seven more models can now answer.
 - When a plan stops part-way (a step fails, or it is cancelled), the sentence is replaced by the app's own list: "Done: … Not done: …".
 - **Limits, said plainly.** The check sees which operations a sentence names, not grammar: "All done!" above a plan still waiting for Run stands, beside steps that show their own state. Some forty words too common to mean an operation ("layer", "size", "color" …) are not counted, so "and changed the colour" beside a crop is not caught. And a sentence that uses an uncommon word of another operation innocently loses its place to "Here's the plan.": true, but plainer.
 - Not seen as pictures yet: the three new lines in the panel (steps Glimmer doesn't have; Done/Not done).
+
+## Test copies and the keychain (2026-11-16, late)
+
+The accessibility pass found no Settings window, in English and in Swedish. Cause, from a sample of the waiting copy: Settings › AI reads the chosen service's key on the main thread, the copy that macOS lets make no connection is signed otherwise than the app Anders saved his Berget key with, so macOS asked for the keychain's password and the window waited on that question. Not a fault of the day's changes: it appeared because a real key exists in the keychain since this evening.
+
+Now: a debug copy started with `-ai.noKeychain YES` keeps keys in memory for the run and never touches the keychain, and `scripts/test-app.sh` starts every test copy so (the guest copy's line for siblings names the switch too). A release copy has no such switch: a re-signed release copy that opens Settings › AI with a keyed service chosen would ask the same question. In the real app there is no question, since it reads its own items; the read is still on the main thread.
+
+A mistake of mine the same hour: I wrapped `test-accessibility.sh` in the GUI lock although it takes the lock itself, so it waited on itself and held the lock from the siblings for about twenty minutes. Stopped by pid; the script is run bare.
+
+**Every offered service, one by one** (`everyOfferedServiceShowsARefusalWordForWordAndMakesNothingOfAnUnusableAnswer`, with an injected session, no network): for the seven text services and the five picture services, a refusal from the service (HTTP 422 with its own sentence) reaches the person word for word, with the status for all but OpenRouter (whose errors are put in Glimmer's words around the service's, as before); and an answer that can't be used (a web page for a plan, a body with no picture in it) becomes an error, never steps and never a picture. The provider suites also pass built for release (`swift test -c release`, 93 tests).
