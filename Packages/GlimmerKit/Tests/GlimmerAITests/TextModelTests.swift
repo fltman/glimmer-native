@@ -12,6 +12,8 @@ final class ScriptedTextModel: TextModel, @unchecked Sendable {
     var asked: [(kind: String, temperature: Double, json: Bool, images: Int, tools: [String], streamed: Bool)] { lock.withLock { _asked } }
     var text = ""
     var calls: [TextToolCall] = []
+    /// What arrives before the final text, piece by piece (each is everything so far).
+    var streamed: [String] = []
 
     func reply(system: String?, user: String, images: [Data], imageType: String, json: Bool, temperature: Double) async throws -> TextReply {
         lock.withLock { _asked.append(("reply", temperature, json, images.count, [], false)) }
@@ -22,6 +24,7 @@ final class ScriptedTextModel: TextModel, @unchecked Sendable {
                    onText: (@Sendable (String) -> Void)?) async throws -> TextToolReply {
         let names = tools.compactMap { ($0["function"] as? [String: Any])?["name"] as? String }
         lock.withLock { _asked.append(("tools", temperature, false, 0, names, onText != nil)) }
+        for partial in streamed { onText?(partial) }
         onText?(text)
         return TextToolReply(text: text, toolCalls: calls, cost: nil)
     }

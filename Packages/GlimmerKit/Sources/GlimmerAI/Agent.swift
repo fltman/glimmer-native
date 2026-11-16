@@ -655,7 +655,13 @@ public enum AgentPlanner {
                             onText: (@Sendable (String) -> Void)? = nil) async throws -> (AgentPlan, Double?) {
         let messages = toolMessages(goal: goal, context: context, history: history, image: image, siblingContext: siblingContext)
         let tools = toolSchemas(short: model.prefersShortToolList) + (model.prefersShortToolList ? [] : siblings.map(\.toolSchema))
-        let response = try await model.callTools(messages: messages, tools: tools, temperature: 0.2, onText: onText)
+        // The text is checked while it arrives too: the caller never gets a figure nobody gave the model.
+        let given = givenFigures(goal: goal, context: context, history: history, siblingContext: siblingContext)
+        var checkedText: (@Sendable (String) -> Void)?
+        if let onText {
+            checkedText = { @Sendable (text: String) in onText(AssistantNumbers.shownWhileArriving(text, given: given)) }
+        }
+        let response = try await model.callTools(messages: messages, tools: tools, temperature: 0.2, onText: checkedText)
         var plan = try plan(from: response, extra: Set(siblings.map(\.toolName)))
         checkFigures(&plan, goal: goal, context: context, history: history, siblingContext: siblingContext)
         return (plan, response.cost)
@@ -667,13 +673,17 @@ public enum AgentPlanner {
         "The document is \(context.width) × \(context.height) pixels and has \(context.layerCount) \(context.layerCount == 1 ? "layer" : "layers")."
     }
 
+    /// Every text the model was given for this request: the figures in them may be stated.
+    static func givenFigures(goal: String, context: AgentContext, history: [(user: String, reply: String)], siblingContext: String?) -> [String] {
+        [goal, "\(context.width) \(context.height) \(context.layerCount)", context.activeLayerName, siblingContext ?? ""] + history.suffix(8).map(\.user)
+    }
+
     /// Takes out of the plan's text every sentence with a figure the model was not given
     /// (`AssistantNumbers`). When nothing is left of an answer without steps, Glimmer states
     /// what it knows itself.
     static func checkFigures(_ plan: inout AgentPlan, goal: String, context: AgentContext,
                              history: [(user: String, reply: String)], siblingContext: String?) {
-        var given = [goal, "\(context.width) \(context.height) \(context.layerCount)", context.activeLayerName, siblingContext ?? ""]
-        given += history.suffix(8).map(\.user)
+        var given = givenFigures(goal: goal, context: context, history: history, siblingContext: siblingContext)
         for step in plan.steps {
             if let data = try? JSONEncoder().encode(step.params), let text = String(data: data, encoding: .utf8) { given.append(text) }
         }

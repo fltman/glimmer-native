@@ -481,3 +481,37 @@ extension AssistantNumbersTests {
         #expect(report.passed == 12 && report.scored.count == 12 && report.gapLine.contains("0 of 1"))
     }
 }
+
+extension AssistantNumbersTests {
+    @Test func anInventedFigureNeverShowsWhileTheAnswerArrives() {
+        let answer = "Sure, here it is. The document is 3000 × 2000 pixels. It costs $0.04 to enlarge. It has 1 layer and is 2400 wide. Anything else?"
+        var everShown: [String] = []
+        for end in answer.indices {
+            everShown.append(AssistantNumbers.shownWhileArriving(String(answer[...end]), given: given))
+        }
+        for shown in everShown {
+            #expect(!shown.contains("3") && !shown.contains("2000") && !shown.contains("0.04") && !shown.contains("$"), "\(shown)")
+        }
+        // Text without figures flows as it arrives, and a given figure shows once its sentence is finished.
+        #expect(everShown.contains("Sure, he"))
+        #expect(everShown.last == "Sure, here it is. It has 1 layer and is 2400 wide. Anything else?")
+        #expect(!everShown.contains { $0.hasSuffix("is 24") })   // never half a number
+    }
+
+    @Test func thePlannerHandsOnOnlyCheckedTextWhileItArrives() async throws {
+        let model = ScriptedTextModel()
+        model.streamed = ["The document is 99", "The document is 9999 pixels wide. ", "The document is 9999 pixels wide. Done"]
+        model.text = "The document is 9999 pixels wide. Done."
+        let seen = ShownTexts()
+        let context = AgentContext(width: 2400, height: 1600, layerCount: 1, hasSelection: false, activeLayerKind: "pixel", activeLayerName: "Photo")
+        let (plan, _) = try await AgentPlanner.plan(goal: "How wide is it?", context: context, history: [], model: model) { seen.add($0) }
+        #expect(!seen.all.contains { $0.contains("9") }, "\(seen.all)")
+        #expect(plan.message == "Done." && plan.removedFigures == ["number 9999"])
+    }
+}
+
+final class ShownTexts: @unchecked Sendable {
+    private let lock = NSLock(); private var texts: [String] = []
+    func add(_ text: String) { lock.withLock { texts.append(text) } }
+    var all: [String] { lock.withLock { texts } }
+}

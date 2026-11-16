@@ -61,6 +61,23 @@ public enum AssistantNumbers {
     /// `text` without the sentences that state a number not in `given`, and those numbers.
     /// `given`: every text Glimmer or the person supplied. `steps`: how many steps the plan
     /// has, so "step 2" and "3 steps" are allowed.
+    /// What may be shown of an answer that is still arriving. `text` is everything received so
+    /// far. Finished sentences are checked as in `checked`; the unfinished one at the end is
+    /// shown as it comes only while it holds no digit and no money word, and is otherwise
+    /// held back whole until it is finished and checked. A figure the check would remove is
+    /// therefore never shown, not even for a moment. (A sentence that gets a digit late
+    /// disappears from view until it is finished.)
+    public static func shownWhileArriving(_ text: String, given: [String]) -> String {
+        var parts = sentences(text)
+        var pending = ""
+        // The last part is finished only when white space follows it: "2400." may go on as "2400.5".
+        if let last = text.last, !last.isWhitespace, !parts.isEmpty { pending = parts.removeLast() }
+        var shown = parts.filter { checked($0, given: given).removed.isEmpty }.joined()
+        let lower = pending.lowercased()
+        if !pending.contains(where: \.isNumber), !money.contains(where: { lower.contains($0) }) { shown += pending }
+        return shown
+    }
+
     /// `pricesOnly`: for text that proposes an edit ("crop to 4:5"), whose numbers are the
     /// proposal itself; only a sentence about money with a figure goes.
     public static func checked(_ text: String, given: [String], steps: Int = 0, pricesOnly: Bool = false) -> (text: String?, removed: [String]) {

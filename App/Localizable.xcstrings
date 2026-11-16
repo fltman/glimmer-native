@@ -11513,6 +11513,61 @@
           }
         }
       }
+    },
+    "Add your OpenRouter API key in Settings › AI to use the assistant.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg in din OpenRouter-nyckel i Inställningar › AI för att använda assistenten."
+          }
+        }
+      }
+    },
+    "Glimmer calls OpenRouter directly with your own key. It is stored in your keychain and only sent to the service below (openrouter.ai unless you change it). [Get a key](https://openrouter.ai/keys)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer anropar OpenRouter direkt med din egen nyckel. Den sparas i din nyckelring och skickas bara till tjänsten nedan (openrouter.ai om du inte ändrar det). [Skaffa en nyckel](https://openrouter.ai/keys)"
+          }
+        }
+      }
+    },
+    "Not a valid http(s) address; Glimmer uses OpenRouter.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inte en giltig http(s)-adress; Glimmer använder OpenRouter."
+          }
+        }
+      }
+    },
+    "Any service with OpenRouter's API (chat completions with image output) works. Leave empty for OpenRouter. Your key is sent only to this address.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alla tjänster med OpenRouters API (chat completions med bild i svaret) fungerar. Lämna tomt för OpenRouter. Din nyckel skickas bara till den här adressen."
+          }
+        }
+      }
+    },
+    "Leave empty for Hugging Face. A mirror must serve the same paths (<repository>/resolve/main/<file>).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lämna tomt för Hugging Face. En spegel måste ha samma sökvägar (<repository>/resolve/main/<file>)."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
