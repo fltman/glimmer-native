@@ -109,6 +109,62 @@ If your document blends colours in linear light (**Image › Blend Colors in Gam
 
 What has been verified: Glimmer reads its own Photoshop files back with every setting above intact and the picture unchanged, and macOS (Preview, Quick Look) shows their flattened picture. The layers have not been tried in Photoshop itself, or in any other program that reads them. Keep the Glimmer document; the Photoshop file is a copy for someone else.
 
+## Photoshop files
+
+Glimmer opens Photoshop files (PSD, and the large-document form PSB) with their layers, as a new, untitled Glimmer document. The Photoshop file itself is never changed. Open one with **File › Open…** or by dragging it onto Glimmer.
+
+What comes through as it was, for RGB and grayscale files with 8 or 16 bits per channel:
+
+- Layers of pixels, with their names, positions, transparency, opacity and visibility.
+- Groups, open or closed, and clipping.
+- Layer masks, including masks that are switched off.
+- The blend modes Glimmer has, which is all of Photoshop's except Dissolve.
+- Solid colour fill layers, and shapes filled with one colour: they come in as fill layers with their outline, which you can go on editing.
+- Levels, Curves and Invert adjustment layers. A Curves layer from a Photoshop file keeps its points and runs between them as Photoshop draws it.
+
+The document is set to blend colours the way Photoshop does (**Image › Blend Colors in Gamma Space**), so that half-transparent layers look as they did.
+
+What does not come through in this version, and what happens instead:
+
+- **Text** becomes a layer of pixels with the same name. The words can't be edited as text; the report quotes them.
+- **Smart objects** become pixels. The file that was placed in them is not kept.
+- The other **adjustment layers**, **gradient and pattern fills**, and shapes with an inverted outline are left out.
+- **Layer effects** such as shadows, strokes and glows, and **vector masks**, are not read.
+- A layer in the **Dissolve** blend mode comes in as Normal.
+- Files in **other colour modes** (CMYK, Lab, indexed colour, duotone, multichannel, bitmap) and files with **32 bits per channel** open as one layer: the flattened picture saved in the file, converted to RGB by macOS. Their layers are not read.
+
+Nothing is dropped silently. When the file has opened, an **Import Report** lists, layer by layer, what did not come through and what was done instead; if everything came through, it says so in one line. Glimmer also compares its own picture of the layers with the flattened picture that the file carries, and the report says whether they match or how much they differ. The report is saved with the Glimmer document: **File › Import Report…** shows it again, also after you have closed and reopened the document.
+
+A file larger than Glimmer's limit for your Mac is refused, with the same message as for other images. A damaged file is refused with a reason rather than opened in part.
+
+Glimmer reads these files with its own code, written from Adobe's published description of the format. What that has been tried against:
+
+- Files that Glimmer's own tests generate, and fifty small test files from two open-source projects, most of them written by Photoshop.
+- In those files, Glimmer's picture of the layers matches the picture saved in the file for: layers of pixels, groups, shapes filled with one colour, layer masks, half-transparent layers, 16 bits per channel, the large-document form PSB, the Normal, Multiply, Darker Color and Lighter Color blend modes, Levels, Curves and Invert adjustment layers, smart objects (as pixels), and text (as pixels) in most of the files.
+- Text differs slightly along the edges of the letters in a few files (under 1 % of the pixels). That is consistent with a Photoshop setting for how text is blended, which is not stored in the file; it has not been confirmed.
+- The picture differs, and the report says why, for: the Dissolve blend mode, the adjustment layers Glimmer leaves out, layer effects, and vector masks on layers of pixels.
+- CMYK and Lab files and files with 32 bits per channel opened as their flattened picture, as described above.
+- Eighteen of the files with their ends cut off or single bytes changed, tens of thousands of ways: each was refused or opened, none crashed.
+
+Two things these files taught Glimmer to say:
+
+- A Photoshop file saved with **Maximize Compatibility** off carries no flattened picture. Glimmer still reads its layers, and the report says that there was nothing to compare with. If Glimmer can't read the layers of such a file (CMYK, for example), it refuses the file and says why, rather than open a blank page.
+- A shape that has both its outline and a painted mask comes in with the two merged into one mask. It looks the same; the outline can no longer be edited as a path, and the report says so.
+
+What no file from Photoshop has been tried for yet: large files (the largest in the set is 1,890 pixels wide), and files from Photoshop versions other than the few that wrote these. If a Photoshop file opens wrongly, the report is the first place to look, and the Photoshop file itself is untouched.
+
+### Exporting a Photoshop file
+
+Choose **File › Export…** and click **Photoshop File…**. A sheet shows what the file will hold before you save it; choose 8 or 16 bits per channel, then **Save…**.
+
+Written as what they are: layers of pixels, groups, masks, names, opacity, visibility, clipping, blend modes, solid colour fills, shapes with their outline, and Levels, Curves and Invert adjustment layers. The file also holds a flattened picture of the whole document, so a program that doesn't read layers still shows the right image.
+
+Written as layers of pixels that look the same: text, smart objects, gradient and pattern fills, and layers with effects. You can't edit them as text, smart objects or effects in the file. Not written as layers: the other adjustment layers; the flattened picture still shows what they do. A mask's feather and density are not written. The sheet lists each of these for your document.
+
+If your document blends colours in linear light (**Image › Blend Colors in Gamma Space** is off, which is Glimmer's default), other programs will blend the same layers differently. The sheet says so, with how different they will look measured on your document, and lets you choose between writing the layers as they are and merging them into one layer that looks right everywhere.
+
+What has been verified: Glimmer reads its own Photoshop files back with every setting above intact and the picture unchanged, and macOS (Preview, Quick Look) shows their flattened picture. The layers have not been tried in Photoshop itself, or in any other program that reads them. Keep the Glimmer document; the Photoshop file is a copy for someone else.
+
 ## Adding images to a document
 
 There are three ways to add an image to the document you are working on. Each one adds the image as a new layer, centered on the canvas, above the active layer.

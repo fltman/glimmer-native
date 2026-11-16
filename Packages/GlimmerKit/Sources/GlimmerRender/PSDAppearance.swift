@@ -15,7 +15,7 @@ public enum PSDAppearance {
     public static let largestCompared = 64_000_000
 
     public static func difference(of state: DocumentState, from file: Data, context: MetalContext) -> (mean: Double, shareVisible: Double)? {
-        guard state.width * state.height <= largestCompared else { return nil }
+        guard state.width * state.height <= largestCompared, PSDFile.hasFlattenedPicture(file) != false else { return nil }
         guard let theirs = flattenedPicture(in: file) ?? (try? ImageImporter.image(from: file)), theirs.width == state.width, theirs.height == state.height,
               let ours = try? ImageExporter.flattenedSRGB(state, context: context),
               let a = onWhite(ours), let b = onWhite(theirs), a.count == b.count, !a.isEmpty else { return nil }

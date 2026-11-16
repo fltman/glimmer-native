@@ -37,6 +37,7 @@ public enum PSDImport {
             return (try flattened(data, header: header, report: &report, why: true), report)
         }
         let file = try PSDFile(data, limits: limits)
+        if PSDFile.hasFlattenedPicture(data) == false { report.fileHasNoPicture = true }
         report.layersInFile = file.layers.filter { $0.group != .end }.count
         guard !file.layers.isEmpty else {
             return (try flattened(data, header: header, report: &report, why: false), report)
@@ -102,6 +103,10 @@ public enum PSDImport {
 
     /// The file's own flattened picture as one layer, converted by the system (which honours the embedded profile).
     private static func flattened(_ data: Data, header: PSDFile.Header, report: inout PSDImportReport, why: Bool) throws -> DocumentState {
+        // A file saved without its flattened picture holds a blank one in its place: opening that would show an empty page as if it were the image.
+        if PSDFile.hasFlattenedPicture(data) == false {
+            throw PSDFile.Problem("Glimmer can't read the layers of this Photoshop file (\(report.source)), and the file was saved without a flattened picture to show instead. Save it again from Photoshop with Maximize Compatibility on, or as RGB with 8 or 16 bits per channel.")
+        }
         let image: CGImage
         do { image = try ImageImporter.image(from: data) } catch {
             throw PSDFile.Problem("This Photoshop file carries no flattened picture that macOS can read, and its layers are in a form Glimmer doesn't read (\(report.source)).")
@@ -306,10 +311,34 @@ public enum PSDImport {
                 return nil
             }
             let path = VectorPath(name: source.name, subpaths: subpaths)
-            var shape = path.asSelection.asMask
-            shape.isEnabled = flags & 4 == 0
-            layer.mask = shape
-            layer.vectorMask = path
+            let outlineOn = flags & 4 == 0
+            if let painted = layer.mask, painted.isEnabled, outlineOn {
+                // An outline and a painted mask on the same shape (seen in a file from Photoshop,
+                // 2026-11-16; the painted one used to be dropped without a word). A Glimmer layer
+                // has one mask: the two are multiplied into it, and the report says the outline
+                // is no longer a path.
+                let a = path.asSelection, b = Selection(tiles: painted.tiles, defaultValue: painted.defaultValue)
+                var grid = TileGrid()
+                for coord in Set(a.tiles.tiles.keys).union(b.tiles.tiles.keys) {
+                    let x = a.tile(at: coord).pixels(), y = b.tile(at: coord).pixels()
+                    var out = [Float16](repeating: 0, count: x.count)
+                    for i in stride(from: 0, to: x.count, by: 4) {
+                        let v = Float16(Float(x[i + 3]) * Float(y[i + 3]))
+                        out[i] = v; out[i + 1] = v; out[i + 2] = v; out[i + 3] = v
+                    }
+                    out.withUnsafeBytes { grid[coord] = Tile.make(pixels: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow) ?? .solid(.zero) }
+                }
+                layer.mask = LayerMask(tiles: grid, defaultValue: a.defaultValue * b.defaultValue)
+                report.notes.append(.init(.masksMerged, layer: source.name))
+            } else if !outlineOn, layer.mask != nil {
+                // The outline is switched off and there is a painted mask: the painted mask stays as it is.
+                report.notes.append(.init(.vectorMaskNotRead, layer: source.name))
+            } else {
+                var shape = path.asSelection.asMask
+                shape.isEnabled = outlineOn
+                layer.mask = shape
+                layer.vectorMask = path
+            }
         }
         if !Set(source.extraKeys).isDisjoint(with: ["lfx2", "lrFX", "lmfx"]) {
             report.notes.append(.init(.effectsNotRead, layer: source.name, changesLook: true))

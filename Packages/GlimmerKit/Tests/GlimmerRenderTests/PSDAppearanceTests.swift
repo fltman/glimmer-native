@@ -57,6 +57,37 @@ import PSDTestSupport
 
     /// A half-transparent layer is where gamma and linear blending part: the imported document
     /// is set to blend as the writing program did, and that setting is what keeps the look.
+    /// Photoshop's "version info" resource (1057) put into a generated file: its fifth byte says
+    /// whether the flattened picture is real. (Seen in files from Photoshop, 2026-11-16: a file
+    /// saved with Maximize Compatibility off holds a blank picture, and the report said
+    /// "everything came through" beside a 100 % difference.)
+    static func saying(_ data: Data, hasPicture: Bool) -> Data {
+        var out = data
+        let colour = Int(out[26]) << 24 | Int(out[27]) << 16 | Int(out[28]) << 8 | Int(out[29])
+        let at = 30 + colour
+        let old = Int(out[at]) << 24 | Int(out[at + 1]) << 16 | Int(out[at + 2]) << 8 | Int(out[at + 3])
+        let block: [UInt8] = Array("8BIM".utf8) + [0x04, 0x21, 0, 0, 0, 0, 0, 6, 0, 0, 0, 1, hasPicture ? 1 : 0, 0]
+        let new = old + block.count
+        out.replaceSubrange(at..<(at + 4), with: [UInt8(new >> 24 & 0xFF), UInt8(new >> 16 & 0xFF), UInt8(new >> 8 & 0xFF), UInt8(new & 0xFF)])
+        out.insert(contentsOf: block, at: at + 4)
+        return out
+    }
+
+    @Test func aFileThatSaysItHasNoPictureOfItsOwnIsNotComparedWithOne() throws {
+        let plain = Self.writer(depth: 8, top: false) { x, y in Self.expected(x, y, top: false) }.data()
+        #expect(PSDFile.hasFlattenedPicture(plain) == nil)   // the tests' own files don't say
+        let without = Self.saying(plain, hasPicture: false), with = Self.saying(plain, hasPicture: true)
+        #expect(PSDFile.hasFlattenedPicture(without) == false && PSDFile.hasFlattenedPicture(with) == true)
+        let (state, report) = try PSDImport.document(from: without, limits: Self.limits)
+        let metal = try context()
+        #expect(report.fileHasNoPicture == true && PSDAppearance.difference(of: state, from: without, context: metal) == nil)
+        #expect(report.lines.last == "The file carries no flattened picture of its own (it was saved with Maximize Compatibility off), so Glimmer's picture could not be compared with it.")
+        let (stateWith, reportWith) = try PSDImport.document(from: with, limits: Self.limits)
+        #expect(reportWith.fileHasNoPicture == nil && PSDAppearance.difference(of: stateWith, from: with, context: metal) != nil)
+        // Cut anywhere in the resources, the question is answered or left open; never a crash.
+        for length in 0..<min(without.count, 120) { _ = PSDFile.hasFlattenedPicture(without.prefix(length)) }
+    }
+
     @Test func aHalfTransparentLayerLooksAsItDidOnlyBecauseTheDocumentBlendsInGamma() throws {
         func mixed(_ x: Int, _ y: Int) -> (Int, Int, Int) {
             let (r, g, b) = Self.expected(x, y, top: false)
@@ -168,10 +199,13 @@ struct PSDRealFiles {
                 let raw = try? PSDFile(data)
                 let keys = Set((raw?.layers ?? []).flatMap(\.extraKeys)).sorted().joined(separator: " ")
                 let blends = (raw?.layers ?? []).map { $0.blendKey.trimmingCharacters(in: .whitespaces) }.joined(separator: ",")
+                let parsed = Date().timeIntervalSince(start)
                 var (state, report) = try PSDImport.document(from: data)
+                let imported = Date().timeIntervalSince(start) - parsed
                 if !report.flattened, let d = PSDAppearance.difference(of: state, from: data, context: try context()) {
                     report.meanDifference = d.mean; report.shareVisiblyDifferent = d.shareVisible
                 }
+                print("PSDREAL    times: read \(String(format: "%.2f", parsed)) s, import \(String(format: "%.2f", imported)) s, comparison \(String(format: "%.2f", Date().timeIntervalSince(start) - parsed - imported)) s")
                 state.importReport = report
                 print("PSDREAL \(url.lastPathComponent) | \(header.width)×\(header.height) \(report.source) | \(String(format: "%.2f", Date().timeIntervalSince(start))) s | layers \(report.layersKept)/\(report.layersInFile) | blends \(blends) | blocks \(keys)")
                 for line in report.lines { print("PSDREAL    \(line)") }

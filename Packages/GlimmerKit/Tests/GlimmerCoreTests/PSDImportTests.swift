@@ -96,6 +96,18 @@ import PSDTestSupport
     }
 
     /// Whatever is done to the bytes, an import throws or gives a document with a report: no crash.
+    /// A CMYK file saved without its flattened picture would open as a blank page: refused, with what to do.
+    @Test func aFileWithNeitherReadableLayersNorAPictureIsRefusedNotShownBlank() throws {
+        var data = Self.file([Self.pixels("Photo")])
+        data[25] = 4   // the header's colour mode: CMYK
+        data.replaceSubrange(30..<34, with: [0, 0, 0, 18])   // (these files have no colour data and no resources)
+        data.insert(contentsOf: Array("8BIM".utf8) + [0x04, 0x21, 0, 0, 0, 0, 0, 6, 0, 0, 0, 1, 0, 0], at: 34)
+        #expect(PSDFile.hasFlattenedPicture(data) == false)
+        #expect { _ = try PSDImport.document(from: data, limits: Self.limits) } throws: { error in
+            ((error as? PSDFile.Problem)?.errorDescription ?? "").contains("saved without a flattened picture")
+        }
+    }
+
     @Test func aDamagedFileNeverCrashesTheImport() {
         let good = PSDTestWriter.sample(compression: 1).data()
         var imported = 0
@@ -172,6 +184,20 @@ import PSDTestSupport
         let anchors = try #require(rectangle.vectorMask?.subpaths.first).anchors.map(\.point)
         #expect(anchors == [SIMD2(2, 2), SIMD2(6, 2), SIMD2(6, 6), SIMD2(2, 6)] && rectangle.vectorMask?.subpaths.first?.isClosed == true)
         #expect(rectangle.mask?.tiles.isEmpty == false && rectangle.mask?.isEnabled == true)
+        // An outline and a painted mask on one shape (found in a file from Photoshop: the painted
+        // mask used to be dropped silently). They become one mask, and the report says so.
+        var both = Self.block("Masked shape", [("SoCo", PSDTestWriter.solidColor(red: 255, green: 0, blue: 0)), ("vmsk", PSDTestWriter.vectorMask(corners))])
+        // The painted mask hides the left half of the canvas (0) and shows the right half (255).
+        both.mask = (rect: PSDFile.Rect(top: 0, left: 0, bottom: 8, right: 8), color: 0, pixels: (0..<64).map { $0 % 8 < 4 ? 0 : 255 })
+        w.layers = [PSDImportTests.pixels("Photo"), both]
+        let (merged, mergedReport) = try PSDImport.document(from: w.data(), limits: PSDImportTests.limits)
+        #expect(mergedReport.notes.map(\.kind) == [.masksMerged] && mergedReport.looksTheSame)
+        let one = try #require(merged.layers.last?.mask)
+        #expect(merged.layers.last?.vectorMask == nil)
+        let values = one.tiles[TileCoord(0, 0)]?.pixels() ?? []
+        func shown(_ x: Int, _ y: Int) -> Float { values.isEmpty ? -1 : Float(values[(y * TileGeometry.size + x) * 4 + 3]) }
+        // Inside the outline (2…6) and in the shown half: there. Inside the outline but hidden by the paint: not. Outside the outline: not.
+        #expect(shown(5, 4) == 1 && shown(3, 4) == 0 && shown(7, 7) == 0)
         // An inverted outline is something Glimmer's shapes don't have: left out, and said.
         let inverted = Self.block("Hole", [("SoCo", PSDTestWriter.solidColor(red: 1, green: 2, blue: 3)), ("vmsk", PSDTestWriter.vectorMask(corners, flags: 1))])
         w.layers = [PSDImportTests.pixels("Photo"), inverted]

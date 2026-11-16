@@ -10,7 +10,7 @@ public struct PSDImportReport: Sendable, Equatable, Codable {
     public enum Kind: String, Sendable, Codable {
         case wasText, wasSmartObject, adjustmentLeftOut, fillLeftOut, effectsNotRead, vectorMaskNotRead
         case blendModeBecameNormal, pixelsIncomplete, groupEndMissing, groupRecordMissing, layersNotRead
-        case curvesMayDiffer
+        case curvesMayDiffer, masksMerged
     }
 
     public struct Note: Sendable, Equatable, Codable {
@@ -41,6 +41,9 @@ public struct PSDImportReport: Sendable, Equatable, Codable {
     /// more than 8. Filled in by the app, which can draw; nil when it wasn't measured.
     public var meanDifference: Double?
     public var shareVisiblyDifferent: Double?
+    /// True when the file says it carries no flattened picture of its own (saved with Maximize
+    /// Compatibility off): there is then nothing to compare Glimmer's picture with.
+    public var fileHasNoPicture: Bool?
 
     public init(source: String) { self.source = source }
 
@@ -70,6 +73,7 @@ extension PSDImportReport.Note {
         case .pixelsIncomplete: "Its pixels are incomplete in the file, so the layer came in empty."
         case .groupEndMissing: "The group's end is missing in the file; it came in empty."
         case .groupRecordMissing: "A group in the file has no record of its own; its layers came in without the group."
+        case .masksMerged: "It had an outline and a painted mask. The two are now one mask, so the outline can't be edited as a path."
         case .layersNotRead: "Glimmer reads the layers of RGB and grayscale files with 8 or 16 bits per channel. This file is \(detail). Its layers were not read; the picture is the one saved in the file."
         }
     }
@@ -87,7 +91,9 @@ extension PSDImportReport {
             out.append("\(layersKept) of \(layersInFile) layers came through as layers (\(source)). \(notes.count) \(notes.count == 1 ? "thing" : "things") did not come through as it was:")
         }
         out += notes.map { ($0.layer.map { "“\($0)”: " } ?? "") + $0.what }
-        if let matches = matchesTheFile, let mean = meanDifference, let share = shareVisiblyDifferent {
+        if fileHasNoPicture == true {
+            out.append("The file carries no flattened picture of its own (it was saved with Maximize Compatibility off), so Glimmer's picture could not be compared with it.")
+        } else if let matches = matchesTheFile, let mean = meanDifference, let share = shareVisiblyDifferent {
             out.append(matches
                 ? "Glimmer's picture matches the one saved in the file."
                 : String(format: "Glimmer's picture differs from the one saved in the file: %.1f %% of the pixels visibly, %.1f of 255 on average.", share * 100, mean))

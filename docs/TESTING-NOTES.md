@@ -353,3 +353,23 @@ The per-file licences were read from the data file the site's table loads (https
 ### Photoshop files still to fetch (candidates found by a reading subagent, nothing downloaded)
 
 Covering text, smart objects, PSB, CMYK and Lab; each fetch needs Anders's yes. Best: more files from psd-tools' tests (MIT, same folder as before: type-layer, text.psd/.psb, smartobject-layer, placedLayer, smart-object-slice, the colormodes folder), and EmilDohne/PhotoshopAPI's test documents (BSD-3-Clause; its README says they were made with Photoshop 2022: ten text files, two smart-object files, CMYK PSB). Large: nothing verified; two CC0 OpenGameArt archives (92.6 MB and 14 MB) of unknown writer, and PhotoshopAPI's benchmark files, which are the right size but carry no licence. Rejected: ag-psd (licence excludes its images), OpenImageIO ("Origin unknown"), Krita (GPL), psd-tools' third-party-psds (one file, no licence note).
+
+## More Photoshop files: text, smart objects, PSB, CMYK, Lab (2026-11-16)
+
+Fetched with Anders's yes: sixteen more files from psd-tools' tests (MIT; `/Volumes/work2/glimmer-samples/psd-more`) and sixteen from PhotoshopAPI's test documents (BSD 3-Clause, "Copyright (c) 2024, Emil Dohne", nothing excluded; its README: "generated using Photoshop Version 22.3.2 (Photoshop 2022)"; `psd-photoshopapi`). 22 MB. None crashed or hung. Which program wrote each psd-tools file is not stated.
+
+| What | Files | Result |
+|---|---|---|
+| Text (as pixels, words quoted in the report) | 14 | 10 match; 3 differ on 0.3 to 0.8 % of the pixels, along letter edges; 1 has no picture to compare with |
+| Smart objects (as pixels) | 7 | 5 match; one differs 0.3 %; one 4.4 % with layer effects, which the report names |
+| PSB | 5 | read like PSD |
+| CMYK, Lab, 32-bit | 9 | opened as the flattened picture, and said |
+
+Found and fixed:
+- **A report that was not true.** `unicode_pathname.psd` said "Everything came through" beside "differs on 100 % of the pixels". The import was right; the file's flattened picture is blank, because it was saved with Maximize Compatibility off. Photoshop says so in the file (resource 1057, fifth byte). Glimmer reads that now: the report says there was nothing to compare with, and a file whose layers Glimmer can't read and that has no picture is refused with what to do, instead of opening as a blank page.
+- **A painted mask dropped silently.** `masks2.psb`: a shape with an outline and a painted mask came in with only the outline (3.9 % of the pixels differed, no note). The two are now multiplied into one mask, with a note that the outline is no longer a path. 0.7 % remains, in the text layer.
+- **Text edges** (`text.psb`, `TextLayers_VerticalBox.psd`, `masks2.psb`): Glimmer's antialiased edge pixels are darker than the file's (64 against 103, 136 against 170). The numbers are roughly what blending text with gamma 1.45 gives, which is a Photoshop colour setting and not stored in the file; `text.psd` from the same source matches exactly. Not confirmed, not changed.
+
+Speed: in the tests' debug build on a busy Mac these files took up to 70 s, which looked like a fault. In the release app through the agent API: 0.6 to 1.6 s each, the largest 1,890 × 1,417 with three layers (1.1 to 1.5 s), twice each, the same both times.
+
+Still open: nothing large from Photoshop; the vector mask's flag bits (0 or 3-as-version in every file; no inverted or disabled outline seen); vector masks on layers of pixels.

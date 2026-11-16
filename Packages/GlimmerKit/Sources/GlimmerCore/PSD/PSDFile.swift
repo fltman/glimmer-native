@@ -147,6 +147,28 @@ public struct PSDFile: Sendable {
 
     // MARK: Image resources
 
+    /// Whether the file carries a real flattened picture. Photoshop says so itself, in the
+    /// "version info" resource (1057): a file saved with Maximize Compatibility off holds a
+    /// blank picture in its place (seen with real files, 2026-11-16). Nil when the file
+    /// doesn't say (files from other programs often don't).
+    public static func hasFlattenedPicture(_ data: Data) -> Bool? {
+        guard data.count >= 34 else { return nil }
+        var r = PSDBytes(data)
+        guard (try? r.skip(26)) != nil, let colour = try? r.u32(), (try? r.skip(Int(colour))) != nil,
+              let size = try? r.u32(), var resources = try? r.slice(Int(size)) else { return nil }
+        while resources.remaining >= 12 {
+            guard (try? resources.ascii(4)) == "8BIM", let id = try? resources.u16(), let nameLength = try? resources.u8(),
+                  (try? resources.skip(Int(nameLength) + (nameLength % 2 == 0 ? 1 : 0))) != nil, let length = try? resources.u32(),
+                  var body = try? resources.slice(Int(length)) else { return nil }
+            if length % 2 == 1 { _ = try? resources.skip(1) }
+            if id == 1057 {
+                guard (try? body.skip(4)) != nil, let flag = try? body.u8() else { return nil }
+                return flag != 0
+            }
+        }
+        return nil
+    }
+
     private static func iccProfile(in r: inout PSDBytes) -> Data? {
         while r.remaining >= 12 {
             guard (try? r.ascii(4)) == "8BIM", let id = try? r.u16(), let nameLength = try? r.u8() else { return nil }

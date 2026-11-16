@@ -11,6 +11,7 @@ extension PSDImportReport {
     }
 
     var pictureLine: String? {
+        if fileHasNoPicture == true { return String(localized: "The file carries no flattened picture of its own (it was saved with Maximize Compatibility off), so Glimmer's picture could not be compared with it.") }
         guard let matches = matchesTheFile, let mean = meanDifference, let share = shareVisiblyDifferent else { return nil }
         if matches { return String(localized: "Glimmer's picture matches the one saved in the file.") }
         let percent = (share * 100).formatted(.number.precision(.fractionLength(1))), level = mean.formatted(.number.precision(.fractionLength(1)))
@@ -34,6 +35,7 @@ extension PSDImportReport.Note {
         case .pixelsIncomplete: String(localized: "Its pixels are incomplete in the file, so the layer came in empty.")
         case .groupEndMissing: String(localized: "The group's end is missing in the file; it came in empty.")
         case .groupRecordMissing: String(localized: "A group in the file has no record of its own; its layers came in without the group.")
+        case .masksMerged: String(localized: "It had an outline and a painted mask. The two are now one mask, so the outline can't be edited as a path.")
         case .layersNotRead: String(localized: "Glimmer reads the layers of RGB and grayscale files with 8 or 16 bits per channel. This file is \(detail). Its layers were not read; the picture is the one saved in the file.")
         }
     }

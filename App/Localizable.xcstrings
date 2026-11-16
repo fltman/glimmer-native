@@ -12228,6 +12228,28 @@
           }
         }
       }
+    },
+    "The file carries no flattened picture of its own (it was saved with Maximize Compatibility off), so Glimmer's picture could not be compared with it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filen har ingen egen sammanslagen bild (den sparades med Maximera kompatibilitet avstängt), så Glimmers bild kunde inte jämföras med den."
+          }
+        }
+      }
+    },
+    "It had an outline and a painted mask. The two are now one mask, so the outline can't be edited as a path.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det hade en kontur och en målad mask. De två är nu en mask, så konturen kan inte redigeras som bana."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
