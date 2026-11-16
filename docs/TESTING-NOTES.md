@@ -50,8 +50,30 @@ Known weak spots, seen in the runs:
 - The smooth fill on a wide area (165 px) shows streaks and a visible meeting line. `auto` doesn't choose it there.
 - A selection that doesn't cover the whole object makes the fill continue the object.
 
+Also verified in the debug app:
+
+- Cancel in the AI panel's job list while a 240 px fill runs: no layer is added, the document is as it was. (The computation runs to its end and the result is dropped; at most a few seconds.)
+- A hole at the canvas edge and in a corner: filled. A hole that reaches over transparent room around the image: the transparent part of the hole is filled with image too, in a new layer and in place alike. A hole wholly in transparent room: refused with `nothing_to_sample`.
+- Edit › Heal Selection reads as disabled for up to about a second after a selection is made through the API. Select › Deselect does the same: it is the menu's own delay in re-reading its state, not something of this command, and Heal Selection has no shortcut that could be pressed in that second.
+
 Not verified:
 
-- Cancel in the job list while a fill runs (the computation runs to its end and the result is dropped; at most a few seconds).
 - Photographs from a camera: only generated sample images were used, as the series' rule for pictures in reports requires.
-- Holes at the canvas edge and on layers with transparency, in the app (unit-tested only).
+- A slower Mac (see the limits above).
+
+## Saving only the changed layers: looked into 2026-11-16, not built
+
+Decision (coordinator for Anders): leave saving as it is. Recorded so the investigation isn't repeated.
+
+What was measured, with temporary logging in the writer, on a document saved outside the container:
+
+- Save As, Save in place and the autosave in place all hand the writer a new temporary folder on the document's own volume (`<volume>/.TemporaryItems/folders.<uid>/TemporaryItems/NSIRD_Glimmer_…/<name>.glimmer`), which the system then swaps in. An untitled document's autosave goes to the container's temporary folder.
+- On a save in place that folder arrives with the package's subfolders (`layers`, `QuickLook`) but no files. The writer gets the previous snapshot (`previous`), not the previous files.
+- The system does not carry over files the writer leaves out: a probe that wrote only `manifest.json` produced a saved package with only `manifest.json`. So every file must be written, or come from somewhere.
+- The only "somewhere" is the document's own file URL, and Apple's guidance for the Document protocol says not to use `URLDocumentConfiguration.fileURL` inside `read` or `write`, only the URL handed to the call.
+
+The options, none built:
+
+- A. Clone unchanged layer files from the document's file URL into the temporary folder (instant on APFS). Likely to work, but against that guidance, and it leans on what the system does with the old package during a save.
+- B. Go back to Apple's `FileWrapperDocumentWriter` and its documented incremental path (the previous `FileWrapper` is passed in). Sanctioned, but our own writer exists because of the full-disk work (it removes the empty folder on failure and explains the error), and it is unknown whether the system then really avoids rewriting unchanged files. Both would need measuring and the full-disk cycle verifying again.
+- C. Leave it. Unchanged layers are already not re-encoded; what remains is disk time: about 2 s for the measured 697 MB document on the internal disk (390 MB/s), about 21 s on the external USB volume it was measured on (33 MB/s). Chosen.
