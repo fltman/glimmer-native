@@ -34,7 +34,10 @@ import Testing
 /// Runs Apple's on-device model; skipped where Apple Intelligence is unavailable.
 /// Serialized: four model sessions at once, beside the rest of the suite, made the
 /// system's content check time out (SensitiveContentAnalysisML error 15).
-@Suite(.enabled(if: OnDeviceRouter.isAvailable), .serialized)
+/// These load Apple's on-device model, so they are run on purpose and one model at a time
+/// for the whole series: `scripts/evaluate-models.sh on-device` (the model lock). The
+/// ordinary run skips them.
+@Suite(.enabled(if: OnDeviceRouter.isAvailable && ProcessInfo.processInfo.environment["GLIMMER_ON_DEVICE_TESTS"] == "1"), .serialized)
 struct LiveOnDeviceRouterTests {
     let candidates = OnDeviceRouterTests().candidates
 

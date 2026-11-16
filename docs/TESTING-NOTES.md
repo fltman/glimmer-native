@@ -118,7 +118,7 @@ So the model sits at the line: right often enough, and the one miss that repeats
 
 Everything below is built from the services' documentation and tested against made-up answers in the documented form. None has had a real call. Use a debug build, started with the launch arguments shown; keys are entered in Settings › AI by hand.
 
-Text, one service at a time: `-ai.showUntried YES`, then Settings › AI › Service lists the untried ones as "(not tried yet)". Save the key, choose a model from the service's own list, and press **Run Glimmer's Test of This Model…**. It asks first, sends eighteen requests (seventeen counted and one known gap; each carries the list of operations, a few thousand tokens, and gets a short answer), and shows each outcome and the verdict by the same rule as for local models (five in six overall and per language: 15 of 17, 8 of 9 in English, 7 of 8 in Swedish; none over 60 s). That result decides whether the service is offered.
+Text, one service at a time: `-ai.showUntried YES`, then Settings › AI › Service lists the untried ones as "(not tried yet)". Save the key, choose a model from the service's own list, and press **Run Glimmer's Test of This Model…**. It asks first, sends nineteen requests (eighteen counted and one known gap; each carries the list of operations, a few thousand tokens, and gets a short answer), and shows each outcome and the verdict by the same rule as for local models (five in six overall and per language: 15 of 18, 9 of 10 in English, 7 of 8 in Swedish; none over 60 s). That result decides whether the service is offered.
 
 | Service | Built on | Notes for the test |
 |---|---|---|
@@ -139,7 +139,7 @@ Images, one service at a time: with `-ai.showUntried YES`, Settings › AI has a
 | fal | data URIs in the request, the result asked for as a data URI | If fal answers with a link instead, Glimmer refuses to fetch it and says so: then that model can't be used this way. |
 | Hedra | bytes uploaded to Hedra (private handle, one hour), a job, a signed download | Only pictures of yourself, by Hedra's rules. |
 
-Costs: Berget's and Grunden's lists give prices per million tokens (about €0.15–0.50 in), so an eighteen-request run is a fraction of a euro cent. For the others no figure is given here, because their text prices were not read; the image prices per service are in `the-apps/research/providers-glimmer.md` and Flimmer's notes.
+Costs: Berget's and Grunden's lists give prices per million tokens (about €0.15–0.50 in), so a nineteen-request run is a fraction of a euro cent. For the others no figure is given here, because their text prices were not read; the image prices per service are in `the-apps/research/providers-glimmer.md` and Flimmer's notes.
 
 ## Accessibility is read with content in place
 
@@ -182,6 +182,8 @@ Baseline, `qwen3:8b`, the short list above, seventeen counted cases (three new o
 
 The on-device router's four live tests were red in the same hour (FoundationModels, "SensitiveContentAnalysisML error 15"), with Ollama's model unloaded and swap at 15.2 of 16 GB; they fail in 0.03 s, before any answer. So unloading Ollama is not the whole explanation, and there is no on-device number for today.
 
-What Glimmer does with a plan today: a plan whose steps are all the editor's own (no paid AI step) runs at once, as one undo step named after the request; a plan with a paid step waits for Run unless "run AI plans automatically" is on. A single command picked by the on-device router also runs at once. So a model that answered "write a poem" with add_text would have changed the document without asking; it would be one Undo to take back.
+What Glimmer did with a plan until 2026-11-16: a plan whose steps were all the editor's own ran at once; only a plan with a paid step waited for Run. Since then (`PlanCheck`): a plan runs at once only when the request names every step that changes the document (word stems in English and Swedish per operation; a text layer's text must be in the request itself); otherwise it is shown, says why, and waits for Run. The same for a single command chosen by the on-device router. An operation Glimmer has no words for always waits. The evaluation has a case that must still run at once ("Make it black and white") and its three no-edit cases pass only when nothing would change without confirmation. Eighteen counted cases: 15 of 18, 9 of 10 in English, 7 of 8 in Swedish. Not yet run with a model under this rule; `qwen3:8b` adds an Auto Enhance step to its black-and-white plans, which the new case will count against it.
+
+The live on-device tests are out of the ordinary run (`GLIMMER_ON_DEVICE_TESTS=1`, set by `scripts/evaluate-models.sh on-device`); `scripts/test.sh` says what it skipped.
 
 Later the same hour, under the series' model lock (`scripts/evaluate-models.sh on-device`, one model at a time for all three apps): the on-device router's four live tests passed, 4.6 s in all. The red run above coincided with Jämmer running an evaluation of its own at the same moment, which is what the lock now prevents. Evaluations go through `scripts/evaluate-models.sh` (`ollama <model>` or `on-device`): model lock, supervisor, a time limit, and Ollama's model unloaded at the end and on interruption. The ordinary package test run still includes the four live on-device tests whenever Apple's model is available, outside the lock.

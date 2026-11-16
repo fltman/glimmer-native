@@ -90,6 +90,15 @@ extension AIController {
                 if Task.isCancelled { self.isPlanning = false; return }
                 switch decision {
                 case .run(let id):
+                    // A command the request doesn't name is shown and waits for Run (PlanCheck).
+                    if let item = Palette.allItems.first(where: { $0.id == id }), !Self.requestNames(goal, item) {
+                        self.isPlanning = false
+                        var message = Message(fromUser: false, text: String(localized: "I think you mean \(String(localized: String.LocalizationValue(item.title))). You didn't name it, so it waits for you."))
+                        message.pendingCommand = item.id
+                        self.messages.append(message)
+                        self.agentHistory.append((goal, "Suggested \(item.title)."))
+                        return
+                    }
                     if let item = Palette.allItems.first(where: { $0.id == id }), self.session.runPaletteItem(item) {
                         self.isPlanning = false
                         self.messages.append(Message(fromUser: false, text: String(localized: "Done: \(String(localized: String.LocalizationValue(item.title))) (on this Mac, no AI cost).")))
@@ -184,6 +193,33 @@ extension AIController {
         }
     }
 
+    /// Whether the request names this palette entry (its title, a search word of its command).
+    nonisolated static func requestNames(_ goal: String, _ item: PaletteItem) -> Bool {
+        var keywords: [String] = []
+        if case .command(let id) = item.action { keywords = CommandRegistry.standard.descriptor(for: id)?.keywords ?? [] }
+        if case .command(.autoEnhance) = item.action { keywords += PlanCheck.words["auto_enhance"] ?? [] }
+        return PlanCheck.namesCommand(goal, title: item.title, keywords: keywords)
+            || PlanCheck.namesCommand(goal, title: String(localized: String.LocalizationValue(item.title)), keywords: [])
+    }
+
+    static func commandTitle(_ id: String) -> String? { CommandRegistry.standard.descriptor(for: CommandID(rawValue: id))?.title }
+
+    /// Runs the command a message is holding for confirmation.
+    func runPendingCommand(_ messageID: UUID) {
+        guard let i = messages.firstIndex(where: { $0.id == messageID }), let id = messages[i].pendingCommand else { return }
+        messages[i].pendingCommand = nil
+        if let item = Palette.allItems.first(where: { $0.id == id }), session.runPaletteItem(item) {
+            messages[i].text = String(localized: "Done: \(String(localized: String.LocalizationValue(item.title))) (on this Mac, no AI cost).")
+        } else {
+            messages[i].text = String(localized: "That isn't available right now.")
+        }
+    }
+
+    func dismissPendingCommand(_ messageID: UUID) {
+        guard let i = messages.firstIndex(where: { $0.id == messageID }) else { return }
+        messages[i].pendingCommand = nil
+    }
+
     private func receive(_ plan: AgentPlan, goal: String) {
         let summary = plan.message ?? (plan.steps.isEmpty ? "I'm not sure how to do that." : "Here's the plan.")
         var text = summary
@@ -191,13 +227,16 @@ extension AIController {
         if !plan.droppedOps.isEmpty {
             text += " (Skipped steps the editor can't do: \(plan.droppedOps.joined(separator: ", ")).)"
         }
+        // A plan runs at once only when the request names every step that changes the document.
+        let named = PlanCheck.runsAtOnce(plan, request: goal, commandTitle: Self.commandTitle)
+        if !named, !plan.usesAI { text += " " + String(localized: "Some of these steps aren't named in what you asked, so the plan waits for Run.") }
         let message = Message(fromUser: false, text: text, plan: plan.steps.isEmpty ? nil : plan)
         messages.append(message)
         agentHistory.append((goal, summary + (plan.steps.isEmpty ? "" : " Steps: " + plan.steps.map(\.op).joined(separator: ", "))))
         guard !plan.steps.isEmpty else { return }
         for step in plan.steps { stepStatus[step.id] = .pending }
         planStatus[message.id] = .proposed
-        if !plan.usesAI || autoRunAIPlans { runPlan(message.id) }
+        if named, !plan.usesAI || autoRunAIPlans { runPlan(message.id) }
     }
 
     func runPlan(_ messageID: UUID) {

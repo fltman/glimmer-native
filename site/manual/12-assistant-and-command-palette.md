@@ -70,7 +70,8 @@ The assistant answers with a short message and a plan: a checklist of steps, eac
 
 What happens next depends on the plan:
 
-- A plan that only uses the editor's own tools, such as adjustment layers, filters, presets, text and selections, runs straight away.
+- A plan that only uses the editor's own tools, such as adjustment layers, filters, presets, text and selections, runs straight away, as long as it does what you asked. If a step that would change the document isn't named by anything in your request, the plan is shown and waits for **Run** instead, and the reply says so. This happens, for example, if you ask for a black and white photo and the plan also wants to enhance it, or if you write something that isn't a request to edit at all. When Glimmer can't tell, it waits.
+- A single command picked on your Mac for a short request works the same way: if your words don't name it, the assistant says which command it thinks you mean and waits for **Run**.
 - A plan with steps that call OpenRouter shows **Uses AI credits** and waits. Those steps are AI edits of the whole image, generated layers, and Generative Fill or Remove on a selection. Steps that run on your Mac, such as Select Subject, Remove Background and upscaling, never make a plan wait. Click **Run** to carry it out, or **Dismiss** to drop it. While it runs, click **Stop** to cancel it.
 
 The whole plan is one undo step, named after your request, such as "Assistant: make it warmer". Press ⌘Z once to undo all of it.

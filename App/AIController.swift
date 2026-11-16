@@ -30,6 +30,9 @@ final class AIController {
         var text: String
         /// The assistant's plan, shown as a checklist under the message.
         var plan: AgentPlan?
+        /// A single command the on-device model chose for a request that doesn't name it: it
+        /// waits for Run. The palette entry's id; nil once it has been run or dismissed.
+        var pendingCommand: String?
     }
 
     enum StepStatus: Equatable {

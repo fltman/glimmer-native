@@ -53,7 +53,7 @@ Suggest Edits and Find Distractions need a model that can look at pictures. With
 
 If you run [Ollama](https://ollama.com) on your Mac, the Assistant can use a model there instead of a service. Nothing is sent anywhere, no key is needed and nothing is billed.
 
-**Ollama (on this Mac)** appears under **Service** only while Ollama is running. Under **Model**, Glimmer lists the installed models that can call tools, which the Assistant needs. Glimmer has tried one of them, `qwen3:8b`, with its own test of seventeen everyday requests and questions in English and Swedish; it is listed by its name. Any other installed model is marked **not evaluated with Glimmer**: you can choose it, but Glimmer has not tried it.
+**Ollama (on this Mac)** appears under **Service** only while Ollama is running. Under **Model**, Glimmer lists the installed models that can call tools, which the Assistant needs. Glimmer has tried one of them, `qwen3:8b`, with its own test of eighteen everyday requests and questions in English and Swedish; it is listed by its name. Any other installed model is marked **not evaluated with Glimmer**: you can choose it, but Glimmer has not tried it.
 
 What to expect, plainly:
 

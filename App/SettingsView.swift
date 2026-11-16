@@ -804,7 +804,7 @@ private struct LocalTextSettings: View {
 }
 
 #if DEBUG
-/// The paid test of a text service (debug builds only): Glimmer's seventeen everyday requests and questions,
+/// The paid test of a text service (debug builds only): Glimmer's eighteen everyday requests and questions,
 /// run only when the button is pressed and confirmed. Its result decides whether the
 /// service is offered (the-apps/PROVIDERS.md, rule 3).
 private struct TextModelTrial: View {

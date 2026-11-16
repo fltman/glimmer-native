@@ -11711,6 +11711,39 @@
           }
         }
       }
+    },
+    "I think you mean %@. You didn't name it, so it waits for you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jag tror att du menar %@. Du nämnde det inte, så det väntar på dig."
+          }
+        }
+      }
+    },
+    "That isn't available right now.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det går inte att göra just nu."
+          }
+        }
+      }
+    },
+    "Some of these steps aren't named in what you asked, so the plan waits for Run.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Några av stegen nämns inte i det du bad om, så planen väntar på Kör."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

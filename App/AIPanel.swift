@@ -173,6 +173,14 @@ private struct AssistantView: View {
                         .font(.callout)
                         .textSelection(.enabled)
                     if let plan = message.plan { PlanView(ai: ai, messageID: message.id, plan: plan) }
+                    if message.pendingCommand != nil {
+                        HStack {
+                            Spacer()
+                            Button("Dismiss") { ai.dismissPendingCommand(message.id) }
+                            Button("Run") { ai.runPendingCommand(message.id) }.buttonStyle(.borderedProminent)
+                        }
+                        .controlSize(.small)
+                    }
                 }
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel(message.fromUser ? Text("You") : Text("Assistant"))

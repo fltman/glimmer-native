@@ -42,6 +42,17 @@ extension AIController {
             ]
             stepStatus = [steps[0].id: .done, steps[1].id: .failed("No font named “Nope” is installed."), steps[2].id: .skipped]
             planStatus = [withPlan.id: .failed]
+        case "waiting":
+            // A plan whose step the request doesn't name, and a command the on-device model chose unasked: both wait for Run.
+            s.showLayersPanel = true; s.inspectorTab = .ai; s.aiSection = .assistant
+            var planned = Message(fromUser: false, text: "Here is a poem as a text layer. Some of these steps aren't named in what you asked, so the plan waits for Run.")
+            let step = AgentStep(op: "add_text", params: ["text": .string("The sea is wide")], rationale: "The poem.")
+            planned.plan = AgentPlan(steps: [step], message: nil)
+            var command = Message(fromUser: false, text: "I think you mean Flatten Image. You didn't name it, so it waits for you.")
+            command.pendingCommand = "image.flatten"
+            messages = [Message(fromUser: true, text: "Write a poem about the sea"), planned, Message(fromUser: true, text: "tidy up"), command]
+            stepStatus = [step.id: .pending]
+            planStatus = [planned.id: .proposed]
         case "jobs":
             s.showLayersPanel = true; s.inspectorTab = .ai
             showFixtureJobs()

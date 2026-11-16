@@ -49,7 +49,7 @@ extension ChatAdapterTests {
     }
 
     @Test func theCasesAreHalfSwedishAndUseOnlyTheShortList() {
-        #expect(LocalModelEvaluation.scored.count == 17 && LocalModelEvaluation.cases.count == 18)   // one known gap, not counted
+        #expect(LocalModelEvaluation.scored.count == 18 && LocalModelEvaluation.cases.count == 19)   // one known gap, not counted
         #expect(LocalModelEvaluation.scored.filter { $0.language == "sv" }.count == 8)
         #expect(LocalModelEvaluation.scored.filter(\.answerOnly).count == 2)   // one in each language: no invented figures
         #expect(LocalModelEvaluation.scored.filter(\.changesNothing).count == 3)   // requests that name no edit
@@ -633,6 +633,49 @@ extension ChatAdapterTests {
     @Test func aRequestThatNamesNoEditMustChangeNothing() {
         let poem = LocalModelEvaluation.cases.first(where: \.changesNothing)!
         #expect(LocalModelEvaluation.judge(AgentPlan(steps: [], message: "The sea is wide…"), poem))
-        #expect(!LocalModelEvaluation.judge(AgentPlan(steps: [AgentStep(op: "add_text", params: ["text": .string("The sea is wide")])], message: nil), poem))
+        // A plan for it is tolerated only because it waits for Run: the request doesn't name its step.
+        let written = AgentPlan(steps: [AgentStep(op: "add_text", params: ["text": .string("The sea is wide")])], message: nil)
+        #expect(!PlanCheck.runsAtOnce(written, request: poem.goal) && LocalModelEvaluation.judge(written, poem))
+        // "Write a poem about the sea" with the text "sea" would be named: the whole text is in the request.
+        #expect(PlanCheck.runsAtOnce(AgentPlan(steps: [AgentStep(op: "add_text", params: ["text": .string("sea")])]), request: poem.goal))
+    }
+}
+
+/// A plan runs at once only when the request names every step that changes the document.
+@Suite struct PlanCheckTests {
+    private func plan(_ steps: (String, [String: JSONValue])...) -> AgentPlan { AgentPlan(steps: steps.map { AgentStep(op: $0.0, params: $0.1) }) }
+
+    @Test func whatWasAskedForStillRunsAtOnce() {
+        #expect(PlanCheck.runsAtOnce(plan(("add_adjustment", ["type": .string("black_white")])), request: "Make it black and white"))
+        #expect(PlanCheck.runsAtOnce(plan(("add_adjustment", ["type": .string("black_white")])), request: "Gör bilden svartvit"))
+        #expect(PlanCheck.runsAtOnce(plan(("crop", ["aspect": .string("16:9")])), request: "Crop the image to 16:9"))
+        #expect(PlanCheck.runsAtOnce(plan(("add_text", ["text": .string("Hello"), "position": .string("top")])), request: "Add the text Hello at the top"))
+        #expect(PlanCheck.runsAtOnce(plan(("auto_enhance", [:])), request: "Improve the photo automatically"))
+        #expect(PlanCheck.runsAtOnce(plan(("remove_background", [:])), request: "Ta bort bakgrunden"))
+        #expect(PlanCheck.runsAtOnce(plan(("resize_image", ["scale": .number(0.5)])), request: "Gör bilden hälften så stor"))
+        #expect(PlanCheck.runsAtOnce(plan(("set_layer", ["opacity": .number(0.5)])), request: "Make the layer half transparent"))
+        // Selecting changes nothing in the document, and several named steps are fine together.
+        #expect(PlanCheck.runsAtOnce(plan(("select_subject", [:])), request: "Markera motivet"))
+        #expect(PlanCheck.runsAtOnce(plan(("add_adjustment", ["type": .string("black_white")]), ("apply_filter", ["type": .string("vignette")])), request: "black and white with a vignette"))
+    }
+
+    @Test func whatWasNotAskedForWaits() {
+        #expect(!PlanCheck.runsAtOnce(plan(("add_text", ["text": .string("The sea is wide and deep")])), request: "Write a poem about the sea"))
+        #expect(!PlanCheck.runsAtOnce(plan(("add_adjustment", ["type": .string("invert")])), request: "Berätta ett skämt"))
+        #expect(!PlanCheck.runsAtOnce(plan(("crop", ["aspect": .string("1:1")])), request: "Thanks, that looks good"))
+        // One step the request names and one it doesn't: the plan waits, and the unnamed one is told apart.
+        let mixed = plan(("add_adjustment", ["type": .string("black_white")]), ("auto_enhance", [:]))
+        #expect(!PlanCheck.runsAtOnce(mixed, request: "Make it black and white"))
+        #expect(PlanCheck.unnamed(mixed, request: "Make it black and white").map(\.op) == ["auto_enhance"])
+        // An operation Glimmer has no words for, and a step with nothing to go on: it asks.
+        #expect(!PlanCheck.runsAtOnce(plan(("some_new_op", [:])), request: "do the new thing"))
+        #expect(!PlanCheck.runsAtOnce(plan(("add_adjustment", [:])), request: "Make it black and white"))
+    }
+
+    @Test func aSingleCommandIsNamedByItsTitleOrSearchWords() {
+        #expect(PlanCheck.namesCommand("flip the canvas horizontally", title: "Flip Canvas Horizontal", keywords: []))
+        #expect(PlanCheck.namesCommand("fix the colors", title: "Auto Enhance", keywords: ["fix", "improve"]))
+        #expect(!PlanCheck.namesCommand("write a poem about the sea", title: "Flatten Image", keywords: ["merge"]))
+        #expect(!PlanCheck.namesCommand("tack, det ser bra ut", title: "Invert", keywords: []))
     }
 }

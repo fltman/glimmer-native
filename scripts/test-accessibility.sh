@@ -69,6 +69,7 @@ fixture panel:channels && read_state "the Channels tab" "Channels" || bad "fixtu
 fixture panel:history && read_state "the History tab with steps" "Agent Edit" || bad "fixture panel:history"
 fixture assistant && read_state "the Assistant: requests, a plan with a failed and a skipped step, an error, a refusal" "Claude declined this request (cyber). Nothing was changed." || bad "fixture assistant"
 read_state "the plan's failed step says why" "No font named “Nope” is installed."
+fixture waiting && read_state "a plan and a command that wait for Run, because the request didn't name them" "I think you mean Flatten Image. You didn't name it, so it waits for you." || bad "fixture waiting"
 fixture jobs && read_state "the job list: running, failed, done with a cost, cancelled" "OpenRouter rejected the API key." || bad "fixture jobs"
 
 # The link bar.

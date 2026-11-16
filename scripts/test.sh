@@ -12,6 +12,7 @@ echo "▸ Package tests"
 mkdir -p build
 if swift test --package-path Packages/GlimmerKit > build/test.log 2>&1; then
   grep -E 'Test run with' build/test.log || true
+  echo "– skipped on purpose: the live tests of Apple's on-device model and the Ollama evaluation (they load a model: scripts/evaluate-models.sh), the paid live tests, and the network tests"
 else
   grep -E '✘|error:|Test run with' build/test.log || tail -20 build/test.log
   echo "✘ package tests failed (build/test.log)"; exit 1

@@ -30,5 +30,5 @@ if [[ "$KIND" == ollama ]]; then
   unload
   echo "Loaded in Ollama afterwards: $(curl -s --max-time 5 http://127.0.0.1:11434/api/ps | python3 -c 'import sys,json;print([m["name"] for m in json.load(sys.stdin).get("models",[])])' 2>/dev/null)"
 else
-  swift test --package-path Packages/GlimmerKit --filter LiveOnDeviceRouterTests 2>&1 | grep -E "→|✘ Test|✔ Test [a-zA-Z]+\(\) passed|Test run with" | sed 's/\x1b\[[0-9;]*m//g'
+  GLIMMER_ON_DEVICE_TESTS=1 swift test --package-path Packages/GlimmerKit --filter LiveOnDeviceRouterTests 2>&1 | grep -E "→|✘ Test|✔ Test [a-zA-Z]+\(\) passed|Test run with" | sed 's/\x1b\[[0-9;]*m//g'
 fi
