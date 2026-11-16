@@ -129,6 +129,9 @@ struct DocumentView: View {
             .sheet(isPresented: $session.isImportReportPresented) {
                 ImportReportSheet(session: session)
             }
+            .sheet(isPresented: $session.isPSDExportPresented) {
+                PSDExportSheet(session: session)
+            }
             #endif
             .sheet(isPresented: $session.isImageSizePresented) {
                 ImageSizeSheet(session: session)

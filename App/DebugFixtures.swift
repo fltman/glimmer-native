@@ -16,7 +16,7 @@ extension AIController {
         switch name {
         case "clear":
             s.textNotice = nil; s.healWarning = nil; s.errorMessage = nil
-            s.isImageSizePresented = false; s.isCanvasSizePresented = false
+            s.isImageSizePresented = false; s.isCanvasSizePresented = false; s.isPSDExportPresented = false; s.isImportReportPresented = false
             s.linkedImage = nil; s.brokenLink = nil
         case "panel:layers", "panel:paths", "panel:channels", "panel:history", "panel:ai":
             // The side panel, on the named tab.
@@ -75,6 +75,10 @@ extension AIController {
             s.healWarning = "The area is 203 px across at its thickest. Heal Selection gives good results up to about 120 px; beyond that the fill may smear or repeat."
         case "error":
             s.errorMessage = "Couldn't save photo.png: The file “photo.png” couldn’t be opened because you don’t have permission to view it."
+        case "psdExport":
+            #if GLIMMER_PSD
+            s.isPSDExportPresented = true
+            #endif
         case "imageSize":
             s.isImageSizePresented = true
         case "canvasSize":

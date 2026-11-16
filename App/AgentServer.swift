@@ -533,6 +533,29 @@ enum AgentRouter {
             guard preset as? String == "podcast-cover" else { throw APIError.badRequest("preset must be \"podcast-cover\".") }
             return try await podcastCover(session, obj)
         }
+        #if GLIMMER_PSD
+        // A Photoshop file with the layers. What is not written as it is comes back in a header, as JSON.
+        if (obj["format"] as? String)?.lowercased() == "psd" {
+            guard let metal = MetalContext.shared else { throw APIError.internalError("No Metal GPU available.") }
+            let depth = obj["depth"] as? Int ?? 8
+            guard depth == 8 || depth == 16 else { throw APIError.badRequest("depth must be 8 or 16.") }
+            let flattened = obj["flatten"] as? Bool ?? false
+            let snapshot = session.state
+            let result: (data: Data, report: PSDExportReport)
+            do {
+                result = try await Task.detached(priority: .userInitiated) { try PSDExport.data(for: snapshot, depth: depth, flattened: flattened, context: metal) }.value
+            } catch let problem as PSDFile.Problem {
+                throw APIError.unprocessable("cannot_export", problem.message)
+            }
+            var report: [String: Any] = ["layersWritten": result.report.layersWritten,
+                                         "notes": result.report.notes.map { ["layer": $0.layer ?? NSNull(), "kind": $0.kind.rawValue, "what": $0.what, "changesLook": $0.changesLook] as [String: Any] }]
+            if let d = result.report.gammaDifference { report["layersBlendedInGamma"] = ["mean": d.mean, "shareVisiblyDifferent": d.shareVisible] }
+            let header = (try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys])).map { String(decoding: $0, as: UTF8.self) } ?? "{}"
+            // Header values are ASCII: anything else is written as \u escapes, which JSON readers take back.
+            let ascii = header.unicodeScalars.map { $0.isASCII ? String($0) : String(format: "\\u%04x", $0.value) }.joined()
+            return Response(status: 200, contentType: "image/vnd.adobe.photoshop", body: result.data, extraHeaders: ["X-Glimmer-Export-Report": ascii])
+        }
+        #endif
         var options = ExportOptions(format: try format(obj["format"] as? String))
         if let q = obj["quality"] as? Double {
             guard (0.05...1).contains(q) else { throw APIError.badRequest("quality must be 0.05…1.") }

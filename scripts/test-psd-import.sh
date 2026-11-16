@@ -56,6 +56,24 @@ check "mixed.psd: the sheet has a line about the picture (not comparable for thi
 front; press 36
 "$TOOLS/safemenu/safemenu" --pid $GLIMMER_PID --check "File" "Import Report…" >/dev/null 2>&1 && ok "File › Import Report… is there and enabled for this window" || bad "File › Import Report…"
 
+# Export: the imported document back out as a Photoshop file, through the agent API, and in again.
+MIXED=$(echo "$R" | field 'd["id"]')
+curl -s --max-time 120 -D build/psd-samples/export.headers -o build/psd-samples/exported.psd -H 'X-Glimmer-Agent: 1' -H 'Content-Type: application/json' -X POST "$B/documents/$MIXED/export" -d '{"format":"psd"}'
+check "export as psd: a Photoshop file comes back ($(stat -f %z build/psd-samples/exported.psd) bytes, $(head -c 4 build/psd-samples/exported.psd))" '[[ "$(head -c 4 build/psd-samples/exported.psd)" == 8BPS ]]'
+REPORT=$(grep -i '^x-glimmer-export-report:' build/psd-samples/export.headers | cut -d' ' -f2- | tr -d '\r')
+check "export as psd: the report is in the answer's header: ${REPORT:0:150}" 'echo "$REPORT" | python3 -c "import sys,json;d=json.load(sys.stdin);sys.exit(0 if d[\"layersWritten\"]>=5 else 1)"'
+check "macOS reads the exported file ($(sips -g pixelWidth -g pixelHeight build/psd-samples/exported.psd 2>/dev/null | tail -2 | awk "{print \$2}" | tr "\n" " "))" '[[ "$(sips -g pixelWidth build/psd-samples/exported.psd 2>/dev/null | tail -1 | awk "{print \$2}")" == 64 ]]'
+R2=$(open_psd build/psd-samples/exported.psd again)
+check "the exported file opens in Glimmer again with the same layers: $(echo "$R2" | field "[l[\"name\"] for l in d[\"layers\"]]")" '[[ "$(echo "$R2" | field "[l[\"name\"] for l in d[\"layers\"]]")" == "$(echo "$R" | field "[l[\"name\"] for l in d[\"layers\"]]")" ]]'
+check "and its own flattened picture matches its layers this time: $(echo "$R2" | field "d[\"importReport\"][\"differenceFromFile\"]")" 'echo "$R2" | python3 -c "import sys,json;x=json.load(sys.stdin)[\"document\"][\"importReport\"][\"differenceFromFile\"];sys.exit(0 if x[\"mean\"]<1.5 and x[\"shareVisiblyDifferent\"]<0.01 else 1)"'
+front; press 36
+# The sheet that says what the file will hold, before it is saved.
+curl -s --max-time 10 -o /dev/null -H 'X-Glimmer-Agent: 1' -H 'Content-Type: application/json' -X POST "$B/debug/fixture" -d '{"name":"psdExport"}'; sleep 4
+SEEN=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>&1)
+check "File › Export… › Photoshop File…: the sheet says what is written and that Photoshop has not been tried" 'echo "$SEEN" | grep -q "layers and groups" && echo "$SEEN" | grep -qF "the layers have not been tried in Photoshop"'
+"$TOOLS/axaudit/axaudit" --pid $GLIMMER_PID --strict >/dev/null 2>&1 && ok "the export sheet has no unnamed controls" || bad "the export sheet: axaudit found something"
+front; press 53
+
 # Something that is not a Photoshop file inside, with the signature: refused with words.
 printf '8BPS\0\1garbage' > build/psd-samples/broken.psd
 CODE=$(curl -s --max-time 30 -o build/psd-samples/broken.json -w '%{http_code}' -H 'X-Glimmer-Agent: 1' -H 'Content-Type: image/vnd.adobe.photoshop' -X POST --data-binary @build/psd-samples/broken.psd "$B/documents?name=broken")

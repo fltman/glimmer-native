@@ -189,6 +189,8 @@ final class EditorSession {
     /// file opens and again from File › Import Report…. Not saved with the document.
     var importReport: PSDImportReport? { state.importReport }
     var isImportReportPresented = false
+    /// File › Export… › Photoshop File…: the sheet with what the file will hold (`EditorSession+PSD`).
+    var isPSDExportPresented = false
     var exportOptions = ExportOptions()
     var isExporting = false
     var errorMessage: String?

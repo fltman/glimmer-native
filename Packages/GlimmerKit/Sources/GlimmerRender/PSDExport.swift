@@ -19,6 +19,8 @@ public struct PSDExportReport: Sendable, Equatable {
         case linearBlending
         /// The document's colours are Display P3; the file is written in sRGB.
         case writtenInSRGB
+        /// By choice: everything merged into one layer.
+        case flattenedByChoice
     }
 
     public struct Note: Sendable, Equatable {
@@ -54,6 +56,7 @@ extension PSDExportReport.Note {
         case .clippedToCanvas: "It reaches outside the canvas, and what is outside is not written."
         case .linearBlending: "This document blends colours in linear light. Other programs blend these layers in gamma, so the layers will look different there; the flattened picture in the file is right."
         case .writtenInSRGB: "The document's colours are Display P3; the file is written in sRGB."
+        case .flattenedByChoice: "All layers are merged into one, as chosen: the file looks right everywhere and has no layers to edit."
         }
     }
 }
@@ -69,18 +72,35 @@ public enum PSDExport {
         .exclusion: "smud", .subtract: "fsub", .divide: "fdiv", .hue: "hue ", .saturation: "sat ", .color: "colr", .luminosity: "lum ",
     ]
 
-    public static func data(for state: DocumentState, depth: Int = 8, context: MetalContext) throws -> (data: Data, report: PSDExportReport) {
-        let (file, report) = try file(for: state, depth: depth, context: context)
+    /// `flattened`: write one merged layer instead of the document's layers (for a document
+    /// whose layers would blend differently in another program).
+    public static func data(for state: DocumentState, depth: Int = 8, flattened: Bool = false, context: MetalContext) throws -> (data: Data, report: PSDExportReport) {
+        let (file, report) = try file(for: state, depth: depth, flattened: flattened, context: context)
         return (try PSDWriter.data(for: file), report)
     }
 
-    public static func file(for state: DocumentState, depth: Int = 8, context: MetalContext) throws -> (file: PSDFile, report: PSDExportReport) {
+    public static func file(for state: DocumentState, depth: Int = 8, flattened: Bool = false, context: MetalContext) throws -> (file: PSDFile, report: PSDExportReport) {
         guard depth == 8 || depth == 16 else { throw PSDFile.Problem("Glimmer writes Photoshop files with 8 or 16 bits per channel.") }
         guard (1...30_000).contains(state.width), (1...30_000).contains(state.height) else {
             throw PSDFile.Problem("A Photoshop file can be at most 30,000 pixels on a side. This document is \(state.width) × \(state.height).")
         }
         var report = PSDExportReport()
         if state.colorSpace == .displayP3 { report.notes.append(.init(.writtenInSRGB)) }
+        if flattened {
+            // One layer holding the document's own picture, transparency kept.
+            report.notes.append(.init(.flattenedByChoice))
+            let merged = try Pixels(ImageExporter.flatten(state, context: context), depth: depth, overWhite: false)
+            var layer = PSDFile.Layer(name: "Merged", rect: PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0), blendKey: "norm", opacity: 255, isClipped: false, isVisible: true,
+                                      group: .none, mask: nil, extraKeys: [], planes: [-1: Data(), 0: Data(), 1: Data(), 2: Data()], bytesPerSample: depth / 8)
+            if let box = merged.box {
+                layer.rect = PSDFile.Rect(top: box.y, left: box.x, bottom: box.maxY, right: box.maxX)
+                layer.planes = [-1: merged.cropped(merged.alpha, to: box), 0: merged.cropped(merged.red, to: box), 1: merged.cropped(merged.green, to: box), 2: merged.cropped(merged.blue, to: box)]
+            }
+            report.layersWritten = 1
+            let flat = try Pixels(ImageExporter.flatten(state, context: context), depth: depth, overWhite: true)
+            let header = PSDFile.Header(isLarge: false, channels: 3, width: state.width, height: state.height, depth: depth, mode: .rgb)
+            return (PSDFile(header: header, layers: [layer], composite: [flat.red, flat.green, flat.blue], iccProfile: CGColorSpace(name: CGColorSpace.sRGB)?.copyICCData() as Data?), report)
+        }
         if state.blendSpace == .linear {
             report.notes.append(.init(.linearBlending, changesLook: true))
             var asElsewhere = state

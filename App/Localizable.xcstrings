@@ -11986,6 +11986,215 @@
           }
         }
       }
+    },
+    "It is written as a layer of pixels that looks the same (in Glimmer it is %@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det skrivs som ett pixellager som ser likadant ut (i Glimmer är det %@)."
+          }
+        }
+      }
+    },
+    "It is a %@ adjustment layer, which Glimmer can't write as one. It is not among the file's layers; the flattened picture in the file still shows it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det är ett justeringslager (%@) som Glimmer inte kan skriva som sådant. Det finns inte bland filens lager; den sammanslagna bilden i filen visar det ändå."
+          }
+        }
+      }
+    },
+    "Its mask is written without its feather and density.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagrets mask skrivs utan ludd och täthet."
+          }
+        }
+      }
+    },
+    "It reaches outside the canvas, and what is outside is not written.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagret når utanför arbetsytan, och det som ligger utanför skrivs inte."
+          }
+        }
+      }
+    },
+    "This document blends colours in linear light. Other programs blend these layers in gamma, so the layers will look different there; the flattened picture in the file is right.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här dokumentet blandar färger i linjärt ljus. Andra program blandar lagren i gamma, så lagren ser annorlunda ut där; den sammanslagna bilden i filen är rätt."
+          }
+        }
+      }
+    },
+    "The document's colours are Display P3; the file is written in sRGB.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentets färger är Display P3; filen skrivs i sRGB."
+          }
+        }
+      }
+    },
+    "All layers are merged into one, as chosen: the file looks right everywhere and has no layers to edit.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alla lager slås ihop till ett, som du valde: filen ser rätt ut överallt och har inga lager att redigera."
+          }
+        }
+      }
+    },
+    "Export as Photoshop File": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera som Photoshop-fil"
+          }
+        }
+      }
+    },
+    "8 bits per channel": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8 bitar per kanal"
+          }
+        }
+      }
+    },
+    "As they are": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Som de är"
+          }
+        }
+      }
+    },
+    "Merged into one layer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sammanslagna till ett lager"
+          }
+        }
+      }
+    },
+    "Preparing the file": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förbereder filen"
+          }
+        }
+      }
+    },
+    "Every layer is written as it is: %lld layers and groups.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Varje lager skrivs som det är: %lld lager och grupper."
+          }
+        }
+      }
+    },
+    "%lld layers and groups are written. These things are not written as they are:": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld lager och grupper skrivs. Det här skrivs inte som det är:"
+          }
+        }
+      }
+    },
+    "Measured on this document: blended as other programs do, the layers differ from what you see here on %1$@ %% of the pixels visibly, %2$@ of 255 on average.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mätt på det här dokumentet: blandade som andra program gör skiljer sig lagren från det du ser här på %1$@ %% av pixlarna synligt, %2$@ av 255 i genomsnitt."
+          }
+        }
+      }
+    },
+    "Text, smart objects and effects can't be edited as such in the file. Glimmer has read its own Photoshop files back and macOS shows their picture; the layers have not been tried in Photoshop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text, smarta objekt och effekter går inte att redigera som sådana i filen. Glimmer har läst tillbaka sina egna Photoshop-filer och macOS visar deras bild; lagren har inte provats i Photoshop."
+          }
+        }
+      }
+    },
+    "Save…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara…"
+          }
+        }
+      }
+    },
+    "Photoshop File…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photoshop-fil…"
+          }
+        }
+      }
+    },
+    "Export the document with its layers as a Photoshop file (PSD)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exportera dokumentet med lager som Photoshop-fil (PSD)"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

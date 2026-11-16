@@ -50,6 +50,14 @@ struct ExportSheet: View {
             .formStyle(.grouped)
 
             HStack {
+                #if GLIMMER_PSD
+                // A Photoshop file keeps the layers, so it has its own step: what the file will hold is shown before it is saved.
+                Button("Photoshop File…") {
+                    dismiss()
+                    session.isPSDExportPresented = true
+                }
+                .help("Export the document with its layers as a Photoshop file (PSD)")
+                #endif
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
