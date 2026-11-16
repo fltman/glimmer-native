@@ -43,6 +43,10 @@ release_build() {
     && scripts/check-release-binary.sh build/DerivedData-release/Build/Products/Release/Glimmer.app
 }
 site() { local here="$PWD"; for s in "$PWD/../the-apps/site" "$HOME/Projekt/the-apps/site"; do [[ -f "$s/build.mjs" ]] && { (cd "$s" && node build.mjs --strict); return; }; done; echo "the-apps/site not found"; return 1; }
+# In zsh `path` is tied to PATH: a script that uses it as an ordinary variable empties the search path
+# (it happened in two sessions' GUI scripts, whose cleanup then never ran). The series' check, when it is there.
+zsh_path() { local tool; for tool in "$PWD/../the-apps/tools/check-zsh-path.sh" "$HOME/Projekt/the-apps/tools/check-zsh-path.sh"; do [[ -x "$tool" ]] && { "$tool" scripts; return; }; done; echo "check-zsh-path.sh not found: skipped"; }
+run zsh-path zsh_path
 run features scripts/apply-features.py --check
 run strings scripts/check-strings.py
 run tests tests
