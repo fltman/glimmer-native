@@ -48,9 +48,11 @@ let package = Package(
         // Mac that a test has not replaced. The C part loads it before any test runs.
         .target(name: "NetworkGuardLoader", path: "Tests/Support/NetworkGuardLoader"),
         .target(name: "NetworkGuard", dependencies: ["NetworkGuardLoader"], path: "Tests/Support/NetworkGuard"),
+        // For the tests only: writes Photoshop files to read back and to damage.
+        .target(name: "PSDTestSupport", dependencies: ["GlimmerCore"], path: "Tests/Support/PSDTestSupport"),
 
-        .testTarget(name: "GlimmerCoreTests", dependencies: ["GlimmerCore", "NetworkGuard"]),
-        .testTarget(name: "GlimmerRenderTests", dependencies: ["GlimmerRender", "NetworkGuard"]),
+        .testTarget(name: "GlimmerCoreTests", dependencies: ["GlimmerCore", "NetworkGuard", "PSDTestSupport"]),
+        .testTarget(name: "GlimmerRenderTests", dependencies: ["GlimmerRender", "NetworkGuard", "PSDTestSupport"]),
         .testTarget(name: "GlimmerAITests", dependencies: ["GlimmerAI", "NetworkGuard"]),
         .testTarget(name: "GlimmerToolsTests", dependencies: ["GlimmerTools", "NetworkGuard"]),
         .testTarget(name: "GlimmerHealTests", dependencies: ["GlimmerHeal", "NetworkGuard"], swiftSettings: healSettings),

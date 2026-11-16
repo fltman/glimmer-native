@@ -192,6 +192,38 @@ final class DocumentOpener {
     /// Linked images waiting for their window, by the id of the document's first layer.
     private var pendingLinks: [UUID: LinkedImage] = [:]
 
+    /// Import reports of Photoshop files waiting for their window, by the id of the document's
+    /// first layer, with the file's bytes for measuring the picture against the file's own.
+    private var pendingReports: [UUID: (report: PSDImportReport, file: Data)] = [:]
+
+    /// Called when a document window appears: an imported Photoshop file gets its report, and
+    /// the report is shown. No import reaches a window without it.
+    func claimImportReport(for session: EditorSession) {
+        guard let id = session.state.layers.first?.id, let pending = pendingReports.removeValue(forKey: id) else { return }
+        var report = pending.report
+        if !report.flattened, let metal = try? session.ai.metal, let difference = PSDAppearance.difference(of: session.state, from: pending.file, context: metal) {
+            report.meanDifference = difference.mean
+            report.shareVisiblyDifferent = difference.shareVisible
+        }
+        session.importReport = report
+        session.isImportReportPresented = true
+    }
+
+    /// For a document made from a Photoshop file elsewhere (the agent API): its report waits for the window the same way.
+    func noteImport(_ report: PSDImportReport, file: Data, firstLayer: UUID) { pendingReports[firstLayer] = (report, file) }
+
+    /// Whether these bytes are a Photoshop file (by its signature, not its name).
+    static func isPhotoshopFile(_ data: Data) -> Bool { data.prefix(4) == Data("8BPS".utf8) }
+
+    /// A Photoshop file opens as a new, untitled document with its layers, and a report of what did not come through.
+    private func openPhotoshopFile(_ data: Data, url: URL) throws {
+        let (state, report) = try PSDImport.document(from: data)
+        guard let first = state.layers.first else { throw PSDFile.Problem("This Photoshop file has nothing in it that Glimmer can show.") }
+        pendingReports[first.id] = (report, data)
+        createDocument(state)
+        NSDocumentController.shared.noteNewRecentDocumentURL(url)
+    }
+
     /// Called when a document window appears: a handed-over image becomes linked.
     func claimLink(for session: EditorSession) {
         guard let id = session.state.layers.first?.id, let link = pendingLinks.removeValue(forKey: id) else {
@@ -270,6 +302,13 @@ final class DocumentOpener {
         let access = url.startAccessingSecurityScopedResource()
         defer { if access { url.stopAccessingSecurityScopedResource() } }
         do {
+            // A Photoshop file comes in with its layers. (A file handed over by a sibling to edit
+            // and save back stays the picture it is: SIBLINGS.md §6 has no PSD.)
+            if link == nil, let handle = try? FileHandle(forReadingFrom: url), let start = try? handle.read(upToCount: 4), Self.isPhotoshopFile(start) {
+                try? handle.close()
+                try openPhotoshopFile(try Data(contentsOf: url, options: .mappedIfSafe), url: url)
+                return
+            }
             let image = try ImageImporter.image(contentsOf: url)
             let name = url.deletingPathExtension().lastPathComponent
             // An empty, untouched document (the one Glimmer opens at launch) becomes the image,

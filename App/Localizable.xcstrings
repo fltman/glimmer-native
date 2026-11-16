@@ -11744,6 +11744,39 @@
           }
         }
       }
+    },
+    "Import Report": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importrapport"
+          }
+        }
+      }
+    },
+    "Import Report…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importrapport…"
+          }
+        }
+      }
+    },
+    "The Photoshop file itself is not changed. This is a new Glimmer document; you can read the report again under File › Import Report… while the window is open.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Själva Photoshop-filen ändras inte. Det här är ett nytt Glimmer-dokument; du kan läsa rapporten igen under Arkiv › Importrapport… så länge fönstret är öppet."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

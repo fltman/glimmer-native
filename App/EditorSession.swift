@@ -185,6 +185,10 @@ final class EditorSession {
     /// A question or refusal about the text service, while it is up (`AIController+TextGate`).
     var textNotice: AIController.TextNotice?
     var isCanvasSizePresented = false
+    /// What the import of a Photoshop file kept and lost, for this window. Shown once when the
+    /// file opens and again from File › Import Report…. Not saved with the document.
+    var importReport: PSDImportReport?
+    var isImportReportPresented = false
     var exportOptions = ExportOptions()
     var isExporting = false
     var errorMessage: String?
@@ -509,6 +513,8 @@ final class EditorSession {
             return !isUntouchedBlank
         case .exportForWeb:
             return !isExporting
+        case .importReport:
+            return importReport != nil
         case .deselect, .invertSelection, .aiRemoveObject, .featherSelection, .growSelection, .shrinkSelection, .healSelection:
             return state.selection != nil
         case .copy, .cut:
@@ -687,6 +693,8 @@ final class EditorSession {
             isImageSizePresented = true
         case .canvasSize:
             isCanvasSizePresented = true
+        case .importReport:
+            isImportReportPresented = importReport != nil
         case .toggleRulers:
             edit(state.aids.rulersVisible ? "Hide Rulers" : "Show Rulers") { $0.aids.rulersVisible.toggle() }
         case .toggleGrid:

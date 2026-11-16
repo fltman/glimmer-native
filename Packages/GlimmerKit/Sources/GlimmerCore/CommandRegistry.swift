@@ -160,6 +160,7 @@ extension CommandID {
     public static let fillBackground: CommandID = "edit.fillBackground"
     public static let fillPattern: CommandID = "edit.fillPattern"
     public static let exportWebProject: CommandID = "file.exportWebProject"
+    public static let importReport: CommandID = "file.importReport"
     public static let exportPNG: CommandID = "file.exportPNG"
     public static let newDocument: CommandID = "file.new"
     public static let openDocument: CommandID = "file.open"
@@ -259,6 +260,8 @@ public struct CommandRegistry: Sendable {
                           keywords: ["batch", "folder", "many images", "bulk", "convert", "droplet", "automate"]),
         CommandDescriptor(.exportWebProject, "Export Web Project (.aips)…", category: .file,
                           keywords: ["aips", "glimmer web", "save project", "browser"]),
+        CommandDescriptor(.importReport, "Import Report…", category: .file,
+                          keywords: ["psd", "photoshop", "what was lost", "layers", "import"]),
 
         CommandDescriptor(.newLayer, "New Layer", category: .layer,
                           shortcut: KeyShortcut("n", [.command, .shift]), keywords: ["add"]),

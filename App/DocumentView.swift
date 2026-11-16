@@ -125,6 +125,9 @@ struct DocumentView: View {
             .sheet(isPresented: $session.isCanvasSizePresented) {
                 CanvasSizeSheet(session: session)
             }
+            .sheet(isPresented: $session.isImportReportPresented) {
+                ImportReportSheet(session: session)
+            }
             .sheet(isPresented: $session.isImageSizePresented) {
                 ImageSizeSheet(session: session)
             }
@@ -204,6 +207,7 @@ struct DocumentView: View {
                 // Only a session that has a window is offered to agents.
                 AgentRegistry.shared.register(session)
                 DocumentOpener.shared.claimLink(for: session)
+                DocumentOpener.shared.claimImportReport(for: session)
             }
             .onDisappear { AgentRegistry.shared.unregister(session) }
             .onChange(of: activeState) { _, state in if state == .key { AgentRegistry.shared.markFront(session) } }

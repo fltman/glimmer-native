@@ -60,6 +60,34 @@ When Glimmer reads an image, it:
 
 You can also open files from Finder: drag them onto the Glimmer icon in the Dock, or Control-click a file and choose **Open With › Glimmer**.
 
+## Photoshop files
+
+Glimmer opens Photoshop files (PSD, and the large-document form PSB) with their layers, as a new, untitled Glimmer document. The Photoshop file itself is never changed. Open one with **File › Open…** or by dragging it onto Glimmer.
+
+What comes through as it was, for RGB and grayscale files with 8 or 16 bits per channel:
+
+- Layers of pixels, with their names, positions, transparency, opacity and visibility.
+- Groups, open or closed, and clipping.
+- Layer masks, including masks that are switched off.
+- The blend modes Glimmer has, which is all of Photoshop's except Dissolve, Darker Color and Lighter Color.
+
+The document is set to blend colours the way Photoshop does (**Image › Blend Colors in Gamma Space**), so that half-transparent layers look as they did.
+
+What does not come through in this version, and what happens instead:
+
+- **Text** becomes a layer of pixels with the same name. The words can't be edited as text.
+- **Smart objects** become pixels. The file that was placed in them is not kept.
+- **Adjustment layers** and **fill and shape layers** are left out.
+- **Layer effects** such as shadows, strokes and glows, and **vector masks**, are not read.
+- A layer in one of the three missing **blend modes** comes in as Normal.
+- Files in **other colour modes** (CMYK, Lab, indexed colour, duotone, multichannel, bitmap) and files with **32 bits per channel** open as one layer: the flattened picture saved in the file, converted to RGB by macOS. Their layers are not read.
+
+Nothing is dropped silently. When the file has opened, an **Import Report** lists, layer by layer, what did not come through and what was done instead; if everything came through, it says so in one line. Glimmer also compares its own picture of the layers with the flattened picture that the file carries, and the report says whether they match or how much they differ. You can read the report again under **File › Import Report…** while the window is open; it is not saved with the document. The report is in English.
+
+A file larger than Glimmer's limit for your Mac is refused, with the same message as for other images. A damaged file is refused with a reason rather than opened in part.
+
+Glimmer reads these files with its own code, written from Adobe's published description of the format. It has been tried with files that Glimmer's own tests generate, not yet with files saved by Photoshop. Glimmer does not write Photoshop files yet.
+
 ## Adding images to a document
 
 There are three ways to add an image to the document you are working on. Each one adds the image as a new layer, centered on the canvas, above the active layer.

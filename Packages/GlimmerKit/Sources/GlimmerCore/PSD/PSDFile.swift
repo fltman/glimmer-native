@@ -20,6 +20,7 @@ public struct PSDFile: Sendable {
 
     public struct Rect: Sendable, Equatable {
         public var top: Int, left: Int, bottom: Int, right: Int
+        public init(top: Int, left: Int, bottom: Int, right: Int) { self.top = top; self.left = left; self.bottom = bottom; self.right = right }
         public var width: Int { right - left }
         public var height: Int { bottom - top }
     }
