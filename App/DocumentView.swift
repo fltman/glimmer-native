@@ -6,6 +6,7 @@ import SwiftUI
 struct DocumentView: View {
     @State private var session: EditorSession
     @Environment(\.undoManager) private var undoManager
+    @Environment(\.openSettings) private var openSettings
     @Environment(\.controlActiveState) private var activeState
     @AppStorage(Preferences.showOmnibarKey) private var showOmnibar = true
     @AppStorage(SelectionBar.showKey) private var showSelectionBar = true
@@ -160,6 +161,21 @@ struct DocumentView: View {
                 Text("\(session.healWarning ?? "")\n\nGenerative Fill (AI ▸ Generative Fill…) can replace larger areas.")
             }
             #endif
+            .alert(Text(verbatim: session.textNotice?.title ?? ""), isPresented: Binding(
+                get: { session.textNotice != nil },
+                set: { if !$0 { session.textNotice = nil } }
+            ), presenting: session.textNotice) { notice in
+                switch notice.kind {
+                case .firstUse:
+                    Button("Send") { notice.proceed?() }
+                    Button("Not Now", role: .cancel) {}
+                case .cantSee:
+                    Button("Open Settings…") { openSettings() }
+                    Button("OK", role: .cancel) {}
+                }
+            } message: { notice in
+                Text(verbatim: notice.message)
+            }
             .alert(Text("Rasterize text?"), isPresented: Binding(
                 get: { session.rasterizeTextConfirmation != nil },
                 set: { if !$0 { session.rasterizeTextConfirmation = nil } }

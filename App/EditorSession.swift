@@ -182,6 +182,8 @@ final class EditorSession {
     var isImageSizePresented = false
     /// Heal Selection asks before filling a large area: the reason, while the question is up.
     var healWarning: String?
+    /// A question or refusal about the text service, while it is up (`AIController+TextGate`).
+    var textNotice: AIController.TextNotice?
     var isCanvasSizePresented = false
     var exportOptions = ExportOptions()
     var isExporting = false

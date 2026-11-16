@@ -12,6 +12,8 @@ public struct OllamaTextModel: TextModel {
     public let modelID: String
     /// Tokens of context asked for: room for the tool list, a picture and the answer.
     public let contextTokens: Int
+    /// Whether the model may reason before it answers (slower; off by default, as measured in docs/TESTING-NOTES.md).
+    public let thinks: Bool
     let session: URLSession
 
     public var providerName: String { "Ollama" }
@@ -19,7 +21,8 @@ public struct OllamaTextModel: TextModel {
     public var prefersShortToolList: Bool { true }
 
     /// `baseURL` is the server's address, with or without the `/v1` of its OpenAI-style route.
-    public init(baseURL: URL = URL(string: "http://127.0.0.1:11434")!, model: String, contextTokens: Int = 16_384, session: URLSession = .shared) {
+    public init(baseURL: URL = URL(string: "http://127.0.0.1:11434")!, model: String, contextTokens: Int = 16_384, thinks: Bool = false, session: URLSession = .shared) {
+        self.thinks = thinks
         self.baseURL = baseURL.lastPathComponent == "v1" ? baseURL.deletingLastPathComponent() : baseURL
         self.modelID = model
         self.contextTokens = contextTokens
@@ -64,7 +67,7 @@ public struct OllamaTextModel: TextModel {
     }
 
     private func body(messages: [[String: Any]], temperature: Double) -> [String: Any] {
-        ["model": modelID, "messages": messages, "stream": false, "think": false,
+        ["model": modelID, "messages": messages, "stream": false, "think": thinks,
          "options": ["num_ctx": contextTokens, "temperature": temperature]]
     }
 

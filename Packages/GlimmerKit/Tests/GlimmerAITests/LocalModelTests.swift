@@ -98,7 +98,9 @@ extension ChatAdapterTests {
             let abilities = try await OllamaTextModel.abilities(of: name)
             say("EVAL \(name): tools \(abilities.tools), vision \(abilities.vision), context length \(abilities.contextLength.map(String.init) ?? "?")")
             guard abilities.tools else { say("EVAL \(name): not evaluated, Ollama lists it without tools"); continue }
-            let report = await LocalModelEvaluation.run(OllamaTextModel(model: name)) { o in
+            let thinks = env["GLIMMER_LOCAL_EVAL_THINK"] == "1"
+            say("EVAL \(name): think \(thinks)")
+            let report = await LocalModelEvaluation.run(OllamaTextModel(model: name, thinks: thinks)) { o in
                 say("EVAL \(name) | \(o.passed ? "ok  " : "FAIL") | \(String(format: "%5.1f", o.seconds)) s | \(o.language) | \(o.goal) -> \(o.got)")
             }
             let en = report.passed(language: "en"), sv = report.passed(language: "sv")
@@ -156,5 +158,70 @@ extension ChatAdapterTests {
         let sent = try #require(FakeProvider.requests.first)
         #expect(sent.url.absoluteString == "https://openrouter.ai/api/v1/chat/completions")
         #expect(sent.json["modalities"] as? [String] == ["image", "text"])
+    }
+}
+
+/// The Responses adapter (OpenAI, xAI) against answers in the form their documentation shows.
+extension ChatAdapterTests {
+    static let responsesAnswer = #"""
+    {"id":"resp_1","object":"response","status":"completed","model":"m","output":[
+      {"type":"reasoning","id":"rs_1","summary":[]},
+      {"type":"message","id":"msg_1","role":"assistant","content":[{"type":"output_text","text":"Black and white, then cropped."}]},
+      {"id":"fc_1","call_id":"call_1","type":"function_call","name":"add_adjustment","arguments":"{\"type\":\"black_white\"}"},
+      {"id":"fc_2","call_id":"call_2","type":"function_call","name":"crop","arguments":"{\"aspect\":\"16:9\"}"}],
+     "usage":{"input_tokens":900,"output_tokens":40,"total_tokens":940}}
+    """#
+
+    @Test func openAIGetsAResponsesRequestAndItsToolCallsBecomeThePlan() async throws {
+        FakeProvider.script([(200, Self.responsesAnswer)])
+        let model = try #require(AIProvider.named("openai")?.textModel(key: "sk-test", model: "some-model", session: FakeProvider.session))
+        let heard = NSLock(); nonisolated(unsafe) var text = ""
+        let (plan, cost) = try await AgentPlanner.plan(goal: "Black and white, 16:9", context: context, history: [("earlier", "done")], image: Data([7]), model: model) { t in heard.withLock { text = t } }
+        #expect(plan.steps.map(\.op) == ["add_adjustment", "crop"] && plan.message == "Black and white, then cropped." && cost == nil)
+        #expect(heard.withLock { text } == "Black and white, then cropped.")
+        let sent = try #require(FakeProvider.requests.first)
+        #expect(sent.url.absoluteString == "https://api.openai.com/v1/responses")
+        #expect(sent.headers["Authorization"] == "Bearer sk-test")
+        #expect(sent.json["messages"] == nil && sent.json["temperature"] == nil && sent.json["tool_choice"] == nil)
+        // Tools in the flat form.
+        let tool = try #require((sent.json["tools"] as? [[String: Any]])?.first)
+        #expect(tool["type"] as? String == "function" && tool["name"] is String && tool["parameters"] != nil && tool["function"] == nil)
+        // The conversation as input items; the picture as input_image with its data URL.
+        let input = try #require(sent.json["input"] as? [[String: Any]])
+        #expect(input.first?["role"] as? String == "system" && input.count == 4)
+        let parts = try #require(input.last?["content"] as? [[String: Any]])
+        #expect(parts.contains { $0["type"] as? String == "input_text" })
+        #expect(parts.contains { $0["type"] as? String == "input_image" && ($0["image_url"] as? String)?.hasPrefix("data:image/") == true })
+    }
+
+    @Test func xAIGoesToItsOwnAddressInTheSameForm() async throws {
+        FakeProvider.script([(200, Self.responsesAnswer)])
+        let model = try #require(AIProvider.named("xai")?.textModel(key: "xai-test", model: "some-model", session: FakeProvider.session))
+        let reply = try await model.reply(system: "s", user: "u", images: [Data([1])], imageType: "image/jpeg", json: true, temperature: 0.7)
+        #expect(reply.text == "Black and white, then cropped.")
+        let sent = try #require(FakeProvider.requests.first)
+        #expect(sent.url.absoluteString == "https://api.x.ai/v1/responses" && sent.headers["Authorization"] == "Bearer xai-test")
+        #expect(sent.json["temperature"] == nil && sent.json["response_format"] == nil && sent.json["text"] == nil)
+        let user = try #require((sent.json["input"] as? [[String: Any]])?.last?["content"] as? [[String: Any]])
+        #expect(user.last?["image_url"] as? String == "data:image/jpeg;base64," + Data([1]).base64EncodedString())
+    }
+
+    @Test func aRefusalFromTheResponsesAPIIsShownAsItCame() async throws {
+        FakeProvider.script([(400, #"{"error":{"message":"The model `gpt-0` does not exist.","type":"invalid_request_error","code":"model_not_found"}}"#)])
+        let model = try #require(AIProvider.named("openai")?.textModel(key: "k", model: "gpt-0", session: FakeProvider.session))
+        await #expect { _ = try await AgentPlanner.plan(goal: "g", context: context, history: [], model: model) } throws: {
+            ($0 as? LocalizedError)?.errorDescription == "OpenAI answered HTTP 400: The model `gpt-0` does not exist."
+        }
+    }
+
+    @Test func theRegisterBuildsTheRightAdapterAndNothingForWhatIsNotBuilt() {
+        #expect(AIProvider.named("openai")?.textModel(key: "k", model: "m") is ResponsesTextModel)
+        #expect(AIProvider.named("xai")?.textModel(key: "k", model: "m") is ResponsesTextModel)
+        #expect(AIProvider.named("berget")?.textModel(key: "k", model: "m") is OpenRouterTextModel)
+        #expect(AIProvider.named("ollama")?.textModel(key: "", model: "m") is OllamaTextModel)
+        #expect(AIProvider.named("anthropic")?.textModel(key: "k", model: "m") == nil)
+        #expect(AIProvider.named("fal")?.textModel(key: "k", model: "m") == nil)
+        // Still hidden: only what Anders has decided is offered.
+        #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "berget", "grunden"])
     }
 }

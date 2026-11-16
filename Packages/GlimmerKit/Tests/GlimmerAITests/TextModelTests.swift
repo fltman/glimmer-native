@@ -96,10 +96,14 @@ final class ScriptedTextModel: TextModel, @unchecked Sendable {
 
     @Test func theAppBuildsATextModelInOnePlace() throws {
         let app = try Self.swiftFiles("App")
-        let makers = app.filter { $0.text.contains("OpenRouterTextModel(") }.map(\.path)
+        // The app never names an adapter: it asks the register for the chosen service's model, in one place.
+        for (path, text) in app {
+            for adapter in ["OpenRouterTextModel(", "ResponsesTextModel(", "OllamaTextModel(", "AnthropicTextModel("] {
+                #expect(!text.contains(adapter), "\(path) builds \(adapter) itself")
+            }
+        }
+        let makers = app.filter { $0.text.contains(".textModel(key:") }.map(\.path)
         #expect(makers == ["App/AIController.swift"])
-        let text = try #require(app.first { $0.path == "App/AIController.swift" }).text
-        #expect(text.components(separatedBy: "OpenRouterTextModel(").count == 2)
         // The text model setting is read there and nowhere else (Settings edits it through @AppStorage).
         for (path, text) in app where path != "App/AIController.swift" {
             #expect(!text.contains("forKey: AIDefaults.textModelKey"), "\(path) reads the text model setting itself")

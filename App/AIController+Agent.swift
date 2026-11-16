@@ -117,6 +117,10 @@ extension AIController {
 
     /// Sends the goal to the text model for a plan.
     private func planWithOpenRouter(_ goal: String) {
+        gateTextRequest(needsPicture: false) { [weak self] in self?.sendPlanRequest(goal) }
+    }
+
+    private func sendPlanRequest(_ goal: String) {
         let model: any TextModel
         do {
             model = try textModel()
@@ -314,6 +318,10 @@ extension AIController {
 
     /// Asks the model to look at the image and propose three edits.
     func suggestEdits() {
+        gateTextRequest(needsPicture: true) { [weak self] in self?.sendSuggestionRequest() }
+    }
+
+    private func sendSuggestionRequest() {
         guard !isSuggesting, let metal = MetalContext.shared, let model = try? textModel() else { return }
         let state = session.state
         let language = Locale.current.language.languageCode?.identifier ?? "en"

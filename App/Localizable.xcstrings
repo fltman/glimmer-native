@@ -11216,6 +11216,138 @@
           }
         }
       }
+    },
+    "This model can't look at pictures": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här modellen kan inte se bilder"
+          }
+        }
+      }
+    },
+    "%1$@ lists %2$@ as a model without picture input, and this needs to see your document. Nothing was sent. Choose a model that takes pictures in Settings › AI.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ anger att %2$@ saknar bildinmatning, och det här kräver att modellen ser ditt dokument. Inget skickades. Välj en modell som tar emot bilder i Inställningar › AI."
+          }
+        }
+      }
+    },
+    "Send this to %@?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skicka det här till %@?"
+          }
+        }
+      }
+    },
+    "You can read this again in Settings › AI.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kan läsa det här igen i Inställningar › AI."
+          }
+        }
+      }
+    },
+    "The Assistant sends what you typed, the list of Glimmer's operations, a description of your document (its size and layers) and a small picture of it to %1$@ (%2$@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistenten skickar det du skrev, listan över Glimmers operationer, en beskrivning av ditt dokument (storlek och lager) och en liten bild av det till %1$@ (%2$@)."
+          }
+        }
+      }
+    },
+    "The Assistant sends what you typed, the list of Glimmer's operations and a description of your document (its size and layers) to %1$@ (%2$@). The chosen model takes no pictures, so none is sent.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistenten skickar det du skrev, listan över Glimmers operationer och en beskrivning av ditt dokument (storlek och lager) till %1$@ (%2$@). Den valda modellen tar inte emot bilder, så ingen bild skickas."
+          }
+        }
+      }
+    },
+    "Suggest Edits and Find Distractions send a picture of the document too.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föreslå ändringar och Hitta störande inslag skickar också en bild av dokumentet."
+          }
+        }
+      }
+    },
+    "%1$@ says it processes this in %2$@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ uppger att bearbetningen sker i %2$@."
+          }
+        }
+      }
+    },
+    "%@ bills your key for each request.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ fakturerar din nyckel för varje förfrågan."
+          }
+        }
+      }
+    },
+    "Nothing leaves this Mac and nothing is billed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget lämnar den här Macen och inget faktureras."
+          }
+        }
+      }
+    },
+    "Not Now": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inte nu"
+          }
+        }
+      }
+    },
+    "What is sent to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vad som skickas till %@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

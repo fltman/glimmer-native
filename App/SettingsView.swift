@@ -92,6 +92,14 @@ private struct AISettingsView: View {
                     ProviderTextSettings(provider: provider)
                         .id(provider.slug)
                 }
+                if let provider = AIProvider.named(textProvider), provider.offers(.text) {
+                    DisclosureGroup("What is sent to \(provider.name)") {
+                        Text(verbatim: AIController.textNotice(for: provider, sendsPictures: AIController.chosenTextModel(for: provider).vision != false))
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
             } header: {
                 Text("Text (the Assistant)")
             } footer: {

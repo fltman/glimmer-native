@@ -237,6 +237,21 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
         #expect(sent.json["reasoning_effort"] as? String == "low" && sent.json["usage"] == nil)
     }
 
+    @Test func googleGetsItsCompatibilityRouteWithoutWhatItsPageDoesNotShow() async throws {
+        FakeProvider.script([(200, Self.toolAnswer)])
+        _ = try await AgentPlanner.plan(goal: "g", context: context, history: [], image: Data([9]), model: model("google", key: "gk"))
+        let sent = try #require(FakeProvider.requests.first)
+        #expect(sent.url.absoluteString == "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions")
+        #expect(sent.headers["Authorization"] == "Bearer gk")
+        #expect(sent.json["parallel_tool_calls"] == nil && sent.json["usage"] == nil && sent.json["tool_choice"] as? String == "auto")
+        // The picture goes as a data URL in the user message.
+        let user = try #require((sent.json["messages"] as? [[String: Any]])?.last)
+        let parts = try #require(user["content"] as? [[String: Any]])
+        #expect(parts.contains { (($0["image_url"] as? [String: Any])?["url"] as? String)?.hasPrefix("data:image/") == true })
+        // Hidden until Anders has tried it.
+        #expect(AIProvider.named("google")?.offered.isEmpty == true && AIProvider.named("google")?.built == [.text])
+    }
+
     @Test func ollamaGetsNoKeyAndNoToolChoice() async throws {
         FakeProvider.script([(200, Self.toolAnswer)])
         _ = try await AgentPlanner.plan(goal: "g", context: context, history: [], model: model("ollama", key: ""))

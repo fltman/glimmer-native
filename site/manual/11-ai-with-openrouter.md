@@ -44,6 +44,10 @@ For a service other than OpenRouter:
 
 Under the model, Glimmer shows what the service's own list says: its price per million tokens when the list has prices (otherwise "Billed by … at their rates"), and two warnings when they apply. A model without tool calls can't be used by the Assistant, which works by calling Glimmer's tools. A model that can't take pictures makes the Assistant plan without looking at the document, and suggestions and Find Distractions won't work with it.
 
+The first time a request is about to go to a service, Glimmer tells you which service it is, what is sent (what you typed, the list of Glimmer's operations, a description of your document and, when the model takes pictures, a small picture of it), where the service says it processes it, and that it is billed to your key. Choose **Send** or **Not Now**. You can read the same text again under **What is sent to …** in the settings. Glimmer asks once per service, not for every request.
+
+Suggest Edits and Find Distractions need a model that can look at pictures. With a model that can't, Glimmer doesn't send the request and says why, with a button to the settings.
+
 Berget and Grunden are Swedish services that run open models in Sweden. Glimmer's support for them is built from their documentation and has not been tried with a real call yet. If a service answers with an error, Glimmer shows the error as it came, with its status code.
 
 ## What costs money

@@ -43,6 +43,9 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
 
     public var missingKeyMessage: String { "Add your \(name) API key in Settings › AI." }
 
+    /// The host requests go to, for "sent to …".
+    public var host: String { URL(string: baseURL)?.host() ?? baseURL }
+
     // MARK: The list
 
     public static let all: [AIProvider] = [
@@ -54,12 +57,28 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
             p.keysURL = "https://openrouter.ai/keys"; p.termsURL = "https://openrouter.ai/terms"; p.pricesURL = "https://openrouter.ai/models"
             return p
         }(),
-        AIProvider(slug: "openai", name: "OpenAI", kind: .cloud, serves: [.text, .image], textAdapter: .responses, baseURL: "https://api.openai.com/v1"),
+        {
+            var p = AIProvider(slug: "openai", name: "OpenAI", kind: .cloud, serves: [.text, .image], textAdapter: .responses, baseURL: "https://api.openai.com/v1")
+            p.built = [.text]
+            p.keysURL = "https://platform.openai.com/api-keys"; p.pricesURL = "https://developers.openai.com/api/docs/pricing"
+            return p
+        }(),
         AIProvider(slug: "anthropic", name: "Anthropic", kind: .cloud, serves: [.text], textAdapter: .anthropicMessages, baseURL: "https://api.anthropic.com/v1"),
-        AIProvider(slug: "xai", name: "xAI", kind: .cloud, serves: [.text], textAdapter: .responses, baseURL: "https://api.x.ai/v1"),
+        {
+            var p = AIProvider(slug: "xai", name: "xAI", kind: .cloud, serves: [.text], textAdapter: .responses, baseURL: "https://api.x.ai/v1")
+            p.built = [.text]
+            p.keysURL = "https://console.x.ai"; p.pricesURL = "https://docs.x.ai/developers/models"
+            return p
+        }(),
         {
             var p = AIProvider(slug: "google", name: "Google", kind: .cloud, serves: [.text, .image], textAdapter: .chatCompletions,
                                baseURL: "https://generativelanguage.googleapis.com/v1beta/openai")
+            // Google's OpenAI-compatible route ("still in beta" in its own words). Its page shows tools,
+            // tool_choice, pictures and streaming; what it doesn't show is left out.
+            p.dialect.parallelToolCalls = false
+            p.dialect.jsonObject = false
+            p.built = [.text]
+            p.keysURL = "https://aistudio.google.com/apikey"; p.pricesURL = "https://ai.google.dev/gemini-api/docs/pricing"
             p.termsNote = "For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognisable people."
             p.termsURL = "https://ai.google.dev/gemini-api/terms"
             return p
@@ -119,6 +138,23 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
         c.needsKey = needsKey
         c.providerName = slug == "openrouter" ? nil : name
         return c
+    }
+
+    /// The text model for this service: the adapter its `textAdapter` names. `baseURL` overrides
+    /// the address (OpenRouter's endpoint setting, a local server's address). The key is passed
+    /// in for this one model and kept nowhere else.
+    public func textModel(key: String, model: String, baseURL override: URL? = nil, session: URLSession = .shared) -> (any TextModel)? {
+        guard built.contains(.text) else { return nil }
+        if slug == "ollama" { return OllamaTextModel(baseURL: override ?? URL(string: baseURL)!, model: model, session: session) }
+        switch textAdapter {
+        case .chatCompletions:
+            return OpenRouterTextModel(client: OpenRouterClient(apiKey: key, configuration: chatConfiguration(baseURL: override), session: session),
+                                       model: model, providerName: name)
+        case .responses:
+            return ResponsesTextModel(provider: self, key: key, model: model, session: session)
+        case .anthropicMessages, nil:
+            return nil
+        }
     }
 
     /// The manual's table, generated so it can't drift from the list.

@@ -115,7 +115,10 @@ final class AIController {
             let chosen = Self.chosenTextModel(for: provider).id
             guard !chosen.isEmpty else { throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI.")) }
             let address = UserDefaults.standard.string(forKey: "ai.address.ollama").flatMap(URL.init) ?? URL(string: provider.baseURL)!
-            return OllamaTextModel(baseURL: address, model: chosen)
+            guard let made = provider.textModel(key: "", model: chosen, baseURL: address) else {
+                throw TextSetupError(errorDescription: String(localized: "Glimmer can't use \(provider.name) for text yet."))
+            }
+            return made
         }
         let key: String?
         if provider.slug == "openrouter" {
@@ -132,8 +135,10 @@ final class AIController {
             throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI."))
         }
         // OpenRouter keeps its endpoint setting; the others go to their own address.
-        let configuration = provider.slug == "openrouter" ? provider.chatConfiguration(baseURL: AIDefaults.endpoint) : provider.chatConfiguration()
-        return OpenRouterTextModel(client: OpenRouterClient(apiKey: key, configuration: configuration), model: model, providerName: provider.name)
+        guard let made = provider.textModel(key: key, model: model, baseURL: provider.slug == "openrouter" ? AIDefaults.endpoint : nil) else {
+            throw TextSetupError(errorDescription: String(localized: "Glimmer can't use \(provider.name) for text yet."))
+        }
+        return made
     }
 
     /// Whether a text request can be made at all (a key where one is needed, and a model).
@@ -492,6 +497,10 @@ final class AIController {
     private(set) var distractionMessage: String?
 
     func findDistractions() {
+        gateTextRequest(needsPicture: true) { [weak self] in self?.sendDistractionRequest() }
+    }
+
+    private func sendDistractionRequest() {
         do {
             let model = try textModel()
             let source = try composite(session.state)
