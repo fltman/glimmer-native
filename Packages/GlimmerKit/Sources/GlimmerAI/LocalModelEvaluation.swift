@@ -172,7 +172,11 @@ public enum LocalModelEvaluation {
                 if !PlanCheck.runsAtOnce(plan, request: test.goal), !plan.steps.isEmpty {
                     got += PlanCheck.withoutExtras(plan, request: test.goal).map { " | runs at once without \($0.offered.map(\.op).joined(separator: ", ")), which is offered" } ?? " | waits for Run"
                 }
-                if !plan.removedFigures.isEmpty { got += " | figures nobody gave it: \(plan.removedFigures.joined(separator: ", "))" }
+                if !plan.removedFigures.isEmpty {
+                    got += " | figures nobody gave it: \(plan.removedFigures.joined(separator: ", "))"
+                    // The sentence as the model wrote it, so a reader of the test can judge what was held back.
+                    if let written = plan.messageAsWritten { got += " | as the model wrote it: “\(written.prefix(300))”" }
+                }
                 if !plan.droppedOps.isEmpty { got += " | made-up tools: \(plan.droppedOps.joined(separator: ", "))" }
             } catch {
                 got = "error: " + String(((error as? LocalizedError)?.errorDescription ?? "\(error)").prefix(120))

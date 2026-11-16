@@ -125,6 +125,8 @@ public struct AgentPlan: Sendable, Equatable {
     public var filledFromRequest = 0
     /// Figures the model stated that nobody gave it; their sentences were taken out (`AssistantNumbers`).
     public var removedFigures: [String] = []
+    /// The answer as the model wrote it, kept when the figures check took something out of it (shown in the test of a model, not to a person).
+    public var messageAsWritten: String?
     /// What is wrong with steps that carry a parameter their operation doesn't have
     /// (`StepParameters`, and a sibling's closed schema): a plan with one is not run at all.
     public var strayParameters: [String] = []
@@ -697,7 +699,8 @@ public enum AgentPlanner {
         let given = givenFigures(goal: goal, context: context, history: history, siblingContext: siblingContext)
         var checkedText: (@Sendable (String) -> Void)?
         if let onText {
-            checkedText = { @Sendable (text: String) in onText(AssistantNumbers.shownWhileArriving(text, given: given)) }
+            let also = alsoGivenFigures(goal: goal, context: context)
+            checkedText = { @Sendable (text: String) in onText(AssistantNumbers.shownWhileArriving(text, given: given, alsoGiven: also)) }
         }
         let response = try await model.callTools(messages: messages, tools: tools, temperature: 0.2, onText: checkedText)
         var plan = try plan(from: response, extra: Set(siblings.map(\.toolName)))
@@ -744,6 +747,14 @@ public enum AgentPlanner {
         [goal, "\(context.width) \(context.height) \(context.layerCount)", context.activeLayerName, siblingContext ?? ""] + history.suffix(8).map(\.user)
     }
 
+    /// The figures in the operations' descriptions (they are sent with every request).
+    static let operationFigures: [Double] = ops.flatMap { op in AssistantNumbers.numbers(in: op.description) + op.params.flatMap { AssistantNumbers.numbers(in: $0.description) } }
+
+    /// What counts as given besides the request and the editor state: the operations' own figures and what the app works out from the document's size.
+    static func alsoGivenFigures(goal: String, context: AgentContext) -> [Double] {
+        operationFigures + AssistantNumbers.worked(width: context.width, height: context.height, request: goal)
+    }
+
     /// Takes out of the plan's text every sentence with a figure the model was not given
     /// (`AssistantNumbers`). When nothing is left of an answer without steps, Glimmer states
     /// what it knows itself.
@@ -753,15 +764,17 @@ public enum AgentPlanner {
         for step in plan.steps {
             if let data = try? JSONEncoder().encode(step.params), let text = String(data: data, encoding: .utf8) { given.append(text) }
         }
+        let also = alsoGivenFigures(goal: goal, context: context)
         var removed: [String] = []
         if let message = plan.message {
-            let result = AssistantNumbers.checked(message, given: given, steps: plan.steps.count)
+            let result = AssistantNumbers.checked(message, given: given, steps: plan.steps.count, alsoGiven: also)
+            if !result.removed.isEmpty { plan.messageAsWritten = message }
             plan.message = result.text
             removed += result.removed
         }
         for i in plan.steps.indices {
             guard let rationale = plan.steps[i].rationale else { continue }
-            let result = AssistantNumbers.checked(rationale, given: given, steps: plan.steps.count)
+            let result = AssistantNumbers.checked(rationale, given: given, steps: plan.steps.count, alsoGiven: also)
             plan.steps[i].rationale = result.text
             removed += result.removed
         }

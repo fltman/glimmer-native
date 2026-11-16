@@ -261,3 +261,73 @@ struct RealSiblingOperations {
         }
     }
 }
+
+/// Figures a capable model works out from what it was given are not taken for invented ones
+/// (the first real model, Berget, 2026-11-16: five cases), and an invented figure beside each still goes.
+@Suite struct WorkedFiguresTests {
+    static let given = ["Crop the image to 16:9", "2400 1600 1", "Photo"]
+    static func check(_ text: String, request: String = "Crop the image to 16:9") -> (text: String?, removed: [String]) {
+        let also = AgentPlanner.operationFigures + AssistantNumbers.worked(width: 2400, height: 1600, request: request)
+        return AssistantNumbers.checked(text, given: [request, "2400 1600 1", "Photo"], steps: 1, alsoGiven: also)
+    }
+
+    @Test func theOtherSideOfANamedAspectIsGiven() {
+        #expect(Self.check("Cropped to 16:9, which is 2400 × 1350 pixels, centred.").removed.isEmpty)
+        // An invented size beside it goes, and it is a number, not a price ("centred" has "cent" in it).
+        #expect(Self.check("Cropped to 16:9, which is 2400 × 1350 pixels, centred. The result is 1777 pixels wide.").removed == ["number 1777"])
+        #expect(Self.check("Cropped to 2400 × 1280 pixels, centred.").removed == ["number 1280"])
+    }
+
+    @Test func halvesAndDoublesAreGiven() {
+        let request = "Gör bilden hälften så stor"
+        #expect(Self.check("Bilden blir 1200 × 800 pixlar.", request: request).removed.isEmpty)
+        #expect(Self.check("Dubbla storleken är 4800 × 3200.", request: request).removed.isEmpty)
+        #expect(Self.check("Bilden blir 1200 × 850 pixlar.", request: request).removed == ["number 850"])
+    }
+
+    @Test func theSizeAsARatioAndItsMegapixelsAreGiven() {
+        let request = "How big is this document, in pixels?"
+        #expect(Self.check("It is 2400 × 1600 pixels, a 3:2 image of 3.84 megapixels.", request: request).removed.isEmpty)
+        #expect(Self.check("It is about 3.8 megapixels.", request: request).removed.isEmpty)
+        // A limit of the rule, known: the operations' descriptions hold most small whole numbers (ranges, factors,
+        // defaults), so a wrong small figure such as "a 4:3 image" is not caught. A wrong larger one is.
+        #expect(Self.check("It is a 4:3 image.", request: request).removed.isEmpty)
+        #expect(Self.check("It is a 37:21 image.", request: request).removed.contains("number 37"))
+        #expect(Self.check("It is 5.1 megapixels.", request: request).removed == ["number 5.1"])
+    }
+
+    @Test func theOperationsOwnFiguresAreGiven() {
+        let request = "Hur många lager har dokumentet och vad kostar det att förstora det?"
+        // 2× and 4× are in the upscale operation's own description, which the model was sent.
+        #expect(Self.check("Dokumentet har 1 lager. Du kan förstora det 2× eller 4×.", request: request).removed.isEmpty)
+        #expect(Self.check("Du kan förstora det 7×.", request: request).removed == ["number 7"])
+    }
+
+    @Test func aPercentageNamedInTheRequestIsGiven() {
+        #expect(Self.check("At 25 % it is 600 × 400.", request: "Scale it to 25 %").removed.isEmpty)
+        #expect(Self.check("At 25 % it is 640 × 400.", request: "Scale it to 25 %").removed == ["number 640"])
+    }
+
+    /// Held whatever the arithmetic: money, time, sizes on disk, quality, a service.
+    @Test func moneyTimeFileSizeQualityAndServicesKeepOnlyWhatWasGiven() {
+        let request = "Make it half as large and tell me the cost"
+        // 2 is an operation's own figure and 1200 a worked one; neither backs a sentence about money, time or a file's size.
+        #expect(Self.check("That costs 2 credits.", request: request).removed == ["price 2"])
+        #expect(Self.check("It will take 4 seconds.", request: request).removed == ["number 4"])
+        #expect(Self.check("The file will be about 1200 kB.", request: request).removed == ["number 1200"])
+        #expect(Self.check("Berget charges 2 per request.", request: request).removed == ["number 2"])
+        #expect(Self.check("Quality 4 is best.", request: request).removed == ["number 4"])
+        // The same figures in a sentence about the picture stay.
+        #expect(Self.check("It becomes 1200 × 800 pixels.", request: request).removed.isEmpty)
+        // A price is called a price only with a currency or the word.
+        #expect(Self.check("The centre is at 999.", request: request).removed == ["number 999"])
+        #expect(Self.check("It is €3.", request: request).removed == ["price 3"])
+    }
+
+    @Test func theSetIsClosed() {
+        let worked = AssistantNumbers.worked(width: 2400, height: 1600, request: "Crop to 16:9 and to a square")
+        #expect(Set(worked).isSuperset(of: [1200, 800, 4800, 3200, 9600, 6400, 1350, 1600, 3.84, 3.8, 4, 3, 2]))
+        #expect(!worked.contains(1777) && !worked.contains(1280) && worked.count < 30)
+        #expect(AssistantNumbers.worked(width: 0, height: 0, request: "x").isEmpty)
+    }
+}

@@ -708,3 +708,17 @@ Anders saved his own Berget key in Settings › AI of the debug build (started w
 What only Anders saw: the first-use notice, whether macOS's Passwords suggestion appeared over the key field, and whether the key was still there on reopening Settings. Asked about the three, his answer was "verkar funka". He has not said in so many words that the notice's text is approved.
 
 Not done in this run: the three RAW requests (they are not among the nineteen the button sends), any other service, any picture service.
+
+## The figures rule after the first real model (2026-11-16, late)
+
+Decided by the coordinator on the Berget finding: the rule was written against a model that invents figures and must not punish one that does the sum.
+
+- **Counts as given now:** what the request and the editor state hold (as before); the figures in the operations' descriptions, which are sent with every request; and a closed set the app works out from the document's size before it reads the answer (`AssistantNumbers.worked`): halves, doubles and four times each side, the other side for an aspect ratio the request names, the megapixels, the size as a ratio in lowest terms, and a percentage the request names of each side. The check is membership in that set, with the rounding a person would see; nothing is "plausible".
+- **Held whatever the arithmetic:** a sentence about money, how long something takes, a size on disk, quality or a service keeps a figure only if the request or the editor state gave it.
+- **A price is called a price** only when the sentence carries a currency or the word. "price 1350" came from "cent" inside "centred": words are now matched as words.
+- A removed figure is still followed by "Glimmer left out a figure it could not verify."
+- The test of a model shows the answer as the model wrote it beside what was removed, and the RAW requests run as a second group of three after the nineteen, counted by themselves.
+
+Tests: tonight's five cases as fixtures (1350 beside 16:9; 1200 and 800 for half; 3:2 and the megapixels; 2× and 4× from the upscale description; a named percentage), each with an invented figure beside it that still goes, and the held subjects.
+
+**A limit, known and tested as such:** the operations' descriptions hold most small whole numbers (0 to 5, 8, 9, 10, 12, 16, 50, 64, 100 and more through the adjustments' ranges), so a wrong small figure such as "a 4:3 image" for a 3:2 document is no longer caught. A wrong larger one is.

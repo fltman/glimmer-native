@@ -838,13 +838,16 @@ private struct TextModelTrial: View {
             ForEach(lines, id: \.self) { Text(verbatim: $0).font(.caption.monospaced()).textSelection(.enabled) }
             if let verdict { Text(verbatim: verdict).font(.callout.bold()) }
         }
-        .confirmationDialog("Send \(LocalModelEvaluation.cases.count) requests to \(provider.name)?", isPresented: $asking) {
-            Button("Send \(LocalModelEvaluation.cases.count) Requests") { run() }
+        .confirmationDialog("Send \(Self.requests) requests to \(provider.name)?", isPresented: $asking) {
+            Button("Send \(Self.requests) Requests") { run() }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Each request carries the list of Glimmer's operations (a few thousand tokens) and gets a short answer. \(provider.name) bills your key for them. Nothing in a document is changed.")
         }
     }
+
+    /// The counted requests, the known gap, and a second group about a RAW layer (three requests).
+    static var requests: Int { LocalModelEvaluation.cases.count + LocalModelEvaluation.rawCases.count }
 
     private func run() {
         guard let model = try? AIController.textModel(for: provider) else {
@@ -860,6 +863,15 @@ private struct TextModelTrial: View {
             }
             let en = report.passed(language: "en"), sv = report.passed(language: "sv")
             verdict = "\(report.model): \(report.passed) of \(report.scored.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "passes" : "does not pass").\(report.gapLine) The cost is on \(provider.name)'s usage page; this service's answers carry no cost."
+            // The second group: requests about a layer opened from a camera's RAW file. Counted by themselves, not in the verdict:
+            // a model that is only sent the short tool list is not offered develop_raw and cannot pass the first two.
+            lines.append("— RAW layer (a second group, not in the verdict above) —")
+            let raw = await LocalModelEvaluation.run(model, cases: LocalModelEvaluation.rawCases) { outcome in
+                Task { @MainActor in
+                    lines.append("\(outcome.passed ? "ok  " : "FAIL") \(String(format: "%5.1f s", outcome.seconds))  \(outcome.language)  \(outcome.goal) → \(outcome.got)")
+                }
+            }
+            verdict = (verdict ?? "") + " RAW layer: \(raw.outcomes.filter(\.passed).count) of \(raw.outcomes.count)."
             running = false
         }
     }
