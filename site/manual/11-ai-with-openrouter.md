@@ -34,6 +34,7 @@ The Assistant, its suggestions and Find Distractions send text (and a small pict
 | OpenRouter | text (the Assistant), images | your own, in **Settings › AI** | see the service's terms |  |
 | Berget | text (the Assistant) | your own, in **Settings › AI** | Stockholm, Sweden | Built from Berget's documentation; not yet tried with a real call. Berget AI runs open models in Stockholm. Its terms say it never stores the content of prompts or answers. |
 | Grunden | text (the Assistant) | your own, in **Settings › AI** | Sweden | Built from Grunden's documentation; not yet tried with a real call. Grunden AI runs open models in Sweden and says all processing happens there. |
+| Ollama | text (the Assistant) | none (shown only while it is running on your Mac) | This Mac | Runs on this Mac with Ollama: nothing is sent anywhere and nothing is billed. Slower than a cloud model; an answer can take up to a minute on a busy Mac. |
 <!-- providers:end -->
 
 For a service other than OpenRouter:
@@ -47,6 +48,20 @@ Under the model, Glimmer shows what the service's own list says: its price per m
 The first time a request is about to go to a service, Glimmer tells you which service it is, what is sent (what you typed, the list of Glimmer's operations, a description of your document and, when the model takes pictures, a small picture of it), where the service says it processes it, and that it is billed to your key. Choose **Send** or **Not Now**. You can read the same text again under **What is sent to …** in the settings. Glimmer asks once per service, not for every request.
 
 Suggest Edits and Find Distractions need a model that can look at pictures. With a model that can't, Glimmer doesn't send the request and says why, with a button to the settings.
+
+### A model on your own Mac (Ollama)
+
+If you run [Ollama](https://ollama.com) on your Mac, the Assistant can use a model there instead of a service. Nothing is sent anywhere, no key is needed and nothing is billed.
+
+**Ollama (on this Mac)** appears under **Service** only while Ollama is running. Under **Model**, Glimmer lists the installed models that can call tools, which the Assistant needs. Glimmer has tried one of them, `qwen3:8b`, with its own test of twelve everyday requests in English and Swedish; it is listed by its name. Any other installed model is marked **not evaluated with Glimmer**: you can choose it, but Glimmer has not tried it.
+
+What to expect, plainly:
+
+- It is slower than a service. An answer usually takes a few seconds, and can take up to a minute on a busy Mac.
+- The model takes memory while it runs, about 6 GB for `qwen3:8b`.
+- It gets most everyday requests right. A Swedish request for an adjustment ("Gör bilden svartvit") can come back incomplete; the same request in English works. If a plan calls a tool that doesn't exist, Glimmer drops that step and tells you.
+- `qwen3:8b` can't take pictures, so the Assistant plans without looking at the document, and Suggest Edits and Find Distractions are not offered with it.
+- Local models get a shorter list of Glimmer's operations (the everyday ones), because a long list makes small models lose their way. For anything outside it, use a service or do it by hand.
 
 Berget and Grunden are Swedish services that run open models in Sweden. Glimmer's support for them is built from their documentation and has not been tried with a real call yet. If a service answers with an error, Glimmer shows the error as it came, with its status code.
 

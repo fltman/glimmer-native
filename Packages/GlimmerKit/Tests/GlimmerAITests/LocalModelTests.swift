@@ -224,9 +224,86 @@ extension ChatAdapterTests {
         #expect(AIProvider.named("xai")?.textModel(key: "k", model: "m") is ResponsesTextModel)
         #expect(AIProvider.named("berget")?.textModel(key: "k", model: "m") is OpenRouterTextModel)
         #expect(AIProvider.named("ollama")?.textModel(key: "", model: "m") is OllamaTextModel)
-        #expect(AIProvider.named("anthropic")?.textModel(key: "k", model: "m") == nil)
+        #expect(AIProvider.named("anthropic")?.textModel(key: "k", model: "m") is AnthropicTextModel)
+        #expect(AIProvider.named("mlx")?.textModel(key: "", model: "m") == nil)
         #expect(AIProvider.named("fal")?.textModel(key: "k", model: "m") == nil)
         // Still hidden: only what Anders has decided is offered.
-        #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "berget", "grunden"])
+        #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "berget", "grunden", "ollama"])
+    }
+}
+
+/// The Anthropic adapter against answers in the form of the Messages API.
+extension ChatAdapterTests {
+    static let claudeAnswer = #"""
+    {"id":"msg_1","type":"message","role":"assistant","model":"m","stop_reason":"tool_use","content":[
+      {"type":"thinking","thinking":"","signature":"x"},
+      {"type":"text","text":"Black and white."},
+      {"type":"tool_use","id":"toolu_1","name":"add_adjustment","input":{"type":"black_white"}}],
+     "usage":{"input_tokens":900,"output_tokens":40}}
+    """#
+
+    @Test func claudeGetsAMessagesRequestAndItsToolUseBecomesThePlan() async throws {
+        FakeProvider.script([(200, Self.claudeAnswer)])
+        let model = try #require(AIProvider.named("anthropic")?.textModel(key: "sk-ant-test", model: "some-claude", session: FakeProvider.session))
+        let (plan, cost) = try await AgentPlanner.plan(goal: "Black and white", context: context, history: [("earlier", "done")], image: Data([7]), model: model)
+        #expect(plan.steps.map(\.op) == ["add_adjustment"] && plan.steps[0].string("type") == "black_white")
+        #expect(plan.message == "Black and white." && cost == nil)
+        let sent = try #require(FakeProvider.requests.first)
+        #expect(sent.url.absoluteString == "https://api.anthropic.com/v1/messages")
+        #expect(sent.headers["x-api-key"] == "sk-ant-test" && sent.headers["anthropic-version"] == "2026-10-21" && sent.headers["Authorization"] == nil)
+        // What the current models refuse is not sent.
+        #expect(sent.json["temperature"] == nil && sent.json["tool_choice"] == nil && sent.json["thinking"] == nil)
+        #expect(sent.json["max_tokens"] as? Int == 16_000)
+        // The system prompt is top-level; the turns are user/assistant only.
+        #expect((sent.json["system"] as? String)?.isEmpty == false)
+        let turns = try #require(sent.json["messages"] as? [[String: Any]])
+        #expect(turns.map { $0["role"] as? String } == ["user", "assistant", "user"])
+        let blocks = try #require(turns.last?["content"] as? [[String: Any]])
+        let image = try #require(blocks.first { $0["type"] as? String == "image" }?["source"] as? [String: Any])
+        #expect(image["type"] as? String == "base64" && image["media_type"] as? String == "image/jpeg" && image["data"] as? String == Data([7]).base64EncodedString())
+        // Tools in Anthropic's form.
+        let tool = try #require((sent.json["tools"] as? [[String: Any]])?.first)
+        #expect(tool["name"] is String && tool["input_schema"] != nil && tool["function"] == nil && tool["type"] == nil)
+    }
+
+    @Test func aDeclinedRequestSaysSoAndChangesNothing() async throws {
+        FakeProvider.script([(200, #"{"id":"msg_2","type":"message","role":"assistant","stop_reason":"refusal","stop_details":{"type":"refusal","category":"cyber"},"content":[]}"#)])
+        let model = try #require(AIProvider.named("anthropic")?.textModel(key: "k", model: "m", session: FakeProvider.session))
+        await #expect { _ = try await AgentPlanner.plan(goal: "g", context: context, history: [], model: model) } throws: {
+            ($0 as? AnthropicTextModel.Refusal)?.errorDescription == "Claude declined this request (cyber). Nothing was changed."
+        }
+    }
+
+    @Test func claudesErrorsAndModelListUseItsOwnHeaders() async throws {
+        FakeProvider.script([(401, #"{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}"#),
+                             (200, #"{"data":[{"type":"model","id":"claude-example-1","display_name":"Example"}],"has_more":false}"#)])
+        let provider = try #require(AIProvider.named("anthropic"))
+        let model = try #require(provider.textModel(key: "bad", model: "m", session: FakeProvider.session))
+        await #expect { _ = try await model.reply(system: nil, user: "u", images: [], imageType: "image/png", json: false, temperature: 0.2) } throws: {
+            ($0 as? LocalizedError)?.errorDescription == "Anthropic answered HTTP 401: invalid x-api-key"
+        }
+        let models = try await ModelCatalog.fetchTextModels(provider, key: "sk-ant-test", session: FakeProvider.session)
+        #expect(models.map(\.id) == ["claude-example-1"])
+        let list = try #require(FakeProvider.requests.last)
+        #expect(list.url.absoluteString == "https://api.anthropic.com/v1/models" && list.headers["x-api-key"] == "sk-ant-test" && list.headers["anthropic-version"] == "2026-10-21")
+    }
+}
+
+/// What Ollama has installed, in the form of its /api/tags and /api/show.
+extension ChatAdapterTests {
+    @Test func installedModelsComeWithWhatOllamaSaysTheyCanDo() async throws {
+        FakeProvider.script([
+            (200, #"{"models":[{"name":"qwen3:8b","model":"qwen3:8b","size":5225388164},{"name":"gemma3:4b","model":"gemma3:4b","size":3338801804}]}"#),
+            (200, #"{"capabilities":["completion","tools","thinking"],"model_info":{"qwen3.context_length":40960}}"#),
+            (200, #"{"capabilities":["completion","vision"],"model_info":{"gemma3.context_length":131072}}"#)])
+        let models = try await OllamaTextModel.installed(session: FakeProvider.session)
+        #expect(models == [OllamaTextModel.Installed(name: "gemma3:4b", tools: false, vision: true, size: 3_338_801_804),
+                           OllamaTextModel.Installed(name: "qwen3:8b", tools: true, vision: false, size: 5_225_388_164)])
+        #expect(FakeProvider.requests.first?.url.absoluteString == "http://127.0.0.1:11434/api/tags")
+    }
+
+    @Test func noServerMeansNoList() async {
+        FakeProvider.script([(404, "not found")])
+        await #expect(throws: OllamaTextModel.OllamaError.self) { _ = try await OllamaTextModel.installed(session: FakeProvider.session) }
     }
 }

@@ -11348,6 +11348,138 @@
           }
         }
       }
+    },
+    "%@ (on this Mac)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (på den här Macen)"
+          }
+        }
+      }
+    },
+    "%@ (not evaluated with Glimmer)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (inte utvärderad med Glimmer)"
+          }
+        }
+      }
+    },
+    "%@ (not installed)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (inte installerad)"
+          }
+        }
+      }
+    },
+    "%@ isn't running on this Mac. Start it, then click Refresh.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kör inte på den här Macen. Starta det och klicka sedan på Uppdatera."
+          }
+        }
+      }
+    },
+    "None of the models installed in %@ lists tool calls, which the Assistant needs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen av modellerna som är installerade i %@ har verktygsanrop, vilket assistenten behöver."
+          }
+        }
+      }
+    },
+    "%1$@ takes about %2$@ of memory while it runs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ tar ungefär %2$@ minne medan den körs."
+          }
+        }
+      }
+    },
+    "Glimmer has tried %@ with its own test of everyday requests. It gets most of them right; a Swedish request for an adjustment can come back incomplete, and the same request in English works.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer har provat %@ med sitt eget test av vardagliga uppdrag. Den klarar de flesta; en svensk begäran om en justering kan komma tillbaka ofullständig, och samma begäran på engelska fungerar."
+          }
+        }
+      }
+    },
+    "Glimmer has not tried %@. It may plan badly or call tools that don't exist; Glimmer drops those and tells you.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer har inte provat %@. Den kan planera dåligt eller anropa verktyg som inte finns; Glimmer hoppar över sådana och talar om det."
+          }
+        }
+      }
+    },
+    "This model can't take pictures, so the Assistant plans without looking at the document, and Suggest Edits and Find Distractions won't work with it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modellen kan inte ta emot bilder, så assistenten planerar utan att se dokumentet, och Föreslå ändringar och Hitta störande inslag fungerar inte med den."
+          }
+        }
+      }
+    },
+    "Runs on this Mac with Ollama: nothing is sent anywhere and nothing is billed. Slower than a cloud model; an answer can take up to a minute on a busy Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Körs på den här Macen med Ollama: inget skickas någonstans och inget faktureras. Långsammare än en molnmodell; ett svar kan ta upp till en minut på en upptagen Mac."
+          }
+        }
+      }
+    },
+    "Glimmer can't use %@ for text yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer kan inte använda %@ för text ännu."
+          }
+        }
+      }
+    },
+    "You": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

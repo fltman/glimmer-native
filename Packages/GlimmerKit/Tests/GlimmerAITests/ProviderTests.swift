@@ -55,14 +55,17 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
 
     /// Hidden until tried: only OpenRouter (in use), and Berget and Grunden (Anders's exception) are offered.
     @Test func onlyWhatIsDecidedIsOffered() {
-        #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "berget", "grunden"])
+        #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "berget", "grunden", "ollama"])
         #expect(AIProvider.offering(.image).map(\.slug) == ["openrouter"])
         for p in AIProvider.all {
             #expect(p.offered.isSubset(of: p.built), "\(p.slug) is offered for something that isn't built")
             #expect(p.built.isSubset(of: Set(p.serves)), "\(p.slug)")
         }
-        // Local servers are never offered before a model has passed the evaluation.
-        #expect(AIProvider.all.filter { $0.kind == .localServer }.allSatisfy { $0.offered.isEmpty })
+        // A local server is offered only with a model that has passed Glimmer's evaluation named.
+        for p in AIProvider.all where p.kind == .localServer {
+            #expect(p.offered.isEmpty == p.evaluatedModels.isEmpty, "\(p.slug)")
+        }
+        #expect(AIProvider.named("ollama")?.evaluatedModels == ["qwen3:8b"] && AIProvider.named("mlx")?.offered.isEmpty == true)
     }
 
     @Test func aLocalServerNeedsNoKeyAndFalIsUntouched() {
@@ -75,7 +78,8 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
     @Test func theManualTableListsWhatIsOfferedAndSaysWhatIsUntried() {
         let table = AIProvider.manualTable()
         #expect(table.contains("| OpenRouter |") && table.contains("| Berget |") && table.contains("| Grunden |"))
-        #expect(!table.contains("Ollama") && !table.contains("Hedra") && !table.contains("OpenAI"))
+        #expect(table.contains("| Ollama |") && table.contains("shown only while it is running"))
+        #expect(!table.contains("Hedra") && !table.contains("OpenAI") && !table.contains("MLX"))
         #expect(table.contains("Built from Berget's documentation; not yet tried with a real call."))
         #expect(table.contains("Stockholm, Sweden"))
     }

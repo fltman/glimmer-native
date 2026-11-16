@@ -110,3 +110,28 @@ final class ScriptedTextModel: TextModel, @unchecked Sendable {
         }
     }
 }
+
+/// Rules for the app's source that a past crash taught.
+@Suite struct AppSourceRuleTests {
+    /// Selectable text with an accessibility label of its own crashed the app (endless
+    /// recursion inside SwiftUI) the moment VoiceOver or any assistive tool read it: the
+    /// Assistant's messages, found 2026-11-16. The speaker is named by the enclosing group instead.
+    @Test func selectableTextCarriesNoAccessibilityLabelOfItsOwn() throws {
+        let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().appending(path: "App")
+        let files = try FileManager.default.contentsOfDirectory(at: app, includingPropertiesForKeys: nil).filter { $0.pathExtension == "swift" }
+        #expect(files.count > 30)
+        for file in files {
+            let lines = try String(contentsOf: file, encoding: .utf8).components(separatedBy: "\n")
+            for (i, line) in lines.enumerated() where line.contains(".textSelection(.enabled)") {
+                // The modifiers chained on the same view: the lines before and after that start with a dot.
+                var chain: [String] = []
+                var j = i - 1
+                while j >= 0, lines[j].trimmingCharacters(in: .whitespaces).hasPrefix(".") { chain.append(lines[j]); j -= 1 }
+                j = i + 1
+                while j < lines.count, lines[j].trimmingCharacters(in: .whitespaces).hasPrefix(".") { chain.append(lines[j]); j += 1 }
+                #expect(!chain.contains { $0.contains(".accessibilityLabel(") }, "\(file.lastPathComponent):\(i + 1): selectable text with an accessibility label of its own")
+            }
+        }
+    }
+}

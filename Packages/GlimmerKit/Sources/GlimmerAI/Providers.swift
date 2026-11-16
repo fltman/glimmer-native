@@ -35,6 +35,10 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
     public var dataNote: String?
     /// Nobody has made a real call: said in the manual.
     public var fromDocumentationOnly = false
+    /// For a local server: the models that have passed Glimmer's own evaluation
+    /// (`LocalModelEvaluation`, numbers in docs/TESTING-NOTES.md). Others that are installed
+    /// are listed as "not evaluated with Glimmer".
+    public var evaluatedModels: [String] = []
 
     public var id: String { slug }
     public var needsKey: Bool { kind == .cloud }
@@ -63,7 +67,13 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
             p.keysURL = "https://platform.openai.com/api-keys"; p.pricesURL = "https://developers.openai.com/api/docs/pricing"
             return p
         }(),
-        AIProvider(slug: "anthropic", name: "Anthropic", kind: .cloud, serves: [.text], textAdapter: .anthropicMessages, baseURL: "https://api.anthropic.com/v1"),
+        {
+            var p = AIProvider(slug: "anthropic", name: "Anthropic", kind: .cloud, serves: [.text], textAdapter: .anthropicMessages, baseURL: "https://api.anthropic.com/v1")
+            p.built = [.text]
+            p.keysURL = "https://platform.claude.com/settings/keys"; p.pricesURL = "https://platform.claude.com/docs/en/about-claude/pricing"
+            p.termsURL = "https://www.anthropic.com/legal/commercial-terms"
+            return p
+        }(),
         {
             var p = AIProvider(slug: "xai", name: "xAI", kind: .cloud, serves: [.text], textAdapter: .responses, baseURL: "https://api.x.ai/v1")
             p.built = [.text]
@@ -113,7 +123,11 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
         {
             var p = AIProvider(slug: "ollama", name: "Ollama", kind: .localServer, serves: [.text], textAdapter: .chatCompletions, baseURL: "http://127.0.0.1:11434/v1")
             p.dialect.toolChoice = false
-            p.built = [.text]
+            // Offered since qwen3:8b passed the evaluation (2026-11-16), and only shown while a
+            // server is running on this Mac.
+            p.built = [.text]; p.offered = [.text]
+            p.evaluatedModels = ["qwen3:8b"]
+            p.termsNote = "Runs on this Mac with Ollama: nothing is sent anywhere and nothing is billed. Slower than a cloud model; an answer can take up to a minute on a busy Mac."
             p.dataNote = "This Mac"
             return p
         }(),
@@ -152,7 +166,9 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
                                        model: model, providerName: name)
         case .responses:
             return ResponsesTextModel(provider: self, key: key, model: model, session: session)
-        case .anthropicMessages, nil:
+        case .anthropicMessages:
+            return AnthropicTextModel(provider: self, key: key, model: model, session: session)
+        case nil:
             return nil
         }
     }
@@ -162,7 +178,7 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
         var lines = ["| Service | Used for | Key | Where your data is processed | Notes |", "|---|---|---|---|---|"]
         for p in all where !p.offered.isEmpty {
             let uses = Capability.allCases.filter(p.offers).map { $0 == .text ? "text (the Assistant)" : "images" }.joined(separator: ", ")
-            let key = p.needsKey ? "your own, in **Settings › AI**" : "none"
+            let key = p.needsKey ? "your own, in **Settings › AI**" : "none (shown only while it is running on your Mac)"
             var notes: [String] = []
             if p.fromDocumentationOnly { notes.append("Built from \(p.name)'s documentation; not yet tried with a real call.") }
             if let t = p.termsNote { notes.append(t) }
@@ -313,7 +329,13 @@ public enum ModelCatalog {
     public static func fetchTextModels(_ provider: AIProvider, baseURL: URL? = nil, key: String?, session: URLSession = .shared) async throws -> [ProviderModel] {
         var request = URLRequest(url: (baseURL ?? URL(string: provider.baseURL)!).appending(path: "models"))
         request.timeoutInterval = 20
-        if let key, !key.isEmpty { request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization") }
+        if let key, !key.isEmpty {
+            if provider.textAdapter == .anthropicMessages {
+                for (name, value) in AnthropicTextModel.headers(key: key) where name != "Content-Type" { request.setValue(value, forHTTPHeaderField: name) }
+            } else {
+                request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+            }
+        }
         let data: Data, response: URLResponse
         do { (data, response) = try await session.data(for: request) } catch {
             throw ListError(provider: provider.name, reason: error.localizedDescription)

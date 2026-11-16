@@ -127,4 +127,34 @@ public struct OllamaTextModel: TextModel {
         let context = info.first { $0.key.hasSuffix(".context_length") }?.value as? Int
         return (caps.contains("tools"), caps.contains("vision"), context)
     }
+
+    /// A model installed in Ollama, with what Ollama says it can do.
+    public struct Installed: Sendable, Equatable, Identifiable {
+        public let name: String
+        public let tools: Bool
+        public let vision: Bool
+        /// Bytes on disk, roughly what it takes in memory while it runs.
+        public let size: Int64?
+        public var id: String { name }
+    }
+
+    /// The models installed in the Ollama at `baseURL` (`/api/tags`, then `/api/show` for each).
+    /// Throws when no server answers there: Ollama is then not offered at all.
+    public static func installed(baseURL: URL = URL(string: "http://127.0.0.1:11434")!, session: URLSession = .shared) async throws -> [Installed] {
+        let root = baseURL.lastPathComponent == "v1" ? baseURL.deletingLastPathComponent() : baseURL
+        var request = URLRequest(url: root.appending(path: "api/tags"))
+        request.timeoutInterval = 3
+        let (data, response) = try await session.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200,
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let list = json["models"] as? [[String: Any]] else {
+            throw OllamaError(message: "No Ollama answered at \(root.host() ?? "this Mac"):\(root.port ?? 11434).")
+        }
+        var models: [Installed] = []
+        for entry in list {
+            guard let name = (entry["name"] as? String) ?? (entry["model"] as? String) else { continue }
+            let abilities = try? await abilities(of: name, baseURL: root, session: session)
+            models.append(Installed(name: name, tools: abilities?.tools ?? false, vision: abilities?.vision ?? false, size: (entry["size"] as? NSNumber)?.int64Value))
+        }
+        return models.sorted { $0.name < $1.name }
+    }
 }

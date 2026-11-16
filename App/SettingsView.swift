@@ -40,6 +40,16 @@ private struct AISettingsView: View {
     @State private var apiKey = ""
     @State private var savedKey = ""
     @State private var status: KeyStatus = .idle
+    /// What each running local server has installed; a server that doesn't answer has no entry.
+    @State private var localModels: [String: [OllamaTextModel.Installed]] = [:]
+
+    private func findLocalServers() async {
+        var found: [String: [OllamaTextModel.Installed]] = [:]
+        for provider in AIProvider.offering(.text) where provider.slug == "ollama" {
+            if let models = try? await OllamaTextModel.installed(baseURL: URL(string: provider.baseURL)!) { found[provider.slug] = models }
+        }
+        localModels = found
+    }
 
     enum KeyStatus: Equatable {
         case idle, checking
@@ -84,13 +94,20 @@ private struct AISettingsView: View {
 
             Section {
                 Picker("Service", selection: $textProvider) {
-                    ForEach(AIProvider.offering(.text)) { provider in
-                        Text(verbatim: provider.name).tag(provider.slug)
+                    // A local server is listed only while it is running on this Mac (or when it is the one chosen).
+                    ForEach(AIProvider.offering(.text).filter { $0.kind == .cloud || localModels[$0.slug] != nil || $0.slug == textProvider }) { provider in
+                        Text(verbatim: provider.kind == .localServer ? String(localized: "\(provider.name) (on this Mac)") : provider.name).tag(provider.slug)
                     }
                 }
-                if let provider = AIProvider.named(textProvider), provider.slug != "openrouter", provider.offers(.text) {
-                    ProviderTextSettings(provider: provider)
-                        .id(provider.slug)
+                .task { await findLocalServers() }
+                if let provider = AIProvider.named(textProvider), provider.offers(.text) {
+                    if provider.kind == .localServer {
+                        LocalTextSettings(provider: provider, models: localModels[provider.slug]) { await findLocalServers() }
+                            .id(provider.slug)
+                    } else if provider.slug != "openrouter" {
+                        ProviderTextSettings(provider: provider)
+                            .id(provider.slug)
+                    }
                 }
                 if let provider = AIProvider.named(textProvider), provider.offers(.text) {
                     DisclosureGroup("What is sent to \(provider.name)") {
@@ -557,6 +574,75 @@ private struct ProviderTextSettings: View {
             if !chosen.isEmpty { choose(chosen) }   // refresh what the list says about the chosen model
         } catch {
             listError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
+    }
+}
+
+/// The model of a local server (Ollama) for text. Only models that list tool calls can be
+/// chosen; the one Glimmer has evaluated is named, the others are marked as not evaluated.
+private struct LocalTextSettings: View {
+    let provider: AIProvider
+    /// nil: no server is answering.
+    let models: [OllamaTextModel.Installed]?
+    let refresh: () async -> Void
+
+    @State private var chosen = ""
+
+    private var modelKey: String { AIController.textModelKey(provider.slug) }
+    private var usable: [OllamaTextModel.Installed] { (models ?? []).filter(\.tools) }
+    private var model: OllamaTextModel.Installed? { usable.first { $0.name == chosen } }
+
+    private func title(_ m: OllamaTextModel.Installed) -> String {
+        provider.evaluatedModels.contains(m.name) ? m.name : String(localized: "\(m.name) (not evaluated with Glimmer)")
+    }
+
+    var body: some View {
+        if models == nil {
+            Label("\(provider.name) isn't running on this Mac. Start it, then click Refresh.", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange).font(.callout)
+        } else if usable.isEmpty {
+            Label("None of the models installed in \(provider.name) lists tool calls, which the Assistant needs.", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange).font(.callout)
+        }
+        HStack {
+            Picker("Model", selection: $chosen) {
+                if chosen.isEmpty { Text("Choose a model").tag("") }
+                if !chosen.isEmpty, model == nil { Text("\(chosen) (not installed)").tag(chosen) }
+                ForEach(usable) { m in Text(verbatim: title(m)).tag(m.name) }
+            }
+            .disabled(usable.isEmpty)
+            Button("Refresh") { Task { await refresh() } }
+        }
+        .onChange(of: chosen) { _, name in choose(name) }
+        .onChange(of: models) { _, _ in if !chosen.isEmpty { choose(chosen) } }
+        .onAppear { chosen = UserDefaults.standard.string(forKey: modelKey) ?? "" }
+
+        VStack(alignment: .leading, spacing: 4) {
+            if let note = provider.termsNote { Text(LocalizedStringKey(note)) }
+            if let m = model {
+                if let size = m.size {
+                    Text("\(m.name) takes about \(ByteCountFormatter.string(fromByteCount: size, countStyle: .memory)) of memory while it runs.")
+                }
+                if provider.evaluatedModels.contains(m.name) {
+                    Text("Glimmer has tried \(m.name) with its own test of everyday requests. It gets most of them right; a Swedish request for an adjustment can come back incomplete, and the same request in English works.")
+                } else {
+                    Text("Glimmer has not tried \(m.name). It may plan badly or call tools that don't exist; Glimmer drops those and tells you.")
+                }
+                if !m.vision {
+                    Label("This model can't take pictures, so the Assistant plans without looking at the document, and Suggest Edits and Find Distractions won't work with it.", systemImage: "eye.slash")
+                }
+            }
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+    }
+
+    private func choose(_ name: String) {
+        let d = UserDefaults.standard
+        d.set(name, forKey: modelKey)
+        if let m = usable.first(where: { $0.name == name }) {
+            d.set(m.tools, forKey: modelKey + ".tools")
+            d.set(m.vision, forKey: modelKey + ".vision")
         }
     }
 }

@@ -166,12 +166,16 @@ private struct AssistantView: View {
             }
             ForEach(ai.messages.suffix(10)) { message in
                 VStack(alignment: .leading, spacing: 6) {
+                    // No accessibility label on the text itself: on selectable text it makes SwiftUI ask
+                    // itself for the label without end, and the app crashes as soon as VoiceOver (or
+                    // any assistive tool) reads the message. Who is speaking is said by the group.
                     Text(message.text)
                         .font(.callout)
                         .textSelection(.enabled)
-                        .accessibilityLabel(message.fromUser ? Text("You: \(message.text)") : Text("Assistant: \(message.text)"))
                     if let plan = message.plan { PlanView(ai: ai, messageID: message.id, plan: plan) }
                 }
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(message.fromUser ? Text("You") : Text("Assistant"))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .foregroundStyle(message.fromUser ? Color.white : Theme.ink)
