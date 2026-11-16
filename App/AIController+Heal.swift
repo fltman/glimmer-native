@@ -219,7 +219,7 @@ extension AIController {
                 try self?.applyHeal(job, result)
             })
         } catch let error as StepError where error.reason == "area_too_large" && !error.hard && !allowLarge {
-            session.healWarning = error.errorDescription
+            session.healWarning = error.errorDescription.map(PersonMessage.text)   // in the person's language (the API keeps the English)
         } catch {
             session.report(error)
         }

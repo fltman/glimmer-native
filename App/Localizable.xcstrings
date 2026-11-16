@@ -13273,6 +13273,149 @@
           }
         }
       }
+    },
+    "The area is %@ px across at its thickest. Heal Selection gives good results up to about %@ px; beyond that the fill may smear or repeat.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ytan är %1$@ px tvärs över där den är som tjockast. Laga markering ger bra resultat upp till ungefär %2$@ px; över det kan fyllningen bli utsmetad eller upprepa sig."
+          }
+        }
+      }
+    },
+    "The area is %@ px across at its thickest (%@ pixels). Heal Selection fills areas up to %@ px across and %@ megapixels.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ytan är %1$@ px tvärs över där den är som tjockast (%2$@ pixlar). Laga markering fyller ytor upp till %3$@ px tvärs över och %4$@ megapixel."
+          }
+        }
+      }
+    },
+    "This Photoshop file has a version Glimmer doesn't know (%@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen har en version som Glimmer inte känner till (%@)."
+          }
+        }
+      }
+    },
+    "This Photoshop file says it has %@ layers, more than Glimmer reads.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen uppger att den har %@ lager, fler än Glimmer läser."
+          }
+        }
+      }
+    },
+    "Glimmer can't read the layers of this Photoshop file (%@), and the file was saved without a flattened picture to show instead. Save it again from Photoshop with Maximize Compatibility on, or as RGB with 8 or 16 bits per channel.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer kan inte läsa lagren i den här Photoshop-filen (%@), och filen sparades utan en sammanslagen bild att visa i stället. Spara den igen från Photoshop med Maximera kompatibilitet på, eller som RGB med 8 eller 16 bitar per kanal."
+          }
+        }
+      }
+    },
+    "This Photoshop file carries no flattened picture that macOS can read, and its layers are in a form Glimmer doesn't read (%@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen har ingen sammanslagen bild som macOS kan läsa, och lagren är i en form som Glimmer inte läser (%@)."
+          }
+        }
+      }
+    },
+    "A Photoshop file can be at most 30,000 pixels on a side. This document is %@ × %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En Photoshop-fil kan vara högst 30 000 pixlar per sida. Det här dokumentet är %1$@ × %2$@."
+          }
+        }
+      }
+    },
+    "The layer “%@” has a rectangle a Photoshop file can't hold.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagret ”%@” har en rektangel som en Photoshop-fil inte rymmer."
+          }
+        }
+      }
+    },
+    "The layer “%@” doesn't fit a Photoshop file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagret ”%@” får inte plats i en Photoshop-fil."
+          }
+        }
+      }
+    },
+    "The mask of the layer “%@” doesn't fit a Photoshop file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Masken till lagret ”%@” får inte plats i en Photoshop-fil."
+          }
+        }
+      }
+    },
+    "The layer “%@” is too wide for a Photoshop file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagret ”%@” är för brett för en Photoshop-fil."
+          }
+        }
+      }
+    },
+    "This picture was developed with process %@, which this version of macOS no longer offers. Develop it again to use the current one; it may look a little different.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här bilden framkallades med process %@, som den här versionen av macOS inte längre erbjuder. Framkalla den igen för att använda den nuvarande; den kan se lite annorlunda ut."
+          }
+        }
+      }
+    },
+    "This RAW file is %@, more than Glimmer keeps in a document.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här RAW-filen är %@, mer än Glimmer sparar i ett dokument."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -369,9 +369,16 @@ private struct PlanView: View {
         }
         func plain(_ s: String?) -> String { menu((s ?? "").replacingOccurrences(of: "_", with: " ").capitalized) }
         let effects = ["dropShadow": "Drop Shadow", "innerShadow": "Inner Shadow", "outerGlow": "Outer Glow", "stroke": "Stroke", "colorOverlay": "Color Overlay"]
-        let menuTitles = ["crop": "Crop", "resize_image": "Image Size…", "resize_canvas": "Canvas Size…", "auto_enhance": "Auto Enhance", "auto_color": "Auto Color",
+        var menuTitles = ["crop": "Crop", "resize_image": "Image Size…", "resize_canvas": "Canvas Size…", "auto_enhance": "Auto Enhance", "auto_color": "Auto Color",
                           "select_people": "Select People", "select_sky": "Select Sky", "select_subject": "Select Subject", "remove_background": "Remove Background",
-                          "transform_layer": "Free Transform", "heal_selection": "Heal Selection", "develop_raw": "Develop…", "add_waveform": "Add Waveform", "deselect": "Deselect"]
+                          "transform_layer": "Free Transform", "add_waveform": "Add Waveform", "deselect": "Deselect"]
+        // Features a release can be built without (Config/Features.xcconfig): their names are not in a build that lacks them.
+        #if GLIMMER_HEAL
+        menuTitles["heal_selection"] = "Heal Selection"
+        #endif
+        #if GLIMMER_RAW
+        menuTitles["develop_raw"] = "Develop…"
+        #endif
         switch step.op {
         case "add_adjustment": return AdjustmentKind(rawValue: step.string("type") ?? "").map { menu($0.title) } ?? String(localized: "Adjustment")
         case "apply_filter": return FilterKind(rawValue: step.string("type") ?? "").map { menu($0.title) } ?? String(localized: "Filter")

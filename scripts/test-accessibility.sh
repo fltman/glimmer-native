@@ -17,6 +17,9 @@ if [[ -z "${GLIMMER_PORT:-}" ]]; then
   xcrun swiftc -O -o build/axread scripts/axread.swift 2>/dev/null || { echo "Couldn't build scripts/axread.swift"; exit 1; }
   xcrun swiftc -O -o build/window-shot scripts/window-shot.swift 2>/dev/null || { echo "Couldn't build scripts/window-shot.swift"; exit 1; }
   # The picture services are hidden until each has been tried; the test copy shows them, with fal chosen and agreed to.
+  # GLIMMER_LANG=sv: the same pass with the copy in Swedish. Every text looked for is named as the source
+  # names it and resolved through the catalogue (scripts/catalog-text.py), so one script serves both.
+  [[ "${GLIMMER_LANG:-en}" == en ]] || GLIMMER_ARGS="-AppleLanguages (${GLIMMER_LANG}) -AppleLocale ${GLIMMER_LANG}_SE ${GLIMMER_ARGS:-}"
   ARGS="-ai.textProvider berget -ai.textModel.berget glimmer-test/not-a-model -ai.showUntried YES -ai.imageProvider fal -ai.imageNoticeShown.fal YES ${GLIMMER_ARGS:-}"
   if [[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]]; then
     # NETWORK TEST, on purpose: Settings › AI is read with Berget's public model list loaded (no key).
@@ -41,16 +44,20 @@ steps() { curl -s --max-time 60 -o /dev/null $H -X POST "$B/documents/$ID/steps"
 # read_state <name> <text that must be among what was read> [seconds to wait first]
 # Audits and reads everything on screen now. The app must survive both, and the expected
 # text must have been read: a state that never appeared can't pass as "nothing wrong found".
-shots=0; mkdir -p build/a11y-shots; rm -f build/a11y-shots/*.png
+LANG_="${GLIMMER_LANG:-en}"; SHOTS=build/a11y-shots$([[ $LANG_ == en ]] || echo "-$LANG_")
+T() { scripts/catalog-text.py "$LANG_" "$1"; }                          # a text of the app, as a pattern, in the copy's language
+M() { scripts/catalog-text.py --exact "$LANG_" "$1" | sed 's/\\\(.\)/\1/g'; }  # the same as plain words, for a menu title
+shots=0; mkdir -p $SHOTS; rm -f $SHOTS/*.png
 read_state() {
   sleep "${3:-1.2}"
   local audit; audit=$("$AUDIT" --pid $GLIMMER_PID --strict 2>&1); local code=$?
   local all; all=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>&1)
   local seen; seen=$(echo "$all" | tail -1)
   if ! kill -0 $GLIMMER_PID 2>/dev/null; then bad "$1: the app is gone after being read"; echo "    $seen"; exit 1; fi
-  if ! echo "$all" | grep -qF -- "$2"; then bad "$1: “$2” was not on screen, so this state was not read ($seen)"; return; fi
+  local want; want=$(T "$2")
+  if ! echo "$all" | grep -qE -- "$want"; then bad "$1: “$2” was not on screen$([[ $LANG_ == en ]] || echo " (in $LANG_: $(echo "$want" | sed 's/\\//g' | cut -c1-70))"), so this state was not read ($seen)"; return; fi
   # A picture of each state too (the app's own windows only): a read does not see a sheet that is cut off or a label that wraps.
-  shots=$((shots + 1)); build/window-shot $GLIMMER_PID build/a11y-shots "$(printf '%02d' $shots)-$(echo "$1" | tr -c 'A-Za-z0-9' '-' | cut -c1-48)" >/dev/null 2>&1
+  shots=$((shots + 1)); build/window-shot $GLIMMER_PID $SHOTS "$(printf '%02d' $shots)-$(echo "$1" | tr -c 'A-Za-z0-9' '-' | cut -c1-48)" >/dev/null 2>&1
   if (( code == 0 )); then ok "$1 ($seen; $(echo "$audit" | tail -1 | cut -d: -f1))"; else bad "$1: $(echo "$audit" | grep -E "UNNAMED|WEAK|OPAQUE|VALUE|SILENT|SAMEID" | head -3 | tr '\n' ' ')"; fi
 }
 press() { osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to key code $1" >/dev/null 2>&1; sleep 0.6; }
@@ -65,7 +72,10 @@ steps '{"op":"select_rect","params":{"x":300,"y":300,"width":400,"height":300}}'
 front
 read_state "the document with a selection (selection bar)" "Deselect"
 
-"$MENU" --pid $GLIMMER_PID --check "Edit" "Heal Selection" >/dev/null 2>&1 && ok "Edit › Heal Selection is there and enabled" || bad "Edit › Heal Selection"
+"$MENU" --pid $GLIMMER_PID --check "$(M Edit)" "$(M "Heal Selection")" >/dev/null 2>&1 && ok "Edit › Heal Selection is there and enabled" || bad "Edit › Heal Selection"
+# Every menu, walked: each item named.
+menus=$("$AUDIT" --pid $GLIMMER_PID --menus --strict 2>&1); mcode=$?
+if (( mcode == 0 )); then ok "the menus, walked ($(echo "$menus" | tail -1 | cut -c1-90))"; else bad "the menus: $(echo "$menus" | grep -E "UNNAMED|WEAK|OPAQUE|VALUE|SILENT|SAMEID" | head -3 | tr '\n' ' ')"; fi
 # The side panel, each tab with content.
 fixture panel:layers && read_state "the Layers panel with 13 layers" "Paint 4" || bad "fixture panel:layers"
 fixture panel:paths && read_state "the Paths tab" "Paths" || bad "fixture panel:paths"
@@ -73,9 +83,9 @@ fixture panel:channels && read_state "the Channels tab" "Channels" || bad "fixtu
 fixture panel:history && read_state "the History tab with steps" "Agent Edit" || bad "fixture panel:history"
 fixture assistant && read_state "the Assistant: requests, a plan with a failed and a skipped step, an error, a refusal" "Claude declined this request (cyber). Nothing was changed." || bad "fixture assistant"
 read_state "the plan's failed step says why" "No font named “Nope” is installed."
-fixture waiting && read_state "a plan and a command that wait for Run, because the request didn't name them" "I think you mean Flatten Image. You didn't name it, so it waits for you." || bad "fixture waiting"
+fixture waiting && read_state "a plan and a command that wait for Run, because the request didn't name them" "I think you mean Rasterize Layer. You didn't name it, so it waits for you." || bad "fixture waiting"
 read_state "an extra step the model added, offered and waiting" "The assistant also suggests Auto Enhance, which you didn't ask for. Run it now on the picture as it is?"
-fixture refusedPlan && read_state "a plan that can't run because a step would be refused: said, and no Run" "The plan asks Exposure for a setting it doesn't have (brightness), so it can't run." || bad "fixture refusedPlan"
+fixture refusedPlan && read_state "a plan that can't run because a step would be refused: said, and no Run" "The plan asks Exposure for a setting it doesn't have (brightness), so it can't run. Nothing was changed. Ask again, perhaps in other words." || bad "fixture refusedPlan"
 fixture jobs && read_state "the job list: running, failed, done with a cost, cancelled" "OpenRouter rejected the API key." || bad "fixture jobs"
 fixture clear   # the job list's running job must not put its spinner in the pictures that follow
 
@@ -86,7 +96,7 @@ fixture clear
 
 # Every sheet and alert, one at a time; Escape closes it.
 alert() { fixture $1 && read_state "alert: $1" "$2" || bad "fixture $1"; front; press 53; fixture clear; sleep 0.4; }
-alert healWarning "203 px across"
+alert healWarning "The area is 203 px across at its thickest. Heal Selection gives good results up to about 120 px; beyond that the fill may smear or repeat."
 alert firstUse "a small picture of it"
 alert firstUseNoPictures "takes no pictures, so none is sent"
 alert cantSee "This model can't look at pictures"
@@ -99,7 +109,7 @@ fixture splash && read_state "Agent Access (the splash)" "Text for your agent" 1
 front; press 53
 
 # Settings › AI with a model list loaded from the service.
-front; "$MENU" --pid $GLIMMER_PID "Glimmer" "Settings…" >/dev/null 2>&1; sleep 1.5
+front; "$MENU" --pid $GLIMMER_PID "Glimmer" "$(M "Settings…")" >/dev/null 2>&1; sleep 1.5
 osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to click (first button of toolbar 1 of window 1 whose description is \"AI\" or title is \"AI\")" >/dev/null 2>&1
 sleep 5
 if [[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]]; then
@@ -128,4 +138,5 @@ MODE=$([[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]] && echo "NETWORK TEST (Berget's 
 SHIP=$(grep -E '^GLIMMER_[A-Z]+ *= *YES' Config/Features.xcconfig | sed 's/GLIMMER_//; s/ *=.*//' | tr '\n' ' ')
 HELD=$(grep -E '^GLIMMER_[A-Z]+ *= *NO' Config/Features.xcconfig | sed 's/GLIMMER_//; s/ *=.*//' | tr '\n' ' ')
 echo "Switched features in the build that was read: all on (debug). In a release: on: ${SHIP:-none}; off: ${HELD:-none}."
+echo "Language of the copy: $LANG_. Pictures of each state: $SHOTS."
 if (( fails == 0 )); then echo "All accessibility checks passed. Run: $MODE."; else echo "$fails accessibility check(s) failed."; exit 1; fi

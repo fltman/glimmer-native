@@ -627,3 +627,19 @@ Also the same day:
 **Refusals in the person's language.** The 37 refusal messages of the Photoshop and RAW code are written in English in the package, which is what the agent API answers with; a window showed the same English in the Swedish app. `App/PersonMessage.swift` now says them through the string catalogue where they are shown to a person (the error bar, the alerts when a file can't be opened, the Develop and export sheets); the 26 without a figure or a name in them have Swedish, and `scripts/check-strings.py` requires it for each such message from now on. The 11 with a figure or a name in them (a file's size, a layer's name, a process number) are still shown in English. Not looked at in the app yet.
 
 **Swedish in the Assistant's plans and the import report (same day, looked at in Swedish).** A plan's steps are named as the menus name them, through the same catalogue entries ("Beskär", "Exponering"), and the formats around what the model wrote are Swedish ("Text ”…”", "Skala upp 2×"). Glimmer's own notes inside a step are said in Swedish when shown (the plan itself keeps them in English, which is what the evaluation reads). The import report describes the file in Swedish ("RGB, 8 bitar per kanal") and names adjustments, fills and blend modes as Glimmer's menus do. What stays English: what the model wrote, the API's exact words under their disclosure, "Sweden" from a provider's data.
+
+## The populated pass in Swedish (2026-11-16)
+
+`GLIMMER_LANG=sv scripts/test-accessibility.sh` runs the same pass with the copy in Swedish. Every text the script looks for is named as the source names it and resolved through the catalogue by `scripts/catalog-text.py` (a key as it is, a sentence with values filled in, or a part of one key; what the catalogue doesn't have is data and is looked for as it is; menu titles that belong to macOS are listed there). The debug fixtures now say Glimmer's own sentences through the catalogue, as the real code does, so the Swedish copy shows them in Swedish. The pass also walks every menu (`axaudit --menus --strict`). Pictures of each state go to `build/a11y-shots` or `build/a11y-shots-sv`.
+
+Result: 25 checks pass in English and in Swedish; the menus have 363 controls, all named, in both. Looked at in Swedish for cut-off words, a selection of the 23 states: Settings › AI, the Layers panel, the Assistant with a refused plan, the job list state, the Heal question, Image Size, Canvas Size, Agent Access. Nothing cut.
+
+Found by it:
+- **The Heal question's body was English** in the Swedish app (title Swedish, body English). It comes from the package with figures in it. `PersonMessage` now also finds a message with figures or names in it, by the catalogue entry whose fixed words it has, and says it with the same values; the eleven Photoshop and RAW refusals with a figure or a name in them have Swedish now too, and `check-strings.py` requires it. Looked at: the Heal question is Swedish throughout.
+- **A fixture named a command that does not exist** ("image.flatten"): the waiting-command state would have done nothing on Run. It names Rasterize Layer now.
+- My first version of the menu lookup took "Settings…" for a part of "Open Settings…" and the English pass lost Settings; menu titles are now resolved as whole keys only.
+
+Seen and not changed:
+- In Settings › AI, macOS lays its own "Lösenord…" (Passwords) suggestion over the API key field, covering part of the row below.
+- The pictures of the two Settings states show the top of the Settings window; the part the state is about (the model list, the picture service) is further down and not in the picture. The same for the job list, which sits below the conversation in the panel. The reads cover them; the pictures do not.
+- "Sweden" in a provider's place, the model's own words and fixture data remain English, as decided.
