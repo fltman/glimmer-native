@@ -624,3 +624,33 @@ extension TileCodecSpeedTests {
         #expect(back.layers.count == 4)
     }
 }
+
+/// A linked edit keeps its link in the document, so a restored window is linked again.
+@Suite struct DocumentLinkTests {
+    @Test func theLinkTravelsWithTheDocument() throws {
+        var state = DocumentState(width: 64, height: 48)
+        state.link = DocumentLink(bookmark: Data([1, 2, 3]), path: "/tmp/photo.png", requester: "Flimmer")
+        let back = try GlimmerPackage.state(from: GlimmerPackage.fileWrapper(for: state))
+        #expect(back.link == state.link)
+        #expect(back.link?.fileName == "photo.png")
+    }
+
+    @Test func anOrdinaryDocumentHasNoLinkInItsManifest() throws {
+        let wrapper = try GlimmerPackage.fileWrapper(for: DocumentState(width: 64, height: 48))
+        let manifest = try #require(wrapper.fileWrappers?[GlimmerPackage.manifestFilename]?.regularFileContents)
+        #expect(!String(decoding: manifest, as: UTF8.self).contains("\"link\""))
+        #expect(try GlimmerPackage.state(from: wrapper).link == nil)
+    }
+
+    /// A build from before the link reads a linked document as an ordinary one: the key is optional and unknown keys are skipped.
+    @Test func aManifestWithoutTheKeyStillReads() throws {
+        var state = DocumentState(width: 64, height: 48)
+        state.link = DocumentLink(bookmark: nil, path: "/tmp/a.jpg", requester: "Jämmer")
+        let wrapper = try GlimmerPackage.fileWrapper(for: state)
+        let data = try #require(wrapper.fileWrappers?[GlimmerPackage.manifestFilename]?.regularFileContents)
+        var json = try #require(try JSONSerialization.jsonObject(with: data) as? [String: Any])
+        #expect(json["link"] != nil)
+        json["link"] = nil
+        #expect(throws: Never.self) { try JSONDecoder().decode(DocumentManifest.self, from: try JSONSerialization.data(withJSONObject: json)) }
+    }
+}

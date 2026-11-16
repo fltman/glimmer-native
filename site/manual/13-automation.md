@@ -161,6 +161,9 @@ Flimmer can hand you a picture to edit in Glimmer, such as a frame or a title ca
 - Press ⌘S, or choose **File › Save Back to** *name* (it takes the place of Save in this window), to write the image back into the same file, in the same format (PNG stays PNG, JPEG stays JPEG). The layers are flattened in the file; Glimmer keeps them in the window. Flimmer sees the change and updates its copy.
 - Choose **File › Save a Glimmer Copy…** (⇧⌘S) if you also want a layered `.glimmer` document, for example next to the image.
 - Glimmer never saves the image on its own: autosave keeps your work in the window but never touches the file.
+- If Glimmer quits or is restarted while you are editing, the window comes back as it was, still linked, with your layers and anything you had not saved back yet (when macOS reopens windows at launch, which is its normal setting). If the image has been renamed or moved in the meantime, Glimmer follows it.
+- If the image is gone when the window comes back, the bar says **For Flimmer – can't save back**, and ⌘S explains why instead of saving somewhere else. Your edit is still in the window: **File › Save a Glimmer Copy…** keeps it, and you can send the picture from Flimmer again.
+- Closing the window after you have saved back asks nothing. Closing it with changes you haven't saved back asks whether to keep them as a Glimmer document.
 
 Images you open yourself, from the Finder or with **File › Open…**, open as new documents as before.
 

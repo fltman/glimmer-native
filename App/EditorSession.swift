@@ -233,7 +233,19 @@ final class EditorSession {
     }
 
     /// An image a sibling app handed over to edit: Save writes it back (`EditorSession+Linked`).
+    /// Set through `link(to:)`, so the link is saved with the document too.
     var linkedImage: LinkedImage?
+    /// The document was linked, and after a restart its file can't be reached or written:
+    /// what it was linked to and why not. Save explains instead of writing anywhere.
+    var brokenLink: (link: DocumentLink, reason: String)?
+    /// The linked file's security scope, held open while the window lives.
+    @ObservationIgnored var linkAccess: URL?
+    /// Counts changes of the document, and its value when the linked file was last saved back.
+    @ObservationIgnored var stateGeneration = 0
+    @ObservationIgnored var savedBackGeneration: Int?
+    @ObservationIgnored var linkedCloser: LinkedWindowCloser?
+
+    func setLinkedImage(_ image: LinkedImage) { linkedImage = image }
     /// The document's window, set by the canvas.
     @ObservationIgnored weak var canvasWindow: NSWindow?
     /// A short message shown over the canvas for a few seconds.
@@ -270,6 +282,8 @@ final class EditorSession {
         ai = AIController(session: self)
         observeDocument()
         refreshThumbnails()
+        // A document read from disk (a restored window) may carry its link.
+        document.onLinkRead = { [weak self] in self?.restoreLink() }
     }
 
     var state: DocumentState { document.state }
@@ -290,6 +304,7 @@ final class EditorSession {
     }
 
     private func documentDidChange() {
+        stateGeneration += 1
         canvas.documentSize = state.size
         canvas.requestRender()
         thumbnailTask?.cancel()

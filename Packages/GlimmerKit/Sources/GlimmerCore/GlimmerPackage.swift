@@ -99,6 +99,7 @@ public enum GlimmerPackage {
         )
         manifest.paths = state.paths.isEmpty ? nil : state.paths
         manifest.aids = state.aids == ViewAids() ? nil : state.aids
+        manifest.link = state.link
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let manifestFile = FileWrapper(regularFileWithContents: try encoder.encode(manifest))
@@ -176,6 +177,7 @@ public enum GlimmerPackage {
         if state.path(of: manifest.activeLayerID) != nil { state.activeLayerID = manifest.activeLayerID }
         state.paths = manifest.paths ?? []
         state.aids = manifest.aids ?? ViewAids()
+        state.link = manifest.link
         return state
     }
 

@@ -296,7 +296,7 @@ enum AgentRouter {
                 "layerCount": st.allLayers.count, "hasSelection": st.selection != nil,
                 "frontmost": AgentRegistry.shared.front === session,
                 "startDocument": session.isUntouchedBlank && !session.madeByAPI,
-                "linkedFile": session.linkedImage.map { ["name": $0.fileName, "format": $0.format.rawValue, "requester": $0.requester] } as Any? ?? NSNull()]
+                "linkedFile": Self.linkedFile(session) as Any? ?? NSNull()]
     }
 
     static func detail(_ session: EditorSession) -> [String: Any] {
@@ -675,6 +675,20 @@ enum AgentRouter {
             return .json(["error": stepFailure(results, failed), "results": list, "document": detail(session)], status: 422)
         }
         return .json(["results": list, "document": detail(session)])
+    }
+
+    /// `linkedFile` of a document: the file it saves back to. `available` is false when the
+    /// document was linked before a restart and the file can no longer be reached or written.
+    static func linkedFile(_ session: EditorSession) -> [String: Any]? {
+        if let link = session.linkedImage {
+            return ["name": link.fileName, "format": link.format.rawValue, "requester": link.requester, "available": true]
+        }
+        if let broken = session.brokenLink {
+            var d: [String: Any] = ["name": broken.link.fileName, "requester": broken.link.requester, "available": false, "reason": broken.reason]
+            if let format = LinkedImage.format(for: URL(fileURLWithPath: broken.link.path)) { d["format"] = format.rawValue }
+            return d
+        }
+        return nil
     }
 
     /// A failed step: always `step_failed`, with a `reason` when the step refused for a known reason.

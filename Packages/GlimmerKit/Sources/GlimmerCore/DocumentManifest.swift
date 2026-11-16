@@ -80,6 +80,8 @@ public struct DocumentManifest: Codable, Sendable {
     public var activeLayerID: UUID?
     public var paths: [VectorPath]?
     public var aids: ViewAids?
+    /// Present while the document is an edit of another app's file (see `DocumentLink`).
+    public var link: DocumentLink?
 
     public init(
         width: Int,

@@ -24,10 +24,19 @@ struct GlimmerCommands: Commands {
         // responder chain to it.
         CommandGroup(replacing: .saveItem) {
             // Close lives in this group too.
-            Button("Close") { NSApp.keyWindow?.performClose(nil) }
+            Button("Close") {
+                session?.prepareToCloseLinkedWindow()
+                NSApp.keyWindow?.performClose(nil)
+            }
                 .keyboardShortcut("w")
             if let link = session?.linkedImage {
                 Button("Save Back to \(link.fileName)") { session?.saveLinkedImage() }
+                    .keyboardShortcut("s")
+                Button("Save a Glimmer Copy…") { session?.saveGlimmerCopy() }
+                    .keyboardShortcut("s", modifiers: [.command, .shift])
+            } else if let broken = session?.brokenLink {
+                // Was linked, and the file can't be reached: Save explains; it never becomes Save As.
+                Button("Save Back to \(broken.link.fileName)") { session?.explainBrokenLink() }
                     .keyboardShortcut("s")
                 Button("Save a Glimmer Copy…") { session?.saveGlimmerCopy() }
                     .keyboardShortcut("s", modifiers: [.command, .shift])

@@ -95,9 +95,19 @@ final class GlimmerDocument: Document {
         }
     }
 
+    /// The file of a sibling app this document is an edit of, as it is saved with the
+    /// document (autosave included), so a restored window is linked again.
+    @ObservationIgnored var linkRecord: DocumentLink?
+    /// Called on the main actor when a document that was read carries a link.
+    @ObservationIgnored var onLinkRead: (@MainActor () -> Void)?
+
     @MainActor
     func apply(snapshot: sending DocumentState, previous: sending DocumentState?) async throws {
+        linkRecord = snapshot.link
+        var snapshot = snapshot
+        snapshot.link = nil
         state = snapshot
+        if linkRecord != nil { onLinkRead?() }
         noteSize()
         if let handedOver = queuedState {
             queuedState = nil
@@ -139,7 +149,9 @@ final class GlimmerDocument: Document {
 
     @MainActor
     func snapshot(contentType: UTType) async throws -> sending DocumentState {
-        state
+        var copy = state
+        copy.link = linkRecord
+        return copy
     }
 
     /// PNG thumbnail (512 px) and preview (1600 px) for Finder and QuickLook.

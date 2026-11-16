@@ -353,7 +353,7 @@ private struct TitleChip: View {
     private var content: some View {
         HStack(spacing: 8) {
             Image(systemName: "sparkle").foregroundStyle(Theme.accent).accessibilityHidden(true)
-            Text(session.linkedImage?.fileName ?? session.explicitName ?? session.documentName).fontWeight(.medium).lineLimit(1)
+            Text(session.linkedImage?.fileName ?? session.brokenLink?.link.fileName ?? session.explicitName ?? session.documentName).fontWeight(.medium).lineLimit(1)
             Text(verbatim: "\(session.state.width)×\(session.state.height)").foregroundStyle(.secondary)
             Text(session.canvas.zoom, format: .percent.precision(.fractionLength(0)))
                 .monospacedDigit()
@@ -368,6 +368,15 @@ private struct TitleChip: View {
                     .truncationMode(.tail)
                     .layoutPriority(-1)  // shortens first when the window is narrow
                     .accessibilityLabel("Editing \(link.fileName) for \(link.requester). Command-S saves it back.")
+            }
+            if let broken = session.brokenLink {
+                Label("For \(broken.link.requester) – can't save back", systemImage: "link.badge.plus")
+                    .symbolVariant(.slash)
+                    .foregroundStyle(.orange)
+                    .lineLimit(1)
+                    .layoutPriority(-1)
+                    .help(broken.reason)
+                    .accessibilityLabel("Was being edited for \(broken.link.requester). \(broken.reason)")
             }
             if session.isExporting {
                 ProgressView().controlSize(.small)

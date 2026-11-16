@@ -125,6 +125,12 @@ final class DocumentOpener {
                 }
             } else if url.pathExtension.lowercased() == "aips" {
                 openAips(url)
+            } else if requester != nil, let existing = AgentRegistry.shared.sessions.first(where: {
+                $0.linkedImage?.url.resolvingSymlinksInPath().path == url.resolvingSymlinksInPath().path
+            }) {
+                // The file is already being edited here (perhaps in a window restored after a
+                // restart): show that window with its work, rather than a second one of the same file.
+                bringForward(existing)
             } else {
                 openImage(url, link: requester.flatMap { LinkedImage(url: url, requester: $0) })
             }
@@ -136,8 +142,12 @@ final class DocumentOpener {
 
     /// Called when a document window appears: a handed-over image becomes linked.
     func claimLink(for session: EditorSession) {
-        guard let id = session.state.layers.first?.id, let link = pendingLinks.removeValue(forKey: id) else { return }
-        session.linkedImage = link
+        guard let id = session.state.layers.first?.id, let link = pendingLinks.removeValue(forKey: id) else {
+            // Not a hand-over just now: perhaps a restored window whose document carries its link.
+            session.restoreLink()
+            return
+        }
+        session.link(to: link)
         session.setDocumentName(link.fileName)
         bringForward(session)
     }
@@ -214,8 +224,8 @@ final class DocumentOpener {
             // instead of leaving a blank window behind.
             if let blank = AgentRegistry.shared.sessions.first(where: \.isUntouchedBlank) {
                 try blank.place(image, name: name)
-                blank.linkedImage = link
                 if let link {
+                    blank.link(to: link)
                     blank.setDocumentName(link.fileName)
                     bringForward(blank)
                 }

@@ -197,6 +197,25 @@ public struct Layer: Identifiable, Sendable {
 
 /// The complete, value-typed state of a document. Snapshots are cheap: tiles are
 /// shared, immutable references.
+/// "Edit in Glimmer" from a sibling app: which file the document writes back to, kept with
+/// the document so a restored window is still linked (SIBLINGS.md §6).
+public struct DocumentLink: Codable, Sendable, Equatable {
+    /// A security-scoped bookmark of the file, when one could be made.
+    public var bookmark: Data?
+    /// Where the file was, for display and as a fallback.
+    public var path: String
+    /// The app that asked ("Flimmer").
+    public var requester: String
+
+    public init(bookmark: Data?, path: String, requester: String) {
+        self.bookmark = bookmark
+        self.path = path
+        self.requester = requester
+    }
+
+    public var fileName: String { URL(fileURLWithPath: path).lastPathComponent }
+}
+
 public struct DocumentState: Sendable {
     public var width: Int
     public var height: Int
@@ -211,6 +230,10 @@ public struct DocumentState: Sendable {
     public var paths: [VectorPath] = []
     /// Guides, grid and rulers (saved).
     public var aids = ViewAids()
+    /// The file of another app this document is an edit of (saved, so the link survives a
+    /// restart). Only set on the copy that is being written or was just read; the editor
+    /// keeps the live link itself.
+    public var link: DocumentLink?
 
     public init(
         width: Int,
