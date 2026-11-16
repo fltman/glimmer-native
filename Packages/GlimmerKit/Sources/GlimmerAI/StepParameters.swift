@@ -74,6 +74,58 @@ public enum StepParameters {
         }
     }
 
+    // MARK: Published schemas
+
+    /// The settings an operation's `params` object takes, per `type`, as JSON Schema: what the
+    /// check above enforces, published so a caller can stop a mistake before it calls
+    /// (SIBLINGS.md §3). Nil for an operation without such an object.
+    public static func nestedSchemas(op: String) -> [String: [String: Any]]? {
+        func closed(_ properties: [String: Any]) -> [String: Any] { ["type": "object", "properties": properties, "additionalProperties": false] }
+        switch op {
+        case "add_adjustment":
+            var out: [String: [String: Any]] = [:]
+            for kind in AdjustmentKind.allCases {
+                var p: [String: Any] = [:]
+                for s in kind.sliders { p[s.key] = ["type": "number", "minimum": s.range.lowerBound, "maximum": s.range.upperBound, "default": s.defaultValue] }
+                for t in kind.toggles { p[t.key] = ["type": "boolean", "default": t.defaultValue] }
+                for c in kind.colors { p[c.key] = ["type": "string", "description": "#RRGGBB"] }
+                out[kind.rawValue] = closed(p)
+            }
+            return out
+        case "apply_filter":
+            var out: [String: [String: Any]] = [:]
+            for kind in FilterKind.allCases {
+                var p: [String: Any] = [:]
+                for f in kind.fields {
+                    p[f.key] = f.isToggle ? ["type": "number", "enum": [0, 1], "default": f.defaultValue]
+                                          : ["type": "number", "minimum": f.range.lowerBound, "maximum": f.range.upperBound, "default": f.defaultValue]
+                }
+                out[kind.rawValue] = closed(p)
+            }
+            return out
+        case "add_layer_effect":
+            func schema<T: Encodable>(_ value: T) -> [String: Any] {
+                guard let data = try? JSONEncoder().encode(value), let dict = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return closed([:]) }
+                var p: [String: Any] = [:]
+                for (key, v) in dict {
+                    let name = key == "isEnabled" ? "enabled" : key
+                    if v is [String: Any] { p[name] = ["type": "string", "description": "#RRGGBB"] }
+                    else if let n = v as? NSNumber, CFGetTypeID(n) == CFBooleanGetTypeID() { p[name] = ["type": "boolean"] }
+                    else if v is NSNumber { p[name] = ["type": "number"] }
+                    else { p[name] = ["type": "string"] }
+                }
+                return closed(p)
+            }
+            return ["dropShadow": schema(ShadowEffect()), "innerShadow": schema(ShadowEffect()), "outerGlow": schema(GlowEffect()),
+                    "stroke": schema(StrokeEffect()), "colorOverlay": schema(ColorOverlayEffect())]
+        default:
+            return nil
+        }
+    }
+
+    /// The name every operation offered as a tool accepts and ignores for effect: a model adds it by habit.
+    public static var rationaleSchema: [String: Any] { ["type": "string", "description": "Optional. One short sentence: why this step. Accepted everywhere and has no effect."] }
+
     // MARK: Endpoints
 
     /// The query parameters each API path takes (by its segments after /api/v1, with `*` for an id), and nothing else.
@@ -99,7 +151,7 @@ public enum StepParameters {
 
     /// "export has no parameter named qualty. It has: …", or nil when every name is known.
     public static func strayMessage(_ given: some Sequence<String>, allowed: [String], what: String) -> String? {
-        guard let name = given.sorted().first(where: { !allowed.contains($0) }) else { return nil }
+        guard let name = given.sorted().first(where: { !allowed.contains($0) && $0 != "rationale" }) else { return nil }
         return "\(what) has no parameter named \(name). " + (allowed.isEmpty ? "It takes none." : "It has: \(allowed.joined(separator: ", ")).")
     }
 }

@@ -15,6 +15,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 if [[ -z "${GLIMMER_PORT:-}" ]]; then
   xcrun swiftc -O -o build/axread scripts/axread.swift 2>/dev/null || { echo "Couldn't build scripts/axread.swift"; exit 1; }
+  xcrun swiftc -O -o build/window-shot scripts/window-shot.swift 2>/dev/null || { echo "Couldn't build scripts/window-shot.swift"; exit 1; }
   # The picture services are hidden until each has been tried; the test copy shows them, with fal chosen and agreed to.
   ARGS="-ai.textProvider berget -ai.textModel.berget glimmer-test/not-a-model -ai.showUntried YES -ai.imageProvider fal -ai.imageNoticeShown.fal YES ${GLIMMER_ARGS:-}"
   if [[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]]; then
@@ -40,6 +41,7 @@ steps() { curl -s --max-time 60 -o /dev/null $H -X POST "$B/documents/$ID/steps"
 # read_state <name> <text that must be among what was read> [seconds to wait first]
 # Audits and reads everything on screen now. The app must survive both, and the expected
 # text must have been read: a state that never appeared can't pass as "nothing wrong found".
+shots=0; mkdir -p build/a11y-shots; rm -f build/a11y-shots/*.png
 read_state() {
   sleep "${3:-1.2}"
   local audit; audit=$("$AUDIT" --pid $GLIMMER_PID --strict 2>&1); local code=$?
@@ -47,6 +49,8 @@ read_state() {
   local seen; seen=$(echo "$all" | tail -1)
   if ! kill -0 $GLIMMER_PID 2>/dev/null; then bad "$1: the app is gone after being read"; echo "    $seen"; exit 1; fi
   if ! echo "$all" | grep -qF -- "$2"; then bad "$1: “$2” was not on screen, so this state was not read ($seen)"; return; fi
+  # A picture of each state too (the app's own windows only): a read does not see a sheet that is cut off or a label that wraps.
+  shots=$((shots + 1)); build/window-shot $GLIMMER_PID build/a11y-shots "$(printf '%02d' $shots)-$(echo "$1" | tr -c 'A-Za-z0-9' '-' | cut -c1-48)" >/dev/null 2>&1
   if (( code == 0 )); then ok "$1 ($seen; $(echo "$audit" | tail -1 | cut -d: -f1))"; else bad "$1: $(echo "$audit" | grep -E "UNNAMED|WEAK|OPAQUE|VALUE|SILENT|SAMEID" | head -3 | tr '\n' ' ')"; fi
 }
 press() { osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to key code $1" >/dev/null 2>&1; sleep 0.6; }

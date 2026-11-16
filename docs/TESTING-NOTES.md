@@ -529,3 +529,16 @@ The series' rule after `develop_raw` passed over "brightness". `StepParameters` 
 Evaluation after the change (qwen3:8b through Ollama, the same 18 scored cases, under the GUI lock and the model lock): **18 of 18**, median 2.5 s, slowest 26.2 s; the known gap still 0 of 1 (as before: it answers "not free", which is right, in words the crude judge does not accept). No plan was held back for a parameter of the model's own invention. Ollama had nothing loaded afterwards. The three RAW requests were not part of it.
 
 The small "Developing <name>…" window shown while a RAW file opens was looked at as a picture (the Fujifilm file): title, spinner and the whole line, nothing cut; the accessibility read gives the same line. `scripts/window-shot.swift` now also takes floating panels, which it had been leaving out. With that, what holds GLIMMER_RAW is Anders's look at the developed pictures.
+
+### What is refused is also published (SIBLINGS.md §3, 2026-11-16)
+
+Flimmer's three suggestions, through the coordinator:
+- Every schema in `/api/v1/operations` is closed (`"additionalProperties": false`), steps and endpoint operations alike.
+- The settings of `add_adjustment`, `apply_filter` and `add_layer_effect` are published per type, under `x-byType` on the `params` property: one closed schema for each adjustment, filter and effect, with ranges and defaults. (An extension key rather than `oneOf`: tool-calling services reject or mishandle `oneOf`, and a caller that checks before calling reads the table directly.)
+- `rationale` is accepted, published and without effect on every operation offered as a tool, also the endpoint operations (in the query where the body is not JSON).
+
+Sizes as JSON with sorted keys: `/operations` 44,694 bytes, of which the per-type tables are 8,151; the full tool list sent to a model 28,769 bytes (it does not carry the per-type tables: the settings are in the description there, and the tables would add those 8 kB); the short list 9,992 bytes (9,642 before; the 350 more are the closing of eleven schemas).
+
+The short list is the one a local model is measured on, so the evaluation was run again on it: qwen3:8b, the same 18 cases, **18 of 18**, median 6.9 s (2.5 s in the run an hour earlier; the Mac was busier), slowest 25.5 s. The pinned size is now 9,992. After the run Ollama had `bge-m3` loaded, which is not a model this run uses; qwen3:8b was unloaded.
+
+The walk now also checks, in the package test and against the running app, that every published schema is closed, has `rationale`, lists exactly the names the check accepts, and that no nested `params` is a bare object.

@@ -553,7 +553,11 @@ public enum AgentPlanner {
 
     /// The JSON Schema of an op's params. The assistant's tools, the API's operation
     /// list and the guide all use it, so they describe the same thing.
-    public static func paramsSchema(_ op: AgentOp) -> [String: Any] {
+    /// Closed: a name that isn't in `properties` is refused by the app, and the schema says so.
+    /// `forModel` leaves the nested settings as a plain object (their keys are in the
+    /// description): the per-type schemas are for callers that check before they call, and
+    /// would double the list a model is sent.
+    public static func paramsSchema(_ op: AgentOp, forModel: Bool = false) -> [String: Any] {
         var properties: [String: Any] = [:]
         var required: [String] = []
         for p in op.params {
@@ -568,10 +572,15 @@ public enum AgentPlanner {
             default: schema["type"] = "string"
             }
             if let options = p.options { schema["enum"] = options }
+            if p.name == "params", !forModel, let byType = StepParameters.nestedSchemas(op: op.name) {
+                // Which settings exist depends on `type`: one closed schema per type.
+                schema["x-byType"] = byType
+            }
             properties[p.name] = schema
             if !p.description.localizedCaseInsensitiveContains("optional") { required.append(p.name) }
         }
-        return ["type": "object", "properties": properties, "required": required]
+        properties["rationale"] = StepParameters.rationaleSchema
+        return ["type": "object", "properties": properties, "required": required, "additionalProperties": false]
     }
 
     /// One function tool per op; the schemas are generated from `ops`.
@@ -579,7 +588,7 @@ public enum AgentPlanner {
     /// `rawLayer: false` leaves out `develop_raw`: the assistant is offered it only when the active layer is a RAW layer.
     public static func toolSchemas(short: Bool = false, rawLayer: Bool = true) -> [[String: Any]] {
         ops.filter { (!short || AgentAPI.coreOps.contains($0.name)) && (rawLayer || $0.name != "develop_raw") }.map { op in
-            var parameters = paramsSchema(op)
+            var parameters = paramsSchema(op, forModel: true)
             var properties = parameters["properties"] as? [String: Any] ?? [:]
             properties["rationale"] = ["type": "string", "description": "One short sentence: why this step."]
             parameters["properties"] = properties

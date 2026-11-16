@@ -612,7 +612,7 @@ extension ChatAdapterTests {
     static let decided = ["add_adjustment", "add_text", "add_waveform", "auto_enhance", "crop", "generate_layer",
                           "image_edit_composite", "remove_background", "resize_image", "select_subject", "set_layer"]
     /// The size of that list as JSON when it was measured, and the room a reworded description may take.
-    static let measuredBytes = 9642
+    static let measuredBytes = 9992   // 2026-11-16, with closed schemas ("additionalProperties": false): qwen3:8b 18 of 18 (it was 9,642 before, also 18 of 18)
     static let room = 300
 
     @Test func theListSentToASmallModelIsTheOneThatWasMeasured() throws {

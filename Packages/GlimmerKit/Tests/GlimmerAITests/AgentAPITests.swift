@@ -92,7 +92,8 @@ import Testing
             let params = try #require(op["params"] as? [String: Any], "\(name)")
             #expect(params["type"] as? String == "object")
             #expect(params["properties"] is [String: Any] && params["required"] is [String])
-            #expect((params["properties"] as? [String: Any])?["rationale"] == nil, "only the assistant's own tools carry rationale")
+            // Every operation offered as a tool accepts `rationale` and says so, and its schema is closed (SIBLINGS.md §3, 2026-11-16).
+            #expect((params["properties"] as? [String: Any])?["rationale"] != nil && params["additionalProperties"] as? Bool == false, "\(name)")
             if let call = op["call"] as? [String: String] {
                 #expect(["GET", "POST"].contains(call["method"] ?? "") && call["path"]?.hasPrefix("/api/v1/documents/{id}/") == true)
                 let id = (params["properties"] as? [String: Any])?["id"] as? [String: Any]

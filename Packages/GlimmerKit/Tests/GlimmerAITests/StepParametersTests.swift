@@ -71,3 +71,57 @@ import GlimmerCore
         #expect(StepParameters.strayMessage(["a"], allowed: [], what: "Undo") == "Undo has no parameter named a. It takes none.")
     }
 }
+
+/// What is published is what is enforced (SIBLINGS.md §3): closed schemas, the nested settings per type, `rationale` everywhere.
+@Suite struct PublishedSchemaTests {
+    @Test func everyPublishedSchemaIsClosedAndCarriesRationale() throws {
+        let ops = AgentAPI.operations
+        #expect(ops.count >= 35)
+        for op in ops {
+            let name = op["name"] as? String ?? "?"
+            let params = try #require(op["params"] as? [String: Any], "\(name) has no schema")
+            #expect(params["additionalProperties"] as? Bool == false, "\(name)'s schema is open")
+            let properties = try #require(params["properties"] as? [String: Any])
+            #expect(properties["rationale"] != nil, "\(name) does not publish rationale")
+            // What the schema lists is exactly what the check accepts.
+            if op["call"] == nil, let registered = AgentPlanner.op(named: name) {
+                #expect(Set(properties.keys) == Set(registered.params.map(\.name) + ["rationale"]), "\(name): schema and register differ")
+            }
+        }
+    }
+
+    @Test func theNestedSettingsArePublishedPerTypeAndClosed() throws {
+        for (name, types) in [("add_adjustment", AdjustmentKind.allCases.map(\.rawValue)), ("apply_filter", FilterKind.allCases.map(\.rawValue)),
+                              ("add_layer_effect", ["dropShadow", "innerShadow", "outerGlow", "stroke", "colorOverlay"])] {
+            let op = try #require(AgentAPI.operations.first { $0["name"] as? String == name })
+            let nested = try #require(((op["params"] as? [String: Any])?["properties"] as? [String: Any])?["params"] as? [String: Any])
+            let byType = try #require(nested["x-byType"] as? [String: [String: Any]], "\(name)'s params is a bare object")
+            #expect(Set(byType.keys) == Set(types))
+            for type in types {
+                let schema = try #require(byType[type])
+                #expect(schema["additionalProperties"] as? Bool == false)
+                // The published names are the enforced names.
+                #expect(Set((schema["properties"] as? [String: Any] ?? [:]).keys) == Set(StepParameters.nestedKeys(op: name, type: type) ?? ["?"]), "\(name) \(type)")
+            }
+        }
+        // A slider's range and default are there to check against.
+        let exposure = StepParameters.nestedSchemas(op: "add_adjustment")?["exposure"]?["properties"] as? [String: [String: Any]]
+        #expect(exposure?["exposure"]?["minimum"] != nil && exposure?["exposure"]?["maximum"] != nil)
+        // A model's tool list has the closed top level but not the per-type tables.
+        let tool = try #require(AgentPlanner.toolSchemas().first { ($0["function"] as? [String: Any])?["name"] as? String == "add_adjustment" })
+        let parameters = try #require((tool["function"] as? [String: Any])?["parameters"] as? [String: Any])
+        #expect(parameters["additionalProperties"] as? Bool == false)
+        #expect(((parameters["properties"] as? [String: Any])?["params"] as? [String: Any])?["x-byType"] == nil)
+    }
+
+    @Test func rationaleIsAcceptedOnEveryEndpoint() {
+        #expect(StepParameters.strayMessage(["fit", "rationale"], allowed: ["fit"], what: "x") == nil)
+        #expect(StepParameters.strayMessage(["rationale"], allowed: [], what: "x") == nil)
+    }
+
+    /// The sizes, for the record (the full list goes to cloud models and to siblings).
+    @Test func sizes() throws {
+        func bytes(_ v: Any) throws -> Int { try JSONSerialization.data(withJSONObject: v, options: [.sortedKeys]).count }
+        print("SCHEMA sizes: /operations \(try bytes(AgentAPI.operations)) bytes; a model's full tool list \(try bytes(AgentPlanner.toolSchemas())) bytes; the short list \(try bytes(AgentPlanner.toolSchemas(short: true))) bytes; the per-type tables alone \(try bytes(["a": StepParameters.nestedSchemas(op: "add_adjustment")!, "f": StepParameters.nestedSchemas(op: "apply_filter")!, "e": StepParameters.nestedSchemas(op: "add_layer_effect")!])) bytes")
+    }
+}

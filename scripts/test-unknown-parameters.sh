@@ -67,6 +67,16 @@ for method, path, body, name in [
     code, raw = call(method, path, body)
     check(f"{method} {path.split('?')[0].replace(doc, '{id}')} refuses “{name}”", code == 400 and f"no parameter named {name}" in message(raw), f"{code}: {message(raw)[:90]}")
 check("the document is untouched after all of it", fingerprint() == before)
+# `rationale` is the one name accepted everywhere, and every published schema is closed.
+code, raw = call("GET", f"/documents/{doc}/image?maxSide=64&rationale=to%20look")
+check("rationale is accepted in a query", code == 200, f"{code}")
+code, raw = call("POST", f"/documents/{doc}/export", {"format": "png", "maxSide": 64, "rationale": "to show"})
+check("rationale is accepted in a body", code == 200, f"{code}: {message(raw)[:80]}")
+all_ops = json.loads(call("GET", "/operations")[1])["operations"]
+open_ones = [o["name"] for o in all_ops if o["params"].get("additionalProperties") is not False or "rationale" not in o["params"]["properties"]]
+check(f"each of the {len(all_ops)} published schemas is closed and has rationale", not open_ones, ", ".join(open_ones))
+bare = [o["name"] for o in all_ops if "params" in o["params"]["properties"] and "x-byType" not in o["params"]["properties"]["params"]]
+check("the nested settings are published per type", not bare, ", ".join(bare))
 code, raw = call("POST", f"/documents/{doc}/steps", {"steps": [{"op": "add_adjustment", "params": {"type": "black_white", "rationale": "as asked"}}]})
 check("and a proper step still runs", code == 200, message(raw))
 print()

@@ -239,8 +239,11 @@ public enum AgentAPI {
                 _ properties: [String: Any] = [:], undoable: Bool = false) -> [String: Any] {
             var properties = properties
             properties["id"] = ["type": "string", "x-in": "path", "description": "The document id (GET /api/v1/documents)."]
+            // `rationale` goes where the operation's other values go: in the query when the body is not JSON.
+            let inQuery = method == "GET" || properties.values.contains { ($0 as? [String: Any])?["x-in"] as? String == "query" }
+            properties["rationale"] = inQuery ? StepParameters.rationaleSchema.merging(["x-in": "query"]) { $1 } : StepParameters.rationaleSchema
             return ["name": name, "description": description,
-             "params": ["type": "object", "properties": properties, "required": ["id"]] as [String: Any],
+             "params": ["type": "object", "properties": properties, "required": ["id"], "additionalProperties": false] as [String: Any],
              "paid": false, "undoable": undoable, "startsJob": false,
              "call": ["method": method, "path": "/api/\(version)/documents/{id}/\(path)"]]
         }
