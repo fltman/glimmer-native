@@ -267,8 +267,9 @@ struct RealSiblingOperations {
 @Suite struct WorkedFiguresTests {
     static let given = ["Crop the image to 16:9", "2400 1600 1", "Photo"]
     static func check(_ text: String, request: String = "Crop the image to 16:9") -> (text: String?, removed: [String]) {
-        let also = AgentPlanner.operationFigures + AssistantNumbers.worked(width: 2400, height: 1600, request: request)
-        return AssistantNumbers.checked(text, given: [request, "2400 1600 1", "Photo"], steps: 1, alsoGiven: also)
+        var extra = AssistantNumbers.worked(width: 2400, height: 1600, request: request)
+        extra.operations = AgentPlanner.operationFigures
+        return AssistantNumbers.checked(text, given: [request, "2400 1600 1", "Photo"], steps: 1, extra: extra)
     }
 
     @Test func theOtherSideOfANamedAspectIsGiven() {
@@ -289,10 +290,11 @@ struct RealSiblingOperations {
         let request = "How big is this document, in pixels?"
         #expect(Self.check("It is 2400 × 1600 pixels, a 3:2 image of 3.84 megapixels.", request: request).removed.isEmpty)
         #expect(Self.check("It is about 3.8 megapixels.", request: request).removed.isEmpty)
-        // A limit of the rule, known: the operations' descriptions hold most small whole numbers (ranges, factors,
-        // defaults), so a wrong small figure such as "a 4:3 image" is not caught. A wrong larger one is.
-        #expect(Self.check("It is a 4:3 image.", request: request).removed.isEmpty)
-        #expect(Self.check("It is a 37:21 image.", request: request).removed.contains("number 37"))
+        // A wrong shape for the person's own document goes: neither the megapixels nor an operation's figures excuse "4:3".
+        #expect(Self.check("It is a 4:3 image.", request: request).removed == ["number 4", "number 3"])
+        #expect(Self.check("It is a 3:2 image.", request: request).removed.isEmpty)
+        #expect(Self.check("It has 4 megapixels.", request: request).removed.isEmpty)       // 3.84, said round
+        #expect(Self.check("It is 4 wide.", request: request).removed == ["number 4"])      // not megapixels, not a size
         #expect(Self.check("It is 5.1 megapixels.", request: request).removed == ["number 5.1"])
     }
 
@@ -324,10 +326,25 @@ struct RealSiblingOperations {
         #expect(Self.check("It is €3.", request: request).removed == ["price 3"])
     }
 
+    /// An operation's own figures count where the sentence names the operation or its subject, and nowhere else.
+    @Test func anOperationsFiguresCountOnlyWhereItIsNamed() {
+        let request = "Make it better"
+        #expect(Self.check("I can upscale it 2× or 4×.", request: request).removed.isEmpty)
+        #expect(Self.check("Du kan förstora det 4×.", request: request).removed.isEmpty)
+        #expect(Self.check("An exposure of +3 would brighten it.", request: request).removed.isEmpty)        // within the exposure adjustment's own range
+        #expect(Self.check("The crop moves it by +3.", request: request).removed == ["number 3"])           // crop has no such figure
+        #expect(Self.check("There are 4 of them.", request: request).removed == ["number 4"])               // names nothing
+        // Free as before: 0, 1 and the count of the plan's steps, as in "1 step" or a numbered list.
+        #expect(Self.check("1. Crop it. Then 1 more thing.", request: request).removed.isEmpty)
+        #expect(AssistantNumbers.checked("Step 1: crop. Step 2: blur. That is 2 steps.", given: [request], steps: 2).removed.isEmpty)
+        #expect(AssistantNumbers.checked("Step 3 comes later.", given: [request], steps: 2).removed == ["number 3"])
+    }
+
     @Test func theSetIsClosed() {
         let worked = AssistantNumbers.worked(width: 2400, height: 1600, request: "Crop to 16:9 and to a square")
-        #expect(Set(worked).isSuperset(of: [1200, 800, 4800, 3200, 9600, 6400, 1350, 1600, 3.84, 3.8, 4, 3, 2]))
-        #expect(!worked.contains(1777) && !worked.contains(1280) && worked.count < 30)
-        #expect(AssistantNumbers.worked(width: 0, height: 0, request: "x").isEmpty)
+        #expect(Set(worked.sizes).isSuperset(of: [1200, 800, 4800, 3200, 9600, 6400, 1350, 1600]))
+        #expect(worked.megapixels == [4, 3.8, 3.84] && worked.ratio?.0 == 3 && worked.ratio?.1 == 2)
+        #expect(!worked.sizes.contains(1777) && !worked.sizes.contains(1280) && worked.sizes.count < 20)
+        #expect(AssistantNumbers.worked(width: 0, height: 0, request: "x").sizes.isEmpty)
     }
 }

@@ -10,10 +10,16 @@ import Foundation
 ///
 /// The rule was written against a model that invents figures; it must not punish one that
 /// does the sum (the first real model, 2026-11-16, lost "2400 × 1350" beside a crop to 16:9
-/// and "1200 × 800" beside "half as large"). So a figure also counts as given when it is in
-/// the operations' descriptions sent with the request, or in a closed set of results the app
-/// itself works out from the document's size before it reads the answer (`worked`). The check
-/// is membership in that set, never "looks plausible".
+/// and "1200 × 800" beside "half as large"). So a figure also counts as given when it is in a
+/// closed set of results the app itself works out from the document's size before it reads
+/// the answer (`worked`), or, in a sentence that names an operation or its subject, in that
+/// operation's own description, which was sent with the request. The check is membership,
+/// never "looks plausible". What is said about the document itself (its megapixels, its shape
+/// as a ratio) is backed only by the document's facts and the worked set, each kind of figure
+/// only where it is said as that kind: "a 4:3 image" for a 3:2 document goes.
+///
+/// Free as before: 0, 1 and the numbers up to the count of the plan's steps ("2 steps", a
+/// numbered list of the steps), and counting words written as words.
 ///
 /// Held hardest, whatever the arithmetic: money, how long something takes, sizes on disk,
 /// quality figures and anything about a service. A sentence about one of those keeps its
@@ -73,15 +79,29 @@ public enum AssistantNumbers {
         return words.contains { word in tokens.contains(word) || (word.count >= 5 && tokens.contains { $0.hasPrefix(word) }) }
     }
 
+    /// What counts as given besides the request and the editor state.
+    public struct Extra: Sendable {
+        /// Sizes worked out from the document's: given in any sentence that is not about a held subject.
+        public var sizes: [Double] = []
+        /// The document's megapixels (rounded as a person would say them): given only beside the word.
+        public var megapixels: [Double] = []
+        /// The document's shape in lowest terms: given only when written as that ratio ("3:2").
+        public var ratio: (Int, Int)?
+        /// Each operation's own figures, with the words that name it: given only in a sentence that has one of the words.
+        public var operations: [(names: [String], figures: [Double])] = []
+        public init() {}
+        public static let none = Extra()
+    }
+
     /// The figures the app itself works out from a document's size before it reads an answer: a
-    /// closed set. Halves, doubles and the upscale operation's own factors of each side; the other
-    /// side for an aspect ratio the request names ("16:9", "square"); the megapixels; the size as a
-    /// ratio in lowest terms (2400 × 1600 is 3:2); and a percentage the request names, of each side.
-    public static func worked(width: Int, height: Int, request: String) -> [Double] {
-        guard width > 0, height > 0 else { return [] }
+    /// closed set. Halves, doubles and four times each side; the other side for an aspect ratio
+    /// the request names ("16:9", "square"); a percentage the request names, of each side; the
+    /// megapixels; and the size as a ratio in lowest terms (2400 × 1600 is 3:2).
+    public static func worked(width: Int, height: Int, request: String) -> Extra {
+        var extra = Extra()
+        guard width > 0, height > 0 else { return extra }
         let w = Double(width), h = Double(height)
-        var out: [Double] = []
-        for factor in [0.5, 2.0, 4.0] { out += [(w * factor).rounded(), (h * factor).rounded()] }
+        for factor in [0.5, 2.0, 4.0] { extra.sizes += [(w * factor).rounded(), (h * factor).rounded()] }
         // Aspect ratios the request names: the largest centred box of that shape, as `crop` cuts it.
         var aspects: [Double] = []
         if let regex = try? NSRegularExpression(pattern: #"(\d+(?:[.,]\d+)?)\s*:\s*(\d+(?:[.,]\d+)?)"#) {
@@ -96,20 +116,20 @@ public enum AssistantNumbers {
         for a in aspects {
             var cw = w, ch = (w / a).rounded()
             if ch > h { ch = h; cw = (h * a).rounded() }
-            out += [cw, ch]
+            extra.sizes += [cw, ch]
         }
-        let megapixels = w * h / 1_000_000
-        out += [megapixels.rounded(), (megapixels * 10).rounded() / 10, (megapixels * 100).rounded() / 100]
-        func gcd(_ a: Int, _ b: Int) -> Int { b == 0 ? a : gcd(b, a % b) }
-        let g = gcd(width, height)
-        if width / g <= 100, height / g <= 100 { out += [Double(width / g), Double(height / g)] }
         if let regex = try? NSRegularExpression(pattern: #"(\d+(?:[.,]\d+)?)\s*(?:%|percent|procent)"#) {
             for m in regex.matches(in: lower, range: NSRange(lower.startIndex..., in: lower)) {
                 guard let r = Range(m.range(at: 1), in: lower), let p = Double(lower[r].replacingOccurrences(of: ",", with: ".")), p > 0 else { continue }
-                out += [(w * p / 100).rounded(), (h * p / 100).rounded()]
+                extra.sizes += [(w * p / 100).rounded(), (h * p / 100).rounded()]
             }
         }
-        return out
+        let megapixels = w * h / 1_000_000
+        extra.megapixels = [megapixels.rounded(), (megapixels * 10).rounded() / 10, (megapixels * 100).rounded() / 100]
+        func gcd(_ a: Int, _ b: Int) -> Int { b == 0 ? a : gcd(b, a % b) }
+        let g = gcd(width, height)
+        if width / g <= 100, height / g <= 100 { extra.ratio = (width / g, height / g) }
+        return extra
     }
 
     private static func sentences(_ text: String) -> [String] {
@@ -135,12 +155,12 @@ public enum AssistantNumbers {
     /// held back whole until it is finished and checked. A figure the check would remove is
     /// therefore never shown, not even for a moment. (A sentence that gets a digit late
     /// disappears from view until it is finished.)
-    public static func shownWhileArriving(_ text: String, given: [String], alsoGiven: [Double] = []) -> String {
+    public static func shownWhileArriving(_ text: String, given: [String], extra: Extra = .none) -> String {
         var parts = sentences(text)
         var pending = ""
         // The last part is finished only when white space follows it: "2400." may go on as "2400.5".
         if let last = text.last, !last.isWhitespace, !parts.isEmpty { pending = parts.removeLast() }
-        var shown = parts.filter { checked($0, given: given, alsoGiven: alsoGiven).removed.isEmpty }.joined()
+        var shown = parts.filter { checked($0, given: given, extra: extra).removed.isEmpty }.joined()
         let lower = pending.lowercased()
         _ = lower
         if !pending.contains(where: \.isNumber), !has(pending, anyOf: money) { shown += pending }
@@ -149,20 +169,31 @@ public enum AssistantNumbers {
 
     /// `pricesOnly`: for text that proposes an edit ("crop to 4:5"), whose numbers are the
     /// proposal itself; only a sentence about money with a figure goes.
-    /// `alsoGiven`: figures that count as given for everything but the held subjects (the
-    /// operations' own descriptions, and what `worked` gives for the document).
-    public static func checked(_ text: String, given: [String], steps: Int = 0, pricesOnly: Bool = false, alsoGiven: [Double] = []) -> (text: String?, removed: [String]) {
+    /// `extra`: what counts as given besides `given`, each kind only where it belongs (see `Extra`).
+    public static func checked(_ text: String, given: [String], steps: Int = 0, pricesOnly: Bool = false, extra: Extra = .none) -> (text: String?, removed: [String]) {
         var backed = Set(given.flatMap(numbers(in:)))
         // A share given as 0.5 may be said as 50 (percent).
         for n in backed where n > 0 && n <= 1 { backed.insert((n * 100).rounded()) }
+        // 0, 1 and the numbers up to the count of the plan's steps are free: "2 steps", a numbered list of the steps.
         for n in 0...max(steps, 1) { backed.insert(Double(n)) }
-        let lenient = backed.union(alsoGiven)
         var kept: [String] = [], removed: [String] = []
         for sentence in sentences(text) {
             let stated = numbers(in: sentence)
+            var allowed = backed
             // A sentence about money, time, a size on disk, quality or a service keeps only what the request or the editor state gave.
-            let isHeld = has(sentence, anyOf: held)
-            let allowed = isHeld ? backed : lenient
+            if !has(sentence, anyOf: held) {
+                allowed.formUnion(extra.sizes)
+                let lower = sentence.lowercased()
+                if ["megapixel", "megapixlar", "megapixels"].contains(where: { lower.contains($0) }) || has(sentence, anyOf: ["mp"]) { allowed.formUnion(extra.megapixels) }
+                // The document's shape counts only written as that ratio; "4:3" for a 3:2 document has neither figure given.
+                if let ratio = extra.ratio, lower.range(of: #"(?<![\d.,])\#(ratio.0)\s*[:∶]\s*\#(ratio.1)(?![\d.,])"#, options: .regularExpression) != nil {
+                    allowed.insert(Double(ratio.0)); allowed.insert(Double(ratio.1))
+                }
+                // An operation's own figures count where the sentence names the operation or its subject.
+                for operation in extra.operations where operation.names.contains(where: { name in
+                    name.contains(" ") || name.contains("_") ? lower.contains(name) : has(sentence, anyOf: [name])
+                }) { allowed.formUnion(operation.figures) }
+            }
             let unbacked = stated.filter { n in !allowed.contains { abs($0 - n) <= max(0.005, abs(n) * 0.005) } }
             // Called a price only when the sentence carries a currency or the word.
             let about = has(sentence, anyOf: money) ? "price" : "number"

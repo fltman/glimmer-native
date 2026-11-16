@@ -700,7 +700,7 @@ public enum AgentPlanner {
         var checkedText: (@Sendable (String) -> Void)?
         if let onText {
             let also = alsoGivenFigures(goal: goal, context: context)
-            checkedText = { @Sendable (text: String) in onText(AssistantNumbers.shownWhileArriving(text, given: given, alsoGiven: also)) }
+            checkedText = { @Sendable (text: String) in onText(AssistantNumbers.shownWhileArriving(text, given: given, extra: also)) }
         }
         let response = try await model.callTools(messages: messages, tools: tools, temperature: 0.2, onText: checkedText)
         var plan = try plan(from: response, extra: Set(siblings.map(\.toolName)))
@@ -747,12 +747,23 @@ public enum AgentPlanner {
         [goal, "\(context.width) \(context.height) \(context.layerCount)", context.activeLayerName, siblingContext ?? ""] + history.suffix(8).map(\.user)
     }
 
-    /// The figures in the operations' descriptions (they are sent with every request).
-    static let operationFigures: [Double] = ops.flatMap { op in AssistantNumbers.numbers(in: op.description) + op.params.flatMap { AssistantNumbers.numbers(in: $0.description) } }
+    /// Each operation's own figures (its description and its parameters' are sent with every request), with
+    /// the words that name it: its tool name, the stems by which a request names it in English and Swedish
+    /// (`PlanCheck.words`), its parameters' names, and for adjustments and filters the kinds' own stems.
+    static let operationFigures: [(names: [String], figures: [Double])] = ops.map { op in
+        var names = [op.name, op.name.replacingOccurrences(of: "_", with: " ")] + (PlanCheck.words[op.name] ?? [])
+        names += op.params.map(\.name).filter { $0.count >= 5 }.map { $0.lowercased() }
+        if op.name == "add_adjustment" || op.name == "apply_filter" { names += PlanCheck.kinds.values.flatMap { $0 } + ["adjustment", "justering", "filter"] }
+        if op.name == "upscale" { names += ["upscal", "förstor", "skala upp", "enlarge"] }
+        let figures = AssistantNumbers.numbers(in: op.description) + op.params.flatMap { AssistantNumbers.numbers(in: $0.description) }
+        return (names.map { $0.lowercased() }, figures)
+    }
 
-    /// What counts as given besides the request and the editor state: the operations' own figures and what the app works out from the document's size.
-    static func alsoGivenFigures(goal: String, context: AgentContext) -> [Double] {
-        operationFigures + AssistantNumbers.worked(width: context.width, height: context.height, request: goal)
+    /// What counts as given besides the request and the editor state: what the app works out from the document's size, and each operation's own figures where it is named.
+    static func alsoGivenFigures(goal: String, context: AgentContext) -> AssistantNumbers.Extra {
+        var extra = AssistantNumbers.worked(width: context.width, height: context.height, request: goal)
+        extra.operations = operationFigures
+        return extra
     }
 
     /// Takes out of the plan's text every sentence with a figure the model was not given
@@ -767,14 +778,14 @@ public enum AgentPlanner {
         let also = alsoGivenFigures(goal: goal, context: context)
         var removed: [String] = []
         if let message = plan.message {
-            let result = AssistantNumbers.checked(message, given: given, steps: plan.steps.count, alsoGiven: also)
+            let result = AssistantNumbers.checked(message, given: given, steps: plan.steps.count, extra: also)
             if !result.removed.isEmpty { plan.messageAsWritten = message }
             plan.message = result.text
             removed += result.removed
         }
         for i in plan.steps.indices {
             guard let rationale = plan.steps[i].rationale else { continue }
-            let result = AssistantNumbers.checked(rationale, given: given, steps: plan.steps.count, alsoGiven: also)
+            let result = AssistantNumbers.checked(rationale, given: given, steps: plan.steps.count, extra: also)
             plan.steps[i].rationale = result.text
             removed += result.removed
         }

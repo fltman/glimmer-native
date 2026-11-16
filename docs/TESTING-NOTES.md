@@ -724,3 +724,9 @@ Tests: tonight's five cases as fixtures (1350 beside 16:9; 1200 and 800 for half
 **A limit, known and tested as such:** the operations' descriptions hold most small whole numbers (0 to 5, 8, 9, 10, 12, 16, 50, 64, 100 and more through the adjustments' ranges), so a wrong small figure such as "a 4:3 image" for a 3:2 document is no longer caught. A wrong larger one is.
 
 Local evaluation after the change (qwen3:8b, the same 18 cases, GUI lock and model lock): **18 of 18**, median 2.6 s, slowest 30.7 s; no figure removed in any answer; the known gap 0 of 1 as before. Ollama empty afterwards. So the local model's result did not get worse. Whether Berget's two failures now pass is not known until Anders presses the button again.
+
+**The tighter form (same night, on the coordinator's word).** The limit named above is closed:
+- An operation's own figures count only in a sentence that names the operation or its subject: its tool name, the stems by which a request names it in English or Swedish, its parameters' names, and for adjustments and filters the kinds' own stems. "I can upscale it 2× or 4×" keeps its figures; "There are 4 of them" does not.
+- What is said about the document itself is backed only by the document's facts and the worked set, each kind of figure only where it is said as that kind: the megapixels beside the word, the shape only written as that ratio. "A 4:3 image" for a 3:2 document goes; "a 3:2 image" and "4 megapixels" (3.84, said round) stay; "It is 4 wide" goes.
+- Free as before, said here so nobody is surprised: 0 and 1 always, and the numbers up to the count of the plan's steps ("2 steps", "Step 2:", a numbered list of the steps); counting words written as words are not figures at all. So "+1" in a sentence about a crop is not caught, because 1 is free everywhere; "+3" there is.
+- Fixtures for each of these, beside the earlier five.
