@@ -211,8 +211,9 @@ public struct PSDTestWriter {
         return w
     }
 
-    /// A 64 × 48 document with things an import can't keep: a text layer, a Levels adjustment
-    /// layer and a layer in Lighter Color, inside a group, over a plain background.
+    /// A 64 × 48 document with things that come through as more than pixels (a Levels layer, a
+    /// shape) and things an import can't keep (a text layer, a Vibrance layer, a layer in
+    /// Lighter Color), inside a group, over a plain background.
     public static func mixed() -> PSDTestWriter {
         var w = PSDTestWriter()
         w.width = 64; w.height = 48
@@ -226,13 +227,84 @@ public struct PSDTestWriter {
             return [(-1, Array(repeating: 255, count: n)), (0, Array(repeating: UInt16(r), count: n)), (1, Array(repeating: UInt16(g), count: n)), (2, Array(repeating: UInt16(b), count: n))]
         }
         var title = Layer(name: "Title", rect: box, planes: solid(250, 240, 200), compression: 1)
-        title.extraBlocks = [("TySh", Data([0, 1]))]
+        title.extraBlocks = [("TySh", typeTool("Summer Sale"))]
         var levels = Layer(name: "Levels 1", rect: PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0))
-        levels.extraBlocks = [("levl", Data([0, 2]))]
+        levels.extraBlocks = [("levl", Self.levels([(10, 240, 0, 255, 120)]))]
+        var vibrance = Layer(name: "Vibrance 1", rect: PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0))
+        vibrance.extraBlocks = [("vibA", Data([0, 0, 0, 16]))]
+        var badge = Layer(name: "Badge", rect: PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0))
+        badge.extraBlocks = [("SoCo", solidColor(red: 220, green: 40, blue: 60)),
+                             ("vmsk", vectorMask([(x: 0.7, y: 0.1), (x: 0.95, y: 0.1), (x: 0.95, y: 0.4), (x: 0.7, y: 0.4)]))]
         let glow = Layer(name: "Glow", rect: box, blendKey: "lgCl", opacity: 200, planes: solid(255, 200, 120), compression: 2)
         let folder = Layer(name: "Heading", rect: PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0), blendKey: "pass", group: 1)
-        w.layers = [back, end, title, levels, glow, folder]
+        w.layers = [back, end, title, levels, vibrance, badge, glow, folder]
         w.composite = [plane { x, _ in 60 + x * 3 }, plane { _, y in 60 + y * 4 }, plane { _, _ in 150 }]
         return w
+    }
+
+    // MARK: Settings blocks (descriptors, paths, adjustments), as the specification lays them out
+
+    public static func be64(_ v: UInt64) -> Data { be32(UInt32(v >> 32)) + be32(UInt32(v & 0xFFFF_FFFF)) }
+    public static func double(_ v: Double) -> Data { be64(v.bitPattern) }
+    public static func unicode(_ text: String) -> Data {
+        let units = Array(text.utf16)
+        return be32(UInt32(units.count)) + units.reduce(Data()) { $0 + be16($1) }
+    }
+    /// "4 bytes (length), followed either by string or (if length is zero) 4-byte ID".
+    public static func id(_ key: String) -> Data { key.utf8.count == 4 ? be32(0) + Data(key.utf8) : be32(UInt32(key.utf8.count)) + Data(key.utf8) }
+    public static func descriptor(_ classID: String, _ items: [(key: String, type: String, value: Data)]) -> Data {
+        var d = unicode("") + id(classID) + be32(UInt32(items.count))
+        for item in items { d += id(item.key) + Data(item.type.utf8) + item.value }
+        return d
+    }
+
+    /// A solid colour fill's block ('SoCo'): version 16 and a descriptor holding the colour.
+    public static func solidColor(red: Double, green: Double, blue: Double) -> Data {
+        let color = descriptor("RGBC", [("Rd  ", "doub", double(red)), ("Grn ", "doub", double(green)), ("Bl  ", "doub", double(blue))])
+        return be32(16) + descriptor("null", [("Clr ", "Objc", color)])
+    }
+
+    /// A vector mask's block ('vmsk'): version 3, flags, then 26-byte path records for one closed
+    /// path with corner points, given as shares of the image (x, y from 0 to 1).
+    public static func vectorMask(_ corners: [(x: Double, y: Double)], flags: UInt32 = 0) -> Data {
+        func fixed(_ share: Double) -> Data { be32(UInt32(bitPattern: Int32((share * 16_777_216).rounded()))) }
+        var d = be32(3) + be32(flags)
+        d += be16(6) + Data(count: 24)                                   // the fill rule record
+        d += be16(0) + be16(UInt16(corners.count)) + Data(count: 22)     // a closed subpath of that many knots
+        for c in corners {
+            let point = fixed(c.y) + fixed(c.x)                          // vertical first
+            d += be16(1) + point + point + point                         // control before, anchor, control after
+        }
+        return d
+    }
+
+    /// A Levels block ('levl'): version 2 and 29 sets of five shorts; the first four are given.
+    public static func levels(_ sets: [(inFloor: UInt16, inCeiling: UInt16, outFloor: UInt16, outCeiling: UInt16, gamma: UInt16)]) -> Data {
+        var d = be16(2)
+        for i in 0..<29 {
+            let set = i < sets.count ? sets[i] : (0, 255, 0, 255, 100)
+            d += be16(set.0) + be16(set.1) + be16(set.2) + be16(set.3) + be16(set.4)
+        }
+        return d
+    }
+
+    /// A Curves block ('curv'), version 4: each curve is its points as (input, output), 0 to 255.
+    public static func curves(_ curves: [[(input: UInt16, output: UInt16)]]) -> Data {
+        var d = be16(4) + be16(UInt16(curves.count))
+        for curve in curves {
+            d += be16(UInt16(curve.count))
+            for point in curve { d += be16(point.output) + be16(point.input) }   // output first
+        }
+        return d
+    }
+
+    /// A type layer's block ('TySh') holding these words.
+    public static func typeTool(_ words: String) -> Data {
+        var d = be16(1)
+        for v in [1.0, 0, 0, 1, 0, 0] { d += double(v) }
+        d += be16(50) + be32(16) + descriptor("TxLr", [("Txt ", "TEXT", unicode(words))])
+        d += be16(1) + be32(16) + descriptor("warp", [])
+        for v in [0.0, 0, 0, 0] { d += double(v) }
+        return d
     }
 }

@@ -11844,28 +11844,6 @@
         }
       }
     },
-    "It was a %@ adjustment layer. Adjustment layers are not read in this version, so it was left out.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det var ett justeringslager (%@). Justeringslager läses inte i den här versionen, så det lämnades utanför."
-          }
-        }
-      }
-    },
-    "It was a fill or shape layer (%@). Those are not read in this version, so it was left out.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det var ett fyllnings- eller formlager (%@). Sådana läses inte i den här versionen, så det lämnades utanför."
-          }
-        }
-      }
-    },
     "Its layer effects (shadows, strokes, glows) were not read.": {
       "extractionState": "manual",
       "localizations": {
@@ -11950,6 +11928,50 @@
           "stringUnit": {
             "state": "translated",
             "value": "Själva Photoshop-filen ändras inte. Det här är ett nytt Glimmer-dokument och rapporten sparas med det: Arkiv › Importrapport… visar den igen."
+          }
+        }
+      }
+    },
+    "It was text (“%@”) and is now pixels: the words can't be edited as text.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det var text (”%@”) och är nu pixlar: orden går inte att redigera som text."
+          }
+        }
+      }
+    },
+    "It is a Curves adjustment with the same points. Between the points the curve may run a little differently than in Photoshop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det är en kurvjustering med samma punkter. Mellan punkterna kan kurvan gå något annorlunda än i Photoshop."
+          }
+        }
+      }
+    },
+    "It was a %@ adjustment layer. That kind is not read in this version, so it was left out.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det var ett justeringslager (%@). Den sorten läses inte i den här versionen, så det lämnades utanför."
+          }
+        }
+      }
+    },
+    "It was a fill or shape layer (%@). That kind is not read in this version, so it was left out.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det var ett fyllnings- eller formlager (%@). Den sorten läses inte i den här versionen, så det lämnades utanför."
           }
         }
       }

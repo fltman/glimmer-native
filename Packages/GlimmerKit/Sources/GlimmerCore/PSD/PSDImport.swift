@@ -159,13 +159,21 @@ public enum PSDImport {
             report.notes.append(.init(.wasSmartObject, layer: source.name))
         }
         if keys.contains("TySh") || keys.contains("tySh") {
-            report.notes.append(.init(.wasText, layer: source.name))
+            report.notes.append(.init(.wasText, layer: source.name, detail: text(source)))
         }
     }
 
     /// A layer of pixels, or nil for a layer that has none and can't be drawn (it is named in the report).
     private static func pixelLayer(_ source: PSDFile.Layer, file: PSDFile, space: CGColorSpace, report: inout PSDImportReport) throws -> Layer? {
         let keys = Set(source.extraKeys)
+        if let settings = adjustment(source, report: &report) {
+            var layer = Layer(name: source.name, isVisible: source.isVisible, opacity: Double(source.opacity) / 255,
+                              blendMode: blendMode(source, isGroup: false, report: &report), isClipped: source.isClipped,
+                              content: .adjustment(settings))
+            layer.mask = mask(source)
+            return layer
+        }
+        if let fill = fillLayer(source, file: file, report: &report) { return fill }
         if let kind = keys.compactMap({ adjustments[$0] }).first {
             report.notes.append(.init(.adjustmentLeftOut, layer: source.name, detail: kind, changesLook: source.isVisible))
             return nil
@@ -187,6 +195,128 @@ public enum PSDImport {
             layer.content = .raster(try ImageImporter.tiles(from: image, origin: SIMD2(source.rect.left, source.rect.top)))
         }
         return layer
+    }
+
+    // MARK: Layers that are more than pixels
+
+    /// The words of a text layer, when its type block gives them readably (nil otherwise).
+    static func text(_ source: PSDFile.Layer) -> String? {
+        guard let block = source.blocks["TySh"] else { return nil }
+        var r = PSDBytes(block)
+        // Version, the six numbers of the transform, the text version and the descriptor's version come first.
+        guard (try? r.skip(2 + 48 + 2 + 4)) != nil else { return nil }
+        var budget = PSDDescriptor.maxItems
+        guard let data = try? PSDDescriptor.read(&r, budget: &budget) else { return nil }
+        for case .string(let words) in data.all where !words.isEmpty {
+            return String(words.replacingOccurrences(of: "\r", with: " ").prefix(200))
+        }
+        return nil
+    }
+
+    /// The adjustment layers whose data the specification lays out and whose arithmetic is the
+    /// same everywhere: Invert, Levels, and Curves (with a note: its points are the same, the
+    /// curve between them need not be).
+    static func adjustment(_ source: PSDFile.Layer, report: inout PSDImportReport) -> Adjustment? {
+        if source.extraKeys.contains("nvrt") { return Adjustment(.invert) }
+        if let block = source.blocks["levl"], let perChannel = levels(block) {
+            var result = Adjustment(.levels)
+            result.levels = perChannel
+            return result
+        }
+        if let block = source.blocks["curv"], let perChannel = curves(block) {
+            var result = Adjustment(.curves)
+            result.curves = perChannel
+            report.notes.append(.init(.curvesMayDiffer, layer: source.name))
+            return result
+        }
+        return nil
+    }
+
+    static let channels: [CurveChannel] = [.rgb, .red, .green, .blue]
+
+    /// Levels: version 2, then record sets of five shorts (input floor and ceiling, output
+    /// floor and ceiling, gamma × 100). The first is the master, the next three red, green, blue.
+    static func levels(_ block: Data) -> [CurveChannel: LevelsChannel]? {
+        var r = PSDBytes(block)
+        guard (try? r.u16()) == 2 else { return nil }
+        var result: [CurveChannel: LevelsChannel] = [:]
+        for channel in channels {
+            guard let inFloor = try? r.u16(), let inCeiling = try? r.u16(), let outFloor = try? r.u16(), let outCeiling = try? r.u16(), let gamma = try? r.u16(),
+                  inFloor <= 253, (2...255).contains(inCeiling), inFloor < inCeiling, outFloor <= 255, outCeiling <= 255, (10...999).contains(gamma) else { return nil }
+            result[channel] = LevelsChannel(inBlack: Double(inFloor) / 255, inWhite: Double(inCeiling) / 255, gamma: Double(gamma) / 100,
+                                            outBlack: Double(outFloor) / 255, outWhite: Double(outCeiling) / 255)
+        }
+        return result
+    }
+
+    /// Curves: version 1 (a bit map of which curves are there) or 4 (their count); each curve
+    /// is a count of 2 to 19 points, each point its output then its input, 0 to 255.
+    static func curves(_ block: Data) -> [CurveChannel: [CurvePoint]]? {
+        var r = PSDBytes(block)
+        // The block may begin with a padding byte before the version; the specification's file form starts at the version.
+        guard let version = try? r.u16(), version == 1 || version == 4, let second = try? r.u16() else { return nil }
+        let present: [Int] = version == 1 ? (0..<16).filter { second & (1 << $0) != 0 } : Array(0..<Int(second))
+        guard present.count <= 19 else { return nil }
+        var result: [CurveChannel: [CurvePoint]] = [:]
+        for index in present {
+            guard let count = try? r.u16(), (2...19).contains(count) else { return nil }
+            var points: [CurvePoint] = []
+            for _ in 0..<count {
+                guard let output = try? r.u16(), let input = try? r.u16(), output <= 255, input <= 255 else { return nil }
+                points.append(CurvePoint(Double(input) / 255, Double(output) / 255))
+            }
+            guard zip(points, points.dropFirst()).allSatisfy({ $0.x < $1.x }) else { return nil }
+            if index < channels.count { result[channels[index]] = points }
+        }
+        return result.isEmpty ? nil : result
+    }
+
+    /// A solid colour fill, with its vector mask when it is a shape: a real fill layer, editable.
+    static func fillLayer(_ source: PSDFile.Layer, file: PSDFile, report: inout PSDImportReport) -> Layer? {
+        guard let block = source.blocks["SoCo"] else { return nil }
+        var r = PSDBytes(block)
+        guard (try? r.skip(4)) != nil else { return nil }   // the version
+        var budget = PSDDescriptor.maxItems
+        guard let settings = try? PSDDescriptor.read(&r, budget: &budget), let fillColor = color(in: settings) else { return nil }
+        var layer = Layer(name: source.name, isVisible: source.isVisible, opacity: Double(source.opacity) / 255,
+                          blendMode: blendMode(source, isGroup: false, report: &report), isClipped: source.isClipped,
+                          content: .fill(.solid(fillColor)))
+        layer.mask = mask(source)
+        if let vector = source.blocks["vmsk"] ?? source.blocks["vsms"] {
+            var v = PSDBytes(vector)
+            // Version, then flags. The specification numbers the flags "bit 1 = invert, bit 2 = not
+            // link, bit 3 = disable"; read here as the three lowest bits in that order.
+            guard (try? v.skip(4)) != nil, let flags = try? v.u32() else { return nil }
+            let subpaths = PSDPath.subpaths(v.rest, width: file.header.width, height: file.header.height)
+            guard !subpaths.isEmpty, flags & 1 == 0 else {
+                // No outline that could be read, or an inverted one, which Glimmer's shapes don't have:
+                // the layer is left out, and the caller says so.
+                return nil
+            }
+            let path = VectorPath(name: source.name, subpaths: subpaths)
+            var shape = path.asSelection.asMask
+            shape.isEnabled = flags & 4 == 0
+            layer.mask = shape
+            layer.vectorMask = path
+        }
+        if !Set(source.extraKeys).isDisjoint(with: ["lfx2", "lrFX", "lmfx"]) {
+            report.notes.append(.init(.effectsNotRead, layer: source.name, changesLook: true))
+        }
+        return layer
+    }
+
+    /// The colour in a fill's settings: an object holding red, green and blue from 0 to 255.
+    /// The specification does not name the keys; red, green and blue are taken by the keys
+    /// other files use ("Rd  ", "Grn ", "Bl  ") when present, and otherwise in that order.
+    static func color(in settings: PSDValue) -> SRGBColor? {
+        for case .object(_, let items) in settings.all {
+            let numbers = items.compactMap { item in item.value.number.map { (item.key, $0) } }
+            guard numbers.count == 3, numbers.count == items.count, numbers.allSatisfy({ (0...255).contains($0.1) }) else { continue }
+            let named = Dictionary(numbers, uniquingKeysWith: { a, _ in a })
+            if let red = named["Rd  "], let green = named["Grn "], let blue = named["Bl  "] { return SRGBColor(red / 255, green / 255, blue / 255) }
+            return SRGBColor(numbers[0].1 / 255, numbers[1].1 / 255, numbers[2].1 / 255)
+        }
+        return nil
     }
 
     /// The layer's planes as one picture: colour (or gray) with its transparency, not premultiplied.

@@ -43,11 +43,11 @@ front; press 36
 # A file with things that don't come through.
 R=$(open_psd build/psd-samples/mixed.psd mixed)
 check "mixed.psd: Background and the group Heading with Title and Glow" '[[ "$(echo "$R" | field "[l[\"name\"] for l in d[\"layers\"]]")" == *Heading*Background* ]]'
-check "mixed.psd: 4 of 5 kept, the look may differ" '[[ "$(echo "$R" | field "d[\"importReport\"][\"layersInFile\"], d[\"importReport\"][\"layersKept\"], d[\"importReport\"][\"looksTheSame\"]")" == "5 4 False" ]]'
+check "mixed.psd: 6 of 7 kept, the look may differ" '[[ "$(echo "$R" | field "d[\"importReport\"][\"layersInFile\"], d[\"importReport\"][\"layersKept\"], d[\"importReport\"][\"looksTheSame\"]")" == "7 6 False" ]]'
 echo "$R" | field '"\n".join("    " + (n["layer"] or "-") + ": " + n["what"] for n in d["importReport"]["notes"])'
 sleep 1.5
 SEEN=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>&1)
-for line in "It was text and is now pixels: the words can't be edited as text." "It was a Levels adjustment layer. Adjustment layers are not read in this version, so it was left out." "The blend mode Lighter Color became Normal: Glimmer doesn't have it."; do
+for line in "It was text (“Summer Sale”) and is now pixels: the words can't be edited as text." "It was a Vibrance adjustment layer. That kind is not read in this version, so it was left out." "The blend mode Lighter Color became Normal: Glimmer doesn't have it."; do
   check "mixed.psd: the sheet says: $line" 'echo "$SEEN" | grep -qF "$line"'
 done
 check "mixed.psd: the sheet says how far the picture is from the file's" 'echo "$SEEN" | grep -q "Glimmer'"'"'s picture \(differs from\|matches\) the one saved in the file"'

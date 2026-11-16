@@ -22,10 +22,12 @@ extension PSDImportReport.Note {
     var localized: String {
         let detail = detail ?? ""
         return switch kind {
-        case .wasText: String(localized: "It was text and is now pixels: the words can't be edited as text.")
+        case .wasText: detail.isEmpty ? String(localized: "It was text and is now pixels: the words can't be edited as text.")
+                                      : String(localized: "It was text (“\(detail)”) and is now pixels: the words can't be edited as text.")
+        case .curvesMayDiffer: String(localized: "It is a Curves adjustment with the same points. Between the points the curve may run a little differently than in Photoshop.")
         case .wasSmartObject: String(localized: "It was a smart object and is now pixels. The file placed in it is not kept in this version.")
-        case .adjustmentLeftOut: String(localized: "It was a \(detail) adjustment layer. Adjustment layers are not read in this version, so it was left out.")
-        case .fillLeftOut: String(localized: "It was a fill or shape layer (\(detail)). Those are not read in this version, so it was left out.")
+        case .adjustmentLeftOut: String(localized: "It was a \(detail) adjustment layer. That kind is not read in this version, so it was left out.")
+        case .fillLeftOut: String(localized: "It was a fill or shape layer (\(detail)). That kind is not read in this version, so it was left out.")
         case .effectsNotRead: String(localized: "Its layer effects (shadows, strokes, glows) were not read.")
         case .vectorMaskNotRead: String(localized: "Its vector mask was not read; the layer's pixels are shown whole.")
         case .blendModeBecameNormal: String(localized: "The blend mode \(detail) became Normal: Glimmer doesn't have it.")

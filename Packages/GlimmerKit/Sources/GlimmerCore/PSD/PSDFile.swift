@@ -47,6 +47,8 @@ public struct PSDFile: Sendable {
         public var mask: Mask?
         /// The keys of the additional-information blocks the layer carries ("TySh", "SoLd", "lfx2" …).
         public var extraKeys: [String]
+        /// The bodies of the blocks Glimmer reads further (fills, vector masks, some adjustments, text), each of bounded size.
+        public var blocks: [String: Data] = [:]
         /// Decoded planes by channel id (0, 1, 2 = red, green, blue or 0 = gray; -1 = transparency),
         /// each `rect.width` × `rect.height` samples of `bytesPerSample` bytes, big-endian as in the file.
         public var planes: [Int: Data]
@@ -78,6 +80,9 @@ public struct PSDFile: Sendable {
             self.maxDecodedBytes = maxDecodedBytes
         }
     }
+
+    /// The additional-information blocks whose contents the import reads.
+    static let keptBlocks: Set<String> = ["SoCo", "vmsk", "vsms", "levl", "curv", "nvrt", "TySh"]
 
     /// The header alone: cheap, and enough to refuse a file before anything else is read.
     public static func readHeader(_ data: Data) throws -> Header {
@@ -209,6 +214,7 @@ public struct PSDFile: Sendable {
             var body = try extra.slice(length)
             if length % 2 == 1, extra.remaining > 0 { try extra.skip(1) }
             layer.extraKeys.append(key)
+            if Self.keptBlocks.contains(key), length <= 4 << 20 { layer.blocks[key] = body.rest }
             switch key {
             case "luni":
                 let units = Int(try body.u32())

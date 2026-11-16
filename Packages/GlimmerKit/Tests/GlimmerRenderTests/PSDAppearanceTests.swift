@@ -89,6 +89,50 @@ import PSDTestSupport
     }
 }
 
+/// Shapes and adjustment layers drawn by Glimmer, against what the same settings give by the book.
+@Suite struct PSDSettingsAppearanceTests {
+    static func withSettings(_ name: String, _ blocks: [(String, Data)], composite: (Int, Int) -> (Int, Int, Int)) -> Data {
+        var w = PSDAppearanceTests.writer(depth: 8, top: false, composite: composite)
+        var layer = PSDTestWriter.Layer(name: name, rect: PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0))
+        layer.extraBlocks = blocks
+        w.layers.append(layer)
+        return w.data()
+    }
+
+    @Test func aShapeLooksAsItsOutlineAndColourSay() throws {
+        let corners = [(x: 0.25, y: 0.25), (x: 0.75, y: 0.25), (x: 0.75, y: 0.75), (x: 0.25, y: 0.75)]
+        let data = Self.withSettings("Rectangle 1", [("SoCo", PSDTestWriter.solidColor(red: 255, green: 128, blue: 0)), ("vmsk", PSDTestWriter.vectorMask(corners))]) { x, y in
+            (2..<6).contains(x) && (2..<6).contains(y) ? (255, 128, 0) : PSDAppearanceTests.expected(x, y, top: false)
+        }
+        let (state, report) = try PSDImport.document(from: data, limits: PSDAppearanceTests.limits)
+        #expect(report.notes.isEmpty)
+        let difference = try #require(PSDAppearance.difference(of: state, from: data, context: try context()))
+        print("PSD appearance, a shape over a gradient: mean \(difference.mean), visibly different \(difference.shareVisible)")
+        #expect(difference.mean < 1 && difference.shareVisible == 0)
+    }
+
+    @Test func levelsAndInvertLookAsTheirArithmeticSays() throws {
+        func level(_ v: Int) -> Int { Int((pow(min(max(Double(v - 10) / 230, 0), 1), 1 / 1.2) * 255).rounded()) }
+        let levels = Self.withSettings("Levels 1", [("levl", PSDTestWriter.levels([(10, 240, 0, 255, 120)]))]) { x, y in
+            let (r, g, b) = PSDAppearanceTests.expected(x, y, top: false)
+            return (level(r), level(g), level(b))
+        }
+        let (a, _) = try PSDImport.document(from: levels, limits: PSDAppearanceTests.limits)
+        let first = try #require(PSDAppearance.difference(of: a, from: levels, context: try context()))
+        print("PSD appearance, Levels (10, 240, gamma 1.2): mean \(first.mean), visibly different \(first.shareVisible)")
+        #expect(first.mean < 1.5 && first.shareVisible == 0)
+
+        let invert = Self.withSettings("Invert 1", [("nvrt", Data())]) { x, y in
+            let (r, g, b) = PSDAppearanceTests.expected(x, y, top: false)
+            return (255 - r, 255 - g, 255 - b)
+        }
+        let (b, _) = try PSDImport.document(from: invert, limits: PSDAppearanceTests.limits)
+        let second = try #require(PSDAppearance.difference(of: b, from: invert, context: try context()))
+        print("PSD appearance, Invert: mean \(second.mean), visibly different \(second.shareVisible)")
+        #expect(second.mean < 1.5 && second.shareVisible == 0)
+    }
+}
+
 /// Writes sample Photoshop files for trying the import in the running app: GLIMMER_PSD_OUT=<folder>.
 @Suite(.enabled(if: ProcessInfo.processInfo.environment["GLIMMER_PSD_OUT"] != nil))
 struct PSDSampleFiles {

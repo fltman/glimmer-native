@@ -10,6 +10,7 @@ public struct PSDImportReport: Sendable, Equatable, Codable {
     public enum Kind: String, Sendable, Codable {
         case wasText, wasSmartObject, adjustmentLeftOut, fillLeftOut, effectsNotRead, vectorMaskNotRead
         case blendModeBecameNormal, pixelsIncomplete, groupEndMissing, groupRecordMissing, layersNotRead
+        case curvesMayDiffer
     }
 
     public struct Note: Sendable, Equatable, Codable {
@@ -57,10 +58,12 @@ extension PSDImportReport.Note {
     public var what: String {
         let detail = detail ?? ""
         return switch kind {
-        case .wasText: "It was text and is now pixels: the words can't be edited as text."
+        case .wasText: detail.isEmpty ? "It was text and is now pixels: the words can't be edited as text."
+                                      : "It was text (“\(detail)”) and is now pixels: the words can't be edited as text."
+        case .curvesMayDiffer: "It is a Curves adjustment with the same points. Between the points the curve may run a little differently than in Photoshop."
         case .wasSmartObject: "It was a smart object and is now pixels. The file placed in it is not kept in this version."
-        case .adjustmentLeftOut: "It was a \(detail) adjustment layer. Adjustment layers are not read in this version, so it was left out."
-        case .fillLeftOut: "It was a \(detail) fill or shape layer. Those are not read in this version, so it was left out."
+        case .adjustmentLeftOut: "It was a \(detail) adjustment layer. That kind is not read in this version, so it was left out."
+        case .fillLeftOut: "It was a \(detail) fill or shape layer. That kind is not read in this version, so it was left out."
         case .effectsNotRead: "Its layer effects (shadows, strokes, glows) were not read."
         case .vectorMaskNotRead: "Its vector mask was not read; the layer's pixels are shown whole."
         case .blendModeBecameNormal: "The blend mode \(detail) became Normal: Glimmer doesn't have it."

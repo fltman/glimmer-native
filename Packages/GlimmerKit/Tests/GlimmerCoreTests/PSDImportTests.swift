@@ -58,8 +58,8 @@ import PSDTestSupport
         #expect(report.layersInFile == 5 && report.layersKept == 3 && !report.looksTheSame)
         let said = report.notes.map { "\($0.layer ?? "-"): \($0.what)" }
         #expect(said == [
-            "Levels 1: It was a Levels adjustment layer. Adjustment layers are not read in this version, so it was left out.",
-            "Color Fill 1: It was a solid colour fill or shape layer. Those are not read in this version, so it was left out.",
+            "Levels 1: It was a Levels adjustment layer. That kind is not read in this version, so it was left out.",
+            "Color Fill 1: It was a solid colour fill or shape layer. That kind is not read in this version, so it was left out.",
             "Glow: The blend mode Lighter Color became Normal: Glimmer doesn't have it.",
             "Glow: Its layer effects (shadows, strokes, glows) were not read.",
             "Glow: It was a smart object and is now pixels. The file placed in it is not kept in this version.",
@@ -128,4 +128,86 @@ import PSDTestSupport
         let manifest = try #require(plain.fileWrappers?["manifest.json"]?.regularFileContents)
         #expect(!String(decoding: manifest, as: UTF8.self).contains("importReport"))
     }
+}
+
+/// Fills, shapes, the adjustment layers with documented data, and a text layer's words.
+@Suite struct PSDSettingsTests {
+    typealias L = PSDTestWriter.Layer
+    static let empty = PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0)
+    static func block(_ name: String, _ blocks: [(String, Data)]) -> L { var l = L(name: name, rect: empty); l.extraBlocks = blocks; return l }
+
+    @Test func aDescriptorIsReadAsTheSpecificationLaysItOut() throws {
+        let inner = PSDTestWriter.descriptor("RGBC", [("Rd  ", "doub", PSDTestWriter.double(255)), ("name with length", "TEXT", PSDTestWriter.unicode("Blå"))])
+        let list = PSDTestWriter.be32(2) + Data("long".utf8) + PSDTestWriter.be32(7) + Data("bool".utf8) + Data([1])
+        let unit = Data("#Pxl".utf8) + PSDTestWriter.double(12.5)
+        let enumerated = PSDTestWriter.id("Ornt") + PSDTestWriter.id("Hrzn")
+        let data = PSDTestWriter.descriptor("null", [("Clr ", "Objc", inner), ("List", "VlLs", list), ("Sz  ", "UntF", unit), ("Ornt", "enum", enumerated)])
+        let value = try PSDDescriptor.read(data)
+        #expect(value["Clr "]?["Rd  "] == .double(255) && value["Clr "]?["name with length"] == .string("Blå"))
+        #expect(value["List"] == .list([.integer(7), .boolean(true)]))
+        #expect(value["Sz  "] == .unitFloat(unit: "#Pxl", value: 12.5) && value["Ornt"] == .enumerated(type: "Ornt", value: "Hrzn"))
+        // Cut anywhere, or with a type nobody knows: an error, never a crash.
+        for length in 0..<data.count { #expect(throws: PSDFile.Problem.self) { _ = try PSDDescriptor.read(data.prefix(length)) } }
+        #expect(throws: PSDFile.Problem.self) { _ = try PSDDescriptor.read(PSDTestWriter.descriptor("null", [("x   ", "wxyz", Data([0, 0, 0, 0]))])) }
+        // A descriptor nested without end is refused by its depth.
+        var deep = PSDTestWriter.descriptor("leaf", [])
+        for _ in 0..<40 { deep = PSDTestWriter.descriptor("node", [("next", "Objc", deep)]) }
+        #expect(throws: PSDFile.Problem.self) { _ = try PSDDescriptor.read(deep) }
+    }
+
+    @Test func aShapeComesInAsARealFillLayerWithItsOutline() throws {
+        let corners = [(x: 0.25, y: 0.25), (x: 0.75, y: 0.25), (x: 0.75, y: 0.75), (x: 0.25, y: 0.75)]
+        let shape = Self.block("Rectangle 1", [("SoCo", PSDTestWriter.solidColor(red: 255, green: 128, blue: 0)), ("vmsk", PSDTestWriter.vectorMask(corners))])
+        let plain = Self.block("Color Fill 1", [("SoCo", PSDTestWriter.solidColor(red: 0, green: 0, blue: 255))])
+        var w = PSDTestWriter()
+        w.width = 8; w.height = 8
+        w.layers = [PSDImportTests.pixels("Photo"), plain, shape]
+        w.composite = Array(repeating: Array(repeating: 0, count: 64), count: 3)
+        let (state, report) = try PSDImport.document(from: w.data(), limits: PSDImportTests.limits)
+        #expect(state.layers.map(\.name) == ["Photo", "Color Fill 1", "Rectangle 1"] && report.notes.isEmpty && report.layersKept == 3)
+        #expect(state.layers[1].content.theFill == .solid(SRGBColor(0, 0, 1)) && state.layers[1].vectorMask == nil)
+        let rectangle = state.layers[2]
+        #expect(rectangle.content.theFill == .solid(SRGBColor(1, 128.0 / 255, 0)))
+        let anchors = try #require(rectangle.vectorMask?.subpaths.first).anchors.map(\.point)
+        #expect(anchors == [SIMD2(2, 2), SIMD2(6, 2), SIMD2(6, 6), SIMD2(2, 6)] && rectangle.vectorMask?.subpaths.first?.isClosed == true)
+        #expect(rectangle.mask?.tiles.isEmpty == false && rectangle.mask?.isEnabled == true)
+        // An inverted outline is something Glimmer's shapes don't have: left out, and said.
+        let inverted = Self.block("Hole", [("SoCo", PSDTestWriter.solidColor(red: 1, green: 2, blue: 3)), ("vmsk", PSDTestWriter.vectorMask(corners, flags: 1))])
+        w.layers = [PSDImportTests.pixels("Photo"), inverted]
+        let (other, second) = try PSDImport.document(from: w.data(), limits: PSDImportTests.limits)
+        #expect(other.layers.map(\.name) == ["Photo"] && second.notes.map(\.kind) == [.fillLeftOut])
+    }
+
+    @Test func invertLevelsAndCurvesComeInAsAdjustmentLayers() throws {
+        let levels = Self.block("Levels 1", [("levl", PSDTestWriter.levels([(10, 240, 0, 255, 120), (0, 255, 20, 235, 100)]))])
+        let curves = Self.block("Curves 1", [("curv", PSDTestWriter.curves([[(0, 0), (128, 160), (255, 255)]]))])
+        let invert = Self.block("Invert 1", [("nvrt", Data())])
+        let vibrance = Self.block("Vibrance 1", [("vibA", Data([0, 0, 0, 16]))])
+        let (state, report) = try PSDImport.document(from: PSDImportTests.file([PSDImportTests.pixels("Photo"), levels, curves, invert, vibrance]), limits: PSDImportTests.limits)
+        #expect(state.layers.map(\.name) == ["Photo", "Levels 1", "Curves 1", "Invert 1"])
+        let l = try #require(state.layers[1].content.theAdjustment)
+        #expect(l.kind == .levels && l.levels[.rgb] == LevelsChannel(inBlack: 10.0 / 255, inWhite: 240.0 / 255, gamma: 1.2, outBlack: 0, outWhite: 1))
+        #expect(l.levels[.red] == LevelsChannel(inBlack: 0, inWhite: 1, gamma: 1, outBlack: 20.0 / 255, outWhite: 235.0 / 255) && l.levels[.blue] == LevelsChannel())
+        let c = try #require(state.layers[2].content.theAdjustment)
+        #expect(c.kind == .curves && c.curves[.rgb] == [CurvePoint(0, 0), CurvePoint(128.0 / 255, 160.0 / 255), CurvePoint(1, 1)])
+        #expect(state.layers[3].content.theAdjustment?.kind == .invert)
+        #expect(report.notes.map(\.kind) == [.curvesMayDiffer, .adjustmentLeftOut] && report.notes[1].detail == "Vibrance")
+        // Settings outside what the specification allows are not guessed at: the layer is left out and named.
+        let bad = Self.block("Levels 2", [("levl", PSDTestWriter.levels([(250, 10, 0, 255, 100)]))])
+        let (_, second) = try PSDImport.document(from: PSDImportTests.file([PSDImportTests.pixels("Photo"), bad]), limits: PSDImportTests.limits)
+        #expect(second.notes.map(\.kind) == [.adjustmentLeftOut])
+    }
+
+    @Test func aTextLayersWordsAreInTheReport() throws {
+        var title = PSDImportTests.pixels("Title")
+        title.extraBlocks = [("TySh", PSDTestWriter.typeTool("Hello world"))]
+        let (_, report) = try PSDImport.document(from: PSDImportTests.file([title]), limits: PSDImportTests.limits)
+        #expect(report.notes == [.init(.wasText, layer: "Title", detail: "Hello world")])
+        #expect(report.notes[0].what == "It was text (“Hello world”) and is now pixels: the words can't be edited as text.")
+    }
+}
+
+private extension LayerContent {
+    var theFill: Fill? { if case .fill(let f) = self { f } else { nil } }
+    var theAdjustment: Adjustment? { if case .adjustment(let a) = self { a } else { nil } }
 }
