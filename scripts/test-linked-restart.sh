@@ -25,6 +25,8 @@ if [[ "${GLIMMER_HOLDS_GUI_LOCK:-}" != 1 ]]; then
 fi
 [[ "$(cat /tmp/gui-test.lock/owner 2>/dev/null)" == glimmer ]] || { echo "Not holding the GUI lock; not starting."; exit 75; }
 MENU="$TOOLS/safemenu/safemenu"
+HANDOVER="$PWD/build/handover"
+xcrun swiftc -O -o "$HANDOVER" scripts/handover.swift 2>/dev/null || { echo "Couldn't build scripts/handover.swift"; exit 1; }
 zmodload zsh/datetime
 
 fails=0
@@ -51,10 +53,16 @@ clean() {
   done
   return 0
 }
-start() {  # sets PID and PORT
+start() {  # sets PID and PORT; with a file: a cold start for that file
   local before=" $(running | tr '\n' ' ') "
   PID=""; PORT=""
-  env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -ApplePersistenceIgnoreState NO -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer
+  if [[ -n "${1:-}" ]]; then
+    # Cold start by a sibling handing a file over: Glimmer itself then restores no windows.
+    # (Through NSWorkspace, as a sibling does: `open -n app file --args …` doesn't deliver the file as an open event.)
+    env -u OPENROUTER_API_KEY "$HANDOVER" "$APP" "$1" -skipWelcome -skipAgentSplash -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer || exit 1
+  else
+    env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -ApplePersistenceIgnoreState NO -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer
+  fi
   for _ in {1..80}; do
     if [[ -z "$PID" ]]; then for p in $(running); do [[ "$before" != *" $p "* ]] && PID=$p; done; fi
     if [[ -n "$PID" ]]; then
@@ -80,6 +88,8 @@ for d in json.load(sys.stdin)["documents"]:
     print("%s|%s|%s|%s" % (d["name"], "-" if not l else l.get("available"), "-" if not l else l.get("requester"), d["id"]))'; }
 linked() { docs | grep "^photo.png|True|Flimmer|" | head -1; }
 edit() { curl -s -o /dev/null --max-time 60 -H 'X-Glimmer-Agent: 1' -H 'Content-Type: application/json' -X POST "$B/documents/$1/steps" -d "{\"steps\":[{\"op\":\"add_text\",\"params\":{\"text\":\"$2\",\"position\":\"$3\"}}]}"; }
+layers() { curl -s --max-time 10 $B/documents/$1 | python3 -c 'import sys,json;print(len(json.load(sys.stdin)["document"]["layers"]))'; }
+killit() { kill -TERM $PID; for _ in {1..40}; do kill -0 $PID 2>/dev/null || break; sleep 0.25; done; }
 stamp() { stat -f '%m:%z:%i' "$FILE"; }
 saveback() {  # presses Save Back and waits for the file to change
   local before=$(stamp)
@@ -128,6 +138,34 @@ kill -TERM $PID; for _ in {1..40}; do kill -0 $PID 2>/dev/null || break; sleep 0
 start
 L=$(linked); ID=${L##*|}
 check "after being killed the window is back and linked: $(docs | tr '\n' ' ')" '[[ -n "$L" ]]'
+check "Save Back writes the file" 'saveback'
+
+echo "== killed with an unsaved edit, then the same file is handed over again, cold"
+N=$(layers $ID)
+edit $ID "Cold" bottom
+echo "   waiting 50 s for autosave"; sleep 50
+killit
+start "$FILE"; sleep 2
+L=$(linked); ID=${L##*|}
+check "one linked window for the file: $(docs | tr '\n' ' ')" '[[ -n "$L" && $(docs | grep -c "^photo.png|") == 1 ]]'
+[[ -n "$ID" ]] || { echo "no linked document; stopping"; stop; exit 1; }
+check "it is the kept document with the unsaved edit ($(layers $ID) layers, $N before the edit)" '[[ $(layers $ID) == $((N + 1)) ]]'
+check "Save Back writes the file" 'saveback'
+
+echo "== killed with an unsaved edit, another file handed over cold, then a normal launch"
+N=$(layers $ID)
+edit $ID "Later" top
+echo "   waiting 50 s for autosave"; sleep 50
+killit
+cp site/source-images/mug.png "$DIR/other.png"
+start "$DIR/other.png"; sleep 2
+check "the other file is linked and the first one's window is not opened: $(docs | tr '\n' ' ')" '[[ $(docs | grep -c "^other.png|True|Flimmer|") == 1 && $(docs | grep -c "^photo.png|") == 0 ]]'
+check "Glimmer quits from its menu" 'quit'
+start
+L=$(linked); ID=${L##*|}
+check "at the next normal launch the first file's window is back, linked: $(docs | tr '\n' ' ')" '[[ -n "$L" && $(docs | grep -c "^photo.png|") == 1 ]]'
+[[ -n "$ID" ]] || { echo "no linked document; stopping"; stop; exit 1; }
+check "with its unsaved edit ($(layers $ID) layers, $N before the edit)" '[[ $(layers $ID) == $((N + 1)) ]]'
 check "Save Back writes the file" 'saveback'
 
 echo "== the file is renamed while Glimmer is closed, relaunch"

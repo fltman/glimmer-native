@@ -131,8 +131,60 @@ final class DocumentOpener {
                 // The file is already being edited here (perhaps in a window restored after a
                 // restart): show that window with its work, rather than a second one of the same file.
                 bringForward(existing)
+            } else if requester != nil, let kept = Self.keptLinkedDocument(for: url) {
+                // Glimmer quit or crashed while this file was being edited, and the window was not
+                // restored in this launch (a launch for a sibling restores none): open the kept
+                // document, with its layers and unsaved work, instead of the file as it is on disk.
+                openLog.notice("reopening the kept linked document for \(url.lastPathComponent, privacy: .public)")
+                NSDocumentController.shared.reopenDocument(for: nil, withContentsOf: kept, display: true) { [weak self] _, _, error in
+                    MainActor.assumeIsolated {
+                        if let error {
+                            openLog.error("couldn't reopen the kept document: \(error.localizedDescription, privacy: .public)")
+                            self?.openImage(url, link: requester.flatMap { LinkedImage(url: url, requester: $0) })
+                            return
+                        }
+                        self?.bringForwardLinked(url, attempt: 0)
+                    }
+                }
             } else {
                 openImage(url, link: requester.flatMap { LinkedImage(url: url, requester: $0) })
+            }
+        }
+    }
+
+    /// The untitled document the system kept (for restoring windows) that is a linked edit of
+    /// `file` and isn't open now, if there is one.
+    static func keptLinkedDocument(for file: URL) -> URL? {
+        guard let folder = try? FileManager.default.url(for: .autosavedInformationDirectory, in: .userDomainMask, appropriateFor: nil, create: false),
+              let items = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey]) else { return nil }
+        let wanted = file.resolvingSymlinksInPath().path
+        let open = Set(NSDocumentController.shared.documents.compactMap { $0.autosavedContentsFileURL?.resolvingSymlinksInPath().path })
+        var best: (url: URL, date: Date)?
+        for item in items where item.pathExtension == "glimmer" && !open.contains(item.resolvingSymlinksInPath().path) {
+            guard let data = try? Data(contentsOf: item.appendingPathComponent(GlimmerPackage.manifestFilename)),
+                  let link = (try? JSONDecoder().decode(DocumentManifest.self, from: data))?.link else { continue }
+            var path = URL(fileURLWithPath: link.path).resolvingSymlinksInPath().path
+            if path != wanted, let bookmark = link.bookmark {
+                var stale = false
+                if let resolved = try? URL(resolvingBookmarkData: bookmark, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &stale) {
+                    path = resolved.resolvingSymlinksInPath().path
+                }
+            }
+            guard path == wanted else { continue }
+            let date = (try? item.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
+            if best == nil || date > best!.date { best = (item, date) }
+        }
+        return best?.url
+    }
+
+    /// Brings the window that edits `file` to the front once it is there and linked.
+    private func bringForwardLinked(_ file: URL, attempt: Int) {
+        let wanted = file.resolvingSymlinksInPath().path
+        if let session = AgentRegistry.shared.sessions.first(where: { $0.linkedImage?.url.resolvingSymlinksInPath().path == wanted }) {
+            bringForward(session)
+        } else if attempt < 50 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                MainActor.assumeIsolated { self?.bringForwardLinked(file, attempt: attempt + 1) }
             }
         }
     }
