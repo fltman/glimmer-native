@@ -66,6 +66,11 @@ extension ChatAdapterTests {
         let half = LocalModelEvaluation.cases[9]
         #expect(LocalModelEvaluation.judge(plan([("resize_image", ["scale": .number(0.5)])]), half))
         #expect(!LocalModelEvaluation.judge(plan([("resize_image", ["scale": .number(2)])]), half))
+        // The test document is 2400 × 1600: half of it is also a width of 1200, a height of 800, or both.
+        #expect(LocalModelEvaluation.judge(plan([("resize_image", ["width": .number(1200)])]), half))
+        #expect(LocalModelEvaluation.judge(plan([("resize_image", ["width": .number(1200), "height": .number(800)])]), half))
+        #expect(!LocalModelEvaluation.judge(plan([("resize_image", ["width": .number(600)])]), half))
+        #expect(!LocalModelEvaluation.judge(plan([("resize_image", ["width": .number(1200), "height": .number(1600)])]), half))
     }
 
     @Test func aModelThatAnswersRightPassesAndASlowOrWrongOneDoesNot() async {

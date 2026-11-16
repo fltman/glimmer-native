@@ -98,4 +98,16 @@ Local model, measured with `LocalModelEvaluation` (twelve everyday requests, six
 | `qwen3:8b` | 10 of 12 | 6 of 6 | 4 of 6 | 4.3 s | 20.4 s | does not pass (the rule: 10 of 12, 5 of 6 in each language, none over 60 s) |
 | `gemma3:4b` | not run | | | | | Ollama lists it without tools |
 
-The two misses were both Swedish: "Gör bilden svartvit" got an adjustment without its type, and "Gör bilden hälften så stor" got a fixed width instead of a scale. With every operation as a tool and Ollama's default 4096-token context, the same model had taken two to seven minutes per request and got one of three right. So Ollama stays hidden. Run it again with `GLIMMER_LOCAL_EVAL=<model> swift test --filter evaluateInstalledModels`.
+The two misses were both Swedish: "Gör bilden svartvit" got an adjustment without its type, and "Gör bilden hälften så stor" got `width: 1200`. The second was the test's mistake, not the model's: the test document is 2400 × 1600, so a width of 1200 is half the size. The case now accepts that (and `height: 800`, or both), and only those.
+
+With the corrected case, three more runs of `qwen3:8b` (reasoning off, as before):
+
+| Run | Right | English | Swedish | Median | Slowest | Verdict |
+|---|---|---|---|---|---|---|
+| 1 | 11 of 12 | 6 of 6 | 5 of 6 | 3.9 s | 9.2 s | passes |
+| 2 | 11 of 12 | 6 of 6 | 5 of 6 | 3.1 s | 17.5 s | passes |
+| 3 | 12 of 12 | 6 of 6 | 6 of 6 | 6.4 s | 65.0 s | does not pass (one answer over 60 s; a GUI test was running on the Mac at the time) |
+
+With reasoning on (`think: true`), one run before the correction: 11 of 12 as judged then, median 23.7 s, slowest 65.3 s. Slower for no clear gain, so reasoning stays off.
+
+So the model sits at the line: right often enough, and the one miss that repeats is "Gör bilden svartvit" answered with an adjustment that lacks its type. Whether Ollama is shown is the coordinator's and Anders's call; until then it is hidden. With every operation as a tool and Ollama's default 4096-token context, the same model had taken two to seven minutes per request and got one of three right. Run it again with `GLIMMER_LOCAL_EVAL=<model> swift test --filter evaluateInstalledModels` (`GLIMMER_LOCAL_EVAL_THINK=1` turns reasoning on).

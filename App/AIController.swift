@@ -102,7 +102,9 @@ final class AIController {
     static func chosenTextModel(for provider: AIProvider) -> (id: String, tools: Bool?, vision: Bool?) {
         let d = UserDefaults.standard, key = textModelKey(provider.slug)
         let id = d.string(forKey: key) ?? (provider.slug == "openrouter" ? AIDefaults.textModel : "")
-        return (id, d.object(forKey: key + ".tools") as? Bool, d.object(forKey: key + ".vision") as? Bool)
+        // `bool(forKey:)` also reads a value given as a launch argument ("NO"); nil means the list didn't say.
+        func flag(_ name: String) -> Bool? { d.object(forKey: key + name) == nil ? nil : d.bool(forKey: key + name) }
+        return (id, flag(".tools"), flag(".vision"))
     }
 
     struct TextSetupError: LocalizedError { let errorDescription: String? }

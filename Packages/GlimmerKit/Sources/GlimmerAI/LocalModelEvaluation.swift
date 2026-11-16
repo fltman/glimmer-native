@@ -11,6 +11,9 @@ public enum LocalModelEvaluation {
         /// The operation that answers it, and parameter values that must be there (as text; numbers within 1 %).
         public let op: String
         public let params: [String: String]
+        /// Other parameter sets that give the same result (half the size of the 2400 × 1600 test
+        /// document is `scale: 0.5`, and it is also `width: 1200`).
+        public var alternatives: [[String: String]] = []
     }
 
     public static let cases: [Case] = [
@@ -23,7 +26,8 @@ public enum LocalModelEvaluation {
         Case(goal: "Add the text Hello at the top", language: "en", op: "add_text", params: ["text": "Hello", "position": "top"]),
         Case(goal: "Lägg till texten Hej längst ner", language: "sv", op: "add_text", params: ["text": "Hej", "position": "bottom"]),
         Case(goal: "Improve the photo automatically", language: "en", op: "auto_enhance", params: [:]),
-        Case(goal: "Gör bilden hälften så stor", language: "sv", op: "resize_image", params: ["scale": "0.5"]),
+        Case(goal: "Gör bilden hälften så stor", language: "sv", op: "resize_image", params: ["scale": "0.5"],
+             alternatives: [["width": "1200"], ["height": "800"], ["width": "1200", "height": "800"]]),
         Case(goal: "Make the layer half transparent", language: "en", op: "set_layer", params: ["opacity": "0.5"]),
         Case(goal: "Markera motivet", language: "sv", op: "select_subject", params: [:]),
     ]
@@ -66,14 +70,19 @@ public enum LocalModelEvaluation {
             let known = Set(op.params.map(\.name) + ["rationale"])
             if !Set(s.params.keys).isSubset(of: known) { return false }
         }
-        for (key, want) in test.params {
-            if let number = Double(want), let got = step.number(key) {
-                if abs(got - number) > max(0.01, abs(number) * 0.01) { return false }
-            } else if step.string(key)?.caseInsensitiveCompare(want) != .orderedSame {
-                return false
+        func has(_ wanted: [String: String]) -> Bool {
+            for (key, want) in wanted {
+                if let number = Double(want), let got = step.number(key) {
+                    if abs(got - number) > max(0.01, abs(number) * 0.01) { return false }
+                } else if step.string(key)?.caseInsensitiveCompare(want) != .orderedSame {
+                    return false
+                }
             }
+            return true
         }
-        return true
+        // An alternative must be met exactly: no other sizing parameter beside it.
+        let given = Set(step.params.keys).subtracting(["rationale"])
+        return has(test.params) || test.alternatives.contains { has($0) && given == Set($0.keys) }
     }
 
     public static func run(_ model: any TextModel, cases: [Case] = cases, progress: (@Sendable (Outcome) -> Void)? = nil) async -> Report {
