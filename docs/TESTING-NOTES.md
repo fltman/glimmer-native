@@ -693,3 +693,18 @@ What can be said: the file itself costs about 2 s (four runs across two sessions
 **Decided for the 50-megapixel draft (coordinator, 2026-11-16):** the true picture keeps following once or twice a second, and the sheet says it once it has seen it: when a draft after the first takes more than a tenth of a second, a line under the picture reads "A large file: the picture follows the controls a moment behind. What it shows when it has caught up is what you get." No smaller or approximate draft, and no drawing only on release: a picture that jumps when the control is let go is worse than one that is a moment behind. The manual already says the same.
 
 **One heavy build at a time.** The gate, `scripts/test.sh`, `scripts/test-performance.sh`, `scripts/release.sh` and the release build inside the offline test take the series' build lock around themselves (`scripts/with-build-lock.sh`; build lock first, then the GUI lock, then the model lock).
+
+## The first real call: Berget, by Anders (2026-11-16, evening)
+
+Anders saved his own Berget key in Settings › AI of the debug build (started without an OpenRouter key in its environment) and pressed **Run Glimmer's Test of This Model…**. What the app showed afterwards was read from its Settings window through the accessibility API (kept in `build/trial-berget-glm53flash.txt`).
+
+**zai-org/GLM-5.3-Flash through Berget: 16 of 18** (English 9 of 10, Swedish 7 of 8), median 3.8 s, slowest 9.5 s: passes. Known gap 0 of 1. Berget's answers carry no cost; the cost is on Berget's usage page (not read).
+
+- All twelve requests for an edit gave the right step in both languages, and the three that must change nothing (a poem, a joke, thanks) changed nothing.
+- The two that failed are the two questions to answer in words, and both failed on Glimmer's own check for figures, not on a wrong answer: "How big is this document, in pixels?" (figures 3 and 2 taken out) and "Hur många lager har dokumentet och vad kostar det att förstora det?" (figures 2 and 4 taken out). What the person would have seen is Glimmer's own sentence or the model's with the figure's sentence removed.
+- The same check took figures out of three answers that passed: 1350 beside a crop to 16:9 (2400 × 1350 is that crop; it was labelled a price), and 1200 and 800 beside "half as large" (half of 2400 × 1600). Only the removed figures are shown, not the model's sentences, so that these were correct arithmetic or values from the operations' own descriptions (2× and 4× for upscaling) is a reading, not a certainty. If it is right, the check is removing true figures that a capable model works out or reads from the tool list, which the local model never did.
+- The known gap: the model answered "No — generating a new image … costs money", which is right; the crude judge does not accept its wording. As before, not counted.
+
+What only Anders saw: the first-use notice, whether macOS's Passwords suggestion appeared over the key field, and whether the key was still there on reopening Settings. Asked about the three, his answer was "verkar funka". He has not said in so many words that the notice's text is approved.
+
+Not done in this run: the three RAW requests (they are not among the nineteen the button sends), any other service, any picture service.
