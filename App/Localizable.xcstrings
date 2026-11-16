@@ -11107,17 +11107,6 @@
         }
       }
     },
-    "%1$@'s list: %2$@. %3$@ bills you for what you use.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@s lista: %2$@. %3$@ fakturerar dig för det du använder."
-          }
-        }
-      }
-    },
     "Billed by %@ at their rates.": {
       "extractionState": "manual",
       "localizations": {
@@ -11129,17 +11118,6 @@
         }
       }
     },
-    "%1$@ no longer lists %2$@. Choose another model.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ har inte längre %2$@ i sin lista. Välj en annan modell."
-          }
-        }
-      }
-    },
     "Choose a %@ model in Settings › AI.": {
       "extractionState": "manual",
       "localizations": {
@@ -11147,17 +11125,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Välj en modell för %@ i Inställningar › AI."
-          }
-        }
-      }
-    },
-    "%1$@ lists %2$@ as a model without tool calls, and the Assistant works by calling Glimmer's tools. Choose another model in Settings › AI.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ anger att %2$@ saknar verktygsanrop, och assistenten arbetar genom att anropa Glimmers verktyg. Välj en annan modell i Inställningar › AI."
           }
         }
       }
@@ -11206,17 +11173,6 @@
         }
       }
     },
-    "%1$@ lists %2$@ as a model without picture input, and this needs to see your document. Nothing was sent. Choose a model that takes pictures in Settings › AI.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ anger att %2$@ saknar bildinmatning, och det här kräver att modellen ser ditt dokument. Inget skickades. Välj en modell som tar emot bilder i Inställningar › AI."
-          }
-        }
-      }
-    },
     "Send this to %@?": {
       "extractionState": "manual",
       "localizations": {
@@ -11239,28 +11195,6 @@
         }
       }
     },
-    "The Assistant sends what you typed, the list of Glimmer's operations, a description of your document (its size and layers) and a small picture of it to %1$@ (%2$@).": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Assistenten skickar det du skrev, listan över Glimmers operationer, en beskrivning av ditt dokument (storlek och lager) och en liten bild av det till %1$@ (%2$@)."
-          }
-        }
-      }
-    },
-    "The Assistant sends what you typed, the list of Glimmer's operations and a description of your document (its size and layers) to %1$@ (%2$@). The chosen model takes no pictures, so none is sent.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Assistenten skickar det du skrev, listan över Glimmers operationer och en beskrivning av ditt dokument (storlek och lager) till %1$@ (%2$@). Den valda modellen tar inte emot bilder, så ingen bild skickas."
-          }
-        }
-      }
-    },
     "Suggest Edits and Find Distractions send a picture of the document too.": {
       "extractionState": "manual",
       "localizations": {
@@ -11268,17 +11202,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Föreslå ändringar och Hitta störande inslag skickar också en bild av dokumentet."
-          }
-        }
-      }
-    },
-    "%1$@ says it processes this in %2$@.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ uppger att bearbetningen sker i %2$@."
           }
         }
       }
@@ -11378,17 +11301,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingen av modellerna som är installerade i %@ har verktygsanrop, vilket assistenten behöver."
-          }
-        }
-      }
-    },
-    "%1$@ takes about %2$@ of memory while it runs.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ tar ungefär %2$@ minne medan den körs."
           }
         }
       }
@@ -11569,17 +11481,6 @@
         }
       }
     },
-    "Generate, Edit with Prompt, Generative Fill and the other picture features send your prompt and the pictures they work on (the document or the selected part of it, and any reference pictures) to %1$@ (%2$@).": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Generera, Redigera med prompt, Generativ fyllning och de andra bildfunktionerna skickar din prompt och bilderna de arbetar med (dokumentet eller den markerade delen av det, och eventuella referensbilder) till %1$@ (%2$@)."
-          }
-        }
-      }
-    },
     "%@ bills your key for each picture.": {
       "extractionState": "manual",
       "localizations": {
@@ -11587,17 +11488,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ debiterar din nyckel för varje bild."
-          }
-        }
-      }
-    },
-    "Billed by %1$@ at their rates. Glimmer shows no cost for these pictures, because %2$@'s answers carry none.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Debiteras av %1$@ enligt deras priser. Glimmer visar ingen kostnad för de här bilderna, eftersom svaren från %2$@ inte innehåller någon."
           }
         }
       }
@@ -11756,28 +11646,6 @@
         }
       }
     },
-    "Everything came through: %1$lld layers, %2$lld of them groups (%3$@).": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allt kom med: %1$lld lager, varav %2$lld grupper (%3$@)."
-          }
-        }
-      }
-    },
-    "%1$lld of %2$lld layers came through as layers (%3$@). These things did not come through as they were:": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld av %2$lld lager kom med som lager (%3$@). Det här kom inte med som det var:"
-          }
-        }
-      }
-    },
     "Glimmer's picture matches the one saved in the file.": {
       "extractionState": "manual",
       "localizations": {
@@ -11785,17 +11653,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Glimmers bild stämmer med den som är sparad i filen."
-          }
-        }
-      }
-    },
-    "Glimmer's picture differs from the one saved in the file: %1$@ %% of the pixels visibly, %2$@ of 255 on average.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Glimmers bild skiljer sig från den som är sparad i filen: %1$@ %% av pixlarna synligt, %2$@ av 255 i genomsnitt."
           }
         }
       }
@@ -12115,17 +11972,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld lager och grupper skrivs. Det här skrivs inte som det är:"
-          }
-        }
-      }
-    },
-    "Measured on this document: blended as other programs do, the layers differ from what you see here on %1$@ %% of the pixels visibly, %2$@ of 255 on average.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mätt på det här dokumentet: blandade som andra program gör skiljer sig lagren från det du ser här på %1$@ %% av pixlarna synligt, %2$@ av 255 i genomsnitt."
           }
         }
       }
@@ -12610,6 +12456,171 @@
           "stringUnit": {
             "state": "translated",
             "value": "Exakt ordalydelse"
+          }
+        }
+      }
+    },
+    "%@'s list: %@. %@ bills you for what you use.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@s lista: %2$@. %3$@ fakturerar dig för det du använder."
+          }
+        }
+      }
+    },
+    "%@ no longer lists %@. Choose another model.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ har inte längre %2$@ i sin lista. Välj en annan modell."
+          }
+        }
+      }
+    },
+    "%@ lists %@ as a model without tool calls, and the Assistant works by calling Glimmer's tools. Choose another model in Settings › AI.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ anger att %2$@ saknar verktygsanrop, och assistenten arbetar genom att anropa Glimmers verktyg. Välj en annan modell i Inställningar › AI."
+          }
+        }
+      }
+    },
+    "%@ lists %@ as a model without picture input, and this needs to see your document. Nothing was sent. Choose a model that takes pictures in Settings › AI.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ anger att %2$@ saknar bildinmatning, och det här kräver att modellen ser ditt dokument. Inget skickades. Välj en modell som tar emot bilder i Inställningar › AI."
+          }
+        }
+      }
+    },
+    "The Assistant sends what you typed, the list of Glimmer's operations, a description of your document (its size and layers) and a small picture of it to %@ (%@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistenten skickar det du skrev, listan över Glimmers operationer, en beskrivning av ditt dokument (storlek och lager) och en liten bild av det till %1$@ (%2$@)."
+          }
+        }
+      }
+    },
+    "The Assistant sends what you typed, the list of Glimmer's operations and a description of your document (its size and layers) to %@ (%@). The chosen model takes no pictures, so none is sent.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistenten skickar det du skrev, listan över Glimmers operationer och en beskrivning av ditt dokument (storlek och lager) till %1$@ (%2$@). Den valda modellen tar inte emot bilder, så ingen bild skickas."
+          }
+        }
+      }
+    },
+    "%@ says it processes this in %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ uppger att bearbetningen sker i %2$@."
+          }
+        }
+      }
+    },
+    "%@ takes about %@ of memory while it runs.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ tar ungefär %2$@ minne medan den körs."
+          }
+        }
+      }
+    },
+    "Generate, Edit with Prompt, Generative Fill and the other picture features send your prompt and the pictures they work on (the document or the selected part of it, and any reference pictures) to %@ (%@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Generera, Redigera med prompt, Generativ fyllning och de andra bildfunktionerna skickar din prompt och bilderna de arbetar med (dokumentet eller den markerade delen av det, och eventuella referensbilder) till %1$@ (%2$@)."
+          }
+        }
+      }
+    },
+    "Billed by %@ at their rates. Glimmer shows no cost for these pictures, because %@'s answers carry none.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debiteras av %1$@ enligt deras priser. Glimmer visar ingen kostnad för de här bilderna, eftersom svaren från %2$@ inte innehåller någon."
+          }
+        }
+      }
+    },
+    "Everything came through: %lld layers, %lld of them groups (%@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allt kom med: %1$lld lager, varav %2$lld grupper (%3$@)."
+          }
+        }
+      }
+    },
+    "%lld of %lld layers came through as layers (%@). These things did not come through as they were:": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld av %2$lld lager kom med som lager (%3$@). Det här kom inte med som det var:"
+          }
+        }
+      }
+    },
+    "Glimmer's picture differs from the one saved in the file: %@ %% of the pixels visibly, %@ of 255 on average.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmers bild skiljer sig från den som är sparad i filen: %1$@ %% av pixlarna synligt, %2$@ av 255 i genomsnitt."
+          }
+        }
+      }
+    },
+    "Measured on this document: blended as other programs do, the layers differ from what you see here on %@ %% of the pixels visibly, %@ of 255 on average.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mätt på det här dokumentet: blandade som andra program gör skiljer sig lagren från det du ser här på %1$@ %% av pixlarna synligt, %2$@ av 255 i genomsnitt."
+          }
+        }
+      }
+    },
+    "The agent API's own message, in English:": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agent-API:ts eget meddelande, på engelska:"
           }
         }
       }

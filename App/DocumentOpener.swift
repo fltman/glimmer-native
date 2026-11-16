@@ -342,7 +342,7 @@ final class DocumentOpener {
             return nil
         }
         openLog.notice("open from \(app.bundleIdentifier ?? "?", privacy: .public) (pid \(app.processIdentifier))")
-        if let sibling = SiblingApp.allCases.first(where: { $0.bundleID == app.bundleIdentifier }) { return sibling.displayName }
+        if let sibling = SiblingApp.allCases.first(where: { $0.accepts(bundleID: app.bundleIdentifier) }) { return sibling.displayName }
         #if DEBUG
         // Tests send from helper apps with their own bundle ids: com.brattoo.glimmer.linktester…
         // (a sandboxed helper can't pass launch arguments), or `-linkSenderIDs <id>[,<id>…]`.

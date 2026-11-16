@@ -175,6 +175,9 @@ private struct AssistantView: View {
                     if let plan = message.plan { PlanView(ai: ai, messageID: message.id, plan: plan) }
                     if let exact = message.exactWords {
                         DisclosureGroup("Exact words") {
+                            // Said in the person's language, so the English below reads as what it is.
+                            Text("The agent API's own message, in English:").font(.caption).foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             Text(verbatim: exact).font(.caption.monospaced()).foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
                         }

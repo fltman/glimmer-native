@@ -9,7 +9,9 @@ import GlimmerCore
 /// siblings' debug builds (series rule), so tests never reach the real apps.
 public enum AppIdentity {
     public static let ownBundleID = Bundle.main.bundleIdentifier ?? "com.brattoo.glimmer"
-    public static var isDebugBuild: Bool { ownBundleID.hasSuffix(".debug") }
+    public static var isDebugBuild: Bool { isDebug(ownBundleID) }
+    /// A debug build, or its guest copy for a visiting test (`.debug.guest`, SIBLINGS.md §1: a copy with a container of its own).
+    public static func isDebug(_ bundleID: String) -> Bool { bundleID.hasSuffix(".debug") || bundleID.hasSuffix(".debug.guest") }
     /// Glimmer's own id in this build (com.brattoo.glimmer or com.brattoo.glimmer.debug).
     public static var glimmerBundleID: String { "com.brattoo.glimmer" + (isDebugBuild ? ".debug" : "") }
 }
@@ -24,6 +26,13 @@ public enum SiblingApp: String, CaseIterable, Sendable {
     /// The sibling's id in this kind of build: debug builds pair with debug builds.
     public var bundleID: String { bundleID(debug: AppIdentity.isDebugBuild) }
     public func bundleID(debug: Bool) -> String { "com.brattoo.\(rawValue)" + (debug ? ".debug" : "") }
+
+    /// Whether a running app with this bundle id is this sibling, for a build of this kind. A debug
+    /// build also accepts the sibling's guest copy (`….debug.guest`); a release build never does.
+    public func accepts(bundleID id: String?, debug: Bool = AppIdentity.isDebugBuild) -> Bool {
+        guard let id else { return false }
+        return id == bundleID(debug: debug) || (debug && id == bundleID(debug: true) + ".guest")
+    }
 
     /// Which copy to open when several are installed (SIBLINGS.md §1): the highest
     /// CFBundleVersion (compared as numbers), then /Applications on a tie, then the most
@@ -326,7 +335,7 @@ public actor SiblingClient {
               let root = try? JSONDecoder().decode([String: JSONValue].self, from: data),
               let info = root["app"]?.object, info["name"]?.string == app.appName else { return false }
         // A sibling that says which build it is must be the matching one (debug with debug).
-        if let id = info["bundleID"]?.string { return id == app.bundleID }
+        if let id = info["bundleID"]?.string { return app.accepts(bundleID: id) }
         return true
     }
 

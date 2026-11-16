@@ -43,11 +43,17 @@ for path in sorted(glob.glob(os.path.join(root, "App/*.swift"))):
         pieces = parts(literal)
         if pieces is None or not re.search(r"[A-Za-z]{3}", "".join(p or "" for p in pieces)): continue
         if "." in literal and " " not in literal: continue      # an SF Symbol name
-        pattern = "^" + "".join(r"%(?:\d+\$)?(?:@|lld|lf|d|ld)" if p is None
+        # The key the app looks up at run time has plain placeholders (%@, %lld), never numbered ones:
+        # a key written "%1$@ … %2$@" is not found, and the text stays English. (Fourteen such keys
+        # were in the catalogue until 2026-11-16, and this check let them through.) Numbered
+        # placeholders belong in the translation, not in the key.
+        pattern = "^" + "".join(r"%(?:@|lld|lf|d|ld)" if p is None
                                 else re.escape(p.replace('\\"', '"').replace("\\n", "\n").replace("%", "%%" if None in pieces else "%")) for p in pieces) + "$"
         hits = [k for k in keys if re.match(pattern, k)]
         if not any("sv" in (catalog[k].get("localizations") or {}) or catalog[k].get("shouldTranslate") is False for k in hits):
             missing.append(f"{name}: {literal[:100]}")
+numbered = [k for k in keys if re.search(r"%\d+\$", k)]
+for k in numbered: missing.append(f"catalogue key with a numbered placeholder (never found at run time): {k[:90]}")
 for line in sorted(set(missing)): print("✘", line)
 print(f"{len(set(missing))} text(s) without Swedish." if missing else "Every text found has Swedish.")
 sys.exit(1 if missing else 0)

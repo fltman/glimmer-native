@@ -245,3 +245,19 @@ struct RealSiblingOperations {
         #expect(ops.allSatisfy { ((($0.toolSchema["function"] as? [String: Any])?["parameters"] as? [String: Any])?["additionalProperties"] as? Bool) == false })
     }
 }
+
+/// A visiting test's copy (`….debug.guest`) is a debug build, and debug builds accept each other's guest copies; a release never does.
+@Suite struct GuestCopyTests {
+    @Test func guestCopiesAreDebugAndOnlyDebugAcceptsThem() {
+        #expect(AppIdentity.isDebug("com.brattoo.glimmer.debug") && AppIdentity.isDebug("com.brattoo.glimmer.debug.guest") && AppIdentity.isDebug("com.brattoo.glimmer.offline.debug"))
+        #expect(!AppIdentity.isDebug("com.brattoo.glimmer") && !AppIdentity.isDebug("com.brattoo.glimmer.guest"))
+        for app in SiblingApp.allCases {
+            let id = "com.brattoo.\(app.rawValue)"
+            #expect(app.accepts(bundleID: id + ".debug", debug: true) && app.accepts(bundleID: id + ".debug.guest", debug: true))
+            #expect(!app.accepts(bundleID: id, debug: true))                       // debug talks to debug
+            #expect(app.accepts(bundleID: id, debug: false))
+            #expect(!app.accepts(bundleID: id + ".debug.guest", debug: false) && !app.accepts(bundleID: id + ".debug", debug: false))
+            #expect(!app.accepts(bundleID: nil, debug: true))
+        }
+    }
+}
