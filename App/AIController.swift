@@ -98,7 +98,7 @@ final class AIController {
     // MARK: Jobs
 
     /// Runs `work` off the main actor; `apply` lands the result on the main actor.
-    private func run<T: Sendable>(_ title: String,
+    func run<T: Sendable>(_ title: String,
                                   _ work: @escaping @Sendable () async throws -> (T, Double?),
                                   apply: @escaping @MainActor (T) throws -> Void) {
         var job = Job(title: title)

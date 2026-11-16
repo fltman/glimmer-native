@@ -146,6 +146,20 @@ struct DocumentView: View {
             } message: {
                 Text(session.errorMessage ?? "")
             }
+            #if GLIMMER_HEAL
+            .alert(Text("This is a large area to heal"), isPresented: Binding(
+                get: { session.healWarning != nil },
+                set: { if !$0 { session.healWarning = nil } }
+            )) {
+                Button("Fill Anyway") {
+                    session.healWarning = nil
+                    session.ai.healSelection(allowLarge: true)
+                }
+                Button("Cancel", role: .cancel) { session.healWarning = nil }
+            } message: {
+                Text("\(session.healWarning ?? "")\n\nGenerative Fill (AI ▸ Generative Fill…) can replace larger areas.")
+            }
+            #endif
             .alert(Text("Rasterize text?"), isPresented: Binding(
                 get: { session.rasterizeTextConfirmation != nil },
                 set: { if !$0 { session.rasterizeTextConfirmation = nil } }

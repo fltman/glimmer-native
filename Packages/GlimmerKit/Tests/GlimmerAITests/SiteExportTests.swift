@@ -39,11 +39,31 @@ import Testing
 
     @Test func agentGuideOnTheSiteMatchesTheApp() throws {
         let file = Self.repo.appending(path: "site/agents.md")
-        let guide = AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version)
+        // The site describes what a release has (Config/Features.xcconfig), not this debug build.
+        let features = try String(contentsOf: Self.repo.appending(path: "Config/Features.xcconfig"), encoding: .utf8)
+        let releaseHasHeal = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_HEAL=YES" }
+        let guide = AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, heal: releaseHasHeal)
+        #expect(guide.contains("heal_selection") == releaseHasHeal)
+        #if GLIMMER_HEAL
+        #expect(AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, heal: true).contains("heal_selection"))
+        #expect(AgentAPI.operations.contains { $0["name"] as? String == "heal_selection" && $0["tier"] as? String == "advanced" && $0["paid"] as? Bool == false })
+        #endif
         if ProcessInfo.processInfo.environment["GLIMMER_WRITE_SITE"] == "1" {
             try guide.write(to: file, atomically: true, encoding: .utf8)
         }
         let onDisk = try String(contentsOf: file, encoding: .utf8)
         #expect(onDisk == guide, "site/agents.md is out of date: run scripts/export-agents-guide.sh")
+    }
+
+    /// The manual and FAQ say what the release build has (Config/Features.xcconfig).
+    @Test func manualFollowsFeatures() throws {
+        let p = Process()
+        p.executableURL = Self.repo.appending(path: "scripts/apply-features.py")
+        p.arguments = ["--check"]
+        let err = Pipe()
+        p.standardError = err
+        try p.run()
+        p.waitUntilExit()
+        #expect(p.terminationStatus == 0, "\(String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? "")")
     }
 }

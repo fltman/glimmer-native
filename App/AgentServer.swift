@@ -679,8 +679,10 @@ enum AgentRouter {
 
     /// A failed step: always `step_failed`, with a `reason` when the step refused for a known reason.
     private static func stepFailure(_ results: [AIController.APIStepResult], _ failed: Int) -> [String: Any] {
-        AgentAPI.APIError.stepFailedBody(step: failed, op: results[failed].op, message: results[failed].error ?? "",
-                                         reason: results[failed].reason)
+        var body = AgentAPI.APIError.stepFailedBody(step: failed, op: results[failed].op, message: results[failed].error ?? "",
+                                                    reason: results[failed].reason)
+        if results[failed].hard { body["hard"] = true }
+        return body
     }
 
     private static func stepList(_ results: [AIController.APIStepResult]) -> [[String: Any]] {

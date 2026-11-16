@@ -225,6 +225,7 @@ extension AIController {
         let status: String  // done, failed, skipped
         let error: String?
         var reason: String? = nil
+        var hard = false
         /// Facts a step reports about what it did (style_text: matches and ranges).
         var info: [String: Any]? = nil
     }
@@ -254,7 +255,7 @@ extension AIController {
                 stopped = true
                 results.append(APIStepResult(op: step.op, status: "failed",
                                              error: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription,
-                                             reason: (error as? StepError)?.reason))
+                                             reason: (error as? StepError)?.reason, hard: (error as? StepError)?.hard ?? false))
             }
             progress?(i + 1)
         }
@@ -379,6 +380,8 @@ extension AIController {
         let errorDescription: String?
         /// A machine-readable reason (the API adds it to its 422 step_failed answer).
         var reason: String?
+        /// True when no parameter of the step lifts the refusal (the API passes it on as `hard`).
+        var hard = false
         init(_ message: String, reason: String? = nil) {
             errorDescription = message
             self.reason = reason
@@ -473,6 +476,10 @@ extension AIController {
             try performSelectRect(step)
         case "set_layer":
             try performSetLayer(step)
+        #if GLIMMER_HEAL
+        case "heal_selection":
+            try await performHealSelection(step)
+        #endif
         case let op where SiblingApp.split(tool: op) != nil:
             try await performSiblingTool(step)
         case "run_command":

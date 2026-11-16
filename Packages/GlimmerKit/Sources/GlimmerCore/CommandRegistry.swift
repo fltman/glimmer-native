@@ -106,6 +106,8 @@ extension CommandID {
     public static let cut: CommandID = "edit.cut"
     public static let layerViaCopy: CommandID = "layer.viaCopy"
     public static let clearPixels: CommandID = "edit.clear"
+    /// Heal Selection (only in builds with GLIMMER_HEAL; Config/Features.xcconfig).
+    public static let healSelection: CommandID = "edit.heal"
     public static let freeTransform: CommandID = "edit.transform"
     public static let crop: CommandID = "image.crop"
     public static let imageSize: CommandID = "image.size"
@@ -368,10 +370,20 @@ public struct CommandRegistry: Sendable {
                           keywords: ["again", "filter"]),
         CommandDescriptor(.liquify, "Liquify…", category: .filter, shortcut: KeyShortcut("x", [.command, .shift]),
                           keywords: ["warp", "push", "bloat", "pucker", "twirl", "reshape"]),
-    ] + AdjustmentKind.allCases.map {
+    ] + optionalCommands + AdjustmentKind.allCases.map {
         CommandDescriptor(.newAdjustment($0), $0.title, category: .image, keywords: ["adjustment", "layer"])
     } + FilterKind.allCases.map {
         CommandDescriptor(.filter($0), $0.fields.isEmpty ? $0.title : "\($0.title)…", category: .filter,
                           keywords: ["filter", $0.group.lowercased()])
     })
+}
+
+/// Commands of features a release can be built without (Config/Features.xcconfig).
+private var optionalCommands: [CommandDescriptor] {
+    var list: [CommandDescriptor] = []
+    #if GLIMMER_HEAL
+    list.append(CommandDescriptor(.healSelection, "Heal Selection", category: .edit,
+                                  keywords: ["remove object", "content-aware fill", "erase", "retouch", "spot", "dust", "wire", "cleanup", "fill from surroundings"]))
+    #endif
+    return list
 }

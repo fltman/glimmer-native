@@ -1,0 +1,10 @@
+// Features a release can be built without, with no code change. Debug builds always have
+// them (Config/Debug.xcconfig). This file is the switch: the package manifest reads it too,
+// so with NO the code isn't compiled into a release at all. After changing it, run
+// scripts/export-agents-guide.sh.
+//
+// Heal Selection (Edit › Heal Selection, the agent's heal_selection): fills a selected area
+// from its surroundings with classic methods, no model. NO until Anders has seen results
+// (docs/PATENTS.md has the rules the code keeps to and why). The menu item, /operations,
+// the guide, the manual and the FAQ follow this (Config/site-features.json).
+GLIMMER_HEAL = NO

@@ -277,7 +277,31 @@ public enum AgentAPI {
     // MARK: Guide
 
     /// The guide an agent fetches first: what Glimmer is and exactly how to drive it.
-    public static func guide(port: UInt16, appVersion: String) -> String {
+    /// What the guide says about taking an object out of a photo; depends on whether this
+    /// build has Heal Selection (Config/Features.xcconfig).
+    /// A build without the feature has no text about it at all, whatever `heal` says.
+    static func objectRemovalNote(heal: Bool) -> String {
+        let patch = "Free steps can cut out a subject (`remove_background`), cover an area with a colour (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object)."
+        #if GLIMMER_HEAL
+        if heal {
+            return "To take something out of a photo: select it (`select_rect`, or `select_subject` when it is the main subject), then `heal_selection` fills the area from what surrounds it, on the Mac and free. It suits dust, scratches, wires and things up to about 120 px across on grass, sky, walls and the like; it copies existing image, it does not invent, so a large object or one in front of a complicated scene needs `inpaint_selection` (paid). An area over about 120 px across is refused with `area_too_large` unless `allowLarge` is true, and over 250 px or too much work always (`hard` is then true). " + patch
+        }
+        #endif
+        return "Removing an object from a photo has no free operation: `inpaint_selection` (paid) is the only one. " + patch
+    }
+
+    /// Whether this build has Heal Selection (Config/Features.xcconfig).
+    public static var hasHeal: Bool {
+        #if GLIMMER_HEAL
+        true
+        #else
+        false
+        #endif
+    }
+
+    /// `heal`: whether the guide describes Heal Selection. The app passes nothing (what it was
+    /// built with); the site's copy is written for what a release has.
+    public static func guide(port: UInt16, appVersion: String, heal: Bool = hasHeal) -> String {
         let base = "http://127.0.0.1:\(port)"
         var s = """
         # Glimmer: guide for agents
@@ -426,7 +450,7 @@ public enum AgentAPI {
         These are the `op` values for `steps`, with their `params`. The same list is available as JSON from `GET /api/v1/operations`.
 
         """
-        for op in AgentPlanner.ops {
+        for op in AgentPlanner.ops where heal || op.name != "heal_selection" {
             s += "\n### `\(op.name)`\(paidOps.contains(op.name) ? " (paid)" : "")\n\n\(op.description)\n"
             if op.params.isEmpty {
                 s += "\nNo params: `{\"op\": \"\(op.name)\"}`\n"
@@ -459,7 +483,7 @@ public enum AgentAPI {
         - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers` (its bytes, or `fromDocument` if it is already open as a document). Either way works for any caller. Place it with `x` and `y` when you add it, or afterwards with `transform_layer` (`moveX`, `moveY`); blend it with `set_layer`, cut it out with `remove_background`.
         - `resize_canvas` adds room around the image (`crop` can only take room away). To get a shape such as 16:9: `crop` with `aspect` cuts the image down to it; `resize_canvas` with `aspect` and `anchor` adds room instead, for example beside a person for a title. Use `crop` when the image has more than you need, `resize_canvas` when it has too little.
         - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
-        - Removing an object from a photo has no free operation: `inpaint_selection` (paid) is the only one. Free steps can cut out a subject (`remove_background`), cover an area with a colour (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object).
+        - \(objectRemovalNote(heal: heal))
         - A layer's `bounds` are where its visible content is, in document pixels, after its mask; they can reach outside the canvas when content hangs over the edge.
         - `maxSide` only ever makes an image smaller.
         - Size limits: a side is at most 30000 pixels; an opened image at most 256 megapixels; and a canvas may not need more than two fifths of the Mac's memory for one layer (8 bytes a pixel: 800 megapixels on a 16 GB Mac). A new document, `resize_image` or `resize_canvas` beyond that is refused with reason `too_large` and the numbers. Many large layers make a document slow long before that: 60 layers at 6000 × 4000 take about 5.5 GB.

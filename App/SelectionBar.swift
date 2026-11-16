@@ -47,6 +47,7 @@ struct SelectionBar: View {
         HStack(spacing: 8) {
             Image(systemName: "sparkles").foregroundStyle(.secondary)
             TextField("Describe what to add here…", text: $prompt)
+                .accessibilityLabel("Generative Fill prompt")
                 .textFieldStyle(.plain)
                 .focused($promptFocused)
                 .onSubmit(generate)
@@ -59,6 +60,10 @@ struct SelectionBar: View {
                 }
                 .help(session.ai.hasAPIKey ? "Remove what's inside the selection" : "Add your OpenRouter key in Settings › AI")
                 .disabled(!session.ai.hasAPIKey)
+                #if GLIMMER_HEAL
+                Button("Heal", systemImage: "bandage") { session.perform(.healSelection) }
+                    .help("Fill the selection from what surrounds it (on this Mac, free)")
+                #endif
                 Divider().frame(height: 18)
                 Button("Invert", systemImage: "circle.righthalf.filled") { session.perform(.invertSelection) }
                     .help("Invert the selection")

@@ -331,7 +331,21 @@ public enum AgentPlanner {
         AgentOp("run_command", "Run an editor menu command.", [
             AgentParam("id", "string", "Command id.", options: runnableCommands.map(\.id.rawValue)),
         ]),
-    ]
+    ] + optionalOps
+
+    /// Operations of features a release can be built without (Config/Features.xcconfig).
+    private static var optionalOps: [AgentOp] {
+        var list: [AgentOp] = []
+        #if GLIMMER_HEAL
+        list.append(AgentOp("heal_selection", "Fill the SELECTED area from what surrounds it, to take out a blemish, a wire or a small object (on-device, free, no model). Requires a selection. Copies existing image, so it suits areas up to about 120 px across on texture or even surfaces; larger areas are refused with reason area_too_large unless allowLarge is true. The step's info gives the method used, the pixels filled, the area's width at its thickest and the layer. One undo step; the selection stays.", [
+            AgentParam("method", "string", "Optional. auto (default) picks; smooth suits thin lines and even areas; texture copies patches of the surroundings.", options: ["auto", "smooth", "texture"]),
+            AgentParam("expand", "number", "Optional. Pixels the selection is grown by first, 0–50 (default 3), so the object's edge and halo go with it."),
+            AgentParam("sampleAllLayers", "boolean", "Optional. true (default): reads what is visible and puts the fill in a new layer named Heal above the active layer. false: reads and changes the active pixel layer itself."),
+            AgentParam("allowLarge", "boolean", "Optional. true fills an area over about 120 px across anyway; the result may smear or repeat (info.quality is then may_repeat)."),
+        ]))
+        #endif
+        return list
+    }
 
     public static func op(named name: String) -> AgentOp? { ops.first { $0.name == name } }
 

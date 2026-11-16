@@ -1,0 +1,4 @@
+// Debug builds have every feature, whatever Features.xcconfig says for releases.
+GLIMMER_HEAL = YES
+GLIMMER_FEATURE_CONDITIONS = $(GLIMMER_HEAL_CONDITION_$(GLIMMER_HEAL))
+GLIMMER_HEAL_CONDITION_YES = GLIMMER_HEAL

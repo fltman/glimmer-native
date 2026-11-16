@@ -180,6 +180,8 @@ final class EditorSession {
     var isExportSheetPresented = false
     var isLayerStylePresented = false
     var isImageSizePresented = false
+    /// Heal Selection asks before filling a large area: the reason, while the question is up.
+    var healWarning: String?
     var isCanvasSizePresented = false
     var exportOptions = ExportOptions()
     var isExporting = false
@@ -490,7 +492,7 @@ final class EditorSession {
             return !isUntouchedBlank
         case .exportForWeb:
             return !isExporting
-        case .deselect, .invertSelection, .aiRemoveObject, .featherSelection, .growSelection, .shrinkSelection:
+        case .deselect, .invertSelection, .aiRemoveObject, .featherSelection, .growSelection, .shrinkSelection, .healSelection:
             return state.selection != nil
         case .copy, .cut:
             // Without a selection they take the whole layer.
@@ -680,6 +682,10 @@ final class EditorSession {
             ai.removeBackground()
         case .aiRemoveObject:
             ai.fill(mode: .remove, prompt: "", reference: nil)
+        #if GLIMMER_HEAL
+        case .healSelection:
+            ai.healSelection()
+        #endif
         case .showAssistant:
             showAI(.assistant)
         case .aiGenerate:

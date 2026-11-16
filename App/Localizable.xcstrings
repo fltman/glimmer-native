@@ -10798,6 +10798,83 @@
           }
         }
       }
+    },
+    "Heal Selection": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laga markering"
+          }
+        }
+      }
+    },
+    "Heal": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laga"
+          }
+        }
+      }
+    },
+    "This is a large area to heal": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här är en stor yta att laga"
+          }
+        }
+      }
+    },
+    "Fill Anyway": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll ändå"
+          }
+        }
+      }
+    },
+    "%@\n\nGenerative Fill (AI ▸ Generative Fill…) can replace larger areas.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@\n\nGenerativ fyllning (AI ▸ Generativ fyllning…) kan ersätta större ytor."
+          }
+        }
+      }
+    },
+    "Fill the selection from what surrounds it (on this Mac, free)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll markeringen med det som finns runt omkring (på den här Macen, gratis)"
+          }
+        }
+      }
+    },
+    "Generative Fill prompt": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beskrivning för generativ fyllning"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

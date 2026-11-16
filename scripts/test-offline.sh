@@ -77,6 +77,13 @@ for step in \
   check "on device: ${name} (${SECS%.*} s)" 'allDone'
   allDone || echo "    $(echo "$R" | python3 -c 'import sys,json;print([r.get("error") for r in json.load(sys.stdin)["results"]])' 2>/dev/null)"
 done
+# Heal Selection, in builds that have it (Config/Features.xcconfig): no model, nothing to download.
+if curl -s --max-time 10 $B/operations | grep -q '"heal_selection"'; then
+  steps '{"op":"select_rect","params":{"x":200,"y":200,"width":60,"height":60,"shape":"ellipse"}},{"op":"heal_selection"},{"op":"deselect"}'
+  check "on device: heal_selection (${SECS%.*} s)" 'allDone'
+else
+  echo "– heal_selection is not in this build (GLIMMER_HEAL is off)"
+fi
 
 # The sky needs a photo with a sky in it.
 SKY=$(curl -s --max-time 60 $H -H 'Content-Type: image/jpeg' -X POST --data-binary @site/source-images/mountain-lake.jpg "$B/documents?name=sky" | python3 -c 'import sys,json;print(json.load(sys.stdin)["document"]["id"])' 2>/dev/null)

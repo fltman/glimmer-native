@@ -67,6 +67,9 @@ struct GlimmerCommands: Commands {
         CommandGroup(after: .pasteboard) {
             Divider()
             items([.fillForeground, .fillBackground, .fillPattern])
+            #if GLIMMER_HEAL
+            items([.healSelection])
+            #endif
             Divider()
             items([.copyImageText])
         }
