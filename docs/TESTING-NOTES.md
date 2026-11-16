@@ -730,3 +730,5 @@ Local evaluation after the change (qwen3:8b, the same 18 cases, GUI lock and mod
 - What is said about the document itself is backed only by the document's facts and the worked set, each kind of figure only where it is said as that kind: the megapixels beside the word, the shape only written as that ratio. "A 4:3 image" for a 3:2 document goes; "a 3:2 image" and "4 megapixels" (3.84, said round) stay; "It is 4 wide" goes.
 - Free as before, said here so nobody is surprised: 0 and 1 always, and the numbers up to the count of the plan's steps ("2 steps", "Step 2:", a numbered list of the steps); counting words written as words are not figures at all. So "+1" in a sentence about a crop is not caught, because 1 is free everywhere; "+3" there is.
 - Fixtures for each of these, beside the earlier five.
+
+Local evaluation with the tighter form (qwen3:8b, the same 18, both locks): **18 of 18**, median 2.9 s, slowest 26.9 s; no figure removed in any answer; the known gap 0 of 1. It cost the local model nothing.
