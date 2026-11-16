@@ -453,3 +453,11 @@ Looked at as pictures (the OM-5 run): the sheet after the drag and the grey-poin
 **One failure not explained.** In one of three runs with the Fujifilm file (load average 24 to 32), Develop had not closed the sheet after 60 s; the app was still running, nothing crashed. The two other runs took 14 s. An earlier run of the same file did not open within 120 s at load 32. Whether those were only the load or something that can stick is not known; it has to be watched for when the Mac is quiet.
 
 Still before the switch: Anders's look at the developed pictures; the RAW's size in the document's size estimate; the agent API; the evaluation with the new operation.
+
+## The glow behind the icon breathes (2026-11-16)
+
+Anders's wish, for all three apps. In Glimmer the icon has a glow in two places: the empty document's start card and the Agent Access splash. (The Welcome window's icon has no glow, and About is the system's panel.) `App/GlowPulse.swift`: a Core Animation shadow whose opacity eases between 60 % and 100 % of a peak a little above the old still glow, and whose radius follows by about a fifth; two seconds in, two out. The window server animates it; the app does nothing per frame.
+
+Measured in the debug copy with the start card showing (load average 19 from other sessions): the app used 0.00 % of a core over 30 s in front (below what `ps` can resolve, 0.03 %), and 0.10 % over 20 s in the background; no power assertion names Glimmer. Four pictures of the app's own window a second apart show the glow at different strengths (the centre crop's mean blue 45.5 to 48.2) and the icon unchanged. The accessibility read gives the same texts at two moments; the element count is 53 on the very first read after launch and 54 on every read after, with or without time passing, so it is not the animation.
+
+Not verified: Reduce Motion (the code stands still when the system says so and listens for the change; I do not change system settings to try it); the splash's glow, which uses the same view but was not looked at; that the animation is really removed when the window is covered (the code removes it on the occlusion notification; the background CPU figure is consistent with that but does not prove it).

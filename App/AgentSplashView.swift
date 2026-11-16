@@ -19,7 +19,8 @@ struct AgentSplashView: View {
                 Image(nsImage: NSApp.applicationIconImage)
                     .resizable()
                     .frame(width: 72, height: 72)
-                    .shadow(color: Self.neon.opacity(0.5), radius: 18)
+                    // The icon's own shape is a little inside its square: the glow follows that.
+                    .background(GlowPulse(color: NSColor(Self.neon), strength: 0.5, radius: 18, cornerRadius: 16).padding(7))
                     .accessibilityHidden(true)  // the heading names the app
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Glimmer").font(.largeTitle.bold())

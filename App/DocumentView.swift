@@ -246,7 +246,7 @@ private struct StartCard: View {
                 .scaledToFit()
                 .frame(width: 180, height: 180)
                 .clipShape(.rect(cornerRadius: 40, style: .continuous))
-                .shadow(color: Color(red: 0.77, green: 0.36, blue: 1).opacity(0.35), radius: 24)
+                .background(GlowPulse(color: NSColor(red: 0.77, green: 0.36, blue: 1, alpha: 1), strength: 0.35, radius: 24, cornerRadius: 40))
                 .accessibilityLabel("Glimmer")
             Text("Drop a file anywhere, paste from your clipboard, or open one — or just describe an image in the bar below and AI generates it.")
                 .multilineTextAlignment(.center)
