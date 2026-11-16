@@ -17,6 +17,9 @@ public struct PSDFile: Sendable {
         public var width: Int, height: Int
         public var depth: Int             // 1, 8, 16 or 32 bits per channel
         public var mode: ColorMode
+        public init(isLarge: Bool, channels: Int, width: Int, height: Int, depth: Int, mode: ColorMode) {
+            self.isLarge = isLarge; self.channels = channels; self.width = width; self.height = height; self.depth = depth; self.mode = mode
+        }
     }
 
     public struct Rect: Sendable, Equatable {
@@ -34,6 +37,9 @@ public struct PSDFile: Sendable {
         public var isDisabled: Bool
         /// One byte per pixel, `rect.width` × `rect.height`, when the file had the channel.
         public var pixels: Data?
+        public init(rect: Rect, defaultColor: UInt8, isDisabled: Bool, pixels: Data?) {
+            self.rect = rect; self.defaultColor = defaultColor; self.isDisabled = isDisabled; self.pixels = pixels
+        }
     }
 
     public struct Layer: Sendable {

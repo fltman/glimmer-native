@@ -14,8 +14,14 @@ public enum PSDAppearance {
         guard let theirs = try? ImageImporter.image(from: file), theirs.width == state.width, theirs.height == state.height,
               let ours = try? ImageExporter.flattenedSRGB(state, context: context),
               let a = onWhite(ours), let b = onWhite(theirs), a.count == b.count, !a.isEmpty else { return nil }
+        return difference(a, b)
+    }
+
+    /// The same measure for two pictures already as 8-bit sRGB over white, of the same size.
+    static func difference(_ a: [UInt8], _ b: [UInt8]) -> (mean: Double, shareVisible: Double) {
         var total = 0, visible = 0
-        let pixels = a.count / 4
+        let pixels = min(a.count, b.count) / 4
+        guard pixels > 0 else { return (0, 0) }
         for i in 0..<pixels {
             var worst = 0
             for c in 0..<3 {
