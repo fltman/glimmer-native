@@ -758,3 +758,5 @@ Three requests on one model once is thin: it says the operation is found for exp
 Decided (coordinator, 2026-11-16): `develop_raw` stays offered to the assistant; the 2 of 3 stands as it is. The prompt is not changed after one answer on one model; a line for RAW layers comes only if a second model also reaches for an adjustment, and then the case is no longer counted as unseen.
 
 **To watch for in the paid tests of the picture services:** a claim about cost without a figure ("it is free", "kostar ingenting") about something that does cost: generating, editing with a prompt, upscaling through a service. The figures check does not see such a claim. About enlarging on the Mac it was true tonight; about a paid operation it would be a real fault, and the known gap is to be closed then.
+
+**The first-use notice's text is approved (Anders, 2026-11-16).** He was shown the whole text in Swedish and English, for a model that takes pictures, for one that doesn't, and the ending for a model on this Mac, and answered "den är ok". He was told that "Stockholm, Sweden" stands in English inside the Swedish sentence and did not ask for it changed.
