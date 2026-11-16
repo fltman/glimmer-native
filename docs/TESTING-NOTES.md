@@ -563,3 +563,16 @@ In a scratch worktree (removed afterwards), with one change, `.iOS("27.0")` adde
 - All five package targets (GlimmerCore, GlimmerRender with its Metal shaders, GlimmerTools, GlimmerAI, GlimmerHeal: 87 files, about 20,000 lines) **build for iPadOS with no error**, for a device in Debug and Release and for the simulator. None of them uses AppKit.
 - **Not run.** No simulator with iOS 27 is set up on this Mac and I created none; a device is attached and I did not touch it. So "builds" is all that is known: nothing about Metal on an iPad's GPU, memory limits, the RAW decoder or the on-device models there.
 - The app itself (App/, 64 files, 17,553 lines) does not build: the compiler stops at the first `import AppKit`. By reference count, 40 files (8,463 lines) use no AppKit symbol and 24 files (9,090 lines) do; the heaviest are the canvas view (1,404 lines, 106 references: mouse, keyboard, cursor, the text editor), the document opener (587 lines, 47: NSDocumentController, Apple events, panels), then the session, the tool options, the menus. Mac-only by nature: Sparkle, sibling calls and linked files (Apple events between Mac apps), Ollama and MLX servers.
+
+## GLIMMER_RAW switched on for releases (2026-11-16)
+
+Anders looked at the developed pictures and said, in the session window: "raw ser ok ut". Reported to the coordinator before the switch; no objection. What was done with it:
+
+- `Config/Features.xcconfig`: `GLIMMER_RAW = YES`. The manual's "Camera RAW files" section and the FAQ line are on the site's sources; the guide has the RAW note, `develop_raw`, and the line for a sibling (send the file, `develop_raw`, `export`).
+- The release build (ad hoc signed): `scripts/check-release-binary.sh`: RAW and PSD present, Heal absent. `scripts/check-release-outside.sh`, new, asks the running release the same from the outside: its `/operations` and its guide have `develop_raw` and the import report and no `heal_selection`, and no debug route answers.
+- In the release build (the no-network copy): the offline test, the Photoshop import script, the RAW API script (19 checks) and the Develop script with the controls (the Panasonic file: opened in 5.2 s through the public endpoint, first picture 4 s later, drag, grey point, As Shot, Develop in 2 s, the changed-layer warning) all passed. The sheet was looked at as a picture in the release build: whole.
+- `docs/release-notes/NEXT.md` has the lines for RAW, for the unknown-parameter rule and for the glow.
+
+What ships with known limits, all said in the manual or these notes: two lossy-compressed recording modes (Nikon Z f, Sony A7 IV) are not developed by macOS; the draft follows within a tenth of a second on five of six files and not on the 50-megapixel one; nothing was measured on a quiet Mac; only the Panasonic file was run in the release build (all six in debug); the three RAW requests of the assistant's evaluation have not been run on any model.
+
+Phase 13 (iPad) is dropped: Anders, the same day, "strunta i ipad". The findings are in docs/PLAN.md.

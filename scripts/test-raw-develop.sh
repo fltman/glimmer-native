@@ -6,8 +6,9 @@
 #   GLIMMER_RAW_SAMPLE=/path/to/file.dng scripts/test-raw-develop.sh
 #
 # The sample is not in the repository (docs/TESTING-NOTES.md says where the fetched ones are).
-# Debug build only: RAW development is switched off in releases, and the file is handed to
-# the test copy through a debug route, since a sandboxed copy can't read the sample folder.
+# GLIMMER_OFFLINE_CONFIG=Release runs the release build (build it first). In a debug build the
+# file is handed over through a debug route, which opens it as File › Open… does; a release
+# build has no such route and gets it through the agent API's own endpoint.
 # Budget: 9 minutes (a 40-megapixel file in the debug build on a busy Mac needs most of it). Exit 0 = passed.
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -16,7 +17,7 @@ if [[ -z "${GLIMMER_PORT:-}" ]]; then
   xcrun swiftc -O -o build/axread scripts/axread.swift 2>/dev/null || { echo "Couldn't build scripts/axread.swift"; exit 1; }
   xcrun swiftc -O -o build/axread scripts/axread.swift 2>/dev/null
   xcrun swiftc -O -o build/window-shot scripts/window-shot.swift 2>/dev/null || { echo "Couldn't build scripts/window-shot.swift"; exit 1; }
-  COPY=$(scripts/offline-copy.sh | tail -1) || exit 1
+  COPY=$(scripts/offline-copy.sh | tail -1) || exit 1   # GLIMMER_OFFLINE_CONFIG=Release: the release build (build it first)
   GLIMMER_TEST_LIMIT=540 GLIMMER_TEST_APP="$COPY" exec scripts/test-app.sh "$0"
 fi
 TOOLS="${THE_APPS_TOOLS:-}"
@@ -33,8 +34,11 @@ front() { perl -e 'alarm 15; exec @ARGV' osascript -e "tell application \"System
 NAME=$(basename "$GLIMMER_RAW_SAMPLE")
 
 zmodload zsh/datetime; t0=$EPOCHREALTIME
+# Through the debug route where there is one (it opens the file as File › Open… does, with the progress window);
+# in a release build, which has none, through the agent API's own endpoint.
 CODE=$(curl -s --max-time 240 -o /dev/null -w '%{http_code}' $H -H 'Content-Type: application/octet-stream' -X POST --data-binary @"$GLIMMER_RAW_SAMPLE" "$B/debug/raw?name=$NAME")
-check "$NAME opens as a document ($CODE, $(printf '%.1f' $(( EPOCHREALTIME - t0 ))) s)" '[[ $CODE == 200 ]]'
+[[ $CODE == 200 ]] || CODE=$(curl -s --max-time 240 -o /dev/null -w '%{http_code}' $H -H 'Content-Type: application/octet-stream' -X POST --data-binary @"$GLIMMER_RAW_SAMPLE" "$B/documents?name=$NAME")
+check "$NAME opens as a document ($CODE, $(printf '%.1f' $(( EPOCHREALTIME - t0 ))) s)" '[[ $CODE == 200 || $CODE == 201 ]]'
 # The document's window comes up a moment after the answer (longer on a busy Mac): wait for the menu item, up to 45 s.
 for _ in {1..45}; do "$TOOLS/safemenu/safemenu" --pid $GLIMMER_PID --check "Layer" "Develop…" >/dev/null 2>&1 && break; sleep 1; done
 "$TOOLS/safemenu/safemenu" --pid $GLIMMER_PID --check "Layer" "Develop…" >/dev/null 2>&1 && ok "Layer › Develop… is there and enabled for the RAW layer" || bad "Layer › Develop… is not enabled"

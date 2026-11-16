@@ -48,7 +48,7 @@ Your images stay on your Mac unless you start an OpenRouter feature. Then Glimme
 
 ## Which file formats can Glimmer open and save?
 
-Glimmer opens the image formats macOS can read, including JPEG, PNG, HEIC, TIFF, WebP, GIF, BMP and camera RAW (basic decoding). It saves its own documents as `.glimmer` files, which keep every layer, mask, adjustment and path. It exports PNG, JPEG, HEIC, TIFF, WebP and Photoshop files, and it can import and export projects from Glimmer for the web (`.aips`).
+Glimmer opens the image formats macOS can read, including JPEG, PNG, HEIC, TIFF, WebP, GIF, BMP and camera RAW (which you can develop again at any time: see [Camera RAW files](manual/02-documents-and-files.md#camera-raw-files)). It saves its own documents as `.glimmer` files, which keep every layer, mask, adjustment and path. It exports PNG, JPEG, HEIC, TIFF, WebP and Photoshop files, and it can import and export projects from Glimmer for the web (`.aips`).
 
 ## Can Glimmer open Photoshop files?
 

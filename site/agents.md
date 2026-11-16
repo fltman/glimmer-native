@@ -9,6 +9,7 @@ Glimmer 0.2.0 is a native macOS photo editor with layers, adjustment layers, fil
 - Images travel in request and response bodies. The API never reads or writes file paths.
 - A Photoshop file (PSD or PSB bytes) sent to `POST /api/v1/documents` opens with its layers. The reply's `document.importReport` says what came through: `layersInFile`, `layersKept`, `flattened` (true when only the file's own flattened picture could be used), `notes` (one per thing that did not come through: `layer`, `what`, `changesLook`), `looksTheSame`, and `differenceFromFile` (Glimmer's picture against the one saved in the file: `mean` on a scale of 0 to 255 and `shareVisiblyDifferent` from 0 to 1). Read it before you rely on the layers: text, smart objects, adjustment layers, fill layers and effects are not editable or are left out, and the notes say which. The same report is shown to the person in the window.
 - `POST /api/v1/documents/{id}/export` with `{"format": "psd"}` returns a Photoshop file with the layers (`"depth"`: 8 or 16; `"flatten": true` merges everything into one layer). The response header `X-Glimmer-Export-Report` holds JSON: `layersWritten`, `notes` (what is written as pixels or left out, each with `layer`, `kind`, `what`, `changesLook`), and for a document that blends in linear light `layersBlendedInGamma` (how different the layers will look in other programs). Glimmer reads these files back itself and macOS shows their picture; the layers have not been tried in Photoshop.
+- A camera's RAW file (DNG, CR3, RAF, ORF, RW2 and others; the bytes sent to `POST /api/v1/documents`) opens as a layer that keeps the file: the layer has `raw` (`fileName`, `byteCount`, `settings`, `process`, `pixelsAsDeveloped`), and `develop_raw` develops it again with other settings, without loss. `GET /api/v1/documents/{id}/layers/{layer}/raw/info` says what the file allows. If macOS's decoder gives no picture for the file, the answer is 422 `raw_not_developed` with the reason; another recording mode of the same camera may work. To get the developed picture out, export as usual: a sibling app that has a RAW file sends it here, sets what it wants with `develop_raw`, and takes the picture back with `export`.
 - Edits land in open document windows that the user can see, and can be undone. One `steps` request is one undo step.
 - Steps that cost money (OpenRouter) are refused unless you pass `"allowPaid": true`. Everything else runs on the Mac, free.
 
@@ -501,6 +502,26 @@ Run an editor menu command.
 | `image.rotateLeft` | Rotate 90° Counterclockwise |
 | `image.rotate180` | Rotate 180° |
 | `image.gammaBlending` | Blend Colors in Gamma Space |
+
+### `develop_raw`
+
+Develop a RAW layer again from its camera file with other settings (on-device, free): brighter or darker, warmer or cooler, lifted shadows. Only for a layer that was opened from a RAW file (its `raw` in the document's layers); for any other layer use add_adjustment. Only the values given change. One undo step. Refused with the allowed range when a value is outside it, and by name for a control the file doesn't have: `GET /documents/{id}/layers/{layer}/raw/info` says what the file allows and what the settings are now.
+
+| Param | Type | Description |
+|---|---|---|
+| `target` | string | Optional. The RAW layer's id or name (default: the active layer). |
+| `exposure` | number | Optional. Stops added to the file's own exposure, -5…5; 1 is twice as bright. |
+| `temperature` | number | Optional. White balance in kelvin, 2000…50000. A higher number makes the picture warmer (more yellow), a lower one cooler (more blue). |
+| `tint` | number | Optional. -150…150; negative is greener, positive more magenta. |
+| `shadows` | number | Optional. 0…2; 1 leaves the shadows as they are, more lifts them. |
+| `contrast` | number | Optional. 0…1, where the file has the control. |
+| `sharpness` | number | Optional. 0…1, where the file has the control. |
+| `luminanceNoise` | number | Optional. Noise reduction, 0…1, where the file has the control. |
+| `colorNoise` | number | Optional. Colour noise reduction, 0…1, where the file has the control. |
+| `highlightRecovery` | boolean | Optional. Recover detail in blown highlights (on by default), where the file has the switch. |
+| `lensCorrection` | boolean | Optional. Use the lens correction stored in the file, where there is one. It reshapes the whole picture a little, not only the corners. |
+| `asShot` | boolean | Optional. true first goes back to the camera's white balance and the standard values; other values given in the same step are then applied. |
+| `replaceChanges` | boolean | Optional. A layer that was painted on or filtered after it was developed is refused (replaces_changes) unless this is true: developing again replaces those changes. |
 
 ## Good to know
 

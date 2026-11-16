@@ -6,7 +6,7 @@
 #   GLIMMER_RAW_SAMPLES=/path/to/folder scripts/test-raw-api.sh
 #
 # Needs in the folder: a file with lens data (Panasonic*.RW2), one without (Apple*.DNG) and one
-# macOS gives no picture for (Nikon*.NEF). Debug build (RAW is off in releases). Exit 0 = passed.
+# macOS gives no picture for (Nikon*.NEF). GLIMMER_OFFLINE_CONFIG=Release runs the release build. Exit 0 = passed.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 if [[ -z "${GLIMMER_PORT:-}" ]]; then

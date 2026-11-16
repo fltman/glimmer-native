@@ -143,6 +143,26 @@ If the document is new and untouched, a placed, pasted or dropped image does not
 
 When you place, paste or drop an image whose name says nothing about it, such as "IMG_1234", "DSC0042" or "Pasted Layer", Glimmer looks at the image on your Mac and renames the layer after what it shows. A name you chose yourself is never changed.
 
+## Camera RAW files
+
+A camera's RAW file (DNG, CR3, RAF, ORF, RW2 and others) opens as a new document with one layer that keeps the RAW file itself. The picture you see is developed from it, and you can develop it again at any time with other settings, without losing quality: choose **Layer › Develop…** with that layer selected.
+
+The Develop sheet shows the picture and these controls: **Exposure** (in stops), **Temperature** and **Tint** (white balance; tick *Click the picture to set what should be grey* and click something that should be neutral), **Shadows**, and, where the file allows it, **Contrast**, **Sharpness**, **Noise reduction**, **Colour noise reduction**, **Recover highlights** and **Lens correction**. **As Shot** goes back to the camera's own white balance and the standard values. **Develop** puts the new picture in the layer as one undo step.
+
+The picture in the sheet follows the controls as fast as your Mac develops the file. For most cameras that is at once; for very large files (around 50 megapixels) it can lag by up to a second or two, and the first picture after the sheet opens takes a few seconds. A line under the picture says when it is catching up. What you see when it has caught up is what you get.
+
+**Lens correction** uses the correction the camera stored in the file. It reshapes the whole picture a little, not only the corners.
+
+Things to know:
+
+- Glimmer develops RAW files with the decoder built into macOS. Which cameras and recording modes work is decided by macOS, and newer cameras arrive with system updates. Some compressed recording modes are not supported even for cameras that otherwise are; another recording mode of the same camera may work. If macOS gives no developed picture, Glimmer says so and opens the preview stored in the file, if there is one, as an ordinary picture.
+- The RAW file is saved inside the Glimmer document, so the document grows by the size of the RAW file. Files over 512 MB are not kept.
+- The layer remembers which version of the decoder it was developed with, so an old document looks the same after a system update.
+- If you paint on the layer or change its pixels, developing again replaces those changes; the sheet warns you first. Masks, opacity, blend mode and effects stay.
+- Sidecar files (XMP) and settings from other programs are not read.
+
+What this has been tried with: files from six cameras and phones (Apple, Google, Canon, Fujifilm, OM System, Panasonic). Files in lossy-compressed modes from two others (Nikon, Sony) were not developed by macOS.
+
 ## Glimmer for the web projects (.aips)
 
 Glimmer can exchange projects with Glimmer for the web.

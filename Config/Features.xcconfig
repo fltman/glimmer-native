@@ -16,8 +16,9 @@ GLIMMER_HEAL = NO
 // macOS reads from it. The manual, the FAQ and the agent guide follow this.
 GLIMMER_PSD = YES
 
-// RAW development (a RAW file opens as a layer that keeps the RAW and can be developed again:
-// exposure, white balance and the rest, through Apple's own decoder). NO until Anders has
-// looked at a real camera file developed by it. With NO a RAW file opens as before, as the
-// system's default rendering. The manual follows this.
-GLIMMER_RAW = NO
+// RAW development (a camera's RAW file opens as a layer that keeps the RAW and can be developed
+// again with Layer › Develop… or the agent API's develop_raw, through Apple's own decoder).
+// YES since 2026-11-16: Anders looked at pictures developed from six cameras' files and said
+// yes (docs/TESTING-NOTES.md has what was tried and what was not). With NO a RAW file opens as
+// the system's default rendering. The manual, the FAQ and the agent guide follow this.
+GLIMMER_RAW = YES

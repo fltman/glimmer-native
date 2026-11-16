@@ -334,7 +334,12 @@ Anders, via samordnaren: "ok glimmer kan sätta igång med PSD med lager, RAW-fr
 - **Fas 10 — PSD med lager · XL.** Import först, export sedan. Egen läsare och skrivare från Adobes publicerade specifikation, ingen GPL-kod. PSD är opålitlig indata: storleksgränser före avkodning, stympade och ljugande filer, generatorer i testsviten. Det som inte överlever sägs alltid till användaren.
 - **Fas 11 — RAW-framkallning · L.** Apples egen RAW-kedja (Core Image). RAW-filen förblir källan; framkallningen är ett lager som kan öppnas igen.
 - **Fas 12 — Video · struken.** Anders 2026-11-16, på frågan vad som menades: "glöm det". Flimmer äger tiden.
-- **Fas 13 — iPad · XL.** Sist och störst. Ingen App Store-post skapas och inget laddas upp; det är Anders sak.
+- **Fas 13 — iPad · struken.** Anders 2026-11-16, efter skissen (paketet bygger för iPadOS med en rads ändring men är inte kört; appskalet är Mac-bundet; utan App Store-post kan bara han köra den): "strunta i ipad". Vad som hittades (2026-11-16), som utgångspunkt om frågan kommer tillbaka:
+  - *Mätt:* GlimmerKit (fem mål, 87 filer, ca 20 000 rader, Metal-skuggorna med) bygger för iPadOS för enhet och simulator med en enda rads ändring (plattformsraden); inget i paketet använder AppKit. Inte kört: ingen iOS 27-simulator fanns och ingen skapades. Appskalet bygger inte: 24 av 64 filer (9 090 av 17 553 rader) använder AppKit, tyngst canvasvyn och dokumentöppnaren.
+  - *Mac-bundet av naturen:* Sparkle, syskonanrop och länkade filer, Ollama och MLX, agentservern som den används. Förslaget var inget agent-API på iPad.
+  - *Spridning:* utan App Store-post når en iPad-app bara en enhet som någon själv signerar för från Xcode.
+  - *Uppskattat, inte mätt:* hela redigeraren med pekning och Pencil två till tre månader; en visare med lätt redigering av .glimmer-dokument cirka två veckor.
+  Plattformsraden lades inte in och inget byggskript för iPad finns.
 
 ### Beslut och lärdomar under bygget
 
