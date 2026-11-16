@@ -15,3 +15,9 @@ GLIMMER_HEAL = NO
 // the reader does. With NO a release opens a Photoshop file as before, as the flattened
 // picture macOS reads from it. The manual and the agent guide follow this.
 GLIMMER_PSD = NO
+
+// RAW development (a RAW file opens as a layer that keeps the RAW and can be developed again:
+// exposure, white balance and the rest, through Apple's own decoder). NO until Anders has
+// looked at a real camera file developed by it. With NO a RAW file opens as before, as the
+// system's default rendering. The manual follows this.
+GLIMMER_RAW = NO

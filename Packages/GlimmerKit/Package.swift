@@ -8,7 +8,9 @@ let features = (try? String(contentsOfFile: Context.packageDirectory + "/../../C
 let releaseHasHeal = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_HEAL=YES" }
 // Photoshop import is switched the same way (GLIMMER_PSD).
 let releaseHasPSD = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_PSD=YES" }
-let healSettings: [SwiftSetting] = [.define("GLIMMER_HEAL", .when(configuration: .debug)), .define("GLIMMER_PSD", .when(configuration: .debug))]
+let releaseHasRAW = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_RAW=YES" }
+let healSettings: [SwiftSetting] = [.define("GLIMMER_HEAL", .when(configuration: .debug)), .define("GLIMMER_PSD", .when(configuration: .debug)), .define("GLIMMER_RAW", .when(configuration: .debug))]
+    + (releaseHasRAW ? [.define("GLIMMER_RAW", .when(configuration: .release))] : [])
     + (releaseHasHeal ? [.define("GLIMMER_HEAL", .when(configuration: .release))] : [])
     + (releaseHasPSD ? [.define("GLIMMER_PSD", .when(configuration: .release))] : [])
 
