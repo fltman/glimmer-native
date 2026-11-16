@@ -133,7 +133,9 @@ public struct SiblingOperation: Sendable, Equatable {
             var dependent: Set<String> = []
             for other in table.values { dependent.formUnion((other.object?["properties"]?.object ?? [:]).keys) }
             if let name = params.keys.sorted().first(where: { dependent.contains($0) && own[$0] == nil }) {
-                return ("\(name) for \(sort)", own.keys.sorted())
+                // What this sort does take: its own settings and everything that belongs to no sort.
+                let valid = properties.keys.filter { $0 != "rationale" && (!dependent.contains($0) || own[$0] != nil) }
+                return ("\(name) for \(sort)", valid.sorted())
             }
         }
         // 2. On a nested settings property: the settings are an object of their own.

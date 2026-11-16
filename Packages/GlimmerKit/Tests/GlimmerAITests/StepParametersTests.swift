@@ -181,7 +181,7 @@ import GlimmerCore
         #expect(op.stray(in: ["kind": .string("denoise"), "track": .string("a"), "strength": .number(0.4)]) == nil)
         // A setting of another sort: refused for this one, with what this sort has. `track` belongs to no sort and is always allowed.
         let stray = op.stray(in: ["kind": .string("denoise"), "track": .string("a"), "width": .number(2)])
-        #expect(stray?.name == "width for denoise" && stray?.allowed == ["strength"])
+        #expect(stray?.name == "width for denoise" && stray?.allowed == ["kind", "strength", "track"])   // what denoise does take
         #expect(op.stray(in: ["kind": .string("declick"), "sensitivity": .number(0.2), "width": .number(2)]) == nil)
         // A name the schema doesn't have at all is the ordinary refusal.
         #expect(op.stray(in: ["kind": .string("denoise"), "amount": .number(1)])?.name == "amount")
@@ -211,5 +211,37 @@ import GlimmerCore
         #expect(parameters["additionalProperties"] as? Bool == false)
         let properties = try #require(parameters["properties"] as? [String: Any])
         #expect(properties["document"] != nil && properties["rationale"] != nil && properties["seconds"] != nil)
+    }
+}
+
+/// The reader against a sibling's real list: GLIMMER_SIBLING_OPS=<a saved /api/v1/operations of Jämmer>.
+@Suite(.enabled(if: ProcessInfo.processInfo.environment["GLIMMER_SIBLING_OPS"] != nil))
+struct RealSiblingOperations {
+    @Test func jammersRestoreIsCheckedBySort() throws {
+        let data = try Data(contentsOf: URL(fileURLWithPath: ProcessInfo.processInfo.environment["GLIMMER_SIBLING_OPS"]!))
+        let ops = SiblingOperation.parse(data, app: .jammer)
+        print("SIBLING \(ops.count) operations read")
+        for name in ["restore", "restore_preview"] {
+            let op = try #require(ops.first { $0.name == name })
+            func verdict(_ params: [String: JSONValue]) -> String { op.stray(in: params).map { "refused: \($0.name); has \($0.allowed)" } ?? "passes" }
+            let cases: [(String, [String: JSONValue], Bool)] = [
+                ("denoise with amount", ["kind": .string("denoise"), "amount": .number(0.5)], true),
+                ("dehum with humFrequency", ["kind": .string("dehum"), "humFrequency": .number(50)], true),
+                ("declick with sensitivity", ["kind": .string("declick"), "sensitivity": .number(0.4)], true),
+                ("denoise with sensitivity (declick's)", ["kind": .string("denoise"), "sensitivity": .number(0.4)], false),
+                ("dehum with sensitivity (declick's)", ["kind": .string("dehum"), "sensitivity": .number(0.4)], false),
+                ("declick with humFrequency (dehum's)", ["kind": .string("declick"), "humFrequency": .number(50)], false),
+                ("denoise with a name nobody has", ["kind": .string("denoise"), "strength": .number(1)], false),
+            ]
+            for (what, params, passes) in cases {
+                print("SIBLING \(name): \(what): \(verdict(params))")
+                #expect((op.stray(in: params) == nil) == passes, "\(name): \(what)")
+            }
+            #expect(op.uncheckedTable(for: ["kind": .string("denoise")]) == nil)
+        }
+        // No operation of the list refuses an empty call for a name, and none has a table Glimmer can't read.
+        #expect(ops.allSatisfy { $0.stray(in: [:]) == nil && $0.uncheckedTable(for: [:]) == nil })
+        // The tools Glimmer would offer a model keep every schema closed.
+        #expect(ops.allSatisfy { ((($0.toolSchema["function"] as? [String: Any])?["parameters"] as? [String: Any])?["additionalProperties"] as? Bool) == false })
     }
 }
