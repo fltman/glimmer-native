@@ -142,6 +142,11 @@ static float3 blendColor(float3 cb, float3 cs, int mode) {
         case 21: return step(1.0, cb + cs);
         case 22: return max(float3(0.0), cb - cs);
         case 23: return float3(divideBlend(cb.r, cs.r), divideBlend(cb.g, cs.g), divideBlend(cb.b, cs.b));
+        // Darker Color and Lighter Color: the whole colour of the darker (lighter) of the two, never a
+        // mix of their channels. "Darker" is by luminance: measured on files from Photoshop
+        // (2026-11-16), where blue wins over red and red over green, though their channel sums are equal.
+        case 24: return lum(cs) < lum(cb) ? cs : cb;
+        case 25: return lum(cs) > lum(cb) ? cs : cb;
         default: return cs;
     }
 }

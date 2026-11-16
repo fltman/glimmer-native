@@ -40,6 +40,40 @@ public struct CurvePoint: Codable, Hashable, Sendable {
 public enum CurveMath {
     public static let identity = [CurvePoint(0, 0), CurvePoint(1, 1)]
 
+    /// A natural cubic spline through the points (second derivative zero at both ends), flat
+    /// outside them and clamped to 0…1.
+    public static func evaluateNatural(_ points: [CurvePoint], at t: Double) -> Double {
+        let pts = points.sorted { $0.x < $1.x }
+        guard let first = pts.first, let last = pts.last else { return t }
+        if pts.count == 1 || t <= first.x { return clamp(first.y) }
+        if t >= last.x { return clamp(last.y) }
+        let n = pts.count
+        if n == 2 { return clamp(first.y + (last.y - first.y) * (t - first.x) / (last.x - first.x)) }
+        // Solve for the second derivatives (tridiagonal system).
+        var u = [Double](repeating: 0, count: n), y2 = [Double](repeating: 0, count: n)
+        for i in 1..<(n - 1) {
+            let sig = (pts[i].x - pts[i - 1].x) / (pts[i + 1].x - pts[i - 1].x)
+            let p = sig * y2[i - 1] + 2
+            y2[i] = (sig - 1) / p
+            let d = (pts[i + 1].y - pts[i].y) / (pts[i + 1].x - pts[i].x) - (pts[i].y - pts[i - 1].y) / (pts[i].x - pts[i - 1].x)
+            u[i] = (6 * d / (pts[i + 1].x - pts[i - 1].x) - sig * u[i - 1]) / p
+        }
+        y2[n - 1] = 0
+        for i in stride(from: n - 2, through: 0, by: -1) { y2[i] = y2[i] * y2[i + 1] + u[i] }
+        var k = 0
+        while k < n - 2, t > pts[k + 1].x { k += 1 }
+        let h = pts[k + 1].x - pts[k].x
+        guard h > 1e-9 else { return clamp(pts[k].y) }
+        let a = (pts[k + 1].x - t) / h, b = (t - pts[k].x) / h
+        return clamp(a * pts[k].y + b * pts[k + 1].y + ((a * a * a - a) * y2[k] + (b * b * b - b) * y2[k + 1]) * h * h / 6)
+    }
+
+    /// The curve through the points: Glimmer's own (monotone, never overshoots), or the
+    /// natural spline that curves from Photoshop files are drawn with.
+    public static func evaluate(_ points: [CurvePoint], at t: Double, natural: Bool) -> Double {
+        natural ? evaluateNatural(points, at: t) : evaluate(points, at: t)
+    }
+
     public static func evaluate(_ points: [CurvePoint], at t: Double) -> Double {
         let pts = points.sorted { $0.x < $1.x }
         guard let first = pts.first, let last = pts.last else { return t }
@@ -374,15 +408,22 @@ public struct Adjustment: Codable, Hashable, Sendable {
 
     /// A per-channel lookup table (sRGB-encoded in and out) for LUT-based kinds:
     /// `size` entries of (r, g, b, a).
+    /// Curves from a Photoshop file run between their points as that program draws them (a
+    /// natural cubic spline): measured on a file from Photoshop on 2026-11-16, where Glimmer's
+    /// own curve through the same points differed visibly and this one matched.
+    public static let naturalCurveFlag = "naturalSpline"
+    public var usesNaturalCurve: Bool { flags[Self.naturalCurveFlag] == true }
+
     public func lookupTable(size: Int = 1024) -> [SIMD4<Float>] {
         (0..<size).map { i in
             let t = Double(i) / Double(size - 1)
             switch kind {
             case .curves:
-                let m = curve(.rgb)
-                return SIMD4(Float(CurveMath.evaluate(m, at: CurveMath.evaluate(curve(.red), at: t))),
-                             Float(CurveMath.evaluate(m, at: CurveMath.evaluate(curve(.green), at: t))),
-                             Float(CurveMath.evaluate(m, at: CurveMath.evaluate(curve(.blue), at: t))), 1)
+                let m = curve(.rgb), natural = usesNaturalCurve
+                func value(_ channel: CurveChannel) -> Float {
+                    Float(CurveMath.evaluate(m, at: CurveMath.evaluate(curve(channel), at: t, natural: natural), natural: natural))
+                }
+                return SIMD4(value(.red), value(.green), value(.blue), 1)
             case .levels:
                 let m = levelsChannel(.rgb)
                 return SIMD4(Float(m.apply(levelsChannel(.red).apply(t))),

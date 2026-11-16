@@ -14,11 +14,12 @@ public enum PSDImport {
 
     static let blendModes: [String: BlendMode] = [
         "pass": .passThrough, "norm": .normal, "dark": .darken, "mul ": .multiply, "idiv": .colorBurn, "lbrn": .linearBurn,
+        "dkCl": .darkerColor, "lgCl": .lighterColor,
         "lite": .lighten, "scrn": .screen, "div ": .colorDodge, "lddg": .linearDodge, "over": .overlay, "sLit": .softLight,
         "hLit": .hardLight, "vLit": .vividLight, "lLit": .linearLight, "pLit": .pinLight, "hMix": .hardMix, "diff": .difference,
         "smud": .exclusion, "fsub": .subtract, "fdiv": .divide, "hue ": .hue, "sat ": .saturation, "colr": .color, "lum ": .luminosity,
     ]
-    static let blendNames: [String: String] = ["diss": "Dissolve", "dkCl": "Darker Color", "lgCl": "Lighter Color"]
+    static let blendNames: [String: String] = ["diss": "Dissolve"]
 
     /// The additional blocks that say a layer is more than its pixels, and what is said about each.
     static let adjustments: [String: String] = [
@@ -227,7 +228,7 @@ public enum PSDImport {
         if let block = source.blocks["curv"], let perChannel = curves(block) {
             var result = Adjustment(.curves)
             result.curves = perChannel
-            report.notes.append(.init(.curvesMayDiffer, layer: source.name))
+            result.flags[Adjustment.naturalCurveFlag] = true   // drawn between the points as Photoshop draws it
             return result
         }
         return nil
@@ -250,14 +251,23 @@ public enum PSDImport {
         return result
     }
 
-    /// Curves: version 1 (a bit map of which curves are there) or 4 (their count); each curve
-    /// is a count of 2 to 19 points, each point its output then its input, 0 to 255.
+    /// Curves. In files from Photoshop the block is: one byte, the version (1 or 4), then for
+    /// version 1 a four-byte bit map of which curves are there, for version 4 their count; each
+    /// curve is a count of 2 to 19 points, each point its output then its input, 0 to 255.
+    /// (The specification's page describes the load-file form, without the leading byte and
+    /// with a two-byte bit map; the layout here is what real files hold, seen 2026-11-16.)
+    /// Bit 0 is the composite curve, bits 1 to 3 red, green and blue.
     static func curves(_ block: Data) -> [CurveChannel: [CurvePoint]]? {
         var r = PSDBytes(block)
-        // The block may begin with a padding byte before the version; the specification's file form starts at the version.
-        guard let version = try? r.u16(), version == 1 || version == 4, let second = try? r.u16() else { return nil }
-        let present: [Int] = version == 1 ? (0..<16).filter { second & (1 << $0) != 0 } : Array(0..<Int(second))
-        guard present.count <= 19 else { return nil }
+        guard (try? r.skip(1)) != nil, let version = try? r.u16(), version == 1 || version == 4 else { return nil }
+        let present: [Int]
+        if version == 1 {
+            guard let map = try? r.u32() else { return nil }
+            present = (0..<32).filter { map & (1 << UInt32($0)) != 0 }
+        } else {
+            guard let count = try? r.u16(), count <= 19 else { return nil }
+            present = Array(0..<Int(count))
+        }
         var result: [CurveChannel: [CurvePoint]] = [:]
         for index in present {
             guard let count = try? r.u16(), (2...19).contains(count) else { return nil }
@@ -267,7 +277,8 @@ public enum PSDImport {
                 points.append(CurvePoint(Double(input) / 255, Double(output) / 255))
             }
             guard zip(points, points.dropFirst()).allSatisfy({ $0.x < $1.x }) else { return nil }
-            if index < channels.count { result[channels[index]] = points }
+            guard index < channels.count else { return nil }   // a curve for a channel Glimmer has no curve for: not guessed at
+            result[channels[index]] = points
         }
         return result.isEmpty ? nil : result
     }

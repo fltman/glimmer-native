@@ -97,6 +97,8 @@ enum Reference {
         case .hardMix: each(b, s) { b, s in b + s >= 1 ? 1 : 0 }
         case .subtract: simd_max(b - s, .zero)
         case .divide: each(b, s) { b, s in s <= 0 ? (b > 0 ? 1 : 0) : min(1, b / s) }
+        case .darkerColor: lum(s) < lum(b) ? s : b
+        case .lighterColor: lum(s) > lum(b) ? s : b
         }
     }
 

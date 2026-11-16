@@ -150,3 +150,34 @@ struct PSDSampleFiles {
         try PSDTestWriter.mixed().data().write(to: folder.appending(path: "mixed.psd"))
     }
 }
+
+/// Files written by other programs (fetched with Anders's yes, kept outside the repository):
+/// GLIMMER_PSD_SAMPLES=<folder>. Each is imported, its report printed, and its layers measured
+/// against the flattened picture the file carries.
+@Suite(.enabled(if: ProcessInfo.processInfo.environment["GLIMMER_PSD_SAMPLES"] != nil), .serialized)
+struct PSDRealFiles {
+    @Test func everyFileImportsWithATrueReport() throws {
+        let folder = URL(fileURLWithPath: ProcessInfo.processInfo.environment["GLIMMER_PSD_SAMPLES"]!)
+        let files = try FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil).filter { ["psd", "psb"].contains($0.pathExtension.lowercased()) }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+        #expect(!files.isEmpty)
+        for url in files {
+            let data = try Data(contentsOf: url)
+            let start = Date()
+            do {
+                let header = try PSDFile.readHeader(data)
+                let raw = try? PSDFile(data)
+                let keys = Set((raw?.layers ?? []).flatMap(\.extraKeys)).sorted().joined(separator: " ")
+                let blends = (raw?.layers ?? []).map { $0.blendKey.trimmingCharacters(in: .whitespaces) }.joined(separator: ",")
+                var (state, report) = try PSDImport.document(from: data)
+                if !report.flattened, let d = PSDAppearance.difference(of: state, from: data, context: try context()) {
+                    report.meanDifference = d.mean; report.shareVisiblyDifferent = d.shareVisible
+                }
+                state.importReport = report
+                print("PSDREAL \(url.lastPathComponent) | \(header.width)×\(header.height) \(report.source) | \(String(format: "%.2f", Date().timeIntervalSince(start))) s | layers \(report.layersKept)/\(report.layersInFile) | blends \(blends) | blocks \(keys)")
+                for line in report.lines { print("PSDREAL    \(line)") }
+            } catch {
+                print("PSDREAL \(url.lastPathComponent) | REFUSED: \((error as? LocalizedError)?.errorDescription ?? "\(error)")")
+            }
+        }
+    }
+}

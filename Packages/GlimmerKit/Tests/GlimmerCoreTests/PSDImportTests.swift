@@ -50,22 +50,23 @@ import PSDTestSupport
         levels.extraBlocks = [("levl", Data([0, 2]))]
         var fill = L(name: "Color Fill 1", rect: PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0))
         fill.extraBlocks = [("SoCo", Data([0, 0, 0, 16])), ("vmsk", Data([0, 0, 0, 3]))]
-        var glow = Self.pixels("Glow", blend: "lgCl")
+        var glow = Self.pixels("Glow", blend: "diss")
         glow.extraBlocks = [("lfx2", Data([0, 0])), ("SoLd", Data([0, 0]))]
-        let (state, report) = try PSDImport.document(from: Self.file([Self.pixels("Photo"), levels, fill, glow, Self.pixels("Speckle", blend: "diss")]), limits: Self.limits)
-        #expect(state.layers.map(\.name) == ["Photo", "Glow", "Speckle"])
-        #expect(state.layers.map(\.blendMode) == [.normal, .normal, .normal])
-        #expect(report.layersInFile == 5 && report.layersKept == 3 && !report.looksTheSame)
+        let (state, report) = try PSDImport.document(from: Self.file([Self.pixels("Photo"), levels, fill, glow, Self.pixels("Speckle", blend: "diss"), Self.pixels("Lighter", blend: "lgCl"), Self.pixels("Darker", blend: "dkCl")]), limits: Self.limits)
+        #expect(state.layers.map(\.name) == ["Photo", "Glow", "Speckle", "Lighter", "Darker"])
+        // Lighter Color and Darker Color are Glimmer's own modes now; Dissolve is not.
+        #expect(state.layers.map(\.blendMode) == [.normal, .normal, .normal, .lighterColor, .darkerColor])
+        #expect(report.layersInFile == 7 && report.layersKept == 5 && !report.looksTheSame)
         let said = report.notes.map { "\($0.layer ?? "-"): \($0.what)" }
         #expect(said == [
             "Levels 1: It was a Levels adjustment layer. That kind is not read in this version, so it was left out.",
             "Color Fill 1: It was a solid colour fill or shape layer. That kind is not read in this version, so it was left out.",
-            "Glow: The blend mode Lighter Color became Normal: Glimmer doesn't have it.",
+            "Glow: The blend mode Dissolve became Normal: Glimmer doesn't have it.",
             "Glow: Its layer effects (shadows, strokes, glows) were not read.",
             "Glow: It was a smart object and is now pixels. The file placed in it is not kept in this version.",
             "Speckle: The blend mode Dissolve became Normal: Glimmer doesn't have it.",
         ])
-        #expect(report.lines.first == "3 of 5 layers came through as layers (RGB, 8 bits per channel). 6 things did not come through as it was:")
+        #expect(report.lines.first == "5 of 7 layers came through as layers (RGB, 8 bits per channel). 6 things did not come through as it was:")
     }
 
     @Test func damagedGroupStructureKeepsTheLayersAndSaysSo() throws {
@@ -191,7 +192,8 @@ import PSDTestSupport
         let c = try #require(state.layers[2].content.theAdjustment)
         #expect(c.kind == .curves && c.curves[.rgb] == [CurvePoint(0, 0), CurvePoint(128.0 / 255, 160.0 / 255), CurvePoint(1, 1)])
         #expect(state.layers[3].content.theAdjustment?.kind == .invert)
-        #expect(report.notes.map(\.kind) == [.curvesMayDiffer, .adjustmentLeftOut] && report.notes[1].detail == "Vibrance")
+        #expect(c.usesNaturalCurve)   // drawn between its points as Photoshop draws it
+        #expect(report.notes.map(\.kind) == [.adjustmentLeftOut] && report.notes[0].detail == "Vibrance")
         // Settings outside what the specification allows are not guessed at: the layer is left out and named.
         let bad = Self.block("Levels 2", [("levl", PSDTestWriter.levels([(250, 10, 0, 255, 100)]))])
         let (_, second) = try PSDImport.document(from: PSDImportTests.file([PSDImportTests.pixels("Photo"), bad]), limits: PSDImportTests.limits)

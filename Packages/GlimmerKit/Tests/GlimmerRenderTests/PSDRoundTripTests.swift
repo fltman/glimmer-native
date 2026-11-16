@@ -72,12 +72,13 @@ import Testing
     func everyFieldComesBack(depth: Int) throws {
         let before = try Self.document()
         let (data, report) = try PSDExport.data(for: before, depth: depth, context: try context())
-        #expect(report.notes.isEmpty && report.layersWritten == 10, "\(report.notes.map(\.what))")
+        // The one note: the Curves layer made in Glimmer is written with points added along its curve.
+        #expect(report.notes.map(\.kind) == [.curveDrawnDifferently] && report.layersWritten == 10, "\(report.notes.map(\.what))")
         let (after, imported) = try PSDImport.document(from: data, limits: Self.limits)
         #expect(Self.outline(after.layers) == Self.outline(before.layers))
         #expect(after.width == Self.width && after.height == Self.height && after.blendSpace == .gamma)
         // What the import says about a file Glimmer wrote: only the Curves note.
-        #expect(imported.notes.map(\.kind) == [.curvesMayDiffer] && imported.layersKept == 10 && imported.layersInFile == 10)
+        #expect(imported.notes.isEmpty && imported.layersKept == 10 && imported.layersInFile == 10)
         func find(_ name: String, in layers: [Layer]) -> Layer? {
             for l in layers { if l.name == name { return l }; if case .group(let g) = l.content, let hit = find(name, in: g.children) { return hit } }
             return nil
@@ -93,7 +94,16 @@ import Testing
             let x = try #require(l1.levels[channel]), y = try #require(l0.levels[channel])
             #expect(abs(x.inBlack - y.inBlack) < 0.002 && abs(x.inWhite - y.inWhite) < 0.002 && abs(x.gamma - y.gamma) < 0.006 && abs(x.outBlack - y.outBlack) < 0.002 && abs(x.outWhite - y.outWhite) < 0.002)
         }
-        #expect(adjustment("Curves 1", after)?.curves == adjustment("Curves 1", before)?.curves)
+        // The curve comes back with more points, drawn as other programs draw it, and follows the same line.
+        let c1 = try #require(adjustment("Curves 1", after)), c0 = try #require(adjustment("Curves 1", before))
+        #expect(c1.usesNaturalCurve && (c1.curves[.rgb]?.count ?? 0) > 3)
+        var worstCurve = 0.0
+        for i in 0...255 {
+            let t = Double(i) / 255
+            worstCurve = max(worstCurve, abs(CurveMath.evaluate(c1.curve(.rgb), at: t, natural: true) - CurveMath.evaluate(c0.curve(.rgb), at: t)))
+        }
+        print("PSD round trip, a Curves layer made in Glimmer: the curve read back is at most \(worstCurve * 255) of 255 from the original")
+        #expect(worstCurve * 255 < 1.5)
         // The picture: the document before, the document after, and the file's own flattened picture as macOS reads it.
         let ours = try #require(PSDAppearance.onWhite(try ImageExporter.flattenedSRGB(before, context: try context())))
         let back = try #require(PSDAppearance.onWhite(try ImageExporter.flattenedSRGB(after, context: try context())))
@@ -114,7 +124,7 @@ import Testing
     @Test func whatTheFileCannotCarryIsSaidAndTheFlattenedPictureStillShowsIt() throws {
         let before = try Self.document(extras: true)
         let (data, report) = try PSDExport.data(for: before, context: try context())
-        #expect(report.notes.map { "\($0.layer ?? "-"): \($0.kind.rawValue) \($0.detail ?? "")" } == ["Vibrance 1: adjustmentLeftOut Vibrance", "Gradient Fill 1: writtenAsPixels a gradient fill"])
+        #expect(report.notes.map { "\($0.layer ?? "-"): \($0.kind.rawValue) \($0.detail ?? "")" } == ["Curves 1: curveDrawnDifferently ", "Vibrance 1: adjustmentLeftOut Vibrance", "Gradient Fill 1: writtenAsPixels a gradient fill"])
         #expect(report.layersWritten == 11)
         let (after, _) = try PSDImport.document(from: data, limits: Self.limits)
         #expect(after.layers.map(\.name).suffix(1) == ["Gradient Fill 1"] && !after.layers.contains { $0.name == "Vibrance 1" })
@@ -134,7 +144,7 @@ import Testing
     @Test func aDocumentInLinearLightSaysHowDifferentItsLayersWillLookElsewhere() throws {
         let linear = try Self.document(blend: .linear)
         let (_, report) = try PSDExport.data(for: linear, context: try context())
-        #expect(report.notes.map(\.kind) == [.linearBlending])
+        #expect(report.notes.map(\.kind) == [.linearBlending, .curveDrawnDifferently])
         let difference = try #require(report.gammaDifference)
         print("PSD export of a linear-light document: its layers blended in gamma differ by mean \(difference.mean), visibly on \(difference.shareVisible) of the pixels")
         #expect(difference.mean > 0)

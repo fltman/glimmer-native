@@ -266,3 +266,32 @@ Test files: the tests write their own DNG (a Bayer mosaic in a TIFF with DNG tag
 Measured on the test file (sRGB values of a patch): middle grey 155 at −1 stop, 204 as shot, 241 at +1 stop; white balance at 3000 K gives (170, 205, 247), at 12000 K (245, 227, 199); clicking on a warm patch (255, 199, 197) gives a balance under which it is (238, 238, 238); the stored process gives the same picture again and a process the system does not offer is refused with words; a draft at a quarter scale is a quarter the size; the file cut at 37 lengths is refused every time; data that is not a RAW file is refused.
 
 Not verified: any file from a real camera. The test file's decoder reports no lens correction, so that control has never been switched on anything. What happens inside Apple's decoder on a hostile file is not something Glimmer can test or bound.
+
+## Photoshop files written by Photoshop (2026-11-16)
+
+Anders approved the fetch in the session window. Eighteen test files from the psd-tools project's `tests/psd_files` (repository licence MIT, "Copyright (c) 2019 Kota Yamaguchi"; its `third-party-psds` folder was not fetched), about 3 MB, kept in `/Volumes/work2/glimmer-samples/psd`, outside the repository. They carry Photoshop's own block set. Run: `GLIMMER_PSD_SAMPLES=<folder> swift test --filter PSDRealFiles`.
+
+No crash, no hang, the slowest file 0.8 s. What the real files showed that Glimmer's own generated files could not:
+
+| Found | What it was | Now |
+|---|---|---|
+| `mask-vector-density.psd` refused as damaged | A layer with a vector mask and a painted mask stores the painted mask a second time with a rectangle of its own (channel −3), and the mask data can hold density and feather values; the reader used the first rectangle for both | read correctly |
+| Curves layers left out | In real files the block is one byte, version 1, a four-byte bit map; the specification's page describes the load-file form (no leading byte, two-byte map) | read |
+| Curves read but the picture differed (61 % of the pixels, mean 8.5) | Photoshop draws a natural cubic spline through the points; Glimmer's own curve is monotone | curves from a file are drawn the natural way (a flag on the adjustment), and the picture matches; a curve made in Glimmer is exported with points added along it (read back within 0.5 of 255) |
+| Every file with a transparent background "differed" by about 79 % | The flattened picture in such a file is already laid on white, with the transparency in a fourth channel; macOS's reader applies that channel once more | the comparison reads the file's colour planes directly |
+| Darker Color, Lighter Color | In the files blue wins over red and red over green in Darker Color (and the reverse in Lighter Color); their channel sums are equal, their luminances are not | both built, by luminance; both files match |
+| The three assumptions | Colour keys in a fill are "Rd  ", "Grn ", "Bl  "; the vector mask's flags were 0 in every file (so the bit order is still not settled); no file had text | two of three settled |
+
+Per file, Glimmer's picture of the layers against the picture saved in the file:
+
+| File | Result |
+|---|---|
+| 16bit5x5, group, blend-modes normal / multiply / darker-color / lighter-color, adjustments levels, adjustments curves | match |
+| adjustments invert | 0.6 % of the pixels visibly, mean 0.1 |
+| blend-modes dissolve | differs (79 %): Dissolve is not built, the layers come in as Normal, and the report says so |
+| adjustments brightness/contrast, exposure, hue/saturation, posterize, threshold | differ (71 to 99 %): those adjustment kinds are left out and named |
+| fill_adjustments (every adjustment kind, shapes with effects) | differs (100 %): 14 kinds left out and named, effects not read |
+| mask-vector-density | differs (37 %): vector masks on pixel layers are not read, and said |
+| gradient-fill | 32 bits per channel: opened as the file's flattened picture, and said |
+
+Every difference is one the report names. Still not met by any real file: text layers, smart objects, the vector mask's flag bits when set, PSB, CMYK and Lab.

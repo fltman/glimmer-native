@@ -37,6 +37,11 @@ public struct PSDFile: Sendable {
         public var isDisabled: Bool
         /// One byte per pixel, `rect.width` × `rect.height`, when the file had the channel.
         public var pixels: Data?
+        /// When the layer has a vector mask as well, the file holds the painted mask a second
+        /// time with a rectangle of its own (channel -3). Its plane is read with this rectangle.
+        var realRect: Rect?
+        /// 0…255, when the file gives the mask a density below full.
+        public var density: UInt8?
         public init(rect: Rect, defaultColor: UInt8, isDisabled: Bool, pixels: Data?) {
             self.rect = rect; self.defaultColor = defaultColor; self.isDisabled = isDisabled; self.pixels = pixels
         }
@@ -184,7 +189,7 @@ public struct PSDFile: Sendable {
                 guard Date() < deadline else { throw tookTooLong }
                 var body = try info.slice(channel.length)
                 let isMask = channel.id == -2 || channel.id == -3
-                let rect = isMask ? record.layer.mask?.rect : record.layer.rect
+                let rect = channel.id == -3 ? (record.layer.mask?.realRect ?? record.layer.mask?.rect) : isMask ? record.layer.mask?.rect : record.layer.rect
                 guard let rect, rect.width > 0, rect.height > 0 else { continue }
                 // A plane no larger than the canvas with a margin: a layer may reach outside it, but not without bound.
                 let (samples, overflow) = rect.width.multipliedReportingOverflow(by: rect.height)
@@ -224,6 +229,19 @@ public struct PSDFile: Sendable {
             let color = try mask.u8(), maskFlags = try mask.u8()
             if maskRect.bottom >= maskRect.top, maskRect.right >= maskRect.left {
                 layer.mask = Mask(rect: maskRect, defaultColor: color, isDisabled: maskFlags & 2 != 0, pixels: nil)
+            }
+            // Mask parameters (density and feather of the painted and of the vector mask), when the flags say they are there.
+            if maskFlags & 16 != 0, let which = try? mask.u8() {
+                if which & 1 != 0 { layer.mask?.density = try? mask.u8() }
+                if which & 2 != 0 { try? mask.skip(8) }
+                if which & 4 != 0 { try? mask.skip(1) }
+                if which & 8 != 0 { try? mask.skip(8) }
+            }
+            // The longer form: the painted mask once more, with its own flags, background and rectangle.
+            if mask.remaining >= 18, (try? mask.skip(2)) != nil,
+               let top = try? mask.i32(), let left = try? mask.i32(), let bottom = try? mask.i32(), let right = try? mask.i32(), bottom >= top, right >= left,
+               [top, left, bottom, right].allSatisfy({ abs(Int($0)) <= 1_000_000 }) {
+                layer.mask?.realRect = Rect(top: Int(top), left: Int(left), bottom: Int(bottom), right: Int(right))
             }
         }
         try extra.skip(Int(try extra.u32()))                      // blending ranges

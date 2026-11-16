@@ -47,11 +47,11 @@ check "mixed.psd: 6 of 7 kept, the look may differ" '[[ "$(echo "$R" | field "d[
 echo "$R" | field '"\n".join("    " + (n["layer"] or "-") + ": " + n["what"] for n in d["importReport"]["notes"])'
 sleep 1.5
 SEEN=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>&1)
-for line in "It was text (“Summer Sale”) and is now pixels: the words can't be edited as text." "It was a Vibrance adjustment layer. That kind is not read in this version, so it was left out." "The blend mode Lighter Color became Normal: Glimmer doesn't have it."; do
+for line in "It was text (“Summer Sale”) and is now pixels: the words can't be edited as text." "It was a Vibrance adjustment layer. That kind is not read in this version, so it was left out." "The blend mode Dissolve became Normal: Glimmer doesn't have it."; do
   check "mixed.psd: the sheet says: $line" 'echo "$SEEN" | grep -qF "$line"'
 done
 # This sample's flattened picture is only its background: the tests' writer can't draw Vibrance or
-# Lighter Color into it. So the measured difference says nothing about the import and is not shown here.
+# Dissolve into it. So the measured difference says nothing about the import and is not shown here.
 check "mixed.psd: the sheet has a line about the picture (not comparable for this sample: its flattened picture is only the background)" 'echo "$SEEN" | grep -q "Glimmer'"'"'s picture \(differs from\|matches\) the one saved in the file"'
 front; press 36
 "$TOOLS/safemenu/safemenu" --pid $GLIMMER_PID --check "File" "Import Report…" >/dev/null 2>&1 && ok "File › Import Report… is there and enabled for this window" || bad "File › Import Report…"

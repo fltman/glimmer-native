@@ -21,6 +21,9 @@ public struct PSDExportReport: Sendable, Equatable {
         case writtenInSRGB
         /// By choice: everything merged into one layer.
         case flattenedByChoice
+        /// A Curves layer made in Glimmer: written with points added along the curve, so that a program
+        /// that draws curves its own way follows the same line.
+        case curveDrawnDifferently
     }
 
     public struct Note: Sendable, Equatable {
@@ -56,6 +59,7 @@ extension PSDExportReport.Note {
         case .clippedToCanvas: "It reaches outside the canvas, and what is outside is not written."
         case .linearBlending: "This document blends colours in linear light. Other programs blend these layers in gamma, so the layers will look different there; the flattened picture in the file is right."
         case .writtenInSRGB: "The document's colours are Display P3; the file is written in sRGB."
+        case .curveDrawnDifferently: "It is written as a Curves layer with points added along the curve, so that it looks the same in programs that draw curves their own way. It has more points to edit there."
         case .flattenedByChoice: "All layers are merged into one, as chosen: the file looks right everywhere and has no layers to edit."
         }
     }
@@ -66,7 +70,7 @@ extension PSDExportReport.Note {
 /// any program can show. First version: RGB, 8 or 16 bits per channel, sRGB.
 public enum PSDExport {
     static let blendKeys: [BlendMode: String] = [
-        .passThrough: "pass", .normal: "norm", .darken: "dark", .multiply: "mul ", .colorBurn: "idiv", .linearBurn: "lbrn",
+        .passThrough: "pass", .normal: "norm", .darkerColor: "dkCl", .lighterColor: "lgCl", .darken: "dark", .multiply: "mul ", .colorBurn: "idiv", .linearBurn: "lbrn",
         .lighten: "lite", .screen: "scrn", .colorDodge: "div ", .linearDodge: "lddg", .overlay: "over", .softLight: "sLit",
         .hardLight: "hLit", .vividLight: "vLit", .linearLight: "lLit", .pinLight: "pLit", .hardMix: "hMix", .difference: "diff",
         .exclusion: "smud", .subtract: "fsub", .divide: "fdiv", .hue: "hue ", .saturation: "sat ", .color: "colr", .luminosity: "lum ",
@@ -136,6 +140,12 @@ public enum PSDExport {
                 try append(group.children, to: &out, state: state, depth: depth, context: context, report: &report, nesting: nesting + 1)
                 record.group = group.isExpanded ? .open : .closed
             case .adjustment(let adjustment):
+                // A curve made in Glimmer runs between its points in Glimmer's own way; Photoshop draws its own curve
+                // through the same points. So such a curve is written with points added along it, enough for
+                // the other program's curve to follow the same line.
+                if adjustment.kind == .curves, !adjustment.usesNaturalCurve, adjustment.curves.values.contains(where: { $0.count > 2 }) {
+                    report.notes.append(.init(.curveDrawnDifferently, layer: layer.name))
+                }
                 guard let block = settings(adjustment) else {
                     report.notes.append(.init(.adjustmentLeftOut, layer: layer.name, detail: adjustment.kind.title, changesLook: layer.isVisible))
                     continue
@@ -236,9 +246,18 @@ public enum PSDExport {
             }
             return ("levl", d)
         case .curves:
-            var d = be16(4) + be16(UInt16(channels.count))
+            // As files from Photoshop hold it: one byte, version 1, a four-byte bit map of the curves that follow.
+            var d = Data([0]) + be16(1) + be32(0b1111)
             for channel in channels {
-                var points = (adjustment.curves[channel] ?? []).sorted { $0.x < $1.x }.map { (byte($0.x), byte($0.y)) }
+                var source = (adjustment.curves[channel] ?? []).sorted { $0.x < $1.x }
+                if !adjustment.usesNaturalCurve, source.count > 2 {
+                    // Glimmer's curve sampled at its own points and at even steps between: up to 19 points in all.
+                    var xs = Set(source.map { byte($0.x) })
+                    for i in 0...16 where xs.count < 19 { xs.insert(UInt16((Double(i) * 255 / 16).rounded())) }
+                    let lo = byte(source.first!.x), hi = byte(source.last!.x)
+                    source = xs.filter { $0 >= lo && $0 <= hi }.sorted().map { CurvePoint(Double($0) / 255, CurveMath.evaluate(source, at: Double($0) / 255)) }
+                }
+                var points = source.map { (byte($0.x), byte($0.y)) }
                 // Inputs must rise; points that land on the same input after rounding are dropped. A curve needs 2 to 19 points.
                 points = points.reduce(into: []) { kept, p in if kept.last.map({ $0.0 < p.0 }) ?? true { kept.append(p) } }
                 if points.count < 2 { points = [(0, 0), (255, 255)] }

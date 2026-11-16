@@ -235,7 +235,7 @@ public struct PSDTestWriter {
         var badge = Layer(name: "Badge", rect: PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0))
         badge.extraBlocks = [("SoCo", solidColor(red: 220, green: 40, blue: 60)),
                              ("vmsk", vectorMask([(x: 0.7, y: 0.1), (x: 0.95, y: 0.1), (x: 0.95, y: 0.4), (x: 0.7, y: 0.4)]))]
-        let glow = Layer(name: "Glow", rect: box, blendKey: "lgCl", opacity: 200, planes: solid(255, 200, 120), compression: 2)
+        let glow = Layer(name: "Glow", rect: box, blendKey: "diss", opacity: 200, planes: solid(255, 200, 120), compression: 2)
         let folder = Layer(name: "Heading", rect: PSDFile.Rect(top: 0, left: 0, bottom: 0, right: 0), blendKey: "pass", group: 1)
         w.layers = [back, end, title, levels, vibrance, badge, glow, folder]
         w.composite = [plane { x, _ in 60 + x * 3 }, plane { _, y in 60 + y * 4 }, plane { _, _ in 150 }]
@@ -290,7 +290,8 @@ public struct PSDTestWriter {
 
     /// A Curves block ('curv'), version 4: each curve is its points as (input, output), 0 to 255.
     public static func curves(_ curves: [[(input: UInt16, output: UInt16)]]) -> Data {
-        var d = be16(4) + be16(UInt16(curves.count))
+        // The layout files from Photoshop hold: one byte, version 1, a four-byte bit map of the curves present.
+        var d = Data([0]) + be16(1) + be32(UInt32((1 << curves.count) - 1))
         for curve in curves {
             d += be16(UInt16(curve.count))
             for point in curve { d += be16(point.output) + be16(point.input) }   // output first

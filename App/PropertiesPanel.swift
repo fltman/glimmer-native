@@ -128,7 +128,7 @@ struct AdjustmentEditor: View {
                 channelPicker
                 CurvesEditor(points: adjustment.curve(channel), channel: channel,
                              others: CurveChannel.allCases.filter { $0 != channel && adjustment.curves[$0] != nil }
-                                .map { ($0, adjustment.curve($0)) }) { points in
+                                .map { ($0, adjustment.curve($0)) }, natural: adjustment.usesNaturalCurve) { points in
                     var a = adjustment
                     a.curves[channel] = points
                     update(a)
@@ -328,6 +328,8 @@ struct CurvesEditor: View {
     let channel: CurveChannel
     /// The other channels' curves, drawn faintly behind this one.
     var others: [(CurveChannel, [CurvePoint])] = []
+    /// Draw the curve the way the adjustment applies it (curves from a Photoshop file run differently between their points).
+    var natural = false
     let update: ([CurvePoint]) -> Void
     let commit: () -> Void
 
@@ -388,7 +390,7 @@ struct CurvesEditor: View {
                     var faint = Path()
                     for i in 0...64 {
                         let t = Double(i) / 64
-                        let p = CGPoint(x: size.width * t, y: size.height * (1 - CurveMath.evaluate(otherPoints, at: t)))
+                        let p = CGPoint(x: size.width * t, y: size.height * (1 - CurveMath.evaluate(otherPoints, at: t, natural: natural)))
                         i == 0 ? faint.move(to: p) : faint.addLine(to: p)
                     }
                     ctx.stroke(faint, with: .color(Self.channelColor(other).opacity(0.35)), lineWidth: 1)
@@ -396,7 +398,7 @@ struct CurvesEditor: View {
                 var curve = Path()
                 for i in 0...128 {
                     let t = Double(i) / 128
-                    let p = CGPoint(x: size.width * t, y: size.height * (1 - CurveMath.evaluate(points, at: t)))
+                    let p = CGPoint(x: size.width * t, y: size.height * (1 - CurveMath.evaluate(points, at: t, natural: natural)))
                     i == 0 ? curve.move(to: p) : curve.addLine(to: p)
                 }
                 ctx.stroke(curve, with: .color(tint), lineWidth: 1.5)

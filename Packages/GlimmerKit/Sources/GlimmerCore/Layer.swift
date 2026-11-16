@@ -5,8 +5,8 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
     /// Groups only: children blend straight into what's below.
     case passThrough = "pass-through"
     case normal
-    case darken, multiply, colorBurn = "color-burn", linearBurn = "linear-burn"
-    case lighten, screen, colorDodge = "color-dodge", linearDodge = "linear-dodge"
+    case darken, multiply, colorBurn = "color-burn", linearBurn = "linear-burn", darkerColor = "darker-color"
+    case lighten, screen, colorDodge = "color-dodge", linearDodge = "linear-dodge", lighterColor = "lighter-color"
     case overlay, softLight = "soft-light", hardLight = "hard-light"
     case vividLight = "vivid-light", linearLight = "linear-light", pinLight = "pin-light", hardMix = "hard-mix"
     case difference, exclusion, subtract, divide
@@ -39,6 +39,8 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
         case .hardMix: 21
         case .subtract: 22
         case .divide: 23
+        case .darkerColor: 24
+        case .lighterColor: 25
         }
     }
 
@@ -50,6 +52,8 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
         case .multiply: "Multiply"
         case .colorBurn: "Color Burn"
         case .linearBurn: "Linear Burn"
+        case .darkerColor: "Darker Color"
+        case .lighterColor: "Lighter Color"
         case .lighten: "Lighten"
         case .screen: "Screen"
         case .colorDodge: "Color Dodge"
@@ -75,8 +79,8 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
     /// Menu groups, in Photoshop order (without Pass Through).
     public static let menuGroups: [[BlendMode]] = [
         [.normal],
-        [.darken, .multiply, .colorBurn, .linearBurn],
-        [.lighten, .screen, .colorDodge, .linearDodge],
+        [.darken, .multiply, .colorBurn, .linearBurn, .darkerColor],
+        [.lighten, .screen, .colorDodge, .linearDodge, .lighterColor],
         [.overlay, .softLight, .hardLight, .vividLight, .linearLight, .pinLight, .hardMix],
         [.difference, .exclusion, .subtract, .divide],
         [.hue, .saturation, .color, .luminosity],
@@ -89,6 +93,8 @@ public enum BlendMode: String, Codable, CaseIterable, Sendable {
         case .passThrough: .normal
         case .vividLight, .linearLight, .pinLight, .hardMix: .hardLight
         case .subtract: .difference
+        case .darkerColor: .darken
+        case .lighterColor: .lighten
         case .divide: .colorDodge
         default: self
         }

@@ -12195,6 +12195,39 @@
           }
         }
       }
+    },
+    "It is written as a Curves layer with points added along the curve, so that it looks the same in programs that draw curves their own way. It has more points to edit there.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det skrivs som ett kurvlager med extra punkter längs kurvan, så att det ser likadant ut i program som drar kurvor på sitt eget sätt. Det har fler punkter att redigera där."
+          }
+        }
+      }
+    },
+    "Darker Color": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mörkare färg"
+          }
+        }
+      }
+    },
+    "Lighter Color": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljusare färg"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
