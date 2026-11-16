@@ -738,3 +738,19 @@ Local evaluation with the tighter form (qwen3:8b, the same 18, both locks): **18
 Read against SIBLINGS.md, "Siffror i assistentens svar" (the coordinator's wording of the rule, from this build), two sentences there say a little more than the code does:
 - Point 3 names an operation by its "menu title in either language". The code uses the tool name, the stems by which a request names the operation in English or Swedish, the parameters' names and the kinds' stems; it does not look up menu titles.
 - "A statement about the user's own document is backed only by 2 and 4, never by 3." The code holds the megapixels to the word and the shape to the written ratio, and gives an operation's figures only where the operation is named; it does not otherwise decide that a sentence is "about the document". So a sentence that names an operation and also states something about the document may keep a figure from that operation's description.
+
+## Berget again, with the new figures check and the RAW group (2026-11-16, 22:3x; Anders pressed the button)
+
+Read from the Settings window as before (kept in `build/trial-berget-glm53flash-2.txt`). zai-org/GLM-5.3-Flash through Berget, 22 requests.
+
+**The nineteen: 18 of 18** (English 10 of 10, Swedish 8 of 8), median 7.3 s, slowest 10.2 s: passes. It was 16 of 18 two hours earlier, median 3.8 s; the answers were slower this time.
+- The two that failed earlier pass. "How big is this document, in pixels?" → "The document is 2400 × 1600 pixels — a 3:2 landscape canvas with one pixel layer": the 3:2 stays, as the document's own shape. The Swedish question about layers and the cost of enlarging → an answer that names `upscale` with "2× eller 4×": the operation's own figures stay in the sentence that names it.
+- No figure was removed in any of the nineteen answers this time, so "as the model wrote them" and "as the person gets them" are the same.
+- In that Swedish answer the model says enlarging "kostar ingenting". That is a claim about cost without a figure, the kind the check does not see; here it is true (both ways of enlarging run on the Mac). The known gap itself: 0 of 1 as before, on wording ("No — generating a new image … are paid AI jobs" is right).
+
+**The RAW group: 2 of 3.**
+- "Make it a stop brighter" with a RAW layer active → `develop_raw(exposure: 1)`: right.
+- The same request with an ordinary layer → `add_adjustment(exposure)`: right; developing was not chosen.
+- "Gör bilden varmare" with a RAW layer active → `add_adjustment(color_balance)`, not `develop_raw`: counted as a miss, in 18.6 s. The picture would get warmer either way; the adjustment layer is a real answer to the request, only not the one that uses the RAW file. The case was written, before any model ran, to expect development.
+
+Three requests on one model once is thin: it says the operation is found for exposure and left alone for an ordinary layer, and that for white balance this model reaches for an adjustment first.
