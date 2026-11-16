@@ -327,6 +327,15 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 
 **Kritisk väg:** 0 → 1 → 2 → 3 (AI). AI ligger direkt efter lagerträdet för att få wow-effekten tidigt. Fas 5–7 kan delvis köras parallellt efter fas 4.
 
+### Fas 10–13 — tillagda 2026-11-16
+
+Anders, via samordnaren: "ok glimmer kan sätta igång med PSD med lager, RAW-framkallning, video och iPad". I den ordningen om han inte säger annat. Varje fas börjar med en kort skiss till samordnaren; det som är självklart väntar inte på svar, de namngivna frågorna gör det.
+
+- **Fas 10 — PSD med lager · XL.** Import först, export sedan. Egen läsare och skrivare från Adobes publicerade specifikation, ingen GPL-kod. PSD är opålitlig indata: storleksgränser före avkodning, stympade och ljugande filer, generatorer i testsviten. Det som inte överlever sägs alltid till användaren.
+- **Fas 11 — RAW-framkallning · L.** Apples egen RAW-kedja (Core Image). RAW-filen förblir källan; framkallningen är ett lager som kan öppnas igen.
+- **Fas 12 — Video · ?** Vad som menas frågas Anders innan något skissas (en bildruta som bild, videolager med tidslinje, eller en justering över ett klipp). Flimmer äger tiden.
+- **Fas 13 — iPad · XL.** Sist och störst. Ingen App Store-post skapas och inget laddas upp; det är Anders sak.
+
 ### Beslut och lärdomar under bygget
 
 - **Tiles är delade Metal-texturer** (`.shared`, unified memory) med en unik id per tile. Därför importerar `GlimmerCore` Metal; en ren CPU-modell hade krävt dubbla kopior. Enfärgade tiles lagras som en färg.
@@ -468,7 +477,7 @@ Storlek är relativ: **S** < **M** < **L** < **XL**. Varje fas avslutas med en k
 
 ## 6. Medvetet utanför (för nu)
 
-Replicate, konton, credits och fakturering, multiplayer, plugin-API, PSD med lager, RAW-framkallning utöver grundläget, video, iPad. Allt i `docs/INNOVATION_ROADMAP.md` som inte byggts i webben ligger också utanför, men registret och agentarkitekturen gör dem enkla att lägga till senare.
+Replicate, konton, credits och fakturering, multiplayer, plugin-API. (PSD med lager, RAW-framkallning, video och iPad stod här till 2026-11-16; de är nu fas 10–13, se avsnitt 3.) Allt i `docs/INNOVATION_ROADMAP.md` som inte byggts i webben ligger också utanför, men registret och agentarkitekturen gör dem enkla att lägga till senare.
 
 ## 7. Besvarade frågor (2026-11-13)
 
