@@ -110,6 +110,10 @@ xcodebuild archive -project Glimmer.xcodeproj -scheme Glimmer -configuration Rel
 # Checked on the archive, before anything is signed for distribution or sent anywhere.
 scripts/check-release-binary.sh "$OUT/Glimmer.xcarchive/Products/Applications/Glimmer.app" \
   || { echo "The release contains a switched-off feature (see above). Nothing was uploaded."; exit 1; }
+# The entitlements the release must carry, read from the archived app's signature (one was missing from
+# every build until the rehearsal of 2026-11-16 read it).
+scripts/check-entitlements.sh "$OUT/Glimmer.xcarchive/Products/Applications/Glimmer.app" \
+  || { echo "The release lacks an entitlement (see above). Nothing was uploaded."; exit 1; }
 
 if [[ $DRY_RUN == 1 ]]; then
   # Rehearsal: sign with Developer ID locally, no notarization upload.

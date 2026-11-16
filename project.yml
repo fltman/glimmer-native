@@ -74,6 +74,12 @@ targets:
         # The local agent API (127.0.0.1 only, see AgentServer).
         com.apple.security.network.server: true
         com.apple.security.files.user-selected.read-write: true
+        # A file a sibling app (or the person) handed over stays linked across a restart: a sandboxed app
+        # can only write it again after a relaunch through a bookmark it kept (decided by Anders 2026-11-16,
+        # docs/RELEASE.md point 9). It must stand HERE: XcodeGen writes App/Glimmer.entitlements from this
+        # list, and a key added only to that file is gone at the next `xcodegen generate` (it was, until the
+        # update rehearsal of 2026-11-16 read the signed app's entitlements).
+        com.apple.security.files.bookmarks.app-scope: true
         # Sparkle's installer XPC services in a sandboxed app.
         com.apple.security.temporary-exception.mach-lookup.global-name:
           - $(PRODUCT_BUNDLE_IDENTIFIER)-spks

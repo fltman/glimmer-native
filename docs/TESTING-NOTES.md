@@ -810,3 +810,11 @@ Two faults of mine found by that pass and mended: the key check I had added to t
 Local evaluation after the completion words (qwen3:8b, both locks): see the line below.
     EVAL qwen3:8b: 18 of 18 (English 10/10, Swedish 8/8), median 3.0 s, slowest 31.2 s: PASSES
     EVAL qwen3:8b: Known gaps (not counted): 0 of 1 held.
+
+## The signed update rehearsal (2026-11-16/17; Anders said "kör")
+
+Without notarization: nothing uploaded, everything signed on this Mac with Developer ID and the Sparkle key.
+
+**Found before the update itself: the release lacked an entitlement.** `com.apple.security.files.bookmarks.app-scope` (decided by Anders 2026-11-16 to go into the release, RELEASE.md point 9) was added to `App/Glimmer.entitlements` only. XcodeGen writes that file from `project.yml`, so the next `xcodegen generate` took the key out again, and every build since has been signed without it: a linked edit from Flimmer or Jämmer could not be written back after Glimmer restarted. Read from the signed 0.2.0 and 0.3.0 with `codesign -d --entitlements`. Now the key stands in `project.yml`; `scripts/check-entitlements.sh` checks project.yml, the generated file and (given an app) the signature; the commit gate runs it, and `release.sh` runs it on the archive before anything is signed for distribution. 0.3.0 was built again and carries it.
+
+A slip of mine on the way: `git checkout project.yml` (to take back the version bump after the dry run) also took back the uncommitted entitlement line. Put back and committed before going on. RELEASE.md's "git checkout project.yml" is safe only on a clean tree.

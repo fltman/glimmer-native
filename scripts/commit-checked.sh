@@ -51,6 +51,7 @@ zsh_path() { local tool; for tool in "$PWD/../the-apps/tools/check-zsh-path.sh" 
 run zsh-path zsh_path
 run features scripts/apply-features.py --check
 run strings scripts/check-strings.py
+run entitlements scripts/check-entitlements.sh
 run tests tests
 timed_tests
 run debug-build debug_build
