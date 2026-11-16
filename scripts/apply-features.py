@@ -18,4 +18,14 @@ for feature, pairs in json.load(open(os.path.join(root, "Config/site-features.js
         if other not in text: sys.exit(f"apply-features: can't find the {feature} wording in {p['file']}.")
         if check: stale.append(p["file"])
         else: open(path, "w").write(text.replace(other, want, 1))
+# The package manifest carries the switches as a comment, so that its text changes when they do
+# (Xcode re-reads a manifest only then).
+manifest = os.path.join(root, "Packages/GlimmerKit/Package.swift")
+text = open(manifest).read()
+line = "// features: " + " ".join(f"{k}={flags[k]}" for k in sorted(flags))
+now = re.sub(r"^// features: .*$", line, text, count=1, flags=re.M)
+if line not in now: sys.exit("apply-features: Package.swift has no '// features:' line.")
+if now != text:
+    if check: stale.append("Packages/GlimmerKit/Package.swift")
+    else: open(manifest, "w").write(now)
 if stale: sys.exit("The site is out of step with Config/Features.xcconfig: run scripts/export-agents-guide.sh (" + ", ".join(sorted(set(stale))) + ")")

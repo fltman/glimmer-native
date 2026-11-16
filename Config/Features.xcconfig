@@ -10,11 +10,11 @@
 GLIMMER_HEAL = NO
 
 // Photoshop files with their layers (File › Open… on a PSD or PSB, the agent API's import,
-// File › Import Report…). NO until a file saved by Photoshop itself has met the reader: every
-// test file so far comes from Glimmer's own writer, which reads Adobe's specification the way
-// the reader does. With NO a release opens a Photoshop file as before, as the flattened
-// picture macOS reads from it. The manual and the agent guide follow this.
-GLIMMER_PSD = NO
+// File › Import Report…, File › Export… › Photoshop File…). YES since 2026-11-16: eighteen
+// files written by Photoshop opened with true reports and survived being cut and changed
+// (docs/TESTING-NOTES.md). With NO a release opens a Photoshop file as the flattened picture
+// macOS reads from it. The manual, the FAQ and the agent guide follow this.
+GLIMMER_PSD = YES
 
 // RAW development (a RAW file opens as a layer that keeps the RAW and can be developed again:
 // exposure, white balance and the rest, through Apple's own decoder). NO until Anders has

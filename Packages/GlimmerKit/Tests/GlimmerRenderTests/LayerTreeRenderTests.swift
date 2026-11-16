@@ -45,6 +45,18 @@ private func close(_ a: SIMD4<Float>, _ b: SIMD4<Float>, _ tol: Float = 0.004) -
         #expect(abs(try renderPixel(half, x: 0, y: 0).x - (0.5 + inverted) / 2) < 0.003)
     }
 
+    /// Found with a file written by Photoshop (2026-11-16): a mask at 90 % along the edge of an
+    /// Invert layer. In a document that blends in gamma, opacity and masks mix encoded values.
+    @Test func opacityMixesInTheDocumentsBlendSpace() throws {
+        var state = doc([gray(0.02), Layer(name: "inv", opacity: 0.5, content: .adjustment(Adjustment(.invert)))])
+        state.blendSpace = .gamma
+        let b = srgbEncode(0.02)
+        #expect(abs(try renderPixel(state, x: 0, y: 0).x - srgbDecode((b + (1 - b)) / 2)) < 0.003)
+        // In linear light, as before: halfway between the two linear values (a much lighter grey).
+        state.blendSpace = .linear
+        #expect(abs(try renderPixel(state, x: 0, y: 0).x - (0.02 + srgbDecode(1 - b)) / 2) < 0.003)
+    }
+
     @Test func maskLimitsTheAdjustment() throws {
         var mask = LayerMask.revealAll
         mask.tiles[TileCoord(0, 0)] = .solid(SIMD4(repeating: 0))  // hide in the first tile

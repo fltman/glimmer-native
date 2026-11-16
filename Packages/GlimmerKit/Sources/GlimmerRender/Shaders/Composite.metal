@@ -436,11 +436,13 @@ fragment float4 adjust_fragment(QuadOut in [[stage_in]],
     float3 b = gamma ? encodeSRGB(cb) : cb;
     float3 s = gamma ? encodeSRGB(adjusted) : adjusted;
     float3 blended = blendColor(b, s, u.mode);
-    if (gamma) blended = decodeSRGB(blended);
 
     float k = u.opacity * maskValue(mask.sample(nearestSampler, uv).a, u.maskDensity);
     k *= clip.sample(nearestSampler, uv).a * maskValue(clipMask.sample(nearestSampler, uv).a, u.clipDensity);
-    return float4(mix(cb, blended, k) * a, a);
+    // Opacity and masks mix in the document's blend space too: a mask at 90 % over a
+    // gamma-blended document (one from Photoshop) is 90 % of the way in encoded values.
+    float3 mixed = gamma ? decodeSRGB(mix(b, blended, k)) : mix(cb, blended, k);
+    return float4(mixed * a, a);
 }
 
 // ── Utilities ──────────────────────────────────────────────────────────────

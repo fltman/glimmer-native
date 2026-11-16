@@ -3,6 +3,10 @@
 # that the import report is shown and can be read: no import happens silently.
 #
 #   scripts/test-psd-import.sh
+#   GLIMMER_OFFLINE_CONFIG=Release scripts/test-psd-import.sh   (the release build; build it first)
+#
+# Each sheet is also saved as a picture of the app's own windows (build/psd-shots), to be
+# looked at: a read through the accessibility API does not see a sheet that is cut off.
 #
 # Writes its sample files with the test suite's own writer (nothing downloaded), runs the
 # no-network copy through scripts/test-app.sh (GUI lock, supervisor, no key). Exit 0 = passed.
@@ -10,6 +14,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 if [[ -z "${GLIMMER_PORT:-}" ]]; then
   xcrun swiftc -O -o build/axread scripts/axread.swift 2>/dev/null || { echo "Couldn't build scripts/axread.swift"; exit 1; }
+  xcrun swiftc -O -o build/window-shot scripts/window-shot.swift 2>/dev/null || { echo "Couldn't build scripts/window-shot.swift"; exit 1; }
   mkdir -p build/psd-samples
   GLIMMER_PSD_OUT="$PWD/build/psd-samples" swift test --package-path Packages/GlimmerKit --filter PSDSampleFiles >/dev/null 2>&1 || { echo "Couldn't write the sample files."; exit 1; }
   COPY=$(scripts/offline-copy.sh | tail -1) || exit 1
@@ -24,6 +29,7 @@ bad() { echo "✘ $1"; fails=$((fails + 1)); }
 check() { if eval "$2"; then ok "$1"; else bad "$1"; fi; }
 open_psd() { curl -s --max-time 60 -H 'X-Glimmer-Agent: 1' -H 'Content-Type: image/vnd.adobe.photoshop' -X POST --data-binary @"$1" "$B/documents?name=$2"; }
 field() { python3 -c "import sys,json;d=json.load(sys.stdin)['document'];print($1)" 2>/dev/null; }
+shot() { build/window-shot $GLIMMER_PID build/psd-shots "${GLIMMER_OFFLINE_CONFIG:-Debug}-$1" >/dev/null 2>&1 || bad "no picture of $1"; }
 press() { osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to key code $1" >/dev/null 2>&1; sleep 0.6; }
 front() { perl -e 'alarm 15; exec @ARGV' osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to set frontmost to true" >/dev/null 2>&1; sleep 0.5; }
 
@@ -38,6 +44,7 @@ SEEN=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>&1)
 check "clean.psd: the report sheet is on screen and says everything came through" 'echo "$SEEN" | grep -qF "Everything came through: 2 layers, 0 of them groups (RGB, 8 bits per channel)."'
 check "clean.psd: and that the picture matches the file's" 'echo "$SEEN" | grep -qF "Glimmer'"'"'s picture matches the one saved in the file."'
 "$TOOLS/axaudit/axaudit" --pid $GLIMMER_PID --strict >/dev/null 2>&1 && ok "the report sheet has no unnamed controls" || bad "the report sheet: axaudit found something"
+shot report-clean
 front; press 36
 
 # A file with things that don't come through.
@@ -53,6 +60,7 @@ done
 # This sample's flattened picture is only its background: the tests' writer can't draw Vibrance or
 # Dissolve into it. So the measured difference says nothing about the import and is not shown here.
 check "mixed.psd: the sheet has a line about the picture (not comparable for this sample: its flattened picture is only the background)" 'echo "$SEEN" | grep -q "Glimmer'"'"'s picture \(differs from\|matches\) the one saved in the file"'
+shot report-mixed
 front; press 36
 "$TOOLS/safemenu/safemenu" --pid $GLIMMER_PID --check "File" "Import Report…" >/dev/null 2>&1 && ok "File › Import Report… is there and enabled for this window" || bad "File › Import Report…"
 
@@ -68,10 +76,17 @@ check "the exported file opens in Glimmer again with the same layers: $(echo "$R
 check "and its own flattened picture matches its layers this time: $(echo "$R2" | field "d[\"importReport\"][\"differenceFromFile\"]")" 'echo "$R2" | python3 -c "import sys,json;x=json.load(sys.stdin)[\"document\"][\"importReport\"][\"differenceFromFile\"];sys.exit(0 if x[\"mean\"]<1.5 and x[\"shareVisiblyDifferent\"]<0.01 else 1)"'
 front; press 36
 # The sheet that says what the file will hold, before it is saved.
-curl -s --max-time 10 -o /dev/null -H 'X-Glimmer-Agent: 1' -H 'Content-Type: application/json' -X POST "$B/debug/fixture" -d '{"name":"psdExport"}'; sleep 4
+FIXTURE=$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' -H 'X-Glimmer-Agent: 1' -H 'Content-Type: application/json' -X POST "$B/debug/fixture" -d '{"name":"psdExport"}')
+if [[ "$FIXTURE" != 200 ]]; then
+  # A release build has no fixtures: the sheet is reached the way a person does, File › Export… and its Photoshop File… button.
+  front; "$TOOLS/safemenu/safemenu" --pid $GLIMMER_PID "File" "Export…" >/dev/null 2>&1; sleep 2
+  perl -e 'alarm 20; exec @ARGV' build/axread $GLIMMER_PID --press AXButton "Photoshop File…" 2>/dev/null | grep -q pressed && ok "File › Export… › Photoshop File… pressed (release build: no fixture)" || bad "couldn't press Photoshop File… in the Export sheet"
+fi
+sleep 4
 SEEN=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>&1)
 check "File › Export… › Photoshop File…: the sheet says what is written and that Photoshop has not been tried" 'echo "$SEEN" | grep -q "layers and groups" && echo "$SEEN" | grep -qF "the layers have not been tried in Photoshop"'
 "$TOOLS/axaudit/axaudit" --pid $GLIMMER_PID --strict >/dev/null 2>&1 && ok "the export sheet has no unnamed controls" || bad "the export sheet: axaudit found something"
+shot export-sheet
 front; press 53
 
 # Something that is not a Photoshop file inside, with the signature: refused with words.

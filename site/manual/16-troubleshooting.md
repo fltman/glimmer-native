@@ -117,7 +117,7 @@ Check **Color profile** in the Export sheet. Display P3 keeps more saturated col
 
 ### A Photoshop file opened as a single layer
 
-Glimmer reads the flattened image of a PSD. Layers in PSD files are not imported.
+Glimmer reads the layers of RGB and grayscale Photoshop files with 8 or 16 bits per channel. A file in another colour mode (CMYK, Lab, indexed colour and others) or with 32 bits per channel opens as one layer, the flattened picture saved in the file. **File › Import Report…** says which it was. See [Photoshop files](02-documents-and-files.md#photoshop-files).
 
 ### Batch Process skipped steps or failed on some files
 

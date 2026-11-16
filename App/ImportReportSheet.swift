@@ -1,4 +1,4 @@
-#if GLIMMER_PSD   // Config/Features.xcconfig: not in a release until a file from Photoshop has met it
+#if GLIMMER_PSD   // Config/Features.xcconfig switches this
 import GlimmerCore
 import SwiftUI
 

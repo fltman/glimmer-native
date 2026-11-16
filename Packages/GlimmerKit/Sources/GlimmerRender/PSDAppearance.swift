@@ -1,4 +1,4 @@
-#if GLIMMER_PSD   // Config/Features.xcconfig: not in a release until a file from Photoshop has met it
+#if GLIMMER_PSD   // Config/Features.xcconfig switches this
 import CoreGraphics
 import Foundation
 import GlimmerCore
@@ -10,7 +10,12 @@ public enum PSDAppearance {
     /// The mean difference per channel (0…255) and the share of pixels that differ by more
     /// than 8 in some channel, both over sRGB with the pictures laid on white. Nil when the
     /// file's own picture can't be read or the sizes differ.
+    /// Documents larger than this are not compared: drawing the whole picture twice to measure it
+    /// would cost more memory than the import itself.
+    public static let largestCompared = 64_000_000
+
     public static func difference(of state: DocumentState, from file: Data, context: MetalContext) -> (mean: Double, shareVisible: Double)? {
+        guard state.width * state.height <= largestCompared else { return nil }
         guard let theirs = flattenedPicture(in: file) ?? (try? ImageImporter.image(from: file)), theirs.width == state.width, theirs.height == state.height,
               let ours = try? ImageExporter.flattenedSRGB(state, context: context),
               let a = onWhite(ours), let b = onWhite(theirs), a.count == b.count, !a.isEmpty else { return nil }

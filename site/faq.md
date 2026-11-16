@@ -48,11 +48,13 @@ Your images stay on your Mac unless you start an OpenRouter feature. Then Glimme
 
 ## Which file formats can Glimmer open and save?
 
-Glimmer opens the image formats macOS can read, including JPEG, PNG, HEIC, TIFF, WebP, GIF, BMP and camera RAW (basic decoding). It saves its own documents as `.glimmer` files, which keep every layer, mask, adjustment and path. It exports PNG, JPEG, HEIC, TIFF and WebP, and it can import and export projects from Glimmer for the web (`.aips`).
+Glimmer opens the image formats macOS can read, including JPEG, PNG, HEIC, TIFF, WebP, GIF, BMP and camera RAW (basic decoding). It saves its own documents as `.glimmer` files, which keep every layer, mask, adjustment and path. It exports PNG, JPEG, HEIC, TIFF, WebP and Photoshop files, and it can import and export projects from Glimmer for the web (`.aips`).
 
 ## Can Glimmer open Photoshop files?
 
-It opens the flattened image of a PSD, through macOS. Layers in PSD files are not imported.
+Yes, with their layers, as a new Glimmer document; the Photoshop file is not changed. Layers of pixels, groups, masks, blend modes except Dissolve, solid colour fills, one-colour shapes, and Levels, Curves and Invert adjustment layers come through as they were. Text and smart objects become pixels; layer effects, vector masks and the other adjustment layers are not read. An Import Report lists what did not come through, and says whether Glimmer's picture matches the one saved in the file. Glimmer can also export a Photoshop file with layers (**File › Export… › Photoshop File…**).
+
+This has been tried with eighteen small test files written by Photoshop and with files Glimmer generates itself. Text, smart objects, PSB, CMYK and Lab files, and large files have not yet been tried with files from Photoshop, and exported files have not been opened in Photoshop. See [Photoshop files](manual/02-documents-and-files.md#photoshop-files).
 
 ## Is my work saved automatically?
 

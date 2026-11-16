@@ -181,3 +181,90 @@ struct PSDRealFiles {
         }
     }
 }
+
+/// The files written by Photoshop as seeds for abuse: they hold structures Glimmer's own
+/// writer never produces. Cut short, bytes changed, and a canvas declared at the limit.
+extension PSDRealFiles {
+    static var files: [URL] {
+        let folder = URL(fileURLWithPath: ProcessInfo.processInfo.environment["GLIMMER_PSD_SAMPLES"]!)
+        return ((try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [])
+            .filter { ["psd", "psb"].contains($0.pathExtension.lowercased()) }.sorted { $0.lastPathComponent < $1.lastPathComponent }
+    }
+
+    @Test func realFilesCutShortOrWithBytesChangedNeverCrashOrPassTheBudget() throws {
+        let limits = PSDFile.Limits(maxCanvasPixels: 4_000_000, maxDecodedBytes: 32_000_000)
+        var attempts = 0, read = 0, imported = 0, slowest = 0.0
+        let secondsPerFile = Double(ProcessInfo.processInfo.environment["GLIMMER_PSD_ABUSE_SECONDS"] ?? "") ?? 18
+        for url in Self.files {
+            let good = try Data(contentsOf: url)
+            // Each damaged variant is described, not stored: (cut at a length) or (one byte changed).
+            enum Damage { case cut(Int), byte(Int, UInt8) }
+            var damages: [Damage] = []
+            // Cut: every length in the first 2,000 bytes, then 300 lengths spread over the rest.
+            for length in 0..<min(2_000, good.count) { damages.append(.cut(length)) }
+            for i in 1...300 { damages.append(.cut(2_000 + (good.count - 2_000) * i / 301)) }
+            // Changed: every byte of the first 3,000 to 0x00 and 0xFF, then 1,500 places spread over the file.
+            for index in 0..<min(3_000, good.count) {
+                for value: UInt8 in [0x00, 0xFF] where good[index] != value { damages.append(.byte(index, value)) }
+            }
+            var seed: UInt64 = 0x9E3779B97F4A7C15 &+ UInt64(good.count)
+            func next() -> Int { seed = seed &* 6364136223846793005 &+ 1442695040888963407; return Int(seed >> 33) }
+            for _ in 0..<1_500 { let index = next() % good.count; damages.append(.byte(index, good[index] == 0xFF ? 0x7F : 0xFF)) }
+            // A fixed shuffle, so that a time budget takes an even sample of every kind.
+            for i in stride(from: damages.count - 1, to: 0, by: -1) { damages.swapAt(i, next() % (i + 1)) }
+            let fileStart = Date()
+            var done = 0
+            for (n, damage) in damages.enumerated() {
+                if Date().timeIntervalSince(fileStart) > secondsPerFile { break }
+                var data = good
+                switch damage {
+                case .cut(let length): data = good.prefix(length)
+                case .byte(let index, let value): data[index] = value
+                }
+                attempts += 1; done += 1
+                let start = Date()
+                if let file = try? PSDFile(data, limits: limits) {
+                    read += 1
+                    let decoded = file.layers.reduce(0) { $0 + $1.planes.values.reduce(0) { $0 + $1.count } + ($1.mask?.pixels?.count ?? 0) } + file.composite.reduce(0) { $0 + $1.count }
+                    #expect(decoded <= limits.maxDecodedBytes, "\(url.lastPathComponent) variant \(n): \(decoded) bytes decoded")
+                }
+                // The whole import (layers into tiles, the report) on every 25th variant.
+                if n % 25 == 0, (try? PSDImport.document(from: data, limits: limits)) != nil { imported += 1 }
+                slowest = max(slowest, Date().timeIntervalSince(start))
+            }
+            print("PSDREAL abuse \(url.lastPathComponent): \(done) of \(damages.count) damaged variants in \(String(format: "%.0f", Date().timeIntervalSince(fileStart))) s")
+        }
+        print("PSDREAL abuse: \(Self.files.count) files, \(attempts) damaged variants; \(read) still read, \(imported) of the sampled ones imported; slowest single attempt \(String(format: "%.2f", slowest)) s; no crash")
+        #expect(attempts > 5_000 && slowest < 10)
+    }
+
+    /// A real file's layer records under a canvas declared at Glimmer's limit, and just over it.
+    @Test func aRealFileDeclaringAHugeCanvasStaysWithinItsBounds() throws {
+        let url = try #require(Self.files.first { $0.lastPathComponent.contains("levels_rgb") })
+        var data = try Data(contentsOf: url)
+        func declare(_ width: UInt32, _ height: UInt32) {
+            data.replaceSubrange(14..<18, with: [UInt8(height >> 24), UInt8(height >> 16 & 0xFF), UInt8(height >> 8 & 0xFF), UInt8(height & 0xFF)])
+            data.replaceSubrange(18..<22, with: [UInt8(width >> 24), UInt8(width >> 16 & 0xFF), UInt8(width >> 8 & 0xFF), UInt8(width & 0xFF)])
+        }
+        let limit = DocumentLimits.maxCanvasPixels()
+        let side = UInt32(min(30_000, Int(Double(limit).squareRoot())))
+        declare(side, side)
+        let start = Date()
+        let file = try PSDFile(data)
+        let decoded = file.layers.reduce(0) { $0 + $1.planes.values.reduce(0) { $0 + $1.count } + ($1.mask?.pixels?.count ?? 0) } + file.composite.reduce(0) { $0 + $1.count }
+        let (state, report) = try PSDImport.document(from: data)
+        let seconds = Date().timeIntervalSince(start)
+        print("PSDREAL a real file declaring \(side) × \(side) (\(Int(side) * Int(side) / 1_000_000) megapixels, this Mac's limit \(limit / 1_000_000)): read and imported in \(String(format: "%.2f", seconds)) s, \(decoded / 1024) KB decoded, \(report.layersKept) layers, flattened picture read: \(!file.composite.isEmpty)")
+        #expect(state.width == Int(side) && decoded < 4_000_000 && seconds < 10)
+        // Nothing the size of the canvas was allocated: the comparison is skipped for a document this large.
+        if Int(side) * Int(side) > PSDAppearance.largestCompared {
+            let metal = try context()
+            #expect(PSDAppearance.difference(of: state, from: data, context: metal) == nil)
+        }
+        // Past the limit: refused from the header.
+        if side < 30_000 {
+            declare(30_000, 30_000)
+            #expect(throws: PSDFile.Problem.self) { _ = try PSDFile(data) }
+        }
+    }
+}

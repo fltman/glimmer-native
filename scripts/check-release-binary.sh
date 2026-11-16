@@ -1,6 +1,7 @@
 #!/bin/zsh
 # A release must not contain a feature that Config/Features.xcconfig switches off: not its
 # code, not its texts. Looks for each switched-off feature's own strings in the built binary.
+# A feature that is switched on must be there: a release without it would not match the manual.
 #
 #   scripts/check-release-binary.sh <path to Glimmer.app or to its binary>
 #
@@ -18,7 +19,12 @@ found=0
 ALL=$(strings -a "$TARGET")
 for feature in ${(k)MARKERS}; do
   if grep -Eq "^GLIMMER_${feature}[[:space:]]*=[[:space:]]*YES" Config/Features.xcconfig; then
-    echo "– $feature is switched on for releases: not checked"
+    # Counted, not -q: with pipefail, grep leaving early would fail the pipe and read as "absent".
+    if (( $(echo "$ALL" | grep -Ec "${MARKERS[$feature]}") > 0 )); then
+      echo "✔ $feature is switched on and in the binary"
+    else
+      echo "✘ $feature is switched on, but the binary has none of its texts"; found=1
+    fi
     continue
   fi
   grep -Eq "^GLIMMER_${feature}[[:space:]]*=[[:space:]]*NO" Config/Features.xcconfig || { echo "✘ Config/Features.xcconfig has no GLIMMER_${feature} line"; found=1; continue; }

@@ -1,4 +1,4 @@
-#if GLIMMER_PSD   // Config/Features.xcconfig: not in a release until a file from Photoshop has met it
+#if GLIMMER_PSD   // Config/Features.xcconfig switches this
 import AppKit
 import GlimmerCore
 import GlimmerRender
@@ -56,15 +56,15 @@ struct PSDExportSheet: View {
                         Text(report.notes.isEmpty
                              ? String(localized: "Every layer is written as it is: \(report.layersWritten) layers and groups.")
                              : String(localized: "\(report.layersWritten) layers and groups are written. These things are not written as they are:"))
-                            .fontWeight(.medium).frame(maxWidth: .infinity, alignment: .leading)
+                            .fontWeight(.medium).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
                         ForEach(Array(report.notes.enumerated()), id: \.offset) { _, note in
                             Text(verbatim: (note.layer.map { "“\($0)”: " } ?? "") + note.localized)
-                                .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                                .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
                         }
                         if let difference = report.gammaDifference, !flattened {
                             let percent = (difference.shareVisible * 100).formatted(.number.precision(.fractionLength(1))), level = difference.mean.formatted(.number.precision(.fractionLength(1)))
                             Text("Measured on this document: blended as other programs do, the layers differ from what you see here on \(percent) % of the pixels visibly, \(level) of 255 on average.")
-                                .font(.callout).frame(maxWidth: .infinity, alignment: .leading)
+                                .font(.callout).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                 }
@@ -72,6 +72,8 @@ struct PSDExportSheet: View {
             }
             Text("Text, smart objects and effects can't be edited as such in the file. Glimmer has read its own Photoshop files back and macOS shows their picture; the layers have not been tried in Photoshop.")
                 .font(.callout).foregroundStyle(.secondary)
+                // Never cut short: seen as "…have not been tri…" in a small window (2026-11-16); the list above gives way instead.
+                .fixedSize(horizontal: false, vertical: true).layoutPriority(1)
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
