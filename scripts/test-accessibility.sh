@@ -15,7 +15,7 @@ cd "$(dirname "$0")/.."
 if [[ -z "${GLIMMER_PORT:-}" ]]; then
   xcrun swiftc -O -o build/axread scripts/axread.swift 2>/dev/null || { echo "Couldn't build scripts/axread.swift"; exit 1; }
   # Berget's model list is public: Settings › AI is read with a list loaded, without a key.
-  GLIMMER_ARGS="-ai.textProvider berget ${GLIMMER_ARGS:-}" exec scripts/test-app.sh "$0"
+  GLIMMER_ARGS="-ai.textProvider berget -ai.textModel.berget glimmer-test/not-a-model ${GLIMMER_ARGS:-}" exec scripts/test-app.sh "$0"
 fi
 TOOLS="${THE_APPS_TOOLS:-}"
 for candidate in "$PWD/../the-apps/tools" "$HOME/Projekt/the-apps/tools"; do [[ -z "$TOOLS" && -x "$candidate/axaudit/axaudit" ]] && TOOLS="$candidate"; done
@@ -38,7 +38,7 @@ read_state() {
   local seen; seen=$(echo "$all" | tail -1)
   if ! kill -0 $GLIMMER_PID 2>/dev/null; then bad "$1: the app is gone after being read"; echo "    $seen"; exit 1; fi
   if ! echo "$all" | grep -qF -- "$2"; then bad "$1: “$2” was not on screen, so this state was not read ($seen)"; return; fi
-  if (( code == 0 )); then ok "$1 ($seen; $(echo "$audit" | tail -1 | cut -d: -f1))"; else bad "$1: $(echo "$audit" | grep -E "UNNAMED|WEAK|OPAQUE|VALUE" | head -3 | tr '\n' ' ')"; fi
+  if (( code == 0 )); then ok "$1 ($seen; $(echo "$audit" | tail -1 | cut -d: -f1))"; else bad "$1: $(echo "$audit" | grep -E "UNNAMED|WEAK|OPAQUE|VALUE|SILENT|SAMEID" | head -3 | tr '\n' ' ')"; fi
 }
 press() { osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to key code $1" >/dev/null 2>&1; sleep 0.6; }
 
@@ -85,7 +85,16 @@ front; press 53
 front; "$MENU" --pid $GLIMMER_PID "Glimmer" "Settings…" >/dev/null 2>&1; sleep 1.5
 osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to click (first button of toolbar 1 of window 1 whose description is \"AI\" or title is \"AI\")" >/dev/null 2>&1
 sleep 5
-read_state "Settings › AI with Berget chosen" "Berget"
+# The chosen model is one Berget doesn't have, so "(no longer listed)" shows only once the
+# service's list has loaded (it needs the network; Berget's list is public, no key).
+read_state "Settings › AI with Berget's model list loaded" "glimmer-test/not-a-model (no longer listed)"
+# Open the Model menu and read the names in it, as they came from the service.
+(perl -e 'alarm 20; exec @ARGV' build/axread $GLIMMER_PID --press AXPopUpButton Model >/dev/null 2>&1 &)
+sleep 2
+listed=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>/dev/null | grep -cE '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.:-]+$')
+kill -0 $GLIMMER_PID 2>/dev/null || { bad "the app is gone after the Model menu was read"; exit 1; }
+if (( listed > 0 )); then ok "the Model menu's names were read ($listed model ids from Berget's list)"; else bad "no model name was read from the open Model menu"; fi
+press 53
 
 echo
 if (( fails == 0 )); then echo "All accessibility checks passed."; else echo "$fails accessibility check(s) failed."; exit 1; fi

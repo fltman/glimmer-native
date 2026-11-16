@@ -105,6 +105,12 @@ Click **Copy** (⇧⌘C) and paste the line into your agent. The agent reads the
 
 Turn off **Show at launch** to stop the window from appearing. To open it again, choose **Help › Agent Access…**. The first time you start Glimmer, the Welcome window appears instead.
 
+### Using your own agent
+
+Glimmer has no coding agent built in. You bring your own: any agent that runs on your Mac and can make web requests to 127.0.0.1 works, for example Claude Code or Codex in a terminal. Start Glimmer, start your agent, and paste the line from the **For your agent** window. Nothing has to be installed or signed in to in Glimmer for this.
+
+What the agent costs is between you and the service you run it with; Glimmer isn't part of that and never sees that account. What Glimmer does on your Mac for the agent is free. The steps that use Glimmer's own paid AI features are refused unless the agent's request explicitly allows paid steps and you have saved a key in **Settings › AI** (see Security below).
+
 ### Address and port
 
 The server listens on 127.0.0.1, port 9001. If that port is taken, it uses the first free port from 9101 to 9119. The line in the **For your agent** window always shows the address Glimmer is using. If all those ports are taken, the window says so.
