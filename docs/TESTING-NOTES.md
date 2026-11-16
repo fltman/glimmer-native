@@ -576,3 +576,12 @@ Anders looked at the developed pictures and said, in the session window: "raw se
 What ships with known limits, all said in the manual or these notes: two lossy-compressed recording modes (Nikon Z f, Sony A7 IV) are not developed by macOS; the draft follows within a tenth of a second on five of six files and not on the 50-megapixel one; nothing was measured on a quiet Mac; only the Panasonic file was run in the release build (all six in debug); the three RAW requests of the assistant's evaluation have not been run on any model.
 
 Phase 13 (iPad) is dropped: Anders, the same day, "strunta i ipad". The findings are in docs/PLAN.md.
+
+### What Glimmer sends to its siblings, against their closed schemas (2026-11-16)
+
+Read from the code, not run against Flimmer or Jämmer:
+- `GET /api/v1/operations`, `GET /api/v1/documents`, `GET /api/v1/jobs/{id}`: no parameters. `GET …/waveform?width=N` to Jämmer: one query parameter.
+- A sibling's step: `POST …/steps` with `{"steps": [{"op", "params"}], "allowPaid": false}`. A sibling's endpoint operation: its parameters placed by `x-in`. In both, `document` and `rationale`, which Glimmer adds to the tool it offers a model, are taken out before anything is sent.
+- So nothing Glimmer itself puts together carries a name a sibling doesn't know. What could was a name the model invents: it went out as it was and the sibling's 400 came back as the step's failure. Now, when the sibling's schema is closed, Glimmer refuses first, with the same words, and sends nothing (`SiblingOperation.stray`, tested); a sibling with an open schema still decides for itself.
+- The tool offered to a model is the sibling's schema as it is, so a closed schema stays closed there, with `document` and `rationale` inside it (tested).
+- Not covered: the nested per-type settings a sibling may publish under `x-byType`; Glimmer does not read that key from a sibling yet. And a plan with such a step is not held back before it runs, as a plan with a stray name in one of Glimmer's own operations is: the sibling's list of operations is fetched when the step runs.

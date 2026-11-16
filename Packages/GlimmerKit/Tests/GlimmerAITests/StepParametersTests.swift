@@ -125,3 +125,31 @@ import GlimmerCore
         print("SCHEMA sizes: /operations \(try bytes(AgentAPI.operations)) bytes; a model's full tool list \(try bytes(AgentPlanner.toolSchemas())) bytes; the short list \(try bytes(AgentPlanner.toolSchemas(short: true))) bytes; the per-type tables alone \(try bytes(["a": StepParameters.nestedSchemas(op: "add_adjustment")!, "f": StepParameters.nestedSchemas(op: "apply_filter")!, "e": StepParameters.nestedSchemas(op: "add_layer_effect")!])) bytes")
     }
 }
+
+/// What Glimmer sends to a sibling: a name the sibling's closed schema doesn't have is stopped here.
+@Suite struct SiblingStrayParameterTests {
+    static func op(closed: Bool) -> SiblingOperation {
+        var schema: [String: JSONValue] = ["type": .string("object"), "properties": .object(["seconds": .object(["type": .string("number")]), "rationale": .object(["type": .string("string")])])]
+        if closed { schema["additionalProperties"] = .bool(false) }
+        return SiblingOperation(app: .flimmer, name: "trim_clip", description: "Trim.", params: .object(schema))
+    }
+
+    @Test func aClosedSiblingSchemaIsCheckedBeforeAnythingIsSent() {
+        let closed = Self.op(closed: true)
+        #expect(closed.stray(in: ["seconds": .number(2)]) == nil)
+        let stray = closed.stray(in: ["seconds": .number(2), "fade": .bool(true)])
+        #expect(stray?.name == "fade" && stray?.allowed == ["seconds"])
+        // An older sibling with an open schema decides for itself.
+        #expect(Self.op(closed: false).stray(in: ["fade": .bool(true)]) == nil)
+        #expect(SiblingError.strayParameter("flimmer_trim_clip", "fade", ["seconds"]).errorDescription == "flimmer_trim_clip has no parameter named fade. It has: seconds.")
+    }
+
+    /// The tool Glimmer offers a model keeps the sibling's closed schema, with Glimmer's two additions inside it.
+    @Test func theToolKeepsTheSiblingsSchemaClosed() throws {
+        let tool = Self.op(closed: true).toolSchema
+        let parameters = try #require((tool["function"] as? [String: Any])?["parameters"] as? [String: Any])
+        #expect(parameters["additionalProperties"] as? Bool == false)
+        let properties = try #require(parameters["properties"] as? [String: Any])
+        #expect(properties["document"] != nil && properties["rationale"] != nil && properties["seconds"] != nil)
+    }
+}

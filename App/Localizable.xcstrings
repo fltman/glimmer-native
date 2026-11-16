@@ -12602,6 +12602,28 @@
           }
         }
       }
+    },
+    "%@ has no parameter named %@. It takes none.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ har ingen parameter som heter %2$@. Den tar inga."
+          }
+        }
+      }
+    },
+    "%@ has no parameter named %@. It has: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ har ingen parameter som heter %2$@. Den har: %3$@."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

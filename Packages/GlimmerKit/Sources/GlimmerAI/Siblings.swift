@@ -113,6 +113,17 @@ public struct SiblingOperation: Sendable, Equatable {
         }
     }
 
+    /// A name in `params` that the sibling's schema doesn't have, when that schema is closed
+    /// (`"additionalProperties": false`, SIBLINGS.md §3): the sibling would refuse the call, so
+    /// Glimmer refuses first, with the same words, and sends nothing. Nil when every name is
+    /// known, or when the sibling's schema is open (an older sibling: it decides for itself).
+    /// `document` and `rationale` are Glimmer's own additions to the tool and are taken out before this.
+    public func stray(in params: [String: JSONValue]) -> (name: String, allowed: [String])? {
+        guard let schema = self.params.object, schema["additionalProperties"]?.bool == false, let properties = schema["properties"]?.object else { return nil }
+        guard let name = params.keys.sorted().first(where: { properties[$0] == nil }) else { return nil }
+        return (name, properties.keys.filter { $0 != "rationale" }.sorted())
+    }
+
     /// The function tool for the assistant: the sibling's description and schema as they
     /// are, minus the `x-in` markers, plus `document` when the op doesn't name one itself.
     public var toolSchema: [String: Any] {
@@ -150,9 +161,14 @@ public enum SiblingError: Error, LocalizedError, Equatable {
     case unknownOperation(String)
     case paid(String)
     case failed(SiblingApp, String)
+    /// The step carries a name the sibling's operation doesn't have; nothing was sent.
+    case strayParameter(String, String, [String])
 
     public var errorDescription: String? {
         switch self {
+        case .strayParameter(let tool, let name, let allowed):
+            allowed.isEmpty ? String(localized: "\(tool) has no parameter named \(name). It takes none.")
+                            : String(localized: "\(tool) has no parameter named \(name). It has: \(allowed.joined(separator: ", ")).")
         case .notRunning(let app): String(localized: "\(app.displayName) is not running.")
         case .noDocument(let app, let key?): String(localized: "\(app.displayName) has no open document “\(key)”.")
         case .noDocument(let app, nil): String(localized: "\(app.displayName) has no open document.")
@@ -385,6 +401,7 @@ public actor SiblingClient {
         var params = params
         params.removeValue(forKey: "rationale")
         let key = params.removeValue(forKey: "document")?.string ?? params["id"]?.string
+        if let stray = op.stray(in: params) { throw SiblingError.strayParameter(tool, stray.name, stray.allowed) }
         let doc = try await document(app, key)
         let status: Int, data: Data
         if let call = op.call {
