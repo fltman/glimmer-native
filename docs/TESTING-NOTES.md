@@ -525,3 +525,5 @@ The series' rule after `develop_raw` passed over "brightness". `StepParameters` 
 - Nothing Glimmer's own scripts send was refused: the offline test (30 steps of many kinds), the Photoshop import script, the linked-file script (45 checks) and the RAW API script all pass unchanged, apart from the RAW script's own expectation (400 now, where it had 422).
 
 **Not checked:** what Flimmer and Jämmer send to Glimmer. If either sends a name Glimmer doesn't have, it was being ignored until now and is refused from now on. The on-device and local models: a model that adds a parameter of its own invention now gets its plan shown instead of run, so the local evaluation's "runs at once" cases may score differently; it was not rerun.
+
+Evaluation after the change (qwen3:8b through Ollama, the same 18 scored cases, under the GUI lock and the model lock): **18 of 18**, median 2.5 s, slowest 26.2 s; the known gap still 0 of 1 (as before: it answers "not free", which is right, in words the crude judge does not accept). No plan was held back for a parameter of the model's own invention. Ollama had nothing loaded afterwards. The three RAW requests were not part of it.
