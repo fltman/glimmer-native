@@ -120,8 +120,31 @@ public struct SiblingOperation: Sendable, Equatable {
     /// `document` and `rationale` are Glimmer's own additions to the tool and are taken out before this.
     public func stray(in params: [String: JSONValue]) -> (name: String, allowed: [String])? {
         guard let schema = self.params.object, schema["additionalProperties"]?.bool == false, let properties = schema["properties"]?.object else { return nil }
-        guard let name = params.keys.sorted().first(where: { properties[$0] == nil }) else { return nil }
-        return (name, properties.keys.filter { $0 != "rationale" }.sorted())
+        if let name = params.keys.sorted().first(where: { properties[$0] == nil }) {
+            return (name, properties.keys.filter { $0 != "rationale" }.sorted())
+        }
+        // Settings that depend on a sort (SIBLINGS.md §3): a table under "x-byType" on the property
+        // that carries them, one closed schema per sort. Which sort is chosen is said by the
+        // property named in "x-byTypeKey" when the sibling gives one, else by the property whose
+        // allowed values are the table's sorts, else by "type" or "kind".
+        for (carrier, schema) in properties.sorted(by: { $0.key < $1.key }) {
+            guard let table = schema.object?["x-byType"]?.object, let given = params[carrier]?.object else { continue }
+            let sorts = Set(table.keys)
+            var chooser: String? = schema.object?["x-byTypeKey"]?.string
+            if chooser == nil {
+                for (key, other) in properties where key != carrier {
+                    guard case .array(let values)? = other.object?["enum"] else { continue }
+                    if Set(values.compactMap { $0.string }) == sorts { chooser = key; break }
+                }
+            }
+            if chooser == nil { chooser = ["type", "kind"].first { properties[$0] != nil } }
+            guard let chooser, let sort = params[chooser]?.string, let nested = table[sort]?.object,
+                  nested["additionalProperties"]?.bool == false, let allowed = nested["properties"]?.object else { continue }
+            if let name = given.keys.sorted().first(where: { allowed[$0] == nil }) {
+                return ("\(name) in \(carrier)", allowed.keys.sorted())
+            }
+        }
+        return nil
     }
 
     /// The function tool for the assistant: the sibling's description and schema as they

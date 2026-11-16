@@ -12624,6 +12624,17 @@
           }
         }
       }
+    },
+    "This plan can't run: %@ Nothing was changed. Ask again, perhaps in other words.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här planen kan inte köras: %@ Ingenting ändrades. Fråga igen, kanske med andra ord."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

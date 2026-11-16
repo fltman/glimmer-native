@@ -126,7 +126,7 @@ public struct AgentPlan: Sendable, Equatable {
     /// Figures the model stated that nobody gave it; their sentences were taken out (`AssistantNumbers`).
     public var removedFigures: [String] = []
     /// What is wrong with steps that carry a parameter their operation doesn't have
-    /// (`StepParameters`): such a step is refused when it runs, and the plan says so first.
+    /// (`StepParameters`, and a sibling's closed schema): a plan with one is not run at all.
     public var strayParameters: [String] = []
 
     public init(steps: [AgentStep], message: String? = nil, droppedOps: [String] = []) {
@@ -575,6 +575,7 @@ public enum AgentPlanner {
             if p.name == "params", !forModel, let byType = StepParameters.nestedSchemas(op: op.name) {
                 // Which settings exist depends on `type`: one closed schema per type.
                 schema["x-byType"] = byType
+                schema["x-byTypeKey"] = "type"   // which property chooses the sort: said, so a caller need not guess
             }
             properties[p.name] = schema
             if !p.description.localizedCaseInsensitiveContains("optional") { required.append(p.name) }
@@ -705,6 +706,16 @@ public enum AgentPlanner {
         for i in plan.steps.indices {
             guard let stray = StepParameters.stray(in: plan.steps[i]) else { continue }
             plan.strayParameters.append(stray.message)
+            plan.steps[i].rationale = [plan.steps[i].rationale, "(\(StepParameters.strayNote): \(stray.name))"].compactMap { $0 }.joined(separator: " ")
+        }
+        // The same for a step in a sibling app, against the list that app gave when the plan was
+        // made: found now, before any step runs, not at step three with another app's document already changed.
+        for i in plan.steps.indices {
+            guard let op = siblings.first(where: { $0.toolName == plan.steps[i].op }) else { continue }
+            var params = plan.steps[i].params
+            params.removeValue(forKey: "rationale"); params.removeValue(forKey: "document")
+            guard let stray = op.stray(in: params) else { continue }
+            plan.strayParameters.append(SiblingError.strayParameter(op.toolName, stray.name, stray.allowed).errorDescription ?? "")
             plan.steps[i].rationale = [plan.steps[i].rationale, "(\(StepParameters.strayNote): \(stray.name))"].compactMap { $0 }.joined(separator: " ")
         }
         checkFigures(&plan, goal: goal, context: context, history: history, siblingContext: siblingContext)

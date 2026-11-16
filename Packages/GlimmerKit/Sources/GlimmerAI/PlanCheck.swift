@@ -160,7 +160,7 @@ public enum PlanCheck {
     /// is named by the request. (A plan with a paid step waits anyway.)
     public static func runsAtOnce(_ plan: AgentPlan, request: String, commandTitle: (String) -> String? = { _ in nil }) -> Bool {
         // A step with a parameter its operation doesn't have would be refused: such a plan is shown, never run at once.
-        plan.steps.allSatisfy { StepParameters.stray(in: $0) == nil }
+        plan.strayParameters.isEmpty && plan.steps.allSatisfy { StepParameters.stray(in: $0) == nil }
             && plan.steps.allSatisfy { harmless.contains($0.op) || paid.contains($0.op) || names(request, $0, commandTitle: commandTitle) }
     }
 

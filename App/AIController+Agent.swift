@@ -239,11 +239,20 @@ extension AIController {
             offered = split.offered
             named = true
         }
-        if !named, !plan.usesAI { text += " " + String(localized: "Some of these steps aren't named in what you asked, so the plan waits for Run.") }
+        // A step with a parameter its operation doesn't have would be refused part-way: the plan is shown and none of it runs.
+        let refused = plan.strayParameters.first ?? plan.steps.lazy.compactMap { StepParameters.stray(in: $0)?.message }.first
+        if let refused {
+            text += " " + String(localized: "This plan can't run: \(refused) Nothing was changed. Ask again, perhaps in other words.")
+        } else if !named, !plan.usesAI { text += " " + String(localized: "Some of these steps aren't named in what you asked, so the plan waits for Run.") }
         let message = Message(fromUser: false, text: text, plan: plan.steps.isEmpty ? nil : plan)
         messages.append(message)
         agentHistory.append((goal, summary + (plan.steps.isEmpty ? "" : " Steps: " + plan.steps.map(\.op).joined(separator: ", "))))
         guard !plan.steps.isEmpty else { return }
+        if refused != nil {
+            for step in plan.steps { stepStatus[step.id] = .skipped }
+            planStatus[message.id] = .failed
+            return
+        }
         for step in plan.steps { stepStatus[step.id] = .pending }
         planStatus[message.id] = .proposed
         if named, !plan.usesAI || autoRunAIPlans { runPlan(message.id) }

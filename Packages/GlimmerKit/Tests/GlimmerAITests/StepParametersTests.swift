@@ -144,6 +144,36 @@ import GlimmerCore
         #expect(SiblingError.strayParameter("flimmer_trim_clip", "fade", ["seconds"]).errorDescription == "flimmer_trim_clip has no parameter named fade. It has: seconds.")
     }
 
+    /// A sibling's settings per sort (Jämmer publishes its restore settings this way, on `kind`).
+    @Test func aSiblingsSettingsPerSortAreChecked() {
+        func sort(_ keys: [String]) -> JSONValue {
+            .object(["type": .string("object"), "additionalProperties": .bool(false), "properties": .object(Dictionary(uniqueKeysWithValues: keys.map { ($0, JSONValue.object(["type": .string("number")])) }))])
+        }
+        let settings: JSONValue = .object(["type": .string("object"), "x-byType": .object(["denoise": sort(["strength"]), "declick": sort(["sensitivity", "width"])])])
+        let schema: JSONValue = .object(["type": .string("object"), "additionalProperties": .bool(false), "properties": .object([
+            "kind": .object(["type": .string("string"), "enum": .array([.string("denoise"), .string("declick")])]), "settings": settings])])
+        let restore = SiblingOperation(app: .jammer, name: "restore", description: "Restore.", params: schema)
+        #expect(restore.stray(in: ["kind": .string("denoise"), "settings": .object(["strength": .number(0.5)])]) == nil)
+        // A setting of another sort is refused for this one, by name, with what this sort has.
+        let stray = restore.stray(in: ["kind": .string("denoise"), "settings": .object(["sensitivity": .number(0.5)])])
+        #expect(stray?.name == "sensitivity in settings" && stray?.allowed == ["strength"])
+        #expect(restore.stray(in: ["kind": .string("declick"), "settings": .object(["sensitivity": .number(0.5), "width": .number(2)])]) == nil)
+        // A sort the table doesn't have is the sibling's to refuse.
+        #expect(restore.stray(in: ["kind": .string("dehum"), "settings": .object(["x": .number(1)])]) == nil)
+        // Glimmer's own published table names its chooser, and is read the same way.
+        let own = AgentAPI.operations.first { $0["name"] as? String == "add_adjustment" }
+        let params = ((own?["params"] as? [String: Any])?["properties"] as? [String: Any])?["params"] as? [String: Any]
+        #expect(params?["x-byTypeKey"] as? String == "type")
+    }
+
+    /// A plan with a sibling step that carries an unknown name is known to be refused when it is made.
+    @Test func aPlanIsNotRunAtOnceWhenItSaysAStepWillBeRefused() {
+        var plan = AgentPlan(steps: [AgentStep(op: "add_adjustment", params: ["type": .string("black_white")])])
+        #expect(PlanCheck.runsAtOnce(plan, request: "Make it black and white"))
+        plan.strayParameters = ["flimmer_trim_clip has no parameter named fade. It has: seconds."]
+        #expect(!PlanCheck.runsAtOnce(plan, request: "Make it black and white"))
+    }
+
     /// The tool Glimmer offers a model keeps the sibling's closed schema, with Glimmer's two additions inside it.
     @Test func theToolKeepsTheSiblingsSchemaClosed() throws {
         let tool = Self.op(closed: true).toolSchema
