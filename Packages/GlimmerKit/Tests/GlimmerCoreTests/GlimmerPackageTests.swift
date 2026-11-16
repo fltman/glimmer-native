@@ -365,17 +365,43 @@ import ImageIO
         defer { try? FileManager.default.removeItem(at: temp) }
         let fm = FileManager.default
         let mine = temp.appending(path: UndoSpillStore.folderName())
-        let dead = temp.appending(path: UndoSpillStore.folderName(pid: 99_999_990))
-        let old = temp.appending(path: "undo-" + UUID().uuidString)       // the earlier naming, a week old
-        let recent = temp.appending(path: "undo-" + UUID().uuidString)    // the earlier naming, just made
+        let dead = temp.appending(path: UndoSpillStore.folderName(pid: 99_999_990, start: 1_700_000_000))
+        let deadEarlierForm = temp.appending(path: "undo-99999991-" + UUID().uuidString)
+        // The earliest naming, a bare UUID. These two begin with eight digits, which an earlier
+        // version read as a process id: the fresh one was removed about once in forty runs.
+        let old = temp.appending(path: "undo-12345678-" + UUID().uuidString.dropFirst(9))       // a week old
+        let recent = temp.appending(path: "undo-87654321-" + UUID().uuidString.dropFirst(9))    // just made
         let other = temp.appending(path: "keep-me")
-        for url in [mine, dead, old, recent, other] { try fm.createDirectory(at: url, withIntermediateDirectories: true) }
+        let notOurs = temp.appending(path: "undo-notes")
+        for url in [mine, dead, deadEarlierForm, old, recent, other, notOurs] { try fm.createDirectory(at: url, withIntermediateDirectories: true) }
         try fm.setAttributes([.modificationDate: Date(timeIntervalSinceNow: -7 * 86_400)], ofItemAtPath: old.path)
         #expect(UndoSpillStore.isRunning(ProcessInfo.processInfo.processIdentifier))
+        #expect(UndoSpillStore.startTime(of: ProcessInfo.processInfo.processIdentifier) != nil)
+        #expect(mine.lastPathComponent.contains("."), "this process's folder carries its start time: \(mine.lastPathComponent)")
         let removed = UndoSpillStore.removeOrphans(in: temp)
-        #expect(removed == 2)
-        #expect(fm.fileExists(atPath: mine.path) && fm.fileExists(atPath: recent.path) && fm.fileExists(atPath: other.path))
-        #expect(!fm.fileExists(atPath: dead.path) && !fm.fileExists(atPath: old.path))
+        #expect(removed == 3)
+        #expect(fm.fileExists(atPath: mine.path) && fm.fileExists(atPath: recent.path) && fm.fileExists(atPath: other.path) && fm.fileExists(atPath: notOurs.path))
+        #expect(!fm.fileExists(atPath: dead.path) && !fm.fileExists(atPath: deadEarlierForm.path) && !fm.fileExists(atPath: old.path))
+    }
+
+    /// A process id is handed on: the folder of a finished process whose id a new process now
+    /// has is removed, and the folder of the process that really made it never is.
+    @Test func aReusedProcessIdDoesNotKeepADeadFolderAndNeverCostsALiveOne() throws {
+        let temp = try Self.folder()
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let fm = FileManager.default
+        let deadButIdReused = temp.appending(path: UndoSpillStore.folderName(pid: 4242, start: 1_000))
+        let alive = temp.appending(path: UndoSpillStore.folderName(pid: 4243, start: 2_000))
+        let aliveStartUnknown = temp.appending(path: UndoSpillStore.folderName(pid: 4244, start: 3_000))
+        let aliveEarlierForm = temp.appending(path: "undo-4245-" + UUID().uuidString)
+        for url in [deadButIdReused, alive, aliveStartUnknown, aliveEarlierForm] { try fm.createDirectory(at: url, withIntermediateDirectories: true) }
+        // Every id is in use. 4242 now belongs to a process that started later; 4244's start can't be read.
+        let starts: [Int32: Int] = [4242: 9_999, 4243: 2_000, 4245: 5_000]
+        let removed = UndoSpillStore.removeOrphans(in: temp, isRunning: { _ in true }, startTime: { starts[$0] })
+        #expect(removed == 1 && !fm.fileExists(atPath: deadButIdReused.path))
+        #expect(fm.fileExists(atPath: alive.path), "the same id and the same start: its maker is running")
+        #expect(fm.fileExists(atPath: aliveStartUnknown.path), "when the start can't be read, the folder is kept")
+        #expect(fm.fileExists(atPath: aliveEarlierForm.path), "a folder without a start time is kept while its id is in use")
     }
 
     @Test func aStoreOnAnotherVolumeIsRefusedCleanly() throws {

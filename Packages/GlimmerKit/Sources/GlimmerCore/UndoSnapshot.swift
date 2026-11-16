@@ -207,24 +207,55 @@ public enum UndoSpillStore {
         }
     }
 
-    /// The name of a spill folder for this process: `undo-<pid>-<uuid>`.
-    public static func folderName(pid: Int32 = ProcessInfo.processInfo.processIdentifier) -> String {
-        "undo-\(pid)-\(UUID().uuidString)"
+    /// The name of a spill folder for a process: `undo-<pid>.<start>-<uuid>`, where `start` is
+    /// when the process started (seconds since 1970). A process id alone is not enough: the
+    /// system hands a finished process's id to a new one, and the folder would then look alive.
+    public static func folderName(pid: Int32 = ProcessInfo.processInfo.processIdentifier, start: Int? = nil) -> String {
+        if let start = start ?? startTime(of: pid) { return "undo-\(pid).\(start)-\(UUID().uuidString)" }
+        return "undo-\(pid)-\(UUID().uuidString)"
+    }
+
+    /// What a spill folder's name says about who made it. The three forms are told apart by
+    /// their shape, never by whether a part happens to read as a number: an earlier version
+    /// took a bare UUID that began with eight digits for a process id and removed a fresh folder.
+    enum Owner: Equatable {
+        case process(pid: Int32, start: Int?)   // undo-<pid>.<start>-<uuid> and the earlier undo-<pid>-<uuid>
+        case unknown                            // the first form, undo-<uuid>
+    }
+
+    static func owner(ofFolderNamed name: String) -> Owner? {
+        guard name.hasPrefix("undo-") else { return nil }
+        let parts = name.dropFirst(5).split(separator: "-", omittingEmptySubsequences: false)
+        func isUUID(_ groups: ArraySlice<Substring>) -> Bool { UUID(uuidString: groups.joined(separator: "-")) != nil && groups.count == 5 }
+        if parts.count == 5, isUUID(parts[...]) { return .unknown }
+        guard parts.count == 6, isUUID(parts[1...]) else { return nil }   // not one of ours: left alone
+        let who = parts[0].split(separator: ".", omittingEmptySubsequences: false)
+        guard let pid = Int32(who[0]), pid > 0 else { return nil }
+        if who.count == 1 { return .process(pid: pid, start: nil) }
+        guard who.count == 2, let start = Int(who[1]) else { return nil }
+        return .process(pid: pid, start: start)
     }
 
     /// Removes the spill folders of processes that no longer run (the history isn't kept across
     /// launches, so after a crash they are only wasted space). Folders of running processes,
-    /// this one included, are left alone. Returns how many were removed.
+    /// this one included, are left alone, and so is anything whose name isn't one of the three
+    /// forms. "The same process" means the id and the start time both match; when the start
+    /// time of a running process can't be read, its folder is kept. Returns how many were removed.
     @discardableResult
-    public static func removeOrphans(in directory: URL, isRunning: (Int32) -> Bool = UndoSpillStore.isRunning) -> Int {
+    public static func removeOrphans(in directory: URL, isRunning: (Int32) -> Bool = UndoSpillStore.isRunning,
+                                     startTime: (Int32) -> Int? = UndoSpillStore.startTime) -> Int {
         let fm = FileManager.default
         var removed = 0
-        for name in (try? fm.contentsOfDirectory(atPath: directory.path)) ?? [] where name.hasPrefix("undo-") {
-            let parts = name.split(separator: "-")
+        for name in (try? fm.contentsOfDirectory(atPath: directory.path)) ?? [] {
+            guard let owner = owner(ofFolderNamed: name) else { continue }
             let url = directory.appending(path: name)
-            if parts.count >= 3, let pid = Int32(parts[1]) {
-                if isRunning(pid) { continue }
-            } else {
+            switch owner {
+            case .process(let pid, let start):
+                if isRunning(pid) {
+                    // The id is in use. It is the folder's maker unless both start times are known and differ.
+                    guard let start, let now = startTime(pid), abs(now - start) > 1 else { continue }
+                }
+            case .unknown:
                 // A folder from before folders carried the process id: only when it is a day old.
                 let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
                 if Date().timeIntervalSince(modified) < 86_400 { continue }
@@ -232,6 +263,16 @@ public enum UndoSpillStore {
             if (try? fm.removeItem(at: url)) != nil { removed += 1 }
         }
         return removed
+    }
+
+    /// When the process with this id started, in seconds since 1970, or nil when the system doesn't say.
+    public static func startTime(of pid: Int32) -> Int? {
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.stride
+        var name: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+        guard sysctl(&name, 4, &info, &size, nil, 0) == 0, size > 0, info.kp_proc.p_pid == pid else { return nil }
+        let seconds = info.kp_proc.p_starttime.tv_sec
+        return seconds > 0 ? Int(seconds) : nil
     }
 
     /// Whether a process with this id exists (one we may not signal counts as running).
