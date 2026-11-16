@@ -17,7 +17,13 @@ for feature, pairs in json.load(open(os.path.join(root, "Config/site-features.js
         if want in text and (other not in text or len(want) > len(other)): continue
         if other not in text: sys.exit(f"apply-features: can't find the {feature} wording in {p['file']}.")
         if check: stale.append(p["file"])
-        else: open(path, "w").write(text.replace(other, want, 1))
+        else:
+            # The wording in the file is neither of the two here: it was changed in the JSON alone.
+            # Putting the new text in beside the old would double a whole section (it did once).
+            heading = want.strip().split("\n")[0]
+            if heading.startswith("#") and heading in text and heading not in other:
+                sys.exit(f"apply-features: {p['file']} already has “{heading}” in another wording. Change the file and Config/site-features.json together.")
+            open(path, "w").write(text.replace(other, want, 1))
 # The package manifest carries the switches as a comment, so that its text changes when they do
 # (Xcode re-reads a manifest only then).
 manifest = os.path.join(root, "Packages/GlimmerKit/Package.swift")

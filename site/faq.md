@@ -54,7 +54,7 @@ Glimmer opens the image formats macOS can read, including JPEG, PNG, HEIC, TIFF,
 
 Yes, with their layers, as a new Glimmer document; the Photoshop file is not changed. Layers of pixels, groups, masks, blend modes except Dissolve, solid colour fills, one-colour shapes, and Levels, Curves and Invert adjustment layers come through as they were. Text and smart objects become pixels; layer effects, vector masks and the other adjustment layers are not read. An Import Report lists what did not come through, and says whether Glimmer's picture matches the one saved in the file. Glimmer can also export a Photoshop file with layers (**File › Export… › Photoshop File…**).
 
-This has been tried with eighteen small test files written by Photoshop and with files Glimmer generates itself. Text, smart objects, PSB, CMYK and Lab files, and large files have not yet been tried with files from Photoshop, and exported files have not been opened in Photoshop. See [Photoshop files](manual/02-documents-and-files.md#photoshop-files).
+This has been tried with fifty small test files, most of them written by Photoshop, and with files Glimmer generates itself. Large files have not yet been tried with files from Photoshop, and exported files have not been opened in Photoshop. See [Photoshop files](manual/02-documents-and-files.md#photoshop-files).
 
 ## Is my work saved automatically?
 
