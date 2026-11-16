@@ -128,9 +128,17 @@ Glimmer's siblings, Flimmer and Jämmer, call this API like any agent and add `X
 
 Errors are JSON: `{"error": {"code": "…", "message": "…"}}`. A failed step also gives its index: `{"error": {"code": "step_failed", "message": "…", "step": 1}}`.
 
+A name that an operation or an endpoint doesn't have is never passed over. The message names it and lists what there is, and nothing was applied (in a `steps` request, no step ran). For `{"steps": [{"op": "crop", "params": {"aspect": "16:9", "widht": 800}}]}` the answer is 400 with:
+
+```json
+{"error": {"code": "bad_request", "message": "Step 0: crop has no parameter named widht. It has: x, y, width, height, toSelection, aspect, deletePixels. No step of this request was run."}}
+```
+
+The same goes for a setting inside `params` of `add_adjustment`, `apply_filter` and `add_layer_effect` ("add_adjustment has no parameter named brightness in params. It has: exposure, offset, gamma."), for a setting put beside `"op"` instead of inside `"params"`, and for query parameters.
+
 | Status | Code | Meaning |
 |---|---|---|
-| 400 | `bad_request` | The body or a parameter is malformed. The message says which. |
+| 400 | `bad_request` | The body or a parameter is malformed, or carries a name that isn't one of its parameters. The message says which. |
 | 402 | `paid_not_allowed` | A step costs money and `allowPaid` wasn't `true` (or no OpenRouter key is saved in Glimmer). The request is checked before anything runs: no step of it was run. |
 | 403 | `forbidden` | Missing `X-Glimmer-Agent: 1`, an `Origin` header, or a Host other than this Mac. |
 | 404 | `not_found` | No such document, path or operation. |

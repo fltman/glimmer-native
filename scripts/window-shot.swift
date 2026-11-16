@@ -12,7 +12,7 @@ let args = CommandLine.arguments
 guard args.count == 4, let pid = Int32(args[1]) else { print("usage: window-shot <pid> <folder> <name>"); exit(2) }
 let list = (CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]) ?? []
 var windows: [(id: Int, area: Double)] = []
-for w in list where (w[kCGWindowOwnerPID as String] as? Int32) == pid && (w[kCGWindowLayer as String] as? Int) == 0 {
+for w in list where (w[kCGWindowOwnerPID as String] as? Int32) == pid && (0...8).contains((w[kCGWindowLayer as String] as? Int) ?? -1) {   // ordinary windows and floating panels; not menus or the Dock
     guard let id = w[kCGWindowNumber as String] as? Int, let b = w[kCGWindowBounds as String] as? [String: Double],
           let width = b["Width"], let height = b["Height"], width > 40, height > 40 else { continue }
     windows.append((id, width * height))

@@ -338,6 +338,10 @@ public enum AgentAPI {
         return ""
     }
 
+    /// The guide's examples of a refused name are what the check itself says, not a copy of it.
+    static let strayExample = StepParameters.stray(in: AgentStep(op: "crop", params: ["aspect": .string("16:9"), "widht": .number(800)]))?.message ?? ""
+    static let nestedStrayExample = StepParameters.stray(in: AgentStep(op: "add_adjustment", params: ["type": .string("exposure"), "params": .object(["brightness": .number(0.2)])]))?.message ?? ""
+
     public static func guide(port: UInt16, appVersion: String, heal: Bool = hasHeal, psd: Bool = hasPSD, raw: Bool = hasRAW) -> String {
         let base = "http://127.0.0.1:\(port)"
         var s = """
@@ -470,9 +474,17 @@ public enum AgentAPI {
 
         Errors are JSON: `{"error": {"code": "…", "message": "…"}}`. A failed step also gives its index: `{"error": {"code": "step_failed", "message": "…", "step": 1}}`.
 
+        A name that an operation or an endpoint doesn't have is never passed over. The message names it and lists what there is, and nothing was applied (in a `steps` request, no step ran). For `{"steps": [{"op": "crop", "params": {"aspect": "16:9", "widht": 800}}]}` the answer is 400 with:
+
+        ```json
+        {"error": {"code": "bad_request", "message": "Step 0: \(strayExample) No step of this request was run."}}
+        ```
+
+        The same goes for a setting inside `params` of `add_adjustment`, `apply_filter` and `add_layer_effect` ("\(nestedStrayExample)"), for a setting put beside `"op"` instead of inside `"params"`, and for query parameters.
+
         | Status | Code | Meaning |
         |---|---|---|
-        | 400 | `bad_request` | The body or a parameter is malformed. The message says which. |
+        | 400 | `bad_request` | The body or a parameter is malformed, or carries a name that isn't one of its parameters. The message says which. |
         | 402 | `paid_not_allowed` | A step costs money and `allowPaid` wasn't `true` (or no OpenRouter key is saved in Glimmer). The request is checked before anything runs: no step of it was run. |
         | 403 | `forbidden` | Missing `\(agentHeader): 1`, an `Origin` header, or a Host other than this Mac. |
         | 404 | `not_found` | No such document, path or operation. |
