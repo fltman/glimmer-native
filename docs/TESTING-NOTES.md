@@ -754,3 +754,7 @@ Read from the Settings window as before (kept in `build/trial-berget-glm53flash-
 - "Gör bilden varmare" with a RAW layer active → `add_adjustment(color_balance)`, not `develop_raw`: counted as a miss, in 18.6 s. The picture would get warmer either way; the adjustment layer is a real answer to the request, only not the one that uses the RAW file. The case was written, before any model ran, to expect development.
 
 Three requests on one model once is thin: it says the operation is found for exposure and left alone for an ordinary layer, and that for white balance this model reaches for an adjustment first.
+
+Decided (coordinator, 2026-11-16): `develop_raw` stays offered to the assistant; the 2 of 3 stands as it is. The prompt is not changed after one answer on one model; a line for RAW layers comes only if a second model also reaches for an adjustment, and then the case is no longer counted as unseen.
+
+**To watch for in the paid tests of the picture services:** a claim about cost without a figure ("it is free", "kostar ingenting") about something that does cost: generating, editing with a prompt, upscaling through a service. The figures check does not see such a claim. About enlarging on the Mac it was true tonight; about a paid operation it would be a real fault, and the known gap is to be closed then.
