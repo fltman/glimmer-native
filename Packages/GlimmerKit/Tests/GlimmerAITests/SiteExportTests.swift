@@ -55,6 +55,25 @@ import Testing
         #expect(onDisk == guide, "site/agents.md is out of date: run scripts/export-agents-guide.sh")
     }
 
+    /// The table of services in the manual is the app's own list (`AIProvider`), between two markers.
+    @Test func theManualsTableOfServicesMatchesTheApp() throws {
+        let file = Self.repo.appending(path: "site/manual/11-ai-with-openrouter.md")
+        var text = try String(contentsOf: file, encoding: .utf8)
+        let begin = try #require(text.range(of: "<!-- providers:begin"))
+        let beginEnd = try #require(text.range(of: "-->\n", range: begin.upperBound..<text.endIndex))
+        let end = try #require(text.range(of: "<!-- providers:end -->"))
+        let table = AIProvider.manualTable() + "\n"
+        if ProcessInfo.processInfo.environment["GLIMMER_WRITE_SITE"] == "1" {
+            text.replaceSubrange(beginEnd.upperBound..<end.lowerBound, with: table)
+            try text.write(to: file, atomically: true, encoding: .utf8)
+        }
+        let onDisk = try String(contentsOf: file, encoding: .utf8)
+        let marker = try #require(onDisk.range(of: "<!-- providers:begin"))
+        let b = try #require(onDisk.range(of: "-->\n", range: marker.upperBound..<onDisk.endIndex))
+        let e = try #require(onDisk.range(of: "<!-- providers:end -->"))
+        #expect(String(onDisk[b.upperBound..<e.lowerBound]) == table, "the manual's table of services is out of date: run scripts/export-agents-guide.sh")
+    }
+
     /// The manual and FAQ say what the release build has (Config/Features.xcconfig).
     @Test func manualFollowsFeatures() throws {
         let p = Process()

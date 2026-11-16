@@ -12,6 +12,9 @@ public protocol TextModel: Sendable {
     var providerName: String { get }
     var modelID: String { get }
 
+    /// True for models that do better with the short list of everyday operations as tools.
+    var prefersShortToolList: Bool { get }
+
     /// Text and pictures in, text out. `json` asks for a JSON object.
     func reply(system: String?, user: String, images: [Data], imageType: String, json: Bool, temperature: Double) async throws -> TextReply
 
@@ -20,19 +23,26 @@ public protocol TextModel: Sendable {
                    onText: (@Sendable (String) -> Void)?) async throws -> TextToolReply
 }
 
+public extension TextModel {
+    var prefersShortToolList: Bool { false }
+}
+
 public typealias TextReply = OpenRouterClient.TextResponse
 public typealias TextToolReply = OpenRouterClient.ToolResponse
 public typealias TextToolCall = OpenRouterClient.ToolCall
 
-/// Text through OpenRouter (or the OpenRouter-compatible endpoint set in Settings), with the user's key.
+/// Text through a chat-completions service: OpenRouter (or the compatible endpoint set in
+/// Settings), Berget, Grunden, or a local server. The client's configuration carries what
+/// that service accepts.
 public struct OpenRouterTextModel: TextModel {
     public let client: OpenRouterClient
     public let modelID: String
-    public var providerName: String { "OpenRouter" }
+    public let providerName: String
 
-    public init(client: OpenRouterClient, model: String) {
+    public init(client: OpenRouterClient, model: String, providerName: String = "OpenRouter") {
         self.client = client
         self.modelID = model
+        self.providerName = providerName
     }
 
     public func reply(system: String?, user: String, images: [Data], imageType: String, json: Bool, temperature: Double) async throws -> TextReply {

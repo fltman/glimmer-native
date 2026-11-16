@@ -25,12 +25,6 @@ public struct KeychainSecretStore: SecretStore {
         self.account = account
     }
 
-    /// The app's own keychain item: a debug build (com.brattoo.glimmer.debug) never reads the
-    /// real Glimmer's key.
-    public static let openRouterAPIKey = KeychainSecretStore(
-        service: AppIdentity.glimmerBundleID, account: "openrouter-api-key"
-    )
-
     private var baseQuery: [CFString: Any] {
         [kSecClass: kSecClassGenericPassword,
          kSecAttrService: service,
@@ -63,7 +57,7 @@ public struct KeychainSecretStore: SecretStore {
         case errSecItemNotFound:
             var add = baseQuery
             add[kSecValueData] = data
-            add[kSecAttrLabel] = "Glimmer – OpenRouter API key"
+            add[kSecAttrLabel] = "Glimmer – \(AIProvider.named(account)?.name ?? account) API key"
             let status = SecItemAdd(add as CFDictionary, nil)
             guard status == errSecSuccess else { throw KeychainError(status: status) }
         default:

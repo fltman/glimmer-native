@@ -77,3 +77,25 @@ The options, none built:
 - A. Clone unchanged layer files from the document's file URL into the temporary folder (instant on APFS). Likely to work, but against that guidance, and it leans on what the system does with the old package during a save.
 - B. Go back to Apple's `FileWrapperDocumentWriter` and its documented incremental path (the previous `FileWrapper` is passed in). Sanctioned, but our own writer exists because of the full-disk work (it removes the empty folder on failure and explains the error), and it is unknown whether the system then really avoids rewriting unchanged files. Both would need measuring and the full-disk cycle verifying again.
 - C. Leave it. Unchanged layers are already not re-encoded; what remains is disk time: about 2 s for the measured 697 MB document on the internal disk (390 MB/s), about 21 s on the external USB volume it was measured on (33 MB/s). Chosen.
+
+## Text services and local models (2026-11-16)
+
+Verified without any paid call:
+
+- Every text request goes through one interface (`TextModel`); a guard test fails if anything goes around it.
+- The chat adapter against answers in the documented form (a made-up provider behind a URLProtocol): Berget, Grunden, Ollama's own chat API and OpenRouter each get the request their documentation describes; a refusal is shown with the service's name, its status and its own words.
+- The model-list parsers against what `api.berget.ai/v1/models` and `api.grunden.ai/v1/models` returned on 2026-11-16 (both are public, no key).
+- The keychain move of OpenRouter's key (`openrouter-api-key` → `openrouter`), including an interruption at each point.
+- OpenRouter's documented Image API (`POST /api/v1/images`) against a made-up answer. The old route is the default until a real call has been made through the new one (`-ai.openRouterImageRoute images`).
+- In the debug app: Settings › AI shows the Berget section (key field, links, model list, Refresh); `/status` reports `providerKeys`.
+
+Not verified, because nobody has made a real call: Berget and Grunden with a key (Anders decided they are offered from their documentation alone), and OpenRouter's Image API.
+
+Local model, measured with `LocalModelEvaluation` (twelve everyday requests, six in Swedish, the short tool list, Ollama's own API with a 16,384-token context) against what was already installed in Ollama 0.15.6:
+
+| Model | Right | English | Swedish | Median | Slowest | Verdict |
+|---|---|---|---|---|---|---|
+| `qwen3:8b` | 10 of 12 | 6 of 6 | 4 of 6 | 4.3 s | 20.4 s | does not pass (the rule: 10 of 12, 5 of 6 in each language, none over 60 s) |
+| `gemma3:4b` | not run | | | | | Ollama lists it without tools |
+
+The two misses were both Swedish: "Gör bilden svartvit" got an adjustment without its type, and "Gör bilden hälften så stor" got a fixed width instead of a scale. With every operation as a tool and Ollama's default 4096-token context, the same model had taken two to seven minutes per request and got one of three right. So Ollama stays hidden. Run it again with `GLIMMER_LOCAL_EVAL=<model> swift test --filter evaluateInstalledModels`.

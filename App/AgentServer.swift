@@ -236,7 +236,9 @@ enum AgentRouter {
             return .json(["app": ["name": "Glimmer", "version": appVersion, "bundleID": AppIdentity.ownBundleID],
                           "api": AgentAPI.version, "port": Int(port),
                           "documents": AgentRegistry.shared.sessions.map(summary),
-                          "jobs": AgentJobs.shared.running.map(\.json)])
+                          "jobs": AgentJobs.shared.running.map(\.json),
+                          // Which services have a key (never the key): paid steps need the one they use.
+                          "providerKeys": Self.providerKeys()])
         case ["api", "v1", "operations"]:
             try only("GET")
             return .json(["operations": AgentAPI.operations])
@@ -675,6 +677,14 @@ enum AgentRouter {
             return .json(["error": stepFailure(results, failed), "results": list, "document": detail(session)], status: 422)
         }
         return .json(["results": list, "document": detail(session)])
+    }
+
+    /// Present or missing per offered service that needs a key.
+    static func providerKeys() -> [String: Bool] {
+        var status = ProviderKeys.keychain.status()
+        // A debug copy may get OpenRouter's key from its environment instead of the keychain.
+        status["openrouter"] = ((try? AIController.apiKey()) ?? nil) != nil
+        return status
     }
 
     /// `linkedFile` of a document: the file it saves back to. `available` is false when the

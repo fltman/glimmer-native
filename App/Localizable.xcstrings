@@ -10941,6 +10941,281 @@
           }
         }
       }
+    },
+    "Service": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tjänst"
+          }
+        }
+      }
+    },
+    "Text (the Assistant)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Text (assistenten)"
+          }
+        }
+      }
+    },
+    "Which service answers when the Assistant plans, suggests edits or looks for distractions. Pictures are still made through OpenRouter.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vilken tjänst som svarar när assistenten planerar, föreslår ändringar eller letar efter störande inslag. Bilder görs fortfarande genom OpenRouter."
+          }
+        }
+      }
+    },
+    "%@ API key": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-nyckel för %@"
+          }
+        }
+      }
+    },
+    "Saved in your keychain": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sparad i din nyckelring"
+          }
+        }
+      }
+    },
+    "Glimmer's support for %@ is built from its documentation and has not been tried with a real call yet. If it answers with an error, Glimmer shows it as it came.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmers stöd för %@ är byggt efter tjänstens dokumentation och har ännu inte provats med ett riktigt anrop. Om tjänsten svarar med ett fel visar Glimmer felet som det kom."
+          }
+        }
+      }
+    },
+    "Your key is stored in your keychain and sent only to %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Din nyckel sparas i din nyckelring och skickas bara till %@."
+          }
+        }
+      }
+    },
+    "Get a key": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skaffa en nyckel"
+          }
+        }
+      }
+    },
+    "Terms": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Villkor"
+          }
+        }
+      }
+    },
+    "Prices": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priser"
+          }
+        }
+      }
+    },
+    "Model": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modell"
+          }
+        }
+      }
+    },
+    "Choose a model": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj en modell"
+          }
+        }
+      }
+    },
+    "%@ (no longer listed)": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (finns inte längre i listan)"
+          }
+        }
+      }
+    },
+    "Refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uppdatera"
+          }
+        }
+      }
+    },
+    "Loading the model list": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hämtar modellistan"
+          }
+        }
+      }
+    },
+    "%@ lists this model without tool calls. The Assistant can't use it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ anger att modellen saknar verktygsanrop. Assistenten kan inte använda den."
+          }
+        }
+      }
+    },
+    "This model can't take pictures, so the Assistant plans without looking at the document, and suggestions and Find Distractions won't work with it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modellen kan inte ta emot bilder, så assistenten planerar utan att se dokumentet, och förslag och Hitta störande inslag fungerar inte med den."
+          }
+        }
+      }
+    },
+    "%1$@'s list: %2$@. %3$@ bills you for what you use.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@s lista: %2$@. %3$@ fakturerar dig för det du använder."
+          }
+        }
+      }
+    },
+    "Billed by %@ at their rates.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faktureras av %@ enligt deras priser."
+          }
+        }
+      }
+    },
+    "%1$@ no longer lists %2$@. Choose another model.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ har inte längre %2$@ i sin lista. Välj en annan modell."
+          }
+        }
+      }
+    },
+    "Choose a %@ model in Settings › AI.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj en modell för %@ i Inställningar › AI."
+          }
+        }
+      }
+    },
+    "%1$@ lists %2$@ as a model without tool calls, and the Assistant works by calling Glimmer's tools. Choose another model in Settings › AI.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ anger att %2$@ saknar verktygsanrop, och assistenten arbetar genom att anropa Glimmers verktyg. Välj en annan modell i Inställningar › AI."
+          }
+        }
+      }
+    },
+    "%@ can't take pictures, so the Assistant plans without looking at the document.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ kan inte ta emot bilder, så assistenten planerar utan att se dokumentet."
+          }
+        }
+      }
+    },
+    "Berget AI runs open models in Stockholm. Its terms say it never stores the content of prompts or answers.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Berget AI kör öppna modeller i Stockholm. Enligt villkoren sparas aldrig innehållet i frågor eller svar."
+          }
+        }
+      }
+    },
+    "Grunden AI runs open models in Sweden and says all processing happens there.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grunden AI kör öppna modeller i Sverige och uppger att all bearbetning sker där."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

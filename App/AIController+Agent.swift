@@ -117,9 +117,26 @@ extension AIController {
 
     /// Sends the goal to the text model for a plan.
     private func planWithOpenRouter(_ goal: String) {
-        guard let model = try? textModel() else {
-            messages.append(Message(fromUser: false, text: "Add your OpenRouter API key in Settings › AI to use the assistant."))
+        let model: any TextModel
+        do {
+            model = try textModel()
+        } catch {
+            let why = error is OpenRouterError ? String(localized: "Add your OpenRouter API key in Settings › AI to use the assistant.")
+                : (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            messages.append(Message(fromUser: false, text: why))
             return
+        }
+        // What the service's own list says the model can't do is said before anything is sent.
+        let provider = Self.textProvider
+        let abilities = Self.chosenTextModel(for: provider)
+        if abilities.tools == false {
+            messages.append(Message(fromUser: false, text: String(localized: "\(provider.name) lists \(abilities.id) as a model without tool calls, and the Assistant works by calling Glimmer's tools. Choose another model in Settings › AI.")))
+            return
+        }
+        let canSee = abilities.vision != false
+        if !canSee, !saidModelCantSee {
+            saidModelCantSee = true
+            messages.append(Message(fromUser: false, text: String(localized: "\(abilities.id) can't take pictures, so the Assistant plans without looking at the document.")))
         }
         let context = agentContext
         let history = agentHistory
@@ -131,7 +148,7 @@ extension AIController {
         let messageID = placeholder.id
         planTask = Task { [weak self] in
             do {
-                let image = await Task.detached { metal.flatMap { Self.snapshotJPEG(state, metal: $0) } }.value
+                let image = canSee ? await Task.detached { metal.flatMap { Self.snapshotJPEG(state, metal: $0) } }.value : nil
                 // Running siblings (Jämmer, Flimmer) add their operations as tools; found off the main thread.
                 let siblings = await SiblingClient.shared.toolbox()
                 let (plan, _) = try await AgentPlanner.plan(goal: goal, context: context, history: history, image: image,

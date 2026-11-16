@@ -544,8 +544,9 @@ public enum AgentPlanner {
     }
 
     /// One function tool per op; the schemas are generated from `ops`.
-    public static func toolSchemas() -> [[String: Any]] {
-        ops.map { op in
+    /// `short`: only the everyday operations (the API's core tier), for small local models.
+    public static func toolSchemas(short: Bool = false) -> [[String: Any]] {
+        ops.filter { !short || AgentAPI.coreOps.contains($0.name) }.map { op in
             var parameters = paramsSchema(op)
             var properties = parameters["properties"] as? [String: Any] ?? [:]
             properties["rationale"] = ["type": "string", "description": "One short sentence: why this step."]
@@ -646,7 +647,7 @@ public enum AgentPlanner {
                             model: any TextModel,
                             onText: (@Sendable (String) -> Void)? = nil) async throws -> (AgentPlan, Double?) {
         let messages = toolMessages(goal: goal, context: context, history: history, image: image, siblingContext: siblingContext)
-        let tools = toolSchemas() + siblings.map(\.toolSchema)
+        let tools = toolSchemas(short: model.prefersShortToolList) + (model.prefersShortToolList ? [] : siblings.map(\.toolSchema))
         let response = try await model.callTools(messages: messages, tools: tools, temperature: 0.2, onText: onText)
         return (try plan(from: response, extra: Set(siblings.map(\.toolName))), response.cost)
     }

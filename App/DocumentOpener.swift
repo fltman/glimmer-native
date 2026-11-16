@@ -378,6 +378,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // A move of OpenRouter's key to its new keychain account that was interrupted is finished here.
+        ProviderKeys.keychain.removeLeftoverOpenRouterItem()
         didFinishLaunching = true
         openLog.notice("did finish launching; for a sibling: \(self.launchedForSibling)")
         // Undo snapshots a previous run left on disk (documents remove their own while the app runs).

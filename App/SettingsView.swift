@@ -30,7 +30,8 @@ struct SettingsView: View {
 }
 
 private struct AISettingsView: View {
-    private let store: any SecretStore = KeychainSecretStore.openRouterAPIKey
+    private let store: any SecretStore = ProviderKeys.keychain.store(for: "openrouter")
+    @AppStorage(AIController.textProviderKey) private var textProvider = "openrouter"
 
     @AppStorage(AIDefaults.imageModelKey) private var imageModel = AIDefaults.imageModel
     @AppStorage(AIDefaults.textModelKey) private var textModel = AIDefaults.textModel
@@ -81,9 +82,28 @@ private struct AISettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section {
+                Picker("Service", selection: $textProvider) {
+                    ForEach(AIProvider.offering(.text)) { provider in
+                        Text(verbatim: provider.name).tag(provider.slug)
+                    }
+                }
+                if let provider = AIProvider.named(textProvider), provider.slug != "openrouter", provider.offers(.text) {
+                    ProviderTextSettings(provider: provider)
+                        .id(provider.slug)
+                }
+            } header: {
+                Text("Text (the Assistant)")
+            } footer: {
+                Text("Which service answers when the Assistant plans, suggests edits or looks for distractions. Pictures are still made through OpenRouter.")
+                    .foregroundStyle(.secondary)
+            }
+
             Section("Models") {
                 TextField("Image model", text: $imageModel)
                 TextField("Text model", text: $textModel)
+                    .disabled(textProvider != "openrouter")
+                    .help(textProvider == "openrouter" ? "" : "Used when the text service is OpenRouter")
                 Button("Restore Defaults") {
                     imageModel = AIDefaults.imageModel
                     textModel = AIDefaults.textModel
@@ -121,7 +141,8 @@ private struct AISettingsView: View {
 
     private func load() {
         do {
-            savedKey = try store.read() ?? ""
+            // Through the register's reader, which moves a key stored under the old account name.
+            savedKey = try ProviderKeys.keychain.key(for: "openrouter") ?? ""
             apiKey = savedKey
         } catch {
             status = .failed(error.localizedDescription)
@@ -401,5 +422,133 @@ private struct TabletSettingsView: View {
         }
         .formStyle(.grouped)
         .padding(.vertical, 8)
+    }
+}
+
+/// Key, terms and model for a text service other than OpenRouter. Everything shown comes
+/// from the register (`AIProvider`) and from the service's own model list.
+private struct ProviderTextSettings: View {
+    let provider: AIProvider
+
+    @State private var key = ""
+    @State private var savedKey = ""
+    @State private var keyError: String?
+    @State private var models: [ProviderModel] = []
+    @State private var listError: String?
+    @State private var loading = false
+    @State private var chosen = ""
+
+    private var store: any SecretStore { ProviderKeys.keychain.store(for: provider.slug) }
+    private var modelKey: String { AIController.textModelKey(provider.slug) }
+    private var model: ProviderModel? { models.first { $0.id == chosen } }
+
+    var body: some View {
+        if provider.needsKey {
+            SecureField("\(provider.name) API key", text: $key)
+                .onSubmit(save)
+            HStack {
+                Button("Save", action: save).disabled(key == savedKey)
+                if !savedKey.isEmpty { Button("Remove", role: .destructive) { key = ""; save() } }
+                Spacer()
+                if let keyError {
+                    Label(keyError, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).lineLimit(2)
+                } else if !savedKey.isEmpty {
+                    Label("Saved in your keychain", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                }
+            }
+        }
+        VStack(alignment: .leading, spacing: 4) {
+            if let note = provider.termsNote { Text(LocalizedStringKey(note)) }
+            if provider.fromDocumentationOnly {
+                Text("Glimmer's support for \(provider.name) is built from its documentation and has not been tried with a real call yet. If it answers with an error, Glimmer shows it as it came.")
+            }
+            Text("Your key is stored in your keychain and sent only to \(URL(string: provider.baseURL)?.host() ?? provider.baseURL).")
+            HStack(spacing: 12) {
+                if let url = provider.keysURL.flatMap(URL.init) { Link("Get a key", destination: url) }
+                if let url = provider.termsURL.flatMap(URL.init) { Link("Terms", destination: url) }
+                if let url = provider.pricesURL.flatMap(URL.init) { Link("Prices", destination: url) }
+            }
+        }
+        .font(.callout)
+        .foregroundStyle(.secondary)
+
+        HStack {
+            Picker("Model", selection: $chosen) {
+                if chosen.isEmpty { Text("Choose a model").tag("") }
+                // A model chosen earlier that the service no longer lists is shown as such, not silently kept.
+                if !chosen.isEmpty, !models.isEmpty, model == nil { Text("\(chosen) (no longer listed)").tag(chosen) }
+                if models.isEmpty, !chosen.isEmpty { Text(verbatim: chosen).tag(chosen) }
+                ForEach(models) { m in Text(verbatim: m.id).tag(m.id) }
+            }
+            .disabled(models.isEmpty)
+            if loading { ProgressView().controlSize(.small).accessibilityLabel("Loading the model list") }
+            Button("Refresh") { Task { await loadModels() } }.disabled(loading)
+        }
+        .onChange(of: chosen) { _, id in choose(id) }
+        .task { load(); await loadModels() }
+
+        if let listError {
+            Label(listError, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.callout)
+        }
+        if let m = model {
+            VStack(alignment: .leading, spacing: 4) {
+                if m.tools == false {
+                    Label("\(provider.name) lists this model without tool calls. The Assistant can't use it.", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                }
+                if m.vision == false {
+                    Label("This model can't take pictures, so the Assistant plans without looking at the document, and suggestions and Find Distractions won't work with it.", systemImage: "eye.slash")
+                }
+                if let price = m.priceLine {
+                    Text("\(provider.name)'s list: \(price). \(provider.name) bills you for what you use.")
+                } else {
+                    Text("Billed by \(provider.name) at their rates.")
+                }
+            }
+            .font(.callout)
+            .foregroundStyle(.secondary)
+        } else if !chosen.isEmpty, !models.isEmpty {
+            Label("\(provider.name) no longer lists \(chosen). Choose another model.", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange).font(.callout)
+        }
+    }
+
+    private func load() {
+        savedKey = ((try? ProviderKeys.keychain.key(for: provider.slug)) ?? nil) ?? ""
+        key = savedKey
+        chosen = UserDefaults.standard.string(forKey: modelKey) ?? ""
+    }
+
+    private func save() {
+        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            if trimmed.isEmpty { try store.delete() } else { try store.write(trimmed) }
+            key = trimmed
+            savedKey = trimmed
+            keyError = nil
+        } catch {
+            keyError = error.localizedDescription
+        }
+    }
+
+    /// Remembers the model and what the list says it can do, for the Assistant to check before a request.
+    private func choose(_ id: String) {
+        let d = UserDefaults.standard
+        d.set(id, forKey: modelKey)
+        let m = models.first { $0.id == id }
+        if let tools = m?.tools { d.set(tools, forKey: modelKey + ".tools") } else { d.removeObject(forKey: modelKey + ".tools") }
+        if let vision = m?.vision { d.set(vision, forKey: modelKey + ".vision") } else { d.removeObject(forKey: modelKey + ".vision") }
+    }
+
+    private func loadModels() async {
+        loading = true
+        defer { loading = false }
+        do {
+            models = try await ModelCatalog.fetchTextModels(provider, key: savedKey.isEmpty ? nil : savedKey)
+            listError = nil
+            if !chosen.isEmpty { choose(chosen) }   // refresh what the list says about the chosen model
+        } catch {
+            listError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        }
     }
 }

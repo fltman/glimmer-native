@@ -110,9 +110,70 @@ public struct OpenRouterConfiguration: Sendable {
     /// Shown in the OpenRouter dashboard; identifies the app, not the user.
     public var appTitle: String
 
+    /// What this service's chat completions accept, where it differs from OpenRouter's.
+    public var dialect = ChatDialect()
+    /// Set for services other than OpenRouter: errors then carry the service's name, the HTTP
+    /// status and its own message, word for word.
+    public var providerName: String?
+    /// False for a local server: no key is needed or sent.
+    public var needsKey = true
+
     public init(baseURL: URL = AIDefaults.endpoint, appTitle: String = "Glimmer") {
         self.baseURL = baseURL
         self.appTitle = appTitle
+    }
+}
+
+/// The request fields a chat-completions service takes. The adapter, not the caller, leaves
+/// out what a service refuses.
+public struct ChatDialect: Sendable, Equatable {
+    /// `tool_choice: "auto"` (Ollama's compatibility layer doesn't list it).
+    public var toolChoice = true
+    public var parallelToolCalls = true
+    /// OpenRouter's `usage: {include: true}`, which makes it report the cost.
+    public var usageInclude = true
+    public var temperature = true
+    /// `response_format: {"type": "json_object"}`.
+    public var jsonObject = true
+    /// `reasoning_effort`, for services that reason at full depth unless told otherwise.
+    public var reasoningEffort: String?
+
+    public init() {}
+
+    /// The common OpenAI-style form without OpenRouter's own fields.
+    public static var plain: ChatDialect {
+        var d = ChatDialect()
+        d.usageInclude = false
+        return d
+    }
+
+    func apply(to body: inout [String: Any]) {
+        if !toolChoice { body["tool_choice"] = nil }
+        if !parallelToolCalls { body["parallel_tool_calls"] = nil }
+        if !usageInclude { body["usage"] = nil }
+        if !temperature { body["temperature"] = nil }
+        if !jsonObject { body["response_format"] = nil }
+        if let reasoningEffort { body["reasoning_effort"] = reasoningEffort }
+    }
+}
+
+/// A service other than OpenRouter refused or failed: its name, the status and what it said.
+public struct ProviderHTTPError: Error, LocalizedError, Equatable {
+    public let provider: String
+    public let status: Int
+    public let message: String
+
+    public var errorDescription: String? {
+        message.isEmpty ? "\(provider) answered HTTP \(status)." : "\(provider) answered HTTP \(status): \(message)"
+    }
+
+    /// The service's own message if the body has one in a known place, otherwise the body as it came (shortened).
+    static func message(from body: Data) -> String {
+        if let m = OpenRouterError.extractMessage(from: body) { return m }
+        if let json = try? JSONSerialization.jsonObject(with: body) as? [String: Any] {
+            for key in ["error", "message", "detail"] { if let s = json[key] as? String { return s } }
+        }
+        return String(String(decoding: body, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines).prefix(600))
     }
 }
 
@@ -177,6 +238,27 @@ public actor OpenRouterClient {
         return ImageResponse(imageData: image, cost: Self.cost(json), model: json["model"] as? String)
     }
 
+    /// Image generation through OpenRouter's Image API, `POST /images`: the route its guide
+    /// documents ("Send a POST request to /api/v1/images with the model and prompt"). Input
+    /// pictures travel as data URLs in `input_references`; the answer is base64 in
+    /// `data[0].b64_json` with the charge in `usage.cost`.
+    public func imageGeneration(model: String, text: String, images: [Data], seed: Int? = nil) async throws -> ImageResponse {
+        var body: [String: Any] = ["model": model, "prompt": text, "n": 1]
+        if !images.isEmpty {
+            body["input_references"] = images.map { ["type": "image_url", "image_url": ["url": "data:image/png;base64," + $0.base64EncodedString()]] }
+        }
+        if let seed { body["seed"] = seed }
+        let data = try await sendWithRetry(try request(path: "images", method: "POST", body: JSONSerialization.data(withJSONObject: body)))
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw OpenRouterError.unexpectedResponse(status: 200, message: "not JSON")
+        }
+        guard let first = (json["data"] as? [[String: Any]])?.first, let encoded = first["b64_json"] as? String,
+              let image = Data(base64Encoded: encoded, options: .ignoreUnknownCharacters), !image.isEmpty else {
+            throw OpenRouterError.noImageInResponse(OpenRouterError.extractMessage(from: data))
+        }
+        return ImageResponse(imageData: image, cost: (json["usage"] as? [String: Any])?["cost"] as? Double, model: json["model"] as? String ?? model)
+    }
+
     /// Text-only (optionally multimodal) completion. `jsonMode` requests a JSON object.
     public func textCompletion(model: String, system: String?, user: String, images: [Data] = [],
                                imageType: String = "image/png",
@@ -196,6 +278,7 @@ public actor OpenRouterClient {
         var body: [String: Any] = ["model": model, "messages": messages, "temperature": temperature,
                                    "usage": ["include": true]]
         if jsonMode { body["response_format"] = ["type": "json_object"] }
+        configuration.dialect.apply(to: &body)
         let data = try await sendWithRetry(try request(path: "chat/completions", method: "POST",
                                                        body: JSONSerialization.data(withJSONObject: body)))
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -221,9 +304,10 @@ public actor OpenRouterClient {
     /// `{"role", "content"}` dictionaries; `tools` are `{"type": "function", …}` schemas.
     public func toolCompletion(model: String, messages: [[String: Any]], tools: [[String: Any]],
                                temperature: Double = 0.2) async throws -> ToolResponse {
-        let body: [String: Any] = ["model": model, "messages": messages, "tools": tools, "tool_choice": "auto",
+        var body: [String: Any] = ["model": model, "messages": messages, "tools": tools, "tool_choice": "auto",
                                    "parallel_tool_calls": true, "temperature": temperature,
                                    "usage": ["include": true]]
+        configuration.dialect.apply(to: &body)
         let data = try await sendWithRetry(try request(path: "chat/completions", method: "POST",
                                                        body: JSONSerialization.data(withJSONObject: body)))
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any], Self.message(json) != nil else {
@@ -268,9 +352,10 @@ public actor OpenRouterClient {
     public func toolCompletionStreaming(model: String, messages: [[String: Any]], tools: [[String: Any]],
                                         temperature: Double = 0.2,
                                         onText: @escaping @Sendable (String) -> Void) async throws -> ToolResponse {
-        let body: [String: Any] = ["model": model, "messages": messages, "tools": tools, "tool_choice": "auto",
+        var body: [String: Any] = ["model": model, "messages": messages, "tools": tools, "tool_choice": "auto",
                                    "parallel_tool_calls": true, "temperature": temperature,
                                    "usage": ["include": true], "stream": true]
+        configuration.dialect.apply(to: &body)
         let request = try request(path: "chat/completions", method: "POST", body: JSONSerialization.data(withJSONObject: body))
         var accumulator = StreamAccumulator()
         do {
@@ -387,10 +472,10 @@ public actor OpenRouterClient {
     }
 
     func request(path: String, method: String = "GET", body: Data? = nil) throws -> URLRequest {
-        guard !apiKey.isEmpty else { throw OpenRouterError.missingAPIKey }
+        guard !apiKey.isEmpty || !configuration.needsKey else { throw OpenRouterError.missingAPIKey }
         var request = URLRequest(url: configuration.baseURL.appending(path: path))
         request.httpMethod = method
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        if !apiKey.isEmpty { request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization") }
         request.setValue(configuration.appTitle, forHTTPHeaderField: "X-Title")
         request.timeoutInterval = 240
         if let body {
@@ -415,6 +500,11 @@ public actor OpenRouterClient {
             status: http.statusCode, body: data,
             retryAfterHeader: http.value(forHTTPHeaderField: "Retry-After")
         ) {
+            // Another service's failure is shown as that service gave it; only what is worth
+            // retrying keeps its kind, so the retry loop still works.
+            if let provider = configuration.providerName, !error.isRetryable {
+                throw ProviderHTTPError(provider: provider, status: http.statusCode, message: ProviderHTTPError.message(from: data))
+            }
             throw error
         }
         return data

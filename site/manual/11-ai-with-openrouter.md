@@ -24,6 +24,28 @@ Under **Models** in the same tab you choose which OpenRouter models Glimmer call
 
 Type any OpenRouter model id to use another model. **Restore Defaults** puts both back.
 
+## Other services for text
+
+The Assistant, its suggestions and Find Distractions send text (and a small picture of your document) to a language model. By default that is OpenRouter too. In **Glimmer › Settings › AI**, under **Text (the Assistant)**, you can choose another service for it. Pictures are still made through OpenRouter.
+
+<!-- providers:begin (generated from the app's list of services by scripts/export-agents-guide.sh; don't edit by hand) -->
+| Service | Used for | Key | Where your data is processed | Notes |
+|---|---|---|---|---|
+| OpenRouter | text (the Assistant), images | your own, in **Settings › AI** | see the service's terms |  |
+| Berget | text (the Assistant) | your own, in **Settings › AI** | Stockholm, Sweden | Built from Berget's documentation; not yet tried with a real call. Berget AI runs open models in Stockholm. Its terms say it never stores the content of prompts or answers. |
+| Grunden | text (the Assistant) | your own, in **Settings › AI** | Sweden | Built from Grunden's documentation; not yet tried with a real call. Grunden AI runs open models in Sweden and says all processing happens there. |
+<!-- providers:end -->
+
+For a service other than OpenRouter:
+
+1. Choose it under **Service**.
+2. Paste your key from that service and click **Save**. Each service has its own key, stored in your keychain and sent only to that service.
+3. Choose a **Model**. The list comes from the service itself each time, so it only offers models the service has now. If a model you chose earlier is gone, Glimmer says so.
+
+Under the model, Glimmer shows what the service's own list says: its price per million tokens when the list has prices (otherwise "Billed by … at their rates"), and two warnings when they apply. A model without tool calls can't be used by the Assistant, which works by calling Glimmer's tools. A model that can't take pictures makes the Assistant plan without looking at the document, and suggestions and Find Distractions won't work with it.
+
+Berget and Grunden are Swedish services that run open models in Sweden. Glimmer's support for them is built from their documentation and has not been tried with a real call yet. If a service answers with an error, Glimmer shows the error as it came, with its status code.
+
 ## What costs money
 
 A feature costs money when it sends a request to OpenRouter. The price depends on the model you have chosen and on OpenRouter's pricing. OpenRouter bills it to your account.

@@ -26,9 +26,16 @@ public struct OpenRouterImageModel: ImageModel {
     /// Inputs are downscaled to this long side before sending.
     public let maxInputSide: Int
     public let cacheDirectory: URL?
+    /// How the picture is asked for. `.chat` is the route Glimmer has always used (chat
+    /// completions with image output), which OpenRouter's guide no longer describes and
+    /// serves for a few models only; `.images` is its documented Image API. `.chat` stays the
+    /// default until the first real call through `.images` has been made (docs/RELEASE.md).
+    public enum Route: String, Sendable { case chat, images }
+    public let route: Route
 
-    public init(client: OpenRouterClient, model: String, maxInputSide: Int = 2048, cacheDirectory: URL? = AIResultCache.defaultDirectory) {
+    public init(client: OpenRouterClient, model: String, route: Route = .chat, maxInputSide: Int = 2048, cacheDirectory: URL? = AIResultCache.defaultDirectory) {
         self.client = client
+        self.route = route
         self.model = model
         self.maxInputSide = maxInputSide
         self.cacheDirectory = cacheDirectory
@@ -41,7 +48,10 @@ public struct OpenRouterImageModel: ImageModel {
         if let hit = cache?.load(key), let image = try? ImageImporter.image(from: hit) {
             return AIImageResult(image: RGBAImage(image), cost: 0)
         }
-        let response = try await client.imageCompletion(model: model, text: prompt, images: pngs, seed: seed)
+        let response = switch route {
+        case .chat: try await client.imageCompletion(model: model, text: prompt, images: pngs, seed: seed)
+        case .images: try await client.imageGeneration(model: model, text: prompt, images: pngs, seed: seed)
+        }
         let image = try ImageImporter.image(from: response.imageData)
         cache?.store(response.imageData, key: key)
         return AIImageResult(image: RGBAImage(image), cost: response.cost)

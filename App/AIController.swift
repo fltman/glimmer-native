@@ -69,33 +69,85 @@ final class AIController {
     // MARK: Setup
 
     var hasAPIKey: Bool { (try? Self.apiKey()) != nil }
+    /// Said once per window: the chosen text model can't take pictures.
+    @ObservationIgnored var saidModelCantSee = false
 
     /// The OpenRouter key from the Keychain. Debug builds also accept the
     /// `OPENROUTER_API_KEY` environment variable, so test runs never store a key.
     static func apiKey() throws -> String? {
-        if let key = try KeychainSecretStore.openRouterAPIKey.read(), !key.isEmpty { return key }
+        if let key = try ProviderKeys.keychain.key(for: "openrouter") { return key }
         #if DEBUG
         if let key = ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"], !key.isEmpty { return key }
         #endif
         return nil
     }
 
-    /// The model every text request goes to (the Assistant, suggestions, Find Distractions).
-    /// The one place a text provider is chosen; nothing else constructs one.
-    func textModel() throws -> any TextModel {
-        guard let key = try Self.apiKey() else {
-            throw OpenRouterError.missingAPIKey
-        }
-        let model = UserDefaults.standard.string(forKey: AIDefaults.textModelKey) ?? AIDefaults.textModel
-        return OpenRouterTextModel(client: OpenRouterClient(apiKey: key), model: model)
+    // MARK: Text: which service and model (the register is `AIProvider`)
+
+    static let textProviderKey = "ai.textProvider"
+    static func textModelKey(_ slug: String) -> String { slug == "openrouter" ? AIDefaults.textModelKey : "ai.textModel.\(slug)" }
+
+    /// The service chosen for text in Settings, if it is offered; otherwise OpenRouter.
+    static var textProvider: AIProvider {
+        let slug = UserDefaults.standard.string(forKey: textProviderKey) ?? "openrouter"
+        if let p = AIProvider.named(slug), p.offers(.text) { return p }
+        #if DEBUG
+        // A service that is built but not offered yet can be tried in a debug copy: `-ai.textProvider ollama`.
+        if let p = AIProvider.named(slug), p.built.contains(.text) { return p }
+        #endif
+        return .openRouter
     }
+
+    /// The model chosen for `provider`, and what its service's list said it can do (nil: the list didn't say).
+    static func chosenTextModel(for provider: AIProvider) -> (id: String, tools: Bool?, vision: Bool?) {
+        let d = UserDefaults.standard, key = textModelKey(provider.slug)
+        let id = d.string(forKey: key) ?? (provider.slug == "openrouter" ? AIDefaults.textModel : "")
+        return (id, d.object(forKey: key + ".tools") as? Bool, d.object(forKey: key + ".vision") as? Bool)
+    }
+
+    struct TextSetupError: LocalizedError { let errorDescription: String? }
+
+    /// The model every text request goes to (the Assistant, suggestions, Find Distractions).
+    /// The one place a text service is chosen; nothing else constructs one.
+    func textModel() throws -> any TextModel {
+        let provider = Self.textProvider
+        if provider.slug == "ollama" {
+            let chosen = Self.chosenTextModel(for: provider).id
+            guard !chosen.isEmpty else { throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI.")) }
+            let address = UserDefaults.standard.string(forKey: "ai.address.ollama").flatMap(URL.init) ?? URL(string: provider.baseURL)!
+            return OllamaTextModel(baseURL: address, model: chosen)
+        }
+        let key: String?
+        if provider.slug == "openrouter" {
+            key = try Self.apiKey()
+        } else {
+            key = provider.needsKey ? try ProviderKeys.keychain.key(for: provider.slug) : ""
+        }
+        guard let key else {
+            if provider.slug == "openrouter" { throw OpenRouterError.missingAPIKey }
+            throw TextSetupError(errorDescription: provider.missingKeyMessage)
+        }
+        let model = Self.chosenTextModel(for: provider).id
+        guard !model.isEmpty else {
+            throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI."))
+        }
+        // OpenRouter keeps its endpoint setting; the others go to their own address.
+        let configuration = provider.slug == "openrouter" ? provider.chatConfiguration(baseURL: AIDefaults.endpoint) : provider.chatConfiguration()
+        return OpenRouterTextModel(client: OpenRouterClient(apiKey: key, configuration: configuration), model: model, providerName: provider.name)
+    }
+
+    /// Whether a text request can be made at all (a key where one is needed, and a model).
+    var hasTextModel: Bool { (try? textModel()) != nil }
 
     private func imageModel() throws -> ImageModel {
         guard let key = try Self.apiKey() else {
             throw OpenRouterError.missingAPIKey
         }
         let model = UserDefaults.standard.string(forKey: AIDefaults.imageModelKey) ?? AIDefaults.imageModel
-        return OpenRouterImageModel(client: OpenRouterClient(apiKey: key), model: model)
+        // The documented Image API is built and tested against made-up answers; it is switched on
+        // by a setting (`-ai.openRouterImageRoute images`) until a real call through it has been made.
+        let route = OpenRouterImageModel.Route(rawValue: UserDefaults.standard.string(forKey: "ai.openRouterImageRoute") ?? "") ?? .chat
+        return OpenRouterImageModel(client: OpenRouterClient(apiKey: key), model: model, route: route)
     }
 
     var metal: MetalContext {
