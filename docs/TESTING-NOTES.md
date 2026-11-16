@@ -111,3 +111,30 @@ With the corrected case, three more runs of `qwen3:8b` (reasoning off, as before
 With reasoning on (`think: true`), one run before the correction: 11 of 12 as judged then, median 23.7 s, slowest 65.3 s. Slower for no clear gain, so reasoning stays off.
 
 So the model sits at the line: right often enough, and the one miss that repeats is "Gör bilden svartvit" answered with an adjustment that lacks its type. Whether Ollama is shown is the coordinator's and Anders's call; until then it is hidden. With every operation as a tool and Ollama's default 4096-token context, the same model had taken two to seven minutes per request and got one of three right. Run it again with `GLIMMER_LOCAL_EVAL=<model> swift test --filter evaluateInstalledModels` (`GLIMMER_LOCAL_EVAL_THINK=1` turns reasoning on).
+
+## The paid tests that are Anders's to make (hidden until each is made)
+
+Everything below is built from the services' documentation and tested against made-up answers in the documented form. None has had a real call. Use a debug build, started with the launch arguments shown; keys are entered in Settings › AI by hand.
+
+Text, one service at a time: `-ai.showUntried YES`, then Settings › AI › Service lists the untried ones as "(not tried yet)". Save the key, choose a model from the service's own list, and press **Run Glimmer's Test of This Model…**. It asks first, sends twelve requests (each carries the list of operations, a few thousand tokens, and gets a short answer), and shows each outcome and the verdict by the same rule as for local models (10 of 12, 5 of 6 per language, none over 60 s). That result decides whether the service is offered.
+
+| Service | Built on | Notes for the test |
+|---|---|---|
+| Berget, Grunden | chat completions | Already offered by Anders's decision; the same button works for them and would be their first real call. |
+| Google | its OpenAI-compatible route | |
+| OpenAI, xAI | the Responses API | The reply arrives whole, not streamed. |
+| Anthropic | the Messages API, version `2026-10-21` (as on platform.claude.com on 2026-11-16) | |
+
+The first-use notice ("Send this to <service>?") shows at the first request to each cloud service and has not been seen in the running app, because no key has ever been saved in a test copy: look at it at the first test and say if the text is right.
+
+Images, one service at a time, by launch arguments (there is no picker for them yet): `-ai.imageProvider <slug> -ai.imageModel.<slug> <model id as the service's documentation shows it>`; for fal also `-ai.imageEditModel.fal <id of the model's edit endpoint>` when it isn't `<id>/edit`. Then one **Generate** and one **Edit Image with Prompt** (or Generative Fill) in the AI panel.
+
+| Service | How the pictures travel | What to watch for |
+|---|---|---|
+| OpenRouter, new route (`-ai.openRouterImageRoute images`) | data URLs in the request; base64 back | After one generation and one edit, the new route becomes the default and the old one is removed. |
+| OpenAI | data URLs in the request; base64 back | The account may need OpenAI's organisation verification for image models. |
+| Google | inline base64 parts; the picture inline in the answer | |
+| fal | data URIs in the request, the result asked for as a data URI | If fal answers with a link instead, Glimmer refuses to fetch it and says so: then that model can't be used this way. |
+| Hedra | bytes uploaded to Hedra (private handle, one hour), a job, a signed download | Only pictures of yourself, by Hedra's rules. |
+
+Costs: Berget's and Grunden's lists give prices per million tokens (about €0.15–0.50 in), so a twelve-request run is a fraction of a euro cent. For the others no figure is given here, because their text prices were not read; the image prices per service are in `the-apps/research/providers-glimmer.md` and Flimmer's notes.

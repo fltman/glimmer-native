@@ -10,7 +10,9 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var answers: [(status: Int, body: String)] = []
     static let lock = NSLock()
 
-    static func script(_ answers: [(Int, String)]) { lock.withLock { seen = []; self.answers = answers.map { ($0.0, $0.1) } } }
+    nonisolated(unsafe) static var bodies: [Data] = []
+    static func script(_ answers: [(Int, String)]) { lock.withLock { seen = []; bodies = []; self.answers = answers.map { ($0.0, $0.1) } } }
+    static var rawBodies: [Data] { lock.withLock { bodies } }
     static var requests: [(url: URL, headers: [String: String], json: [String: Any])] { lock.withLock { seen } }
     static var session: URLSession {
         let c = URLSessionConfiguration.ephemeral
@@ -32,11 +34,14 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
         let json = (try? JSONSerialization.jsonObject(with: body)) as? [String: Any] ?? [:]
         let answer = Self.lock.withLock { () -> (status: Int, body: String) in
             Self.seen.append((request.url!, request.allHTTPHeaderFields ?? [:], json))
+            Self.bodies.append(body)
             return Self.answers.isEmpty ? (500, "{}") : Self.answers.removeFirst()
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: answer.status, httpVersion: "HTTP/1.1", headerFields: ["Content-Type": "application/json"])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-        client?.urlProtocol(self, didLoad: Data(answer.body.utf8))
+        // "base64:…" stands for binary content (a picture to download).
+        let payload = answer.body.hasPrefix("base64:") ? Data(base64Encoded: String(answer.body.dropFirst(7))) ?? Data() : Data(answer.body.utf8)
+        client?.urlProtocol(self, didLoad: payload)
         client?.urlProtocolDidFinishLoading(self)
     }
 }
@@ -71,7 +76,7 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
     @Test func aLocalServerNeedsNoKeyAndFalIsUntouched() {
         #expect(AIProvider.named("ollama")?.needsKey == false)
         #expect(AIProvider.named("ollama")?.dialect.toolChoice == false)
-        #expect(AIProvider.named("fal")?.built.isEmpty == true)   // nothing new for fal until its terms are settled
+        #expect(AIProvider.named("fal")?.built == [.image] && AIProvider.named("fal")?.offered.isEmpty == true)
         #expect(AIProvider.named("hedra")?.termsNote?.contains("yourself") == true)
     }
 
@@ -253,7 +258,7 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
         let parts = try #require(user["content"] as? [[String: Any]])
         #expect(parts.contains { (($0["image_url"] as? [String: Any])?["url"] as? String)?.hasPrefix("data:image/") == true })
         // Hidden until Anders has tried it.
-        #expect(AIProvider.named("google")?.offered.isEmpty == true && AIProvider.named("google")?.built == [.text])
+        #expect(AIProvider.named("google")?.offered.isEmpty == true && AIProvider.named("google")?.built.contains(.text) == true)
     }
 
     @Test func ollamaGetsNoKeyAndNoToolChoice() async throws {

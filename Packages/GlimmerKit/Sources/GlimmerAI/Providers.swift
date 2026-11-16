@@ -63,7 +63,7 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
         }(),
         {
             var p = AIProvider(slug: "openai", name: "OpenAI", kind: .cloud, serves: [.text, .image], textAdapter: .responses, baseURL: "https://api.openai.com/v1")
-            p.built = [.text]
+            p.built = [.text, .image]
             p.keysURL = "https://platform.openai.com/api-keys"; p.pricesURL = "https://developers.openai.com/api/docs/pricing"
             return p
         }(),
@@ -87,7 +87,7 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
             // tool_choice, pictures and streaming; what it doesn't show is left out.
             p.dialect.parallelToolCalls = false
             p.dialect.jsonObject = false
-            p.built = [.text]
+            p.built = [.text, .image]
             p.keysURL = "https://aistudio.google.com/apikey"; p.pricesURL = "https://ai.google.dev/gemini-api/docs/pricing"
             p.termsNote = "For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognisable people."
             p.termsURL = "https://ai.google.dev/gemini-api/terms"
@@ -113,10 +113,19 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
             p.fromDocumentationOnly = true
             return p
         }(),
-        AIProvider(slug: "fal", name: "fal.ai", kind: .cloud, serves: [.image], textAdapter: nil, baseURL: "https://fal.run"),
+        {
+            var p = AIProvider(slug: "fal", name: "fal.ai", kind: .cloud, serves: [.image], textAdapter: nil, baseURL: "https://fal.run")
+            p.built = [.image]
+            p.keysURL = "https://fal.ai/dashboard/keys"; p.termsURL = "https://fal.ai/legal/terms-of-service"; p.pricesURL = "https://fal.ai/pricing"
+            // Only what has been read. Glimmer sends pictures inside the request and asks for the result the same way, so nothing is put on fal's storage.
+            p.termsNote = "fal keeps what you send in its request history for 90 days by default. Glimmer sends your pictures inside the request and gets the result back the same way, so nothing is placed on fal's file storage, which is public by default."
+            return p
+        }(),
         {
             var p = AIProvider(slug: "hedra", name: "Hedra", kind: .cloud, serves: [.image], textAdapter: nil, baseURL: "https://api.hedra.com/v3")
-            p.termsNote = "Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a licence to what you make with it."
+            p.built = [.image]
+            p.keysURL = "https://www.hedra.com/develop"; p.pricesURL = "https://www.hedra.com/pricing"
+            p.termsNote = "Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a licence to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour."
             p.termsURL = "https://www.hedra.com/terms"
             return p
         }(),
@@ -170,6 +179,19 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
             return AnthropicTextModel(provider: self, key: key, model: model, session: session)
         case nil:
             return nil
+        }
+    }
+
+    /// The image model for this service. `editModel` is fal's separate model id for requests
+    /// with input pictures. The key is passed in for this one model and kept nowhere else.
+    public func imageModel(key: String, model: String, editModel: String? = nil, session: URLSession = .shared) -> (any ImageModel)? {
+        guard built.contains(.image) else { return nil }
+        switch slug {
+        case "openai": return OpenAIImageModel(key: key, model: model, session: session)
+        case "google": return GoogleImageModel(key: key, model: model, session: session)
+        case "fal": return FalImageModel(key: key, model: model, editModel: editModel, session: session)
+        case "hedra": return HedraImageModel(key: key, model: model, session: session)
+        default: return nil   // OpenRouter's has a result cache and two routes: `OpenRouterImageModel`
         }
     }
 

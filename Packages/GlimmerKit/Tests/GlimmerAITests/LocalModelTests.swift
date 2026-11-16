@@ -227,6 +227,7 @@ extension ChatAdapterTests {
         #expect(AIProvider.named("anthropic")?.textModel(key: "k", model: "m") is AnthropicTextModel)
         #expect(AIProvider.named("mlx")?.textModel(key: "", model: "m") == nil)
         #expect(AIProvider.named("fal")?.textModel(key: "k", model: "m") == nil)
+        #expect(AIProvider.named("openrouter")?.imageModel(key: "k", model: "m") == nil && AIProvider.named("berget")?.imageModel(key: "k", model: "m") == nil)
         // Still hidden: only what Anders has decided is offered.
         #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "berget", "grunden", "ollama"])
     }
@@ -305,5 +306,105 @@ extension ChatAdapterTests {
     @Test func noServerMeansNoList() async {
         FakeProvider.script([(404, "not found")])
         await #expect(throws: OllamaTextModel.OllamaError.self) { _ = try await OllamaTextModel.installed(session: FakeProvider.session) }
+    }
+}
+
+/// The image adapters against answers in the form each service's documentation shows.
+extension ChatAdapterTests {
+    private var input: RGBAImage { RGBAImage(width: 4, height: 4, fill: SIMD4(10, 20, 30, 255)) }
+    private func provider(_ slug: String) throws -> AIProvider { try #require(AIProvider.named(slug)) }
+    private func dataURL(_ any: Any?) -> Bool { (any as? String)?.hasPrefix("data:image/png;base64,") == true }
+
+    @Test func openAIGeneratesAndEditsWithThePicturesInTheRequest() async throws {
+        FakeProvider.script([(200, #"{"created":1,"data":[{"b64_json":"\#(Self.pixel)"}],"usage":{"input_tokens":10,"output_tokens":272}}"#),
+                             (200, #"{"created":1,"data":[{"b64_json":"\#(Self.pixel)"}]}"#)])
+        let model = try #require(try provider("openai").imageModel(key: "sk-test", model: "some-image-model", session: FakeProvider.session))
+        #expect(try await model.generate(prompt: "A red balloon", images: [], seed: nil).image.width == 1)
+        _ = try await model.generate(prompt: "Make it snowy", images: [input], seed: nil)
+        let sent = FakeProvider.requests
+        #expect(sent[0].url.absoluteString == "https://api.openai.com/v1/images/generations" && sent[0].headers["Authorization"] == "Bearer sk-test")
+        #expect(sent[0].json["prompt"] as? String == "A red balloon" && sent[0].json["images"] == nil)
+        #expect(sent[1].url.absoluteString == "https://api.openai.com/v1/images/edits")
+        #expect(dataURL(((sent[1].json["images"] as? [[String: Any]])?.first)?["image_url"]))
+    }
+
+    @Test func googleSendsInlinePartsAndReadsThePictureFromTheAnswer() async throws {
+        FakeProvider.script([(200, #"{"candidates":[{"content":{"parts":[{"text":"Here you are."},{"inlineData":{"mimeType":"image/png","data":"\#(Self.pixel)"}}]}}]}"#),
+                             (200, #"{"candidates":[{"content":{"parts":[{"text":"I can't make that picture."}]}}]}"#)])
+        let model = try #require(try provider("google").imageModel(key: "gk", model: "some-image-model", session: FakeProvider.session))
+        #expect(try await model.generate(prompt: "Make it snowy", images: [input], seed: nil).image.height == 1)
+        let sent = try #require(FakeProvider.requests.first)
+        #expect(sent.url.absoluteString == "https://generativelanguage.googleapis.com/v1/models/some-image-model:generateContent")
+        #expect(sent.headers["x-goog-api-key"] == "gk" && sent.headers["Authorization"] == nil)
+        let parts = try #require(((sent.json["contents"] as? [[String: Any]])?.first)?["parts"] as? [[String: Any]])
+        #expect(parts.first?["text"] as? String == "Make it snowy")
+        #expect(((parts.last?["inline_data"] as? [String: Any])?["mime_type"] as? String) == "image/png")
+        // An answer with words and no picture says what the model said.
+        await #expect { _ = try await model.generate(prompt: "p", images: [], seed: nil) } throws: {
+            ($0 as? LocalizedError)?.errorDescription?.contains("I can't make that picture.") == true
+        }
+    }
+
+    @Test func falGetsDataURIsAndNeverAStoredResult() async throws {
+        FakeProvider.script([(200, #"{"images":[{"url":"data:image/png;base64,\#(Self.pixel)","content_type":"image/png"}]}"#),
+                             (200, #"{"images":[{"url":"data:image/png;base64,\#(Self.pixel)"}]}"#),
+                             (200, #"{"images":[{"url":"https://v3.fal.media/files/x/out.png"}]}"#)])
+        let model = try #require(try provider("fal").imageModel(key: "fk", model: "fal-ai/some-model", session: FakeProvider.session))
+        _ = try await model.generate(prompt: "A red balloon", images: [], seed: 3)
+        _ = try await model.generate(prompt: "Make it snowy", images: [input], seed: nil)
+        let sent = FakeProvider.requests
+        #expect(sent[0].url.absoluteString == "https://fal.run/fal-ai/some-model" && sent[0].headers["Authorization"] == "Key fk")
+        #expect(sent[0].json["sync_mode"] as? Bool == true && sent[0].json["seed"] as? Int == 3 && sent[0].json["image_urls"] == nil)
+        #expect(sent[1].url.absoluteString == "https://fal.run/fal-ai/some-model/edit")
+        #expect(dataURL((sent[1].json["image_urls"] as? [Any])?.first))
+        // A link instead of the picture means it was stored at fal: not fetched, and said plainly.
+        await #expect { _ = try await model.generate(prompt: "p", images: [], seed: nil) } throws: {
+            ($0 as? ProviderHTTPError)?.message.contains("doesn't fetch stored results") == true
+        }
+        #expect(FakeProvider.requests.count == 3)   // three calls to fal.run, and no request to the stored file
+    }
+
+    @Test func hedraUploadsSubmitsWaitsAndDownloads() async throws {
+        FakeProvider.script([
+            (200, #"{"url":"https://uploads.hedra.example/handle?sig=abc","content_type":"image/png","expires_at":"2026-11-16T09:00:00Z"}"#),
+            (202, #"{"job_id":"job_1"}"#),
+            (200, #"{"status":"IN_PROGRESS"}"#),
+            (200, #"{"status":"COMPLETED"}"#),
+            (200, #"{"status":"COMPLETED","outputs":[{"status":"COMPLETED","url":"https://outputs.hedra.example/signed?x=1","asset_id":"asset_1"}]}"#),
+            (200, "base64:" + Self.pixel)])
+        let model = HedraImageModel(key: "id:secret", model: "some-image-model", session: FakeProvider.session, pollInterval: .milliseconds(5))
+        let result = try await model.generate(prompt: "Make it snowy", images: [input], seed: nil)
+        #expect(result.image.width == 1)
+        let sent = FakeProvider.requests
+        #expect(sent.map(\.url.absoluteString) == ["https://api.hedra.com/v3/files", "https://api.hedra.com/v3/models/some-image-model",
+                                                  "https://api.hedra.com/v3/jobs/job_1/status", "https://api.hedra.com/v3/jobs/job_1/status",
+                                                  "https://api.hedra.com/v3/jobs/job_1", "https://outputs.hedra.example/signed?x=1"])
+        // The upload is the picture's bytes in a multipart body.
+        #expect(sent[0].headers["Content-Type"]?.hasPrefix("multipart/form-data; boundary=") == true && sent[0].headers["Authorization"] == "Key id:secret")
+        #expect(FakeProvider.rawBodies[0].range(of: Data([0x89, 0x50, 0x4E, 0x47])) != nil)
+        // The job refers to the upload by its handle, unchanged.
+        let image = try #require((((sent[1].json["input"] as? [String: Any])?["images"]) as? [[String: Any]])?.first)
+        #expect(image["source"] as? String == "url" && image["url"] as? String == "https://uploads.hedra.example/handle?sig=abc")
+        // The key is not sent with the signed download.
+        #expect(sent[5].headers["Authorization"] == nil)
+    }
+
+    @Test func aFailedHedraJobSaysSoAndAnErrorIsShownAsItCame() async throws {
+        FakeProvider.script([(202, #"{"job_id":"job_2"}"#), (200, #"{"status":"FAILED"}"#)])
+        let model = HedraImageModel(key: "k", model: "m", session: FakeProvider.session, pollInterval: .milliseconds(5))
+        await #expect { _ = try await model.generate(prompt: "p", images: [], seed: nil) } throws: {
+            ($0 as? LocalizedError)?.errorDescription == "Hedra answered HTTP 200: The job failed at Hedra."
+        }
+        FakeProvider.script([(402, #"{"error":"Insufficient wallet balance"}"#)])
+        await #expect { _ = try await model.generate(prompt: "p", images: [], seed: nil) } throws: {
+            ($0 as? LocalizedError)?.errorDescription == "Hedra answered HTTP 402: Insufficient wallet balance"
+        }
+    }
+
+    @Test func everyNewImageServiceIsBuiltAndHidden() {
+        for slug in ["openai", "google", "fal", "hedra"] {
+            #expect(AIProvider.named(slug)?.built.contains(.image) == true && AIProvider.named(slug)?.offers(.image) == false, "\(slug)")
+        }
+        #expect(AIProvider.offering(.image).map(\.slug) == ["openrouter"])
     }
 }

@@ -43,6 +43,15 @@ private struct AISettingsView: View {
     /// What each running local server has installed; a server that doesn't answer has no entry.
     @State private var localModels: [String: [OllamaTextModel.Installed]] = [:]
 
+    /// A debug copy may show a service that is built but not offered, for the paid test of it.
+    static func untriedAllowed(_ provider: AIProvider) -> Bool {
+        #if DEBUG
+        return UserDefaults.standard.bool(forKey: "ai.showUntried") && provider.built.contains(.text)
+        #else
+        return false
+        #endif
+    }
+
     private func findLocalServers() async {
         var found: [String: [OllamaTextModel.Installed]] = [:]
         for provider in AIProvider.offering(.text) where provider.slug == "ollama" {
@@ -98,9 +107,17 @@ private struct AISettingsView: View {
                     ForEach(AIProvider.offering(.text).filter { $0.kind == .cloud || localModels[$0.slug] != nil || $0.slug == textProvider }) { provider in
                         Text(verbatim: provider.kind == .localServer ? String(localized: "\(provider.name) (on this Mac)") : provider.name).tag(provider.slug)
                     }
+                    #if DEBUG
+                    // For Anders's paid tests: services that are built but not offered yet (`-ai.showUntried YES`).
+                    if UserDefaults.standard.bool(forKey: "ai.showUntried") {
+                        ForEach(AIProvider.all.filter { $0.built.contains(.text) && !$0.offers(.text) && $0.kind == .cloud }) { provider in
+                            Text(verbatim: "\(provider.name) (not tried yet)").tag(provider.slug)
+                        }
+                    }
+                    #endif
                 }
                 .task { await findLocalServers() }
-                if let provider = AIProvider.named(textProvider), provider.offers(.text) {
+                if let provider = AIProvider.named(textProvider), provider.offers(.text) || Self.untriedAllowed(provider) {
                     if provider.kind == .localServer {
                         LocalTextSettings(provider: provider, models: localModels[provider.slug]) { await findLocalServers() }
                             .id(provider.slug)
@@ -109,6 +126,11 @@ private struct AISettingsView: View {
                             .id(provider.slug)
                     }
                 }
+                #if DEBUG
+                if let provider = AIProvider.named(textProvider), provider.kind == .cloud, provider.offers(.text) || Self.untriedAllowed(provider) {
+                    TextModelTrial(provider: provider)
+                }
+                #endif
                 if let provider = AIProvider.named(textProvider), provider.offers(.text) {
                     DisclosureGroup("What is sent to \(provider.name)") {
                         Text(verbatim: AIController.textNotice(for: provider, sendsPictures: AIController.chosenTextModel(for: provider).vision != false))
@@ -646,3 +668,53 @@ private struct LocalTextSettings: View {
         }
     }
 }
+
+#if DEBUG
+/// The paid test of a text service (debug builds only): Glimmer's twelve everyday requests,
+/// run only when the button is pressed and confirmed. Its result decides whether the
+/// service is offered (the-apps/PROVIDERS.md, rule 3).
+private struct TextModelTrial: View {
+    let provider: AIProvider
+    @State private var asking = false
+    @State private var running = false
+    @State private var lines: [String] = []
+    @State private var verdict: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Button("Run Glimmer's Test of This Model…") { asking = true }.disabled(running)
+                if running { ProgressView().controlSize(.small).accessibilityLabel("Running the test") }
+            }
+            ForEach(lines, id: \.self) { Text(verbatim: $0).font(.caption.monospaced()).textSelection(.enabled) }
+            if let verdict { Text(verbatim: verdict).font(.callout.bold()) }
+        }
+        .confirmationDialog("Send \(LocalModelEvaluation.cases.count) requests to \(provider.name)?", isPresented: $asking) {
+            Button("Send \(LocalModelEvaluation.cases.count) Requests") { run() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Each request carries the list of Glimmer's operations (a few thousand tokens) and gets a short answer. \(provider.name) bills your key for them. Nothing in a document is changed.")
+        }
+    }
+
+    private func run() {
+        let chosen = AIController.chosenTextModel(for: provider).id
+        guard let key = (try? ProviderKeys.keychain.key(for: provider.slug)) ?? nil, !chosen.isEmpty,
+              let model = provider.textModel(key: key, model: chosen, baseURL: provider.slug == "openrouter" ? AIDefaults.endpoint : nil) else {
+            verdict = "Save a key and choose a model first."
+            return
+        }
+        running = true; lines = []; verdict = nil
+        Task {
+            let report = await LocalModelEvaluation.run(model) { outcome in
+                Task { @MainActor in
+                    lines.append("\(outcome.passed ? "ok  " : "FAIL") \(String(format: "%5.1f s", outcome.seconds))  \(outcome.language)  \(outcome.goal) → \(outcome.got)")
+                }
+            }
+            let en = report.passed(language: "en"), sv = report.passed(language: "sv")
+            verdict = "\(report.model): \(report.passed) of \(report.outcomes.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "passes" : "does not pass"). The cost is on \(provider.name)'s usage page; this service's answers carry no cost."
+            running = false
+        }
+    }
+}
+#endif

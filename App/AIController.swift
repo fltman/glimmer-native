@@ -92,8 +92,8 @@ final class AIController {
         let slug = UserDefaults.standard.string(forKey: textProviderKey) ?? "openrouter"
         if let p = AIProvider.named(slug), p.offers(.text) { return p }
         #if DEBUG
-        // A service that is built but not offered yet can be tried in a debug copy: `-ai.textProvider ollama`.
-        if let p = AIProvider.named(slug), p.built.contains(.text) { return p }
+        // A service that is built but not offered yet can be tried in a debug copy (`-ai.showUntried YES`, then Settings › AI).
+        if let p = AIProvider.named(slug), p.built.contains(.text), UserDefaults.standard.bool(forKey: "ai.showUntried") { return p }
         #endif
         return .openRouter
     }
@@ -147,6 +147,24 @@ final class AIController {
     var hasTextModel: Bool { (try? textModel()) != nil }
 
     private func imageModel() throws -> ImageModel {
+        // Another image service, when one is chosen and offered. All of them are hidden until
+        // Anders has tried each with a real call; a debug copy can choose a built one to test:
+        // `-ai.imageProvider openai -ai.imageModel.openai <id>` (fal: also `-ai.imageEditModel.fal <id>`).
+        let d = UserDefaults.standard
+        if let slug = d.string(forKey: "ai.imageProvider"), slug != "openrouter", let provider = AIProvider.named(slug) {
+            var allowed = provider.offers(.image)
+            #if DEBUG
+            allowed = allowed || provider.built.contains(.image)
+            #endif
+            if allowed {
+                guard let key = try ProviderKeys.keychain.key(for: slug) else { throw TextSetupError(errorDescription: provider.missingKeyMessage) }
+                guard let id = d.string(forKey: "ai.imageModel.\(slug)"), !id.isEmpty,
+                      let model = provider.imageModel(key: key, model: id, editModel: d.string(forKey: "ai.imageEditModel.\(slug)")) else {
+                    throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI."))
+                }
+                return model
+            }
+        }
         guard let key = try Self.apiKey() else {
             throw OpenRouterError.missingAPIKey
         }
