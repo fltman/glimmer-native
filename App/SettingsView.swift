@@ -698,9 +698,7 @@ private struct TextModelTrial: View {
     }
 
     private func run() {
-        let chosen = AIController.chosenTextModel(for: provider).id
-        guard let key = (try? ProviderKeys.keychain.key(for: provider.slug)) ?? nil, !chosen.isEmpty,
-              let model = provider.textModel(key: key, model: chosen, baseURL: provider.slug == "openrouter" ? AIDefaults.endpoint : nil) else {
+        guard let model = try? AIController.textModel(for: provider) else {
             verdict = "Save a key and choose a model first."
             return
         }

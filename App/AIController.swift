@@ -111,10 +111,12 @@ final class AIController {
 
     /// The model every text request goes to (the Assistant, suggestions, Find Distractions).
     /// The one place a text service is chosen; nothing else constructs one.
-    func textModel() throws -> any TextModel {
-        let provider = Self.textProvider
+    func textModel() throws -> any TextModel { try Self.textModel(for: Self.textProvider) }
+
+    /// The model chosen in Settings for `provider`, with its key read for this one use.
+    static func textModel(for provider: AIProvider) throws -> any TextModel {
         if provider.slug == "ollama" {
-            let chosen = Self.chosenTextModel(for: provider).id
+            let chosen = chosenTextModel(for: provider).id
             guard !chosen.isEmpty else { throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI.")) }
             let address = UserDefaults.standard.string(forKey: "ai.address.ollama").flatMap(URL.init) ?? URL(string: provider.baseURL)!
             guard let made = provider.textModel(key: "", model: chosen, baseURL: address) else {
@@ -124,7 +126,7 @@ final class AIController {
         }
         let key: String?
         if provider.slug == "openrouter" {
-            key = try Self.apiKey()
+            key = try apiKey()
         } else {
             key = provider.needsKey ? try ProviderKeys.keychain.key(for: provider.slug) : ""
         }
@@ -132,7 +134,7 @@ final class AIController {
             if provider.slug == "openrouter" { throw OpenRouterError.missingAPIKey }
             throw TextSetupError(errorDescription: provider.missingKeyMessage)
         }
-        let model = Self.chosenTextModel(for: provider).id
+        let model = chosenTextModel(for: provider).id
         guard !model.isEmpty else {
             throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI."))
         }
