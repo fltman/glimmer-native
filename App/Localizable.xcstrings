@@ -11480,6 +11480,17 @@
           }
         }
       }
+    },
+    "Suggest Edits and Find Distractions need to see the document, so they don't run with this model.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föreslå ändringar och Hitta störande inslag behöver se dokumentet, så de körs inte med den här modellen."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
