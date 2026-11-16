@@ -232,6 +232,19 @@ final class DocumentOpener {
     }
     #endif
 
+    #if GLIMMER_RAW
+    /// Whether the file's name says it is a camera's RAW file (the decoder decides whether it can be developed).
+    static func isRawFile(_ url: URL) -> Bool {
+        UTType(filenameExtension: url.pathExtension)?.conforms(to: .rawImage) == true
+    }
+
+    /// A RAW file opens as a new document with one layer that keeps the file, so it can be developed again.
+    func openRawFile(_ data: Data, fileName: String) throws {
+        let made = try RawLayer.make(from: data, fileName: fileName)
+        createDocument(DocumentState(width: made.width, height: made.height, layers: [made.layer]))
+    }
+    #endif
+
     /// Called when a document window appears: a handed-over image becomes linked.
     func claimLink(for session: EditorSession) {
         guard let id = session.state.layers.first?.id, let link = pendingLinks.removeValue(forKey: id) else {
@@ -318,6 +331,20 @@ final class DocumentOpener {
                 try? handle.close()
                 try openPhotoshopFile(try Data(contentsOf: url, options: .mappedIfSafe), url: url)
                 return
+            }
+            #endif
+            #if GLIMMER_RAW
+            // A camera's RAW file keeps its RAW in the layer (Layer › Develop…). A file handed over by
+            // a sibling stays a plain picture, as for Photoshop files.
+            if link == nil, Self.isRawFile(url) {
+                do {
+                    try openRawFile(try Data(contentsOf: url, options: .mappedIfSafe), fileName: url.lastPathComponent)
+                    NSDocumentController.shared.noteNewRecentDocumentURL(url)
+                    return
+                } catch let problem as RawDevelopment.Problem {
+                    // The decoder gives no picture: macOS's general reader may still have one (a preview). If not, the RAW reason is the one to show.
+                    guard (try? ImageImporter.image(contentsOf: url)) != nil else { throw problem }
+                }
             }
             #endif
             let image = try ImageImporter.image(contentsOf: url)

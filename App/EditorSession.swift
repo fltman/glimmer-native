@@ -191,6 +191,8 @@ final class EditorSession {
     var isImportReportPresented = false
     /// File › Export… › Photoshop File…: the sheet with what the file will hold (`EditorSession+PSD`).
     var isPSDExportPresented = false
+    /// Layer › Develop…: the RAW layer being developed again (its id), while the sheet is up.
+    var isRawDevelopPresented = false
     var exportOptions = ExportOptions()
     var isExporting = false
     var errorMessage: String?
@@ -517,6 +519,12 @@ final class EditorSession {
             return !isUntouchedBlank
         case .exportForWeb:
             return !isExporting
+        case .developRaw:
+            #if GLIMMER_RAW
+            return activeLayer?.raw != nil
+            #else
+            return false
+            #endif
         case .importReport:
             #if GLIMMER_PSD
             return importReport != nil
@@ -704,6 +712,10 @@ final class EditorSession {
         case .importReport:
             #if GLIMMER_PSD
             isImportReportPresented = importReport != nil
+            #endif
+        case .developRaw:
+            #if GLIMMER_RAW
+            isRawDevelopPresented = activeLayer?.raw != nil
             #endif
         case .toggleRulers:
             edit(state.aids.rulersVisible ? "Hide Rulers" : "Show Rulers") { $0.aids.rulersVisible.toggle() }

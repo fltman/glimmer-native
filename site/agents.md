@@ -493,6 +493,7 @@ Run an editor menu command.
 | `image.rotateLeft` | Rotate 90° Counterclockwise |
 | `image.rotate180` | Rotate 180° |
 | `image.gammaBlending` | Blend Colors in Gamma Space |
+| `layer.developRaw` | Develop |
 
 ## Good to know
 

@@ -161,6 +161,7 @@ extension CommandID {
     public static let fillPattern: CommandID = "edit.fillPattern"
     public static let exportWebProject: CommandID = "file.exportWebProject"
     public static let importReport: CommandID = "file.importReport"
+    public static let developRaw: CommandID = "layer.developRaw"
     public static let exportPNG: CommandID = "file.exportPNG"
     public static let newDocument: CommandID = "file.new"
     public static let openDocument: CommandID = "file.open"
@@ -385,6 +386,10 @@ private var optionalCommands: [CommandDescriptor] {
     #if GLIMMER_PSD
     list.append(CommandDescriptor(.importReport, "Import Report…", category: .file,
                                   keywords: ["psd", "photoshop", "what was lost", "layers", "import"]))
+    #endif
+    #if GLIMMER_RAW
+    list.append(CommandDescriptor(.developRaw, "Develop…", category: .layer,
+                                  keywords: ["raw", "camera", "exposure", "white balance", "develop again", "dng"]))
     #endif
     #if GLIMMER_HEAL
     list.append(CommandDescriptor(.healSelection, "Heal Selection", category: .edit,

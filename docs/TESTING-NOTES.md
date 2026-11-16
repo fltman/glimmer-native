@@ -373,3 +373,17 @@ Found and fixed:
 Speed: in the tests' debug build on a busy Mac these files took up to 70 s, which looked like a fault. In the release app through the agent API: 0.6 to 1.6 s each, the largest 1,890 × 1,417 with three layers (1.1 to 1.5 s), twice each, the same both times.
 
 Still open: nothing large from Photoshop; the vector mask's flag bits (0 or 3-as-version in every file; no inverted or disabled outline seen); vector masks on layers of pixels.
+
+## RAW: Develop… in the app (2026-11-16, debug builds only)
+
+Built: a RAW file opens (File › Open…, drag) as a document with one RAW layer; **Layer › Develop…** shows the sheet (picture, exposure, temperature, tint, grey point by click, shadows, and what the file allows of contrast, sharpness, noise, highlights, lens correction); Develop puts the new picture in the layer as one undo step. Drafts are rendered off the main thread on one kept decoder, only the latest settings, starting when the sheet opens; a line under the picture says when it is behind; the last picture stays meanwhile.
+
+`GLIMMER_RAW_SAMPLE=<file> scripts/test-raw-develop.sh`, with the Panasonic file (24 megapixels): all 18 checks passed. The file opened in 10.8 s (debug build, through the debug route, other sessions busy); the first picture in the sheet was there about 7 s later; the sheet was read through the accessibility API with `axaudit --strict` clean, and looked at as a picture (whole, nothing cut; the status line sat too far under the picture and was moved up). Develop closed the sheet, Edit › Undo Develop RAW was there, and the layer could be developed again.
+
+Not verified:
+- **Dragging a slider** in the app: the script does not move one. The draft's speed in the app, on a quiet Mac with both locks held, is still to be measured; the status stays "met on five of six once warm, not met on the 50-megapixel file or during warm-up".
+- The grey-point click, As Shot, and the warning for a painted-on layer: built, not exercised by a script.
+- Opening blocks the main thread while the file is developed (10.8 s here in debug). It needs to move off the main thread with a progress line.
+- The other five cameras' files in the app; only the Panasonic file was run.
+- The manual text for RAW is written (Config/site-features.json, "raw") but not on the site: it follows the switch.
+- Not built yet: the RAW file's size in the document's size estimate, the megapixel check shown before decoding, anything in the agent API.

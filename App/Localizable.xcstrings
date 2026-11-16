@@ -12250,6 +12250,270 @@
           }
         }
       }
+    },
+    "As Shot": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Som tagen"
+          }
+        }
+      }
+    },
+    "Click the picture to set what should be grey": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka i bilden för att ange vad som ska vara grått"
+          }
+        }
+      }
+    },
+    "Couldn't read a white balance from that point.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det gick inte att läsa en vitbalans från den punkten."
+          }
+        }
+      }
+    },
+    "Develop": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framkalla"
+          }
+        }
+      }
+    },
+    "Develop RAW": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framkalla RAW"
+          }
+        }
+      }
+    },
+    "Develop…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framkalla…"
+          }
+        }
+      }
+    },
+    "Developing": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framkallar"
+          }
+        }
+      }
+    },
+    "Developing the first picture": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framkallar den första bilden"
+          }
+        }
+      }
+    },
+    "Developing the first picture…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Framkallar den första bilden…"
+          }
+        }
+      }
+    },
+    "Lens correction": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Objektivkorrigering"
+          }
+        }
+      }
+    },
+    "Preview of the developed picture": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förhandsvisning av den framkallade bilden"
+          }
+        }
+      }
+    },
+    "Recover highlights": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ högdagrar"
+          }
+        }
+      }
+    },
+    "The picture is catching up with the controls…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilden hinner ikapp reglagen…"
+          }
+        }
+      }
+    },
+    "The picture shows the settings as they are.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilden visar inställningarna som de är."
+          }
+        }
+      }
+    },
+    "This layer has been painted on or changed since it was developed. Developing again replaces those changes.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här lagret har målats på eller ändrats sedan det framkallades. Att framkalla igen ersätter de ändringarna."
+          }
+        }
+      }
+    },
+    "This layer has no RAW file that this Mac can develop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här lagret har ingen RAW-fil som den här datorn kan framkalla."
+          }
+        }
+      }
+    },
+    "Uses the correction the camera stored in the file. It reshapes the whole picture a little, not only the corners.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använder korrigeringen som kameran sparade i filen. Den formar om hela bilden en aning, inte bara hörnen."
+          }
+        }
+      }
+    },
+    "%@ stops": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ steg"
+          }
+        }
+      }
+    },
+    "Temperature": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Temperatur"
+          }
+        }
+      }
+    },
+    "Tint": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgton"
+          }
+        }
+      }
+    },
+    "Sharpness": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skärpa"
+          }
+        }
+      }
+    },
+    "Noise reduction": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brusreducering"
+          }
+        }
+      }
+    },
+    "Colour noise reduction": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgbrusreducering"
+          }
+        }
+      }
+    },
+    "%lld K": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld K"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

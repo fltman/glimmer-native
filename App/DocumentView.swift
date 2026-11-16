@@ -133,6 +133,11 @@ struct DocumentView: View {
                 PSDExportSheet(session: session)
             }
             #endif
+            #if GLIMMER_RAW
+            .sheet(isPresented: $session.isRawDevelopPresented) {
+                RawDevelopSheet(session: session)
+            }
+            #endif
             .sheet(isPresented: $session.isImageSizePresented) {
                 ImageSizeSheet(session: session)
             }

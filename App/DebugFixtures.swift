@@ -75,6 +75,11 @@ extension AIController {
             s.healWarning = "The area is 203 px across at its thickest. Heal Selection gives good results up to about 120 px; beyond that the fill may smear or repeat."
         case "error":
             s.errorMessage = "Couldn't save photo.png: The file “photo.png” couldn’t be opened because you don’t have permission to view it."
+        case "rawDevelop":
+            #if GLIMMER_RAW
+            guard s.activeLayer?.raw != nil else { return false }
+            s.isRawDevelopPresented = true
+            #endif
         case "psdExport":
             #if GLIMMER_PSD
             s.isPSDExportPresented = true

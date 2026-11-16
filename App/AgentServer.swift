@@ -248,6 +248,14 @@ enum AgentRouter {
                 throw APIError.unprocessable("unknown_fixture", "No fixture named “\(name)”.")
             }
             return .json(["fixture": name])
+        #if GLIMMER_RAW
+        case ["api", "v1", "debug", "raw"]:
+            // A RAW file from the request's body opened as File › Open… would (debug builds only, for the
+            // GUI checks: a sandboxed test copy can't read the sample folder). Not part of the agent API.
+            try only("POST")
+            try DocumentOpener.shared.openRawFile(r.body, fileName: r.query["name"] ?? "sample.dng")
+            return .json(["opened": true])
+        #endif
         #endif
         case ["api", "v1", "operations"]:
             try only("GET")

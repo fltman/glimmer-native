@@ -143,6 +143,9 @@ struct GlimmerCommands: Commands {
             Menu("Smart Objects") { items([.convertToSmartObject]) }
             items([.textToLayers])
             items([.rasterizeLayer])
+            #if GLIMMER_RAW
+            items([.developRaw])
+            #endif
             Divider()
             items([.layerStyle])
         }

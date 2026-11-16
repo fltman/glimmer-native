@@ -35,4 +35,4 @@ run tests tests
 run debug-build debug_build
 [[ "${GLIMMER_COMMIT_RELEASE:-0}" == 1 ]] && run release-build release_build
 run site site
-git add -A && git commit -q -F "$MSG" && git log --oneline | head -1
+git add -A && git commit -q -F "$MSG" && git log --oneline -1
