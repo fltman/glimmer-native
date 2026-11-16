@@ -184,10 +184,10 @@ extension ChatAdapterTests {
     @Test func openAIGetsAResponsesRequestAndItsToolCallsBecomeThePlan() async throws {
         FakeProvider.script([(200, Self.responsesAnswer)])
         let model = try #require(AIProvider.named("openai")?.textModel(key: "sk-test", model: "some-model", session: FakeProvider.session))
-        let heard = NSLock(); nonisolated(unsafe) var text = ""
-        let (plan, cost) = try await AgentPlanner.plan(goal: "Black and white, 16:9", context: context, history: [("earlier", "done")], image: Data([7]), model: model) { t in heard.withLock { text = t } }
+        // Without a listener the answer is asked for whole (the streamed form has its own test).
+        let (plan, cost) = try await AgentPlanner.plan(goal: "Black and white, 16:9", context: context, history: [("earlier", "done")], image: Data([7]), model: model)
         #expect(plan.steps.map(\.op) == ["add_adjustment", "crop"] && plan.message == "Black and white, then cropped." && cost == nil)
-        #expect(heard.withLock { text } == "Black and white, then cropped.")
+        #expect(FakeProvider.requests.first?.json["stream"] == nil)
         let sent = try #require(FakeProvider.requests.first)
         #expect(sent.url.absoluteString == "https://api.openai.com/v1/responses")
         #expect(sent.headers["Authorization"] == "Bearer sk-test")
@@ -514,4 +514,74 @@ final class ShownTexts: @unchecked Sendable {
     private let lock = NSLock(); private var texts: [String] = []
     func add(_ text: String) { lock.withLock { texts.append(text) } }
     var all: [String] { lock.withLock { texts } }
+}
+
+/// Streaming for Anthropic and OpenAI, against event streams in the documented form.
+extension ChatAdapterTests {
+    private func sse(_ events: [String]) -> String { events.map { "data: \($0)\n\n" }.joined() }
+    private var oneTool: [[String: Any]] { [["type": "function", "function": ["name": "crop", "description": "Crop", "parameters": ["type": "object"]]]] }
+
+    @Test func anthropicStreamsTextAndPutsAToolCallTogether() async throws {
+        FakeProvider.script([(200, sse([
+            #"{"type":"message_start","message":{"id":"m1","content":[]}}"#,
+            #"{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}"#,
+            #"{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"Cropping "}}"#,
+            #"{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"to square."}}"#,
+            #"{"type":"content_block_stop","index":0}"#,
+            #"{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"t1","name":"crop","input":{}}}"#,
+            #"{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"aspect\":"}}"#,
+            #"{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"\"1:1\"}"}}"#,
+            #"{"type":"message_delta","delta":{"stop_reason":"tool_use"}}"#,
+            #"{"type":"message_stop"}"#]))])
+        let model = AnthropicTextModel(provider: try #require(AIProvider.named("anthropic")), key: "k", model: "m", session: FakeProvider.session)
+        let shown = ShownTexts()
+        let reply = try await model.callTools(messages: [["role": "user", "content": "Square"]], tools: oneTool, temperature: 0.2) { shown.add($0) }
+        #expect(shown.all == ["Cropping ", "Cropping to square."])
+        #expect(reply.text == "Cropping to square." && reply.toolCalls.map(\.name) == ["crop"] && reply.toolCalls.first?.arguments == #"{"aspect":"1:1"}"#)
+        #expect(FakeProvider.requests.first?.json["stream"] as? Bool == true)
+    }
+
+    @Test func aStreamedRefusalAndAStreamedErrorAreSaidAsSuch() async throws {
+        let model = AnthropicTextModel(provider: try #require(AIProvider.named("anthropic")), key: "k", model: "m", session: FakeProvider.session)
+        FakeProvider.script([(200, sse([#"{"type":"message_delta","delta":{"stop_reason":"refusal","stop_details":{"type":"refusal","category":"cyber"}}}"#]))])
+        await #expect(throws: AnthropicTextModel.Refusal(category: "cyber")) {
+            _ = try await model.callTools(messages: [["role": "user", "content": "x"]], tools: [], temperature: 0.2) { _ in }
+        }
+        FakeProvider.script([(200, sse([#"{"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}"#]))])
+        await #expect { _ = try await model.callTools(messages: [["role": "user", "content": "x"]], tools: [], temperature: 0.2) { _ in } } throws: {
+            ($0 as? LocalizedError)?.errorDescription == "Anthropic answered HTTP 200: Overloaded"
+        }
+        FakeProvider.script([(401, #"{"type":"error","error":{"type":"authentication_error","message":"invalid x-api-key"}}"#)])
+        await #expect { _ = try await model.callTools(messages: [["role": "user", "content": "x"]], tools: [], temperature: 0.2) { _ in } } throws: {
+            ($0 as? LocalizedError)?.errorDescription == "Anthropic answered HTTP 401: invalid x-api-key"
+        }
+    }
+
+    @Test func openAIStreamsWithItsDocumentedEventsAndXAIDoesNot() async throws {
+        FakeProvider.script([(200, sse([
+            #"{"type":"response.created","response":{"id":"resp_1"}}"#,
+            #"{"type":"response.output_text.delta","delta":"Cropping "}"#,
+            #"{"type":"response.output_text.delta","delta":"to square."}"#,
+            #"{"type":"response.output_item.added","response_id":"resp_1","output_index":1,"item":{"type":"function_call","id":"fc_1","call_id":"call_1","name":"crop","arguments":""}}"#,
+            #"{"type":"response.function_call_arguments.delta","response_id":"resp_1","item_id":"fc_1","output_index":1,"delta":"{\""}"#,
+            #"{"type":"response.output_item.done","response_id":"resp_1","output_index":1,"item":{"type":"function_call","id":"fc_1","call_id":"call_1","name":"crop","arguments":"{\"aspect\":\"1:1\"}"}}"#,
+            #"{"type":"response.completed"}"#]))])
+        let openAI = ResponsesTextModel(provider: try #require(AIProvider.named("openai")), key: "k", model: "m", session: FakeProvider.session)
+        let shown = ShownTexts()
+        let reply = try await openAI.callTools(messages: [["role": "user", "content": "Square"]], tools: oneTool, temperature: 0.2) { shown.add($0) }
+        #expect(shown.all == ["Cropping ", "Cropping to square."])
+        #expect(reply.text == "Cropping to square." && reply.toolCalls.first?.arguments == #"{"aspect":"1:1"}"#)
+        #expect(FakeProvider.requests.first?.json["stream"] as? Bool == true)
+
+        FakeProvider.script([(200, sse([#"{"type":"error","message":"The server had an error."}"#]))])
+        await #expect { _ = try await openAI.callTools(messages: [["role": "user", "content": "x"]], tools: [], temperature: 0.2) { _ in } } throws: {
+            ($0 as? LocalizedError)?.errorDescription == "OpenAI answered HTTP 200: The server had an error."
+        }
+
+        // xAI's pages name no events for this API: one whole answer, no "stream" in the request.
+        FakeProvider.script([(200, #"{"output":[{"type":"message","content":[{"type":"output_text","text":"Done."}]}]}"#)])
+        let xai = ResponsesTextModel(provider: try #require(AIProvider.named("xai")), key: "k", model: "m", session: FakeProvider.session)
+        let whole = try await xai.callTools(messages: [["role": "user", "content": "x"]], tools: [], temperature: 0.2) { _ in }
+        #expect(whole.text == "Done." && FakeProvider.requests.first?.json["stream"] == nil)
+    }
 }

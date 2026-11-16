@@ -44,9 +44,21 @@ public struct AnthropicTextModel: TextModel {
         let (system, turns) = Self.conversation(from: messages)
         var body: [String: Any] = ["model": modelID, "max_tokens": 16_000, "messages": turns, "tools": Self.tools(from: tools)]
         if let system { body["system"] = system }
-        let blocks = try await send(body)
+        let blocks: [[String: Any]]
+        if let onText {
+            // The Assistant shows the text as it comes: the same request with `stream`, put together from its events.
+            body["stream"] = true
+            var stream = AnthropicStream()
+            let name = providerName
+            try await ServerSentEvents.read(try request(body), provider: name, session: session) { event in
+                if try stream.consume(event, provider: name) { onText(stream.text) }
+            }
+            if stream.stopReason == "refusal" { throw Refusal(category: stream.stopCategory) }
+            blocks = stream.content
+        } else {
+            blocks = try await send(body)
+        }
         let text = Self.text(in: blocks)
-        if !text.isEmpty { onText?(text) }
         let calls: [TextToolCall] = blocks.compactMap { block in
             guard block["type"] as? String == "tool_use", let name = block["name"] as? String else { return nil }
             // The input is an object; the rest of Glimmer reads arguments as a JSON string.
@@ -107,13 +119,18 @@ public struct AnthropicTextModel: TextModel {
     }
 
     /// The `content` blocks of the answer.
-    private func send(_ body: [String: Any]) async throws -> [[String: Any]] {
+    private func request(_ body: [String: Any]) throws -> URLRequest {
         guard !key.isEmpty else { throw OpenRouterError.missingAPIKey }
         var request = URLRequest(url: baseURL.appending(path: "messages"))
         request.httpMethod = "POST"
         for (name, value) in Self.headers(key: key) { request.setValue(value, forHTTPHeaderField: name) }
         request.timeoutInterval = 300
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        return request
+    }
+
+    private func send(_ body: [String: Any]) async throws -> [[String: Any]] {
+        let request = try request(body)
         let data: Data, response: URLResponse
         do { (data, response) = try await session.data(for: request, delegate: KeyStaysHome.shared) } catch {
             throw OpenRouterError.network(error.localizedDescription)
