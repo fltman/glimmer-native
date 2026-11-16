@@ -50,7 +50,15 @@ cleanup() {  # stops only this test copy; with-gui-lock.sh releases the lock
 trap cleanup EXIT INT TERM
 
 BEFORE=" $( (pgrep -x Glimmer || true) | tr "\n" " ") "
-env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -quiet YES -ai.noKeychain YES -ApplePersistenceIgnoreState YES ${=GLIMMER_ARGS:-}
+# GLIMMER_FAKE_SERVICE=http://127.0.0.1:<port>: the copy calls a stand-in on this Mac instead of OpenRouter, with a key that
+# is no key (scripts/test-service-failures.sh). Refused for any other address, so no test can send a paid request anywhere.
+KEYENV=(-u OPENROUTER_API_KEY)
+if [[ -n "${GLIMMER_FAKE_SERVICE:-}" ]]; then
+  [[ "$GLIMMER_FAKE_SERVICE" == http://127.0.0.1:* ]] || { echo "GLIMMER_FAKE_SERVICE must be on 127.0.0.1."; exit 1; }
+  KEYENV=(OPENROUTER_API_KEY=not-a-key-for-the-stand-in)
+  GLIMMER_ARGS="-ai.endpoint $GLIMMER_FAKE_SERVICE ${GLIMMER_ARGS:-}"
+fi
+env $KEYENV open -n "$APP" --args -skipWelcome -skipAgentSplash -quiet YES -ai.noKeychain YES -ApplePersistenceIgnoreState YES ${=GLIMMER_ARGS:-}
 PORT=""
 for _ in {1..80}; do
   if [[ -z "$PID" ]]; then
@@ -65,6 +73,11 @@ for _ in {1..80}; do
   sleep 0.25
 done
 [[ -n "$PID" && -n "$PORT" ]] || { echo "The test copy didn't start its agent server."; exit 1; }
-if ps eww -p "$PID" | grep -q "OPENROUTER_API_KEY="; then echo "The test copy has an OpenRouter key in its environment."; exit 1; fi
+# A key in the environment is allowed in one case only: the one that is no key, in a copy pointed at the stand-in on this Mac.
+ENVKEYS=$(ps eww -p "$PID" | grep -o "OPENROUTER_API_KEY=[^ ]*" | sort -u)
+if [[ -n "$ENVKEYS" ]]; then
+  if [[ -n "${GLIMMER_FAKE_SERVICE:-}" && "$ENVKEYS" == "OPENROUTER_API_KEY=not-a-key-for-the-stand-in" && "$(ps -o command= -p "$PID")" == *"-ai.endpoint http://127.0.0.1:"* ]]; then :
+  else echo "The test copy has an OpenRouter key in its environment."; exit 1; fi
+fi
 echo "▸ Test copy pid $PID on port $PORT"
 GLIMMER_PID=$PID GLIMMER_PORT=$PORT GLIMMER_APP=$APP "$@"
