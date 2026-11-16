@@ -12547,6 +12547,61 @@
           }
         }
       }
+    },
+    "For %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "För %@"
+          }
+        }
+      }
+    },
+    "Can't save back": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kan inte spara tillbaka"
+          }
+        }
+      }
+    },
+    "to %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "till %@"
+          }
+        }
+      }
+    },
+    "– ⌘S saves back": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "– ⌘S sparar tillbaka"
+          }
+        }
+      }
+    },
+    "%lld points in all. Scroll the list to read them.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld punkter totalt. Rulla listan för att läsa dem."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

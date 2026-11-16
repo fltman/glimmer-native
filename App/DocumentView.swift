@@ -397,21 +397,26 @@ private struct TitleChip: View {
                 Label("Editing mask", systemImage: "rectangle.dashed").foregroundStyle(.secondary)
             }
             if let link = session.linkedImage {
-                Label("For \(link.requester) – ⌘S saves back", systemImage: "link")
-                    .foregroundStyle(Theme.accent)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .layoutPriority(-1)  // shortens first when the window is narrow
-                    .accessibilityLabel("Editing \(link.fileName) for \(link.requester). Command-S saves it back.")
+                // Whom it is for is never cut short; the hint after it gives way first in a narrow window.
+                // (Seen as "For Fli…" in a picture of the bar, 2026-11-16; the accessibility read had the whole sentence.)
+                HStack(spacing: 4) {
+                    Label("For \(link.requester)", systemImage: "link").lineLimit(1).fixedSize()
+                    Text("– ⌘S saves back").lineLimit(1).truncationMode(.tail).layoutPriority(-1)
+                }
+                .foregroundStyle(Theme.accent)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Editing \(link.fileName) for \(link.requester). Command-S saves it back.")
             }
             if let broken = session.brokenLink {
-                Label("For \(broken.link.requester) – can't save back", systemImage: "link.badge.plus")
-                    .symbolVariant(.slash)
-                    .foregroundStyle(.orange)
-                    .lineLimit(1)
-                    .layoutPriority(-1)
-                    .help(broken.reason)
-                    .accessibilityLabel("Was being edited for \(broken.link.requester). \(broken.reason)")
+                // What is wrong is never cut short; for whom gives way first.
+                HStack(spacing: 4) {
+                    Label("Can't save back", systemImage: "link.badge.plus").symbolVariant(.slash).lineLimit(1).fixedSize()
+                    Text("to \(broken.link.requester)").lineLimit(1).truncationMode(.tail).layoutPriority(-1)
+                }
+                .foregroundStyle(.orange)
+                .help(broken.reason)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Was being edited for \(broken.link.requester). \(broken.reason)")
             }
             if session.isExporting {
                 ProgressView().controlSize(.small)
@@ -419,7 +424,7 @@ private struct TitleChip: View {
             }
             if let job = session.ai.jobs.first(where: { $0.status == .running }) {
                 ProgressView().controlSize(.small)
-                (Text(LocalizedStringKey(job.title)) + Text(verbatim: "…")).foregroundStyle(.secondary).lineLimit(1)
+                (Text(LocalizedStringKey(job.title)) + Text(verbatim: "…")).foregroundStyle(.secondary).lineLimit(1).layoutPriority(-2)
             }
         }
         .font(.callout)

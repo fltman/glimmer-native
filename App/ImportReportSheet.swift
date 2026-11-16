@@ -63,7 +63,13 @@ struct ImportReportSheet: View {
                         }
                     }
                 }
+                // The list can be longer than the sheet: the scroll bar is always shown, so a row cut at the edge reads as "there is more".
+                .scrollIndicators(.visible)
                 .frame(maxHeight: 320)
+                // macOS shows a scroll bar only while scrolling: said in words, so a row cut at the edge is not taken for the end.
+                if report.notes.count > 5 {
+                    Text("\(report.notes.count) points in all. Scroll the list to read them.").font(.callout).foregroundStyle(.secondary)
+                }
                 Text("The Photoshop file itself is not changed. This is a new Glimmer document, and the report is saved with it: File › Import Report… shows it again.")
                     .font(.callout).foregroundStyle(.secondary)
             }

@@ -542,3 +542,16 @@ Sizes as JSON with sorted keys: `/operations` 44,694 bytes, of which the per-typ
 The short list is the one a local model is measured on, so the evaluation was run again on it: qwen3:8b, the same 18 cases, **18 of 18**, median 6.9 s (2.5 s in the run an hour earlier; the Mac was busier), slowest 25.5 s. The pinned size is now 9,992. After the run Ollama had `bge-m3` loaded, which is not a model this run uses; qwen3:8b was unloaded.
 
 The walk now also checks, in the package test and against the running app, that every published schema is closed, has `rationale`, lists exactly the names the check accepts, and that no nested `params` is a bare object.
+
+## What had only been read is now looked at (2026-11-16)
+
+`scripts/test-accessibility.sh` saves a picture of the app's own windows for every state it reads (`build/a11y-shots`, 22 states), and two more were put up by hand: the import report with a long list (a real file with 19 notes) and the Photoshop export sheet for a linear-light document. Looked at: the first-use notice with and without pictures, the Heal question, the link bar linked and broken, the waiting plan and the command that waits, the offer of an extra step, the long import report, the export sheet. The accessibility pass (23 checks) and the offline test in the release build (switches as they ship: PSD on, Heal and RAW off) passed on this build.
+
+Whole and right: both first-use notices, the Heal question, the waiting plan, the offer.
+
+Three things the read had passed and the pictures showed:
+- **The link bar cut the sender's name**: "For Fli…" in a 900-point window, and in the broken state the words "can't save back" were gone altogether, leaving only an orange icon and "For Fli…". Now whom it is for ("For Flimmer") and what is wrong ("Can't save back") are never cut; the hint after them gives way first, then a running job's name. The manual's wording for the broken state follows ("Can't save back to Flimmer").
+- **The import report's list ended in a row cut in half**, with nothing to say there was more (macOS shows a scroll bar only while scrolling, also when asked to show it always). Under a list of more than five points the sheet now says "19 points in all. Scroll the list to read them."
+- **The export sheet** had the same, and the row it cut was the measured difference. Same line there, over four points.
+
+Not a fault but seen: in these pictures a "Heal Selection…" spinner sits in the status bar from state 10 on. It is the running job of the job-list fixture, which the fixture "clear" does not remove; a real cancelled Heal leaves nothing.

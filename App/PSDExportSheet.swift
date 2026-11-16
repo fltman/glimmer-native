@@ -68,7 +68,13 @@ struct PSDExportSheet: View {
                         }
                     }
                 }
+                // The list can be longer than the sheet: the scroll bar is always shown, so a row cut at the edge reads as "there is more".
+                .scrollIndicators(.visible)
                 .frame(maxHeight: 280)
+                // macOS shows a scroll bar only while scrolling: said in words, so a row cut at the edge is not taken for the end.
+                if report.notes.count > 4 {
+                    Text("\(report.notes.count) points in all. Scroll the list to read them.").font(.callout).foregroundStyle(.secondary)
+                }
             }
             Text("Text, smart objects and effects can't be edited as such in the file. Glimmer has read its own Photoshop files back and macOS shows their picture; the layers have not been tried in Photoshop.")
                 .font(.callout).foregroundStyle(.secondary)
