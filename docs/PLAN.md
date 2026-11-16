@@ -333,7 +333,7 @@ Anders, via samordnaren: "ok glimmer kan sätta igång med PSD med lager, RAW-fr
 
 - **Fas 10 — PSD med lager · XL.** Import först, export sedan. Egen läsare och skrivare från Adobes publicerade specifikation, ingen GPL-kod. PSD är opålitlig indata: storleksgränser före avkodning, stympade och ljugande filer, generatorer i testsviten. Det som inte överlever sägs alltid till användaren.
 - **Fas 11 — RAW-framkallning · L.** Apples egen RAW-kedja (Core Image). RAW-filen förblir källan; framkallningen är ett lager som kan öppnas igen.
-- **Fas 12 — Video · ?** Vad som menas frågas Anders innan något skissas (en bildruta som bild, videolager med tidslinje, eller en justering över ett klipp). Flimmer äger tiden.
+- **Fas 12 — Video · struken.** Anders 2026-11-16, på frågan vad som menades: "glöm det". Flimmer äger tiden.
 - **Fas 13 — iPad · XL.** Sist och störst. Ingen App Store-post skapas och inget laddas upp; det är Anders sak.
 
 ### Beslut och lärdomar under bygget
@@ -497,4 +497,4 @@ Replicate, konton, credits och fakturering, multiplayer, plugin-API. (PSD med la
 - **Tillgänglighet läses med innehåll (2026-11-16):** `scripts/test-accessibility.sh` läser varje panel, ark och varning med innehåll på plats, efter en krasch som bara syntes med ett meddelande i assistenten.
 - **Slut på grafikminne avslutar inte appen (2026-11-16):** de tre hårda stoppen är borta. Där ett fel kan kastas (öppna dokument, smarta objekt) misslyckas åtgärden med ett meddelande; i ritkoden och där rutor byggs av pixlar hoppas rutan över och appen säger en gång att något kan saknas och att steget kan ångras. Mätt (`scripts/test-gpu-memory.sh`, 16 GB, Apple silicon): 52 fulla lager på en duk 4000 px bred, 7,6 GB avtryck, växlingsfilen växte 2,1 GB på 11 s, ingen tilldelning misslyckades och appen levde. I praktiken växlar systemet i stället, så felvägen är inte provad med en riktig brist.
 - **Byggt 2026-11-16 på Anders ord "bygg allt", allt dolt:** väljare för bildtjänst i Inställningar › AI (syns först när fler än OpenRouter erbjuds; frågar en gång vad som skickas), strömmande svar för Anthropic och OpenAI, MLX som lokal texttjänst (bara slutpunkten är läst; inte provad, `mlx_lm` finns inte på den här Macen). Kvar och inte byggt: modellen för objektborttagning (juristfrågan om Places2) och "spara bara ändrade lager" (verifieringen föll; samordnaren valde att lämna sparandet).
-
+- **Fas 10 och 11, läget 2026-11-16:** PSD-import och -export samt RAW-framkallningens kärna är byggda bakom byggväxlarna `GLIMMER_PSD` och `GLIMMER_RAW`, av i Release. Anders har varken Photoshop eller en ProRAW-fil att ge, så inget av det har mött en fil från ett annat program eller en kamera. Vad som väntar på en sådan fil står i `TESTING-NOTES.md`.
