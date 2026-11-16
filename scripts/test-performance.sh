@@ -4,6 +4,8 @@
 # beside the result, and the last run is kept in docs/performance-last.txt.
 # (scripts/commit-checked.sh runs the same tests but only warns: a busy Mac must not decide a commit.)
 set -uo pipefail
+# A full build or test suite: one at a time across the three sessions (scripts/with-build-lock.sh).
+[[ "${GLIMMER_BUILD_LOCKED:-0}" == 1 ]] || exec "$(dirname "$0")/with-build-lock.sh" "$0" "$@"
 cd "$(dirname "$0")/.."
 mkdir -p build
 load() { sysctl -n vm.loadavg | awk '{print $2}'; }

@@ -9,6 +9,8 @@
 # Runs: the site texts against the switches, check-strings, the package tests, the Debug
 # build, and the site build in strict mode. Each check's whole output is kept in build/commit-check/.
 set -uo pipefail
+# A full build or test suite: one at a time across the three sessions (scripts/with-build-lock.sh).
+[[ "${GLIMMER_BUILD_LOCKED:-0}" == 1 ]] || exec "$(dirname "$0")/with-build-lock.sh" "$0" "$@"
 cd "$(dirname "$0")/.."
 MSG="${1:?usage: commit-checked.sh <file with the commit message>}"
 [[ -s "$MSG" ]] || { echo "No commit message in $MSG"; exit 2; }

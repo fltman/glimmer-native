@@ -90,6 +90,9 @@ final class RawDevelopModel {
     /// The settings the picture on screen shows.
     private(set) var shown: RawSettings?
     private(set) var lastDraftSeconds: Double?
+    /// True once a draft after the first has taken more than a tenth of a second: the sheet then says so.
+    private(set) var followsBehind = false
+    @ObservationIgnored private var drafts = 0
     var problem: String?
     var isDeveloping = false
     /// The final development that is running, if any. Cleared by Cancel and by the time limit: its result is then thrown away.
@@ -110,6 +113,11 @@ final class RawDevelopModel {
             switch result {
             case .success(let made):
                 picture = made.image; shown = made.settings; lastDraftSeconds = made.seconds; problem = nil
+                // A draft is the real development; for a very large file one takes longer than a tenth of a second
+                // and the picture follows a moment behind (a 50-megapixel phone file: about 0.6 s, also on a quiet Mac).
+                // Said once it has been seen, not guessed from the file's size. The first picture is not counted.
+                drafts += 1
+                if drafts > 1, made.seconds > 0.1 { followsBehind = true }
             case .failure(let error):
                 problem = PersonMessage.text(for: error)
             }
@@ -191,6 +199,10 @@ struct RawDevelopSheet: View {
                 Text(statusLine(model)).font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("rawDraftStatus")
+                if model.followsBehind {
+                    Text("A large file: the picture follows the controls a moment behind. What it shows when it has caught up is what you get.")
+                        .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                }
             }
             .frame(width: 460)
             VStack(alignment: .leading, spacing: 10) {

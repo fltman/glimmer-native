@@ -13,7 +13,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 if [[ -z "${GLIMMER_PORT:-}" ]]; then
   if [[ "${GLIMMER_OFFLINE_CONFIG:-Debug}" == Release ]]; then
-    xcodebuild -project Glimmer.xcodeproj -scheme Glimmer -configuration Release -derivedDataPath build/DerivedData-release \
+    scripts/with-build-lock.sh xcodebuild -project Glimmer.xcodeproj -scheme Glimmer -configuration Release -derivedDataPath build/DerivedData-release \
       CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= build 2>&1 | grep -E "error:|BUILD" || true
   fi
   COPY=$(scripts/offline-copy.sh | tail -1) || exit 1

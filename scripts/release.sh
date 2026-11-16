@@ -28,6 +28,8 @@
 # CREATE_SPARKLE_KEY=1 creates one, for the very first release only.
 # Env: SKIP_SPARKLE=1 builds without update signing.
 set -euo pipefail
+# A full build or test suite: one at a time across the three sessions (scripts/with-build-lock.sh).
+[[ "${GLIMMER_BUILD_LOCKED:-0}" == 1 ]] || exec "$(dirname "$0")/with-build-lock.sh" "$0" "$@"
 cd "$(dirname "$0")/.."
 
 PUBLISH=0

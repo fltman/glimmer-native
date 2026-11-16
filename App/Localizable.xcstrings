@@ -13526,6 +13526,17 @@
           }
         }
       }
+    },
+    "A large file: the picture follows the controls a moment behind. What it shows when it has caught up is what you get.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En stor fil: bilden följer reglagen med en liten fördröjning. Det den visar när den hunnit ikapp är det du får."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
