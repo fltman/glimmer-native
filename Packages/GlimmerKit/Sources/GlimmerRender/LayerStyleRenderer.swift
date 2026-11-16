@@ -220,7 +220,7 @@ public final class SmartObjectRenderer {
             let docToClip = simd_double3x3(columns: (SIMD3(2 / s, 0, 0), SIMD3(0, -2 / s, 0),
                                                      SIMD3(-2 * o.x / s - 1, 2 * o.y / s + 1, 1)))
             let m = docToClip * srcToDoc
-            let texture = TileTexture.makeTexture(device: pipelines.context.device)
+            let texture = try TileTexture.makeTexture(device: pipelines.context.device)
             let pass = MTLRenderPassDescriptor()
             pass.colorAttachments[0].texture = texture
             pass.colorAttachments[0].loadAction = .clear

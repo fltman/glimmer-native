@@ -11491,6 +11491,17 @@
           }
         }
       }
+    },
+    "Glimmer ran out of memory, so part of the last edit or of the picture on screen may be missing. Undo the last step, close other documents or merge some layers, then try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer fick slut på minne, så en del av den senaste ändringen eller av bilden på skärmen kan saknas. Ångra det senaste steget, stäng andra dokument eller slå ihop några lager och försök igen."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

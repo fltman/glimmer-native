@@ -105,17 +105,49 @@ public final class TileTexture: @unchecked Sendable {
         self.texture = texture
     }
 
-    /// A new, uninitialized tile-sized texture (shared storage).
-    public static func makeTexture(device: MTLDevice = GPU.device) -> MTLTexture {
+    /// A new, uninitialized tile-sized texture (shared storage). Throws `GraphicsMemoryError`
+    /// when the system has no memory for it; the edit that needed it fails with that message.
+    public static func makeTexture(device: MTLDevice = GPU.device) throws -> MTLTexture {
         let descriptor = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: TileGeometry.pixelFormat,
             width: TileGeometry.size, height: TileGeometry.size, mipmapped: false)
         descriptor.usage = [.shaderRead, .renderTarget]
         descriptor.storageMode = .shared
         guard let texture = device.makeTexture(descriptor: descriptor) else {
-            fatalError("Out of GPU memory allocating a tile")
+            throw GraphicsMemoryError()
         }
         return texture
+    }
+}
+
+extension TileTexture {
+    /// For places that can't fail with an error (building tiles from pixels, drawing the
+    /// screen): nil when there is no memory, and the shortage is noted in `GraphicsMemory`.
+    public static func makeTextureOrNote(device: MTLDevice = GPU.device) -> MTLTexture? {
+        do { return try makeTexture(device: device) } catch {
+            GraphicsMemory.noteShortage()
+            return nil
+        }
+    }
+}
+
+/// Whether an allocation has failed since it was last asked. The app asks after each edit
+/// and says that the edit may be incomplete and can be undone.
+public enum GraphicsMemory {
+    private static let shortages = Atomic<Int>(0)
+    public static func noteShortage() { shortages.add(1, ordering: .relaxed) }
+    /// True once per shortage (or run of them): reading it clears it.
+    public static func takeShortage() -> Bool { shortages.exchange(0, ordering: .relaxed) > 0 }
+}
+
+/// The Mac has no memory left for another piece of an image. Measured on 2026-11-16 (16 GB,
+/// Apple silicon): with 52 full layers and 7.6 GB in use the system swapped and no allocation
+/// failed, so this is not expected in practice. If it does happen, the edit is refused with
+/// this message; the app never ends because of it.
+public struct GraphicsMemoryError: Error, LocalizedError, Sendable {
+    public init() {}
+    public var errorDescription: String? {
+        "Glimmer ran out of memory for this. Close other documents or merge some layers, then try again."
     }
 }
 
@@ -182,7 +214,9 @@ public enum Tile: Sendable {
             let h = pixels.loadUnaligned(as: SIMD4<Float16>.self)
             return .solid(SIMD4<Float>(h))
         }
-        let texture = TileTexture.makeTexture(device: device)
+        // Without memory for it the tile is left out (transparent) and the shortage is noted,
+        // so the app can say that the last edit is incomplete; see `GraphicsMemory`.
+        guard let texture = TileTexture.makeTextureOrNote(device: device) else { return nil }
         texture.replace(region: MTLRegionMake2D(0, 0, size, size), mipmapLevel: 0,
                         withBytes: pixels, bytesPerRow: bytesPerRow)
         return .texture(TileTexture(texture))

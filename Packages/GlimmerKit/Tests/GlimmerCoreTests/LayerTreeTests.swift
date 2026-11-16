@@ -402,12 +402,23 @@ private func raster(_ name: String) -> Layer {
 
 @Suite struct TileAccountingTests {
     @Test func countsTextureTilesOnly() {
-        let texture = Tile.texture(TileTexture(TileTexture.makeTexture()))
+        let texture = Tile.texture(TileTexture((try! TileTexture.makeTexture())))
         var grid = TileGrid.solid(SIMD4(1, 0, 0, 1), covering: PixelRect(x: 0, y: 0, width: 512, height: 256))
         grid[TileCoord(0, 0)] = texture
         var masked = Layer(name: "m", content: .raster(TileGrid()))
-        masked.mask = LayerMask(tiles: TileGrid([TileCoord(3, 3): .texture(TileTexture(TileTexture.makeTexture()))]))
+        masked.mask = LayerMask(tiles: TileGrid([TileCoord(3, 3): .texture(TileTexture((try! TileTexture.makeTexture())))]))
         let state = DocumentState(width: 512, height: 256, layers: [Layer(name: "a", content: .raster(grid)), masked])
         #expect(state.textureTileIDs.count == 2)
+    }
+}
+
+@Suite struct GraphicsMemoryTests {
+    @Test func aShortageIsToldOnceAndSaysWhatToDo() {
+        _ = GraphicsMemory.takeShortage()
+        #expect(!GraphicsMemory.takeShortage())
+        GraphicsMemory.noteShortage(); GraphicsMemory.noteShortage()
+        #expect(GraphicsMemory.takeShortage())
+        #expect(!GraphicsMemory.takeShortage())
+        #expect(GraphicsMemoryError().errorDescription?.contains("merge some layers") == true)
     }
 }

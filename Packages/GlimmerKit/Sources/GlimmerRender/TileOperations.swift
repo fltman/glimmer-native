@@ -41,7 +41,7 @@ public enum TileOperations {
                 result[dest] = .solid(color)
                 continue
             }
-            let texture = TileTexture.makeTexture(device: context.device)
+            guard let texture = TileTexture.makeTextureOrNote(device: context.device) else { continue }   // no memory: this tile is left as it was
             let pass = MTLRenderPassDescriptor()
             pass.colorAttachments[0].texture = texture
             pass.colorAttachments[0].loadAction = .clear

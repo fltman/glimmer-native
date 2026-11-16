@@ -290,7 +290,7 @@ import ImageIO
     /// A layer of pixels that don't compress, so its file is well over the small-file limit.
     static func noiseLayer(_ name: String, seed: UInt32) -> Layer {
         var seed = seed
-        let texture = TileTexture.makeTexture()
+        let texture = (try! TileTexture.makeTexture())
         var px = [Float16](repeating: 0, count: TileGeometry.size * TileGeometry.size * 4)
         for j in px.indices { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
         px.withUnsafeBytes {
@@ -463,7 +463,7 @@ import ImageIO
         var tiles: [TileCoord: Tile] = [:]
         var seed: UInt32 = 5
         for i in 0..<40 {
-            let texture = TileTexture.makeTexture()
+            let texture = (try! TileTexture.makeTexture())
             var px = [Float16](repeating: 0, count: TileGeometry.size * TileGeometry.size * 4)
             for j in px.indices { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
             px.withUnsafeBytes {
@@ -499,7 +499,7 @@ import ImageIO
         var tiles: [TileCoord: Tile] = [:]
         var seed: UInt32 = 3
         for i in 0..<80 {
-            let texture = TileTexture.makeTexture()
+            let texture = (try! TileTexture.makeTexture())
             var px = [Float16](repeating: 0, count: TileGeometry.size * TileGeometry.size * 4)
             for j in px.indices { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
             px.withUnsafeBytes {
@@ -523,7 +523,7 @@ import ImageIO
     }
 
     @Test func movesToDiskAndBack() throws {
-        let texture = TileTexture.makeTexture()
+        let texture = (try! TileTexture.makeTexture())
         var px = [Float16](repeating: 0.25, count: TileGeometry.size * TileGeometry.size * 4)
         px[0] = 0.75
         px.withUnsafeBytes {
@@ -565,7 +565,7 @@ import ImageIO
         var px = [Float16](repeating: 0, count: TileGeometry.size * TileGeometry.size * 4)
         for i in 0..<384 {
             for j in stride(from: 0, to: px.count, by: 7) { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
-            let texture = TileTexture.makeTexture()
+            let texture = (try! TileTexture.makeTexture())
             px.withUnsafeBytes {
                 texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size), mipmapLevel: 0,
                                 withBytes: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)
@@ -596,7 +596,7 @@ extension TileCodecSpeedTests {
             var tiles: [TileCoord: Tile] = [:]
             for i in 0..<20 {
                 for j in px.indices { seed = seed &* 1_664_525 &+ 1_013_904_223; px[j] = Float16(Float(seed >> 8) / 16_777_216) }
-                let texture = TileTexture.makeTexture()
+                let texture = (try! TileTexture.makeTexture())
                 px.withUnsafeBytes {
                     texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size), mipmapLevel: 0,
                                     withBytes: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)

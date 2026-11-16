@@ -68,7 +68,7 @@ public final class PixelOps {
                 maskTarget: Float, effect: TileGrid? = nil, commandBuffer: MTLCommandBuffer) -> [TileCoord: Tile] {
         var out: [TileCoord: Tile] = [:]
         for coord in coords {
-            let texture = TileTexture.makeTexture(device: context.device)
+            guard let texture = TileTexture.makeTextureOrNote(device: context.device) else { continue }   // no memory: this tile is left as it was
             let pass = MTLRenderPassDescriptor()
             pass.colorAttachments[0].texture = texture
             pass.colorAttachments[0].loadAction = .dontCare

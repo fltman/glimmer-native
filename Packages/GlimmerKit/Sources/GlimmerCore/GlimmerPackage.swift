@@ -342,7 +342,10 @@ public enum TileCodec {
                 decoded.fail(GlimmerPackageError.corruptLayer("tile \(coord.x),\(coord.y) has \(raw.count) bytes"))
                 return
             }
-            let texture = TileTexture.makeTexture()
+            guard let texture = try? TileTexture.makeTexture() else {
+                decoded.fail(GraphicsMemoryError())   // opening fails with the message; nothing is half-loaded
+                return
+            }
             raw.withUnsafeBytes { bytes in
                 texture.replace(region: MTLRegionMake2D(0, 0, TileGeometry.size, TileGeometry.size),
                                 mipmapLevel: 0, withBytes: bytes.baseAddress!,

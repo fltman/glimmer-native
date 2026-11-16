@@ -348,7 +348,7 @@ public final class DocumentCompositor {
                 continue
             }
             let reuse = cache[coord].flatMap { $0.level == 0 ? $0.texture : nil }
-            let texture = reuse ?? makeCompositeTexture()
+            guard let texture = reuse ?? makeCompositeTexture() else { continue }
             render(nodes, at: coord, into: texture, clear: true, gamma: gamma, commandBuffer: commandBuffer)
             mipTargets.append(texture)
             cache[coord] = Entry(signature: sig, texture: texture)
@@ -564,8 +564,8 @@ public final class DocumentCompositor {
                     // then pull the result back toward the saved backdrop.
                     let needsMix = c.opacity < 1 || c.mask != nil || clip != nil
                     var backup: MTLTexture?
-                    if needsMix, let blit = cb.makeBlitCommandEncoder() {
-                        let b = scratchTexture()
+                    // Without memory for the backup the group is drawn unmixed rather than not at all.
+                    if needsMix, let b = scratchTexture(), let blit = cb.makeBlitCommandEncoder() {
                         temps.append(b)
                         blit.copy(from: target, sourceSlice: 0, sourceLevel: 0, to: b, destinationSlice: 0,
                                   destinationLevel: 0, sliceCount: 1, levelCount: 1)
@@ -587,7 +587,12 @@ public final class DocumentCompositor {
                         base = ClipSource(alpha: pipelines.white, mask: maskTexture(c, at: coord), density: c.mask?.density ?? 0)
                     }
                 } else {
-                    let temp = scratchTexture()
+                    guard let temp = scratchTexture() else {
+                        // No memory to draw the group apart: it is left out of this tile, and the pass goes on.
+                        guard let next = beginPass(target, clear: false, cb) else { return }
+                        encoder = next
+                        continue
+                    }
                     temps.append(temp)
                     render(children, at: coord, into: temp, clear: true, gamma: gamma, commandBuffer: cb)
                     guard let next = beginPass(target, clear: false, cb) else { return }
@@ -637,7 +642,9 @@ public final class DocumentCompositor {
         }
     }
 
-    private func makeCompositeTexture() -> MTLTexture {
+    /// Nil when there is no memory for it: the tile keeps what it showed, and the shortage is
+    /// noted (`GraphicsMemory`). Drawing the screen never ends the app.
+    private func makeCompositeTexture() -> MTLTexture? {
         if let reused = pool.popLast() { return reused }
         let d = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: TileGeometry.pixelFormat,
@@ -646,13 +653,14 @@ public final class DocumentCompositor {
         d.usage = [.renderTarget, .shaderRead]
         d.storageMode = .private
         guard let texture = context.device.makeTexture(descriptor: d) else {
-            fatalError("Out of GPU memory allocating a composite tile")
+            GraphicsMemory.noteShortage()
+            return nil
         }
         texture.label = "Composite tile"
         return texture
     }
 
-    private func scratchTexture() -> MTLTexture {
+    private func scratchTexture() -> MTLTexture? {
         if let reused = scratch.popLast() { return reused }
         let d = MTLTextureDescriptor.texture2DDescriptor(
             pixelFormat: TileGeometry.pixelFormat,
@@ -660,7 +668,8 @@ public final class DocumentCompositor {
         d.usage = [.renderTarget, .shaderRead]
         d.storageMode = .private
         guard let texture = context.device.makeTexture(descriptor: d) else {
-            fatalError("Out of GPU memory allocating a group tile")
+            GraphicsMemory.noteShortage()
+            return nil
         }
         texture.label = "Group tile"
         return texture
@@ -692,7 +701,7 @@ public final class DocumentCompositor {
             if let blit = cb.makeBlitCommandEncoder() {
                 for coord in slice {
                     guard let source = compositor.texture(at: coord) else { continue }
-                    let tile = TileTexture.makeTexture(device: context.device)
+                    guard let tile = TileTexture.makeTextureOrNote(device: context.device) else { continue }   // no memory: this tile is left as it was
                     blit.copy(from: source, sourceSlice: 0, sourceLevel: 0, to: tile, destinationSlice: 0,
                               destinationLevel: 0, sliceCount: 1, levelCount: 1)
                     grid[coord] = .texture(TileTexture(tile))

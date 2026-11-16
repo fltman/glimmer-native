@@ -250,7 +250,7 @@ enum RegionOps {
         guard let blit = commandBuffer.makeBlitCommandEncoder() else { return grid }
         let s = TileGeometry.size
         for coord in region.tileCoords {
-            let tile = TileTexture.makeTexture(device: device)
+            guard let tile = TileTexture.makeTextureOrNote(device: device) else { continue }   // no memory: this tile is left as it was
             blit.copy(from: texture, sourceSlice: 0, sourceLevel: 0,
                       sourceOrigin: MTLOrigin(x: coord.rect.x - region.x, y: coord.rect.y - region.y, z: 0),
                       sourceSize: MTLSize(width: s, height: s, depth: 1),

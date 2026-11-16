@@ -105,7 +105,7 @@ public enum DocumentEffects {
         var grid = TileGrid()
         var partial: [(TileCoord, MTLTexture)] = []
         for coord in bounds.tileCoords {
-            let tile = TileTexture.makeTexture(device: pipelines.context.device)
+            guard let tile = TileTexture.makeTextureOrNote(device: pipelines.context.device) else { continue }   // no memory: this tile is left as it was
             grid[coord] = .texture(TileTexture(tile))
             if coord.rect.maxX > bounds.maxX || coord.rect.maxY > bounds.maxY { partial.append((coord, tile)) }
         }

@@ -311,7 +311,7 @@ public final class SmudgeEngine {
         if let blit = cb.makeBlitCommandEncoder() {
             let s = TileGeometry.size
             for coord in touched {
-                let tile = TileTexture.makeTexture(device: engine.context.device)
+                guard let tile = TileTexture.makeTextureOrNote(device: engine.context.device) else { continue }   // no memory: this tile is left as it was
                 blit.copy(from: working, sourceSlice: 0, sourceLevel: 0,
                           sourceOrigin: MTLOrigin(x: coord.rect.x - region.x, y: coord.rect.y - region.y, z: 0),
                           sourceSize: MTLSize(width: s, height: s, depth: 1),

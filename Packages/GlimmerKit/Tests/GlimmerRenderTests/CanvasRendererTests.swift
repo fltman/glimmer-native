@@ -25,7 +25,7 @@ func textureTile(_ color: SIMD4<Float>) -> Tile {
         px[i] = Float16(color.x); px[i + 1] = Float16(color.y); px[i + 2] = Float16(color.z); px[i + 3] = Float16(color.w)
     }
     px[0] = Float16(color.x) + 0.001  // break uniformity at one corner pixel
-    let texture = TileTexture.makeTexture()
+    let texture = (try! TileTexture.makeTexture())
     px.withUnsafeBytes {
         texture.replace(region: MTLRegionMake2D(0, 0, s, s), mipmapLevel: 0,
                         withBytes: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)

@@ -403,6 +403,11 @@ final class CanvasNSView: NSView, NSUserInterfaceValidations {
         let more = compositor.update(state, overrides: session.overrides, coords: tiles, budget: 96,
                                      detailLevel: DocumentCompositor.detailLevel(forZoom: controller.zoom),
                                      commandBuffer: commandBuffer)
+        // An edit or this frame found no memory for a piece of the image (never seen in practice;
+        // see GraphicsMemoryError). Said once per shortage, with what to do about it.
+        if GraphicsMemory.takeShortage(), session.errorMessage == nil {
+            session.errorMessage = String(localized: "Glimmer ran out of memory, so part of the last edit or of the picture on screen may be missing. Undo the last step, close other documents or merge some layers, then try again.")
+        }
         let frame = CanvasFrame(
             transform: controller.transform,
             viewSize: SIMD2(bounds.width, bounds.height),
