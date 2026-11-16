@@ -46,17 +46,8 @@ private struct AISettingsView: View {
     /// What each running local server has installed; a server that doesn't answer has no entry.
     @State private var localModels: [String: [OllamaTextModel.Installed]] = [:]
 
-    /// The services that can be chosen for pictures: those offered, and in a debug copy with
-    /// `-ai.showUntried YES` those that are built and not tried yet.
-    private var imageChoices: [AIProvider] {
-        var list = AIProvider.offering(.image)
-        #if DEBUG
-        if UserDefaults.standard.bool(forKey: "ai.showUntried") {
-            list += AIProvider.all.filter { $0.built.contains(.image) && !$0.offers(.image) }
-        }
-        #endif
-        return list
-    }
+    /// The services that can be chosen for pictures.
+    private var imageChoices: [AIProvider] { AIProvider.offering(.image) }
 
     /// OpenRouter is chosen at once. Another service is chosen only after what is sent to it has
     /// been shown and agreed to, once per service.
@@ -69,14 +60,6 @@ private struct AISettingsView: View {
         imageProviderAsked = provider
     }
 
-    /// A debug copy may show a service that is built but not offered, for the paid test of it.
-    static func untriedAllowed(_ provider: AIProvider) -> Bool {
-        #if DEBUG
-        return UserDefaults.standard.bool(forKey: "ai.showUntried") && provider.built.contains(.text)
-        #else
-        return false
-        #endif
-    }
 
     private func findLocalServers() async {
         var found: [String: [OllamaTextModel.Installed]] = [:]
@@ -142,17 +125,9 @@ private struct AISettingsView: View {
                     ForEach(AIProvider.offering(.text).filter { $0.kind == .cloud || localModels[$0.slug] != nil || $0.slug == textProvider }) { provider in
                         Text(verbatim: provider.kind == .localServer ? String(localized: "\(provider.name) (on this Mac)") : provider.name).tag(provider.slug)
                     }
-                    #if DEBUG
-                    // For Anders's paid tests: services that are built but not offered yet (`-ai.showUntried YES`).
-                    if UserDefaults.standard.bool(forKey: "ai.showUntried") {
-                        ForEach(AIProvider.all.filter { $0.built.contains(.text) && !$0.offers(.text) }) { provider in
-                            Text("\(provider.name) (not tried yet)").tag(provider.slug)
-                        }
-                    }
-                    #endif
                 }
                 .task { await findLocalServers() }
-                if let provider = AIProvider.named(textProvider), provider.offers(.text) || Self.untriedAllowed(provider) {
+                if let provider = AIProvider.named(textProvider), provider.offers(.text) {
                     if provider.slug == "ollama" {
                         LocalTextSettings(provider: provider, models: localModels[provider.slug]) { await findLocalServers() }
                             .id(provider.slug)
@@ -162,7 +137,7 @@ private struct AISettingsView: View {
                     }
                 }
                 #if DEBUG
-                if let provider = AIProvider.named(textProvider), provider.slug != "ollama", provider.offers(.text) || Self.untriedAllowed(provider) {
+                if let provider = AIProvider.named(textProvider), provider.slug != "ollama", provider.offers(.text) {
                     TextModelTrial(provider: provider)
                 }
                 #endif
@@ -183,12 +158,12 @@ private struct AISettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            // Shown only when there is a choice: today OpenRouter is the one service offered for pictures.
+            // Shown only when there is a choice.
             if imageChoices.count > 1 {
                 Section {
                     Picker("Service", selection: Binding(get: { imageProvider }, set: { chooseImageProvider($0) })) {
                         ForEach(imageChoices) { provider in
-                            Text(verbatim: provider.offers(.image) ? provider.name : String(localized: "\(provider.name) (not tried yet)")).tag(provider.slug)
+                            Text(verbatim: provider.name).tag(provider.slug)
                         }
                     }
                     if imageProvider != "openrouter", let provider = AIProvider.named(imageProvider) {

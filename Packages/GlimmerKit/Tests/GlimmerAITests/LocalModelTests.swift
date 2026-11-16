@@ -234,8 +234,7 @@ extension ChatAdapterTests {
         #expect(AIProvider.named("mlx")?.textModel(key: "", model: "m") != nil && AIProvider.named("mlx")?.offers(.text) == false)
         #expect(AIProvider.named("fal")?.textModel(key: "k", model: "m") == nil)
         #expect(AIProvider.named("openrouter")?.imageModel(key: "k", model: "m") == nil && AIProvider.named("berget")?.imageModel(key: "k", model: "m") == nil)
-        // Still hidden: only what Anders has decided is offered.
-        #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "berget", "grunden", "ollama"])
+        #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "openai", "anthropic", "xai", "google", "berget", "grunden", "ollama"])
     }
 }
 
@@ -407,11 +406,11 @@ extension ChatAdapterTests {
         }
     }
 
-    @Test func everyNewImageServiceIsBuiltAndHidden() {
+    @Test func everyNewImageServiceIsBuiltAndOffered() {
         for slug in ["openai", "google", "fal", "hedra"] {
-            #expect(AIProvider.named(slug)?.built.contains(.image) == true && AIProvider.named(slug)?.offers(.image) == false, "\(slug)")
+            #expect(AIProvider.named(slug)?.built.contains(.image) == true && AIProvider.named(slug)?.offers(.image) == true, "\(slug)")
         }
-        #expect(AIProvider.offering(.image).map(\.slug) == ["openrouter"])
+        #expect(AIProvider.offering(.image).map(\.slug) == ["openrouter", "openai", "google", "fal", "hedra"])
     }
 }
 

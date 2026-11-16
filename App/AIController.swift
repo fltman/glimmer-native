@@ -96,10 +96,6 @@ final class AIController {
     static var textProvider: AIProvider {
         let slug = UserDefaults.standard.string(forKey: textProviderKey) ?? "openrouter"
         if let p = AIProvider.named(slug), p.offers(.text) { return p }
-        #if DEBUG
-        // A service that is built but not offered yet can be tried in a debug copy (`-ai.showUntried YES`, then Settings › AI).
-        if let p = AIProvider.named(slug), p.built.contains(.text), UserDefaults.standard.bool(forKey: "ai.showUntried") { return p }
-        #endif
         return .openRouter
     }
 
@@ -168,16 +164,11 @@ final class AIController {
     }
 
     private func imageModel() throws -> ImageModel {
-        // Another image service, when one is chosen and offered. All of them are hidden until
-        // Anders has tried each with a real call; a debug copy can choose a built one to test:
+        // Another image service, when one is chosen. For a test:
         // `-ai.imageProvider openai -ai.imageModel.openai <id>` (fal: also `-ai.imageEditModel.fal <id>`).
         let d = UserDefaults.standard
         if let slug = d.string(forKey: Self.imageProviderKey), slug != "openrouter", let provider = AIProvider.named(slug) {
-            var allowed = provider.offers(.image)
-            #if DEBUG
-            allowed = allowed || provider.built.contains(.image)
-            #endif
-            if allowed {
+            if provider.offers(.image) {
                 // What goes to the service was said, and agreed to, when it was chosen in Settings.
                 guard d.bool(forKey: Self.imageToldKey(slug)) else {
                     throw TextSetupError(errorDescription: String(localized: "Choose \(provider.name) again in Settings › AI and confirm what is sent to it."))

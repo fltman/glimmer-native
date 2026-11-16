@@ -58,10 +58,14 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
         }
     }
 
-    /// Hidden until tried: only OpenRouter (in use), and Berget and Grunden (Anders's exception) are offered.
+    /// Every cloud service that is built is offered (Anders, 2026-11-16), and those nobody has called say so.
     @Test func onlyWhatIsDecidedIsOffered() {
-        #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "berget", "grunden", "ollama"])
-        #expect(AIProvider.offering(.image).map(\.slug) == ["openrouter"])
+        #expect(AIProvider.offering(.text).map(\.slug) == ["openrouter", "openai", "anthropic", "xai", "google", "berget", "grunden", "ollama"])
+        #expect(AIProvider.offering(.image).map(\.slug) == ["openrouter", "openai", "google", "fal", "hedra"])
+        for p in AIProvider.all where p.kind == .cloud {
+            #expect(p.offered == p.built, "\(p.slug)")
+            #expect(p.fromDocumentationOnly == !["openrouter", "berget"].contains(p.slug), "\(p.slug)")
+        }
         for p in AIProvider.all {
             #expect(p.offered.isSubset(of: p.built), "\(p.slug) is offered for something that isn't built")
             #expect(p.built.isSubset(of: Set(p.serves)), "\(p.slug)")
@@ -76,7 +80,7 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
     @Test func aLocalServerNeedsNoKeyAndFalIsUntouched() {
         #expect(AIProvider.named("ollama")?.needsKey == false)
         #expect(AIProvider.named("ollama")?.dialect.toolChoice == false)
-        #expect(AIProvider.named("fal")?.built == [.image] && AIProvider.named("fal")?.offered.isEmpty == true)
+        #expect(AIProvider.named("fal")?.built == [.image] && AIProvider.named("fal")?.offered == [.image])
         #expect(AIProvider.named("hedra")?.termsNote?.contains("yourself") == true)
     }
 
@@ -84,8 +88,10 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
         let table = AIProvider.manualTable()
         #expect(table.contains("| OpenRouter |") && table.contains("| Berget |") && table.contains("| Grunden |"))
         #expect(table.contains("| Ollama |") && table.contains("shown only while it is running"))
-        #expect(!table.contains("Hedra") && !table.contains("OpenAI") && !table.contains("MLX"))
-        #expect(table.contains("Built from Berget's documentation; not yet tried with a real call."))
+        #expect(table.contains("| Hedra | images |") && table.contains("| OpenAI | text (the Assistant), images |") && !table.contains("MLX"))
+        // Berget has had a real call; those nobody has called say so.
+        #expect(!table.contains("Built from Berget's documentation") && table.contains("Built from Grunden's documentation; not yet tried with a real call."))
+        #expect(table.contains("Built from fal.ai's documentation; not yet tried with a real call."))
         #expect(table.contains("Stockholm, Sweden"))
     }
 }
@@ -128,7 +134,7 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
         try keys(box).store(for: "berget").write("b")
         #expect(try keys(box).key(for: "berget") == "b" && keys(box).key(for: "grunden") == nil)
         #expect(box.items == ["openrouter": "a", "berget": "b"])
-        #expect(keys(box).status() == ["openrouter": true, "berget": true, "grunden": false])
+        #expect(keys(box).status() == ["openrouter": true, "berget": true, "grunden": false, "openai": false, "anthropic": false, "xai": false, "google": false, "fal": false, "hedra": false])
     }
 
     /// Interrupted before the new item is written: the key is still under the old account and is found.
@@ -257,8 +263,7 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
         let user = try #require((sent.json["messages"] as? [[String: Any]])?.last)
         let parts = try #require(user["content"] as? [[String: Any]])
         #expect(parts.contains { (($0["image_url"] as? [String: Any])?["url"] as? String)?.hasPrefix("data:image/") == true })
-        // Hidden until Anders has tried it.
-        #expect(AIProvider.named("google")?.offered.isEmpty == true && AIProvider.named("google")?.built.contains(.text) == true)
+        #expect(AIProvider.named("google")?.offered == [.text, .image] && AIProvider.named("google")?.fromDocumentationOnly == true)
     }
 
     @Test func ollamaGetsNoKeyAndNoToolChoice() async throws {

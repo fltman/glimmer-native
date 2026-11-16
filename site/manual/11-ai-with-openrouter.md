@@ -24,16 +24,24 @@ Under **Models** in the same tab you choose which OpenRouter models Glimmer call
 
 Type any OpenRouter model id to use another model. **Restore Defaults** puts both back.
 
-## Other services for text
+## Other services
 
-The Assistant, its suggestions and Find Distractions send text (and a small picture of your document) to a language model. By default that is OpenRouter too. In **Glimmer › Settings › AI**, under **Text (the Assistant)**, you can choose another service for it. Pictures are still made through OpenRouter.
+The Assistant, its suggestions and Find Distractions send text (and a small picture of your document) to a language model. By default that is OpenRouter too. In **Glimmer › Settings › AI**, under **Text (the Assistant)**, you can choose another service for it. Under **Pictures** you can choose another service for making and editing pictures; the first time, Glimmer shows what is sent to it and asks.
+
+The table lists every service Glimmer can use. Where the notes say a service is built from its documentation and not yet tried with a real call, that is meant literally: nobody has yet sent it a request from Glimmer. If such a service answers with an error, Glimmer shows the error as it came.
 
 <!-- providers:begin (generated from the app's list of services by scripts/export-agents-guide.sh; don't edit by hand) -->
 | Service | Used for | Key | Where your data is processed | Notes |
 |---|---|---|---|---|
 | OpenRouter | text (the Assistant), images | your own, in **Settings › AI** | see the service's terms |  |
-| Berget | text (the Assistant) | your own, in **Settings › AI** | Stockholm, Sweden | Built from Berget's documentation; not yet tried with a real call. Berget AI runs open models in Stockholm. Its terms say it never stores the content of prompts or answers. |
+| OpenAI | text (the Assistant), images | your own, in **Settings › AI** | see the service's terms | Built from OpenAI's documentation; not yet tried with a real call. |
+| Anthropic | text (the Assistant) | your own, in **Settings › AI** | see the service's terms | Built from Anthropic's documentation; not yet tried with a real call. |
+| xAI | text (the Assistant) | your own, in **Settings › AI** | see the service's terms | Built from xAI's documentation; not yet tried with a real call. |
+| Google | text (the Assistant), images | your own, in **Settings › AI** | see the service's terms | Built from Google's documentation; not yet tried with a real call. For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognisable people. |
+| Berget | text (the Assistant) | your own, in **Settings › AI** | Stockholm, Sweden | Berget AI runs open models in Stockholm. Its terms say it never stores the content of prompts or answers. |
 | Grunden | text (the Assistant) | your own, in **Settings › AI** | Sweden | Built from Grunden's documentation; not yet tried with a real call. Grunden AI runs open models in Sweden and says all processing happens there. |
+| fal.ai | images | your own, in **Settings › AI** | see the service's terms | Built from fal.ai's documentation; not yet tried with a real call. fal keeps what you send in its request history for 90 days by default. Glimmer sends your pictures inside the request and gets the result back the same way, so nothing is placed on fal's file storage, which is public by default. |
+| Hedra | images | your own, in **Settings › AI** | see the service's terms | Built from Hedra's documentation; not yet tried with a real call. Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a licence to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour. |
 | Ollama | text (the Assistant) | none (shown only while it is running on your Mac) | This Mac | Runs on this Mac with Ollama: nothing is sent anywhere and nothing is billed. Slower than a cloud model; an answer can take up to a minute on a busy Mac. |
 <!-- providers:end -->
 

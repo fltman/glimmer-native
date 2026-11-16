@@ -19,10 +19,11 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
     public let baseURL: String
     /// What its chat completions accept.
     public var dialect = ChatDialect.plain
-    /// What is offered to the person. Everything new is hidden until Anders has made a paid
-    /// test of it; Berget and Grunden are the exception he decided on 2026-11-16 (built from
-    /// their documentation and offered at once). A local model is shown only once one has
-    /// passed Glimmer's own evaluation.
+    /// What is offered to the person. Every cloud service that is built is offered, by its name
+    /// alone (Anders, 2026-11-16: "låt alla synas", "ta bort märkningen"); before that, a service
+    /// was hidden until he had made a paid test of it. Those nobody has called yet say so where
+    /// the key is entered and in the manual (`fromDocumentationOnly`). A local server is shown
+    /// only once a model has passed Glimmer's own evaluation.
     public var offered: Set<Capability> = []
     /// Built for these (an adapter exists and passes its tests), offered or not.
     public var built: Set<Capability> = []
@@ -63,20 +64,23 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
         }(),
         {
             var p = AIProvider(slug: "openai", name: "OpenAI", kind: .cloud, serves: [.text, .image], textAdapter: .responses, baseURL: "https://api.openai.com/v1")
-            p.built = [.text, .image]
+            p.built = [.text, .image]; p.offered = [.text, .image]
+            p.fromDocumentationOnly = true
             p.keysURL = "https://platform.openai.com/api-keys"; p.pricesURL = "https://developers.openai.com/api/docs/pricing"
             return p
         }(),
         {
             var p = AIProvider(slug: "anthropic", name: "Anthropic", kind: .cloud, serves: [.text], textAdapter: .anthropicMessages, baseURL: "https://api.anthropic.com/v1")
-            p.built = [.text]
+            p.built = [.text]; p.offered = [.text]
+            p.fromDocumentationOnly = true
             p.keysURL = "https://platform.claude.com/settings/keys"; p.pricesURL = "https://platform.claude.com/docs/en/about-claude/pricing"
             p.termsURL = "https://www.anthropic.com/legal/commercial-terms"
             return p
         }(),
         {
             var p = AIProvider(slug: "xai", name: "xAI", kind: .cloud, serves: [.text], textAdapter: .responses, baseURL: "https://api.x.ai/v1")
-            p.built = [.text]
+            p.built = [.text]; p.offered = [.text]
+            p.fromDocumentationOnly = true
             p.keysURL = "https://console.x.ai"; p.pricesURL = "https://docs.x.ai/developers/models"
             return p
         }(),
@@ -87,7 +91,8 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
             // tool_choice, pictures and streaming; what it doesn't show is left out.
             p.dialect.parallelToolCalls = false
             p.dialect.jsonObject = false
-            p.built = [.text, .image]
+            p.built = [.text, .image]; p.offered = [.text, .image]
+            p.fromDocumentationOnly = true
             p.keysURL = "https://aistudio.google.com/apikey"; p.pricesURL = "https://ai.google.dev/gemini-api/docs/pricing"
             p.termsNote = "For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognisable people."
             p.termsURL = "https://ai.google.dev/gemini-api/terms"
@@ -99,7 +104,7 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
             p.keysURL = "https://console.berget.ai"; p.termsURL = "https://berget.ai/en/terms"; p.pricesURL = "https://berget.ai/en/pricing"
             p.termsNote = "Berget AI runs open models in Stockholm. Its terms say it never stores the content of prompts or answers."
             p.dataNote = "Stockholm, Sweden"
-            p.fromDocumentationOnly = true
+            // Tried with a real call by Anders, 2026-11-16 (docs/TESTING-NOTES.md).
             return p
         }(),
         {
@@ -115,7 +120,8 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
         }(),
         {
             var p = AIProvider(slug: "fal", name: "fal.ai", kind: .cloud, serves: [.image], textAdapter: nil, baseURL: "https://fal.run")
-            p.built = [.image]
+            p.built = [.image]; p.offered = [.image]
+            p.fromDocumentationOnly = true
             p.keysURL = "https://fal.ai/dashboard/keys"; p.termsURL = "https://fal.ai/legal/terms-of-service"; p.pricesURL = "https://fal.ai/pricing"
             // Only what has been read. Glimmer sends pictures inside the request and asks for the result the same way, so nothing is put on fal's storage.
             p.termsNote = "fal keeps what you send in its request history for 90 days by default. Glimmer sends your pictures inside the request and gets the result back the same way, so nothing is placed on fal's file storage, which is public by default."
@@ -123,7 +129,8 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
         }(),
         {
             var p = AIProvider(slug: "hedra", name: "Hedra", kind: .cloud, serves: [.image], textAdapter: nil, baseURL: "https://api.hedra.com/v3")
-            p.built = [.image]
+            p.built = [.image]; p.offered = [.image]
+            p.fromDocumentationOnly = true
             p.keysURL = "https://www.hedra.com/develop"; p.pricesURL = "https://www.hedra.com/pricing"
             p.termsNote = "Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a licence to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour."
             p.termsURL = "https://www.hedra.com/terms"

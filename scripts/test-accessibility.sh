@@ -20,7 +20,7 @@ if [[ -z "${GLIMMER_PORT:-}" ]]; then
   # GLIMMER_LANG=sv: the same pass with the copy in Swedish. Every text looked for is named as the source
   # names it and resolved through the catalogue (scripts/catalog-text.py), so one script serves both.
   [[ "${GLIMMER_LANG:-en}" == en ]] || GLIMMER_ARGS="-AppleLanguages (${GLIMMER_LANG}) -AppleLocale ${GLIMMER_LANG}_SE ${GLIMMER_ARGS:-}"
-  ARGS="-ai.textProvider berget -ai.textModel.berget glimmer-test/not-a-model -ai.showUntried YES -ai.imageProvider fal -ai.imageNoticeShown.fal YES ${GLIMMER_ARGS:-}"
+  ARGS="-ai.textProvider berget -ai.textModel.berget glimmer-test/not-a-model -ai.imageProvider fal -ai.imageNoticeShown.fal YES ${GLIMMER_ARGS:-}"
   if [[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]]; then
     # NETWORK TEST, on purpose: Settings › AI is read with Berget's public model list loaded (no key).
     GLIMMER_ARGS="$ARGS" exec scripts/test-app.sh "$0"
