@@ -1,0 +1,8 @@
+Timing tests, 2026-11-16 21:08, commit 78ee3c7. Load average before 9.35, after 19.21.
+✔ Test compositesLargeDocument() passed after 0.581 seconds.
+✔ Test filtersOnAn8kLayer() passed after 1.596 seconds.
+✔ Test brushDabsOnAn8kLayer() passed after 0.045 seconds.
+✔ Test liquifyRenderOn4k() passed after 0.086 seconds.
+✔ Test photoSizedImageEncodesSmall() passed after 35.312 seconds.
+✔ Test run with 5 tests in 2 suites passed after 35.313 seconds.
+Result: all within their limits.

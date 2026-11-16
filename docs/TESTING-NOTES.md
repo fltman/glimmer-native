@@ -652,3 +652,10 @@ Seen and not changed:
 Seen there and not changed: for the picture services that are hidden until tried (shown in the test copy only), the service's note and "(not tried yet)" are English in the Swedish app; they have no Swedish in the catalogue. They would need it before any of those services is offered.
 
 **The hidden picture services have their Swedish (2026-11-16).** The notes Settings shows for Google, fal and Hedra, the label "(not tried yet)", and the six messages their adapters give when an answer is not usable have Swedish in the catalogue, and `scripts/check-strings.py` now requires it for every service's note and every adapter message (it found three more of the messages the moment it was added). Not looked at in the app: the services are hidden, and their messages need a real answer from the service to appear, which is a paid test.
+
+## What could be finished without Anders (2026-11-16, evening; "kör klart det du kan")
+
+- **The timing tests as assertions** (`scripts/test-performance.sh`, result in `docs/performance-last.txt`): all five within their limits, on a Mac that was not quiet (load average 9.4 before, 19.2 after; other sessions building). Compositing a large document 0.58 s for the test, filters on an 8k layer 1.6 s, brush dabs 0.05 s, liquify at 4k 0.09 s, the WebP encode 35 s. A pass on a busy Mac says the limits hold with room; it does not replace the quiet-Mac run for the figures themselves.
+- **The API key field still takes a key** after being declared a one-time code. In the test copy a made-up value (22 characters, not a key) was typed into the field: it shows as 22 dots, Save and Test Key wake up, no Passwords suggestion appears when the field is clicked or typed in, and the field was emptied again. Nothing was saved, so storing and reading the key back is still for a person with a real key.
+
+Not done, because it cannot be without him or a quiet Mac: the RAW draft and the Fujifilm file's final development as figures to rely on; the paid tests; the signed update rehearsal; Reduce Motion.
