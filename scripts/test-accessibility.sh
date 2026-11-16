@@ -75,8 +75,9 @@ fixture assistant && read_state "the Assistant: requests, a plan with a failed a
 read_state "the plan's failed step says why" "No font named “Nope” is installed."
 fixture waiting && read_state "a plan and a command that wait for Run, because the request didn't name them" "I think you mean Flatten Image. You didn't name it, so it waits for you." || bad "fixture waiting"
 read_state "an extra step the model added, offered and waiting" "The assistant also suggests Auto Enhance, which you didn't ask for. Run it now on the picture as it is?"
-fixture refusedPlan && read_state "a plan that can't run because a step would be refused: said, and no Run" "This plan can't run: add_adjustment has no parameter named brightness in params." || bad "fixture refusedPlan"
+fixture refusedPlan && read_state "a plan that can't run because a step would be refused: said, and no Run" "The plan asks Exposure for a setting it doesn't have (brightness), so it can't run." || bad "fixture refusedPlan"
 fixture jobs && read_state "the job list: running, failed, done with a cost, cancelled" "OpenRouter rejected the API key." || bad "fixture jobs"
+fixture clear   # the job list's running job must not put its spinner in the pictures that follow
 
 # The link bar.
 fixture linked && read_state "the bar of a linked document" "Editing frame-0412.png for Flimmer. Command-S saves it back." || bad "fixture linked"

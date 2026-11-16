@@ -33,6 +33,8 @@ final class AIController {
         /// A single command the on-device model chose for a request that doesn't name it: it
         /// waits for Run. The palette entry's id; nil once it has been run or dismissed.
         var pendingCommand: String?
+        /// The exact words of a refusal, as the agent API gives them: shown on request under a message that says the same thing plainly.
+        var exactWords: String?
     }
 
     enum StepStatus: Equatable {
@@ -241,6 +243,9 @@ final class AIController {
         cancelled.status = .cancelled
         jobs = [running, failed, done, cancelled]
     }
+
+    /// Takes the fixture's jobs away again (they are not real: nothing is running).
+    func clearFixtureJobs() { jobs = [] }
     #endif
 
     private func finish(_ id: UUID, _ status: Job.Status, cost: Double? = nil) {

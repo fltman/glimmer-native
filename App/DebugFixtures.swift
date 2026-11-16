@@ -19,6 +19,7 @@ extension AIController {
             s.textNotice = nil; s.healWarning = nil; s.errorMessage = nil
             s.isImageSizePresented = false; s.isCanvasSizePresented = false; s.isPSDExportPresented = false; s.isImportReportPresented = false
             s.linkedImage = nil; s.brokenLink = nil
+            clearFixtureJobs()   // a running job left from the job-list state put its spinner in every later picture
         case "panel:layers", "panel:paths", "panel:channels", "panel:history", "panel:ai":
             // The side panel, on the named tab.
             let tab = EditorSession.InspectorTab.allCases.first { "panel:" + $0.rawValue.lowercased() == name }!
@@ -64,8 +65,9 @@ extension AIController {
             let first = AgentStep(op: "crop", params: ["aspect": .string("1:1")], rationale: "Square.")
             let second = AgentStep(op: "add_adjustment", params: ["type": .string("exposure"), "params": .object(["brightness": .number(0.3)])],
                                    rationale: "Brighter. (\(StepParameters.strayNote): brightness)")
-            let why = StepParameters.stray(in: second)?.message ?? ""
-            var refused = Message(fromUser: false, text: "Cropping square and brightening. " + String(localized: "This plan can't run: \(why) Nothing was changed. Ask again, perhaps in other words."))
+            let stray = StepParameters.stray(in: second)
+            var refused = Message(fromUser: false, text: "Cropping square and brightening. " + String(localized: "The plan asks \(String(localized: String.LocalizationValue(stray?.subject ?? ""))) for a setting it doesn't have (\(stray?.name ?? "")), so it can't run. Nothing was changed. Ask again, perhaps in other words."))
+            refused.exactWords = stray?.message
             refused.plan = AgentPlan(steps: [first, second])
             messages = [Message(fromUser: true, text: "Make it square and brighter"), refused]
             stepStatus = [first.id: .skipped, second.id: .skipped]

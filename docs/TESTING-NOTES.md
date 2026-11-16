@@ -589,3 +589,23 @@ Read from the code, not run against Flimmer or Jämmer:
 Closed the same day, on the coordinator's word:
 - **A sibling's settings per sort are read.** When a sibling's operation carries an `x-byType` table, the nested settings are checked against the sort chosen, with the same refusal as for a top-level name ("sensitivity in settings"). Which property chooses the sort is taken from `x-byTypeKey` if the sibling gives it, else the property whose allowed values are the table's sorts, else `type` or `kind`. SIBLINGS.md §3 does not say how a reader finds that property; Glimmer's own schemas now name it (`"x-byTypeKey": "type"`). Tested with a schema shaped like the description of Jämmer's restore; **not tried against Jämmer itself**.
 - **A plan with a step that would be refused is not run at all.** The check is made when the plan is made, for Glimmer's own operations and for a sibling's (against the list the sibling gave for that plan). The Assistant shows the plan, says "This plan can't run: … Nothing was changed.", and offers no Run. Before, the steps ahead of the refused one ran first. Read in the accessibility pass (fixture `refusedPlan`) and looked at as a picture: whole, both steps shown as not run, no Run button. A rough edge seen there: the reason is in the API's words ("add_adjustment has no parameter named brightness in params. It has: exposure, offset, gamma."), which is right for an agent and heavy for a person reading the Assistant.
+
+## After the switch: the sweep's first round (2026-11-16)
+
+- **A refused plan speaks to a person.** The Assistant now says "The plan asks Exposure for a setting it doesn't have (brightness), so it can't run. Nothing was changed. Ask again, perhaps in other words."; the step's note says "asks for a setting that doesn't exist: brightness"; the API's exact words are under a disclosure, "Exact words". Read in the accessibility pass and looked at: whole.
+- **The fixture "clear" takes the job-list fixture's jobs away**, and the accessibility script clears after the job list: the pictures of later states no longer carry another state's spinner (looked at: the link bar reads "For Flimmer – ⌘S saves back", nothing else).
+- **Three unused strings removed** from the catalogue (the two old link-bar sentences and a lone "Developing").
+- **All six camera files in the release build**, one run each with the Develop script and its controls (load average 8 to 22):
+
+| File | Opens (public endpoint) | First picture after | Develop |
+|---|---|---|---|
+| iPhone 12 Pro | 3.4 s | 5 s | 1 s |
+| Canon R10 | 5.2 s | 8 s | 1 s |
+| Panasonic S5 II | 5.2 s | 9 s | 2 s |
+| OM-5 | 4.7 s | 10 s | 2 s |
+| Pixel 8 Pro, 50 MP | 6.9 s | 11 s | 3 s |
+| Fujifilm X-T50, 40 MP | 11.3 s | 18 s | 12 s |
+
+  Every check passed on all six. The Fujifilm file stands out, as before: 12 s for the final development at load 22.
+- **A sibling's table of settings per sort** is read in both places SIBLINGS.md §3 now allows (on a nested settings property, or on the operation's own schema when the settings sit beside the chooser), always by the chooser named in `x-byTypeKey`. A table without that name is not guessed at: the step's settings go unchecked and the plan's step says so. Tested with schemas of both shapes; not yet tried against Jämmer's real `/operations`.
+- Left as it is and noted: File › Open… on a RAW file maps the file's bytes on the main thread before the development is handed off (not measured as a problem).

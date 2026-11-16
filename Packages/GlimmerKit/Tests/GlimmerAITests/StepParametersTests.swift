@@ -144,26 +144,56 @@ import GlimmerCore
         #expect(SiblingError.strayParameter("flimmer_trim_clip", "fade", ["seconds"]).errorDescription == "flimmer_trim_clip has no parameter named fade. It has: seconds.")
     }
 
-    /// A sibling's settings per sort (Jämmer publishes its restore settings this way, on `kind`).
-    @Test func aSiblingsSettingsPerSortAreChecked() {
-        func sort(_ keys: [String]) -> JSONValue {
-            .object(["type": .string("object"), "additionalProperties": .bool(false), "properties": .object(Dictionary(uniqueKeysWithValues: keys.map { ($0, JSONValue.object(["type": .string("number")])) }))])
+    static func sort(_ keys: [String]) -> JSONValue {
+        .object(["type": .string("object"), "additionalProperties": .bool(false), "properties": .object(Dictionary(uniqueKeysWithValues: keys.map { ($0, JSONValue.object(["type": .string("number")])) }))])
+    }
+    static let kinds: JSONValue = .object(["type": .string("string"), "enum": .array([.string("denoise"), .string("declick")])])
+    static let table: JSONValue = .object(["denoise": sort(["strength"]), "declick": sort(["sensitivity", "width"])])
+
+    /// Settings in an object of their own, the table on that property (Glimmer's own shape).
+    @Test func nestedSettingsPerSortAreChecked() {
+        func restore(named: Bool) -> SiblingOperation {
+            var settings: [String: JSONValue] = ["type": .string("object"), "x-byType": Self.table]
+            if named { settings["x-byTypeKey"] = .string("kind") }
+            return SiblingOperation(app: .jammer, name: "restore", description: "Restore.", params: .object(["type": .string("object"), "additionalProperties": .bool(false),
+                "properties": .object(["kind": Self.kinds, "settings": .object(settings)])]))
         }
-        let settings: JSONValue = .object(["type": .string("object"), "x-byType": .object(["denoise": sort(["strength"]), "declick": sort(["sensitivity", "width"])])])
-        let schema: JSONValue = .object(["type": .string("object"), "additionalProperties": .bool(false), "properties": .object([
-            "kind": .object(["type": .string("string"), "enum": .array([.string("denoise"), .string("declick")])]), "settings": settings])])
-        let restore = SiblingOperation(app: .jammer, name: "restore", description: "Restore.", params: schema)
-        #expect(restore.stray(in: ["kind": .string("denoise"), "settings": .object(["strength": .number(0.5)])]) == nil)
-        // A setting of another sort is refused for this one, by name, with what this sort has.
-        let stray = restore.stray(in: ["kind": .string("denoise"), "settings": .object(["sensitivity": .number(0.5)])])
+        let op = restore(named: true)
+        #expect(op.stray(in: ["kind": .string("denoise"), "settings": .object(["strength": .number(0.5)])]) == nil)
+        let stray = op.stray(in: ["kind": .string("denoise"), "settings": .object(["sensitivity": .number(0.5)])])
         #expect(stray?.name == "sensitivity in settings" && stray?.allowed == ["strength"])
-        #expect(restore.stray(in: ["kind": .string("declick"), "settings": .object(["sensitivity": .number(0.5), "width": .number(2)])]) == nil)
+        #expect(op.uncheckedTable(for: ["kind": .string("denoise"), "settings": .object([:])]) == nil)
         // A sort the table doesn't have is the sibling's to refuse.
-        #expect(restore.stray(in: ["kind": .string("dehum"), "settings": .object(["x": .number(1)])]) == nil)
-        // Glimmer's own published table names its chooser, and is read the same way.
-        let own = AgentAPI.operations.first { $0["name"] as? String == "add_adjustment" }
-        let params = ((own?["params"] as? [String: Any])?["properties"] as? [String: Any])?["params"] as? [String: Any]
-        #expect(params?["x-byTypeKey"] as? String == "type")
+        #expect(op.stray(in: ["kind": .string("dehum"), "settings": .object(["x": .number(1)])]) == nil)
+        // Without the chooser's name nothing is guessed: not checked, and that is known.
+        let unnamed = restore(named: false)
+        #expect(unnamed.stray(in: ["kind": .string("denoise"), "settings": .object(["sensitivity": .number(0.5)])]) == nil)
+        #expect(unnamed.uncheckedTable(for: ["kind": .string("denoise"), "settings": .object(["sensitivity": .number(0.5)])]) == "settings")
+        #expect(unnamed.uncheckedTable(for: ["kind": .string("denoise")]) == nil)   // no settings given: nothing went unchecked
+    }
+
+    /// Settings beside the chooser at top level, the table on the operation's own schema (Jämmer's restore).
+    @Test func topLevelSettingsPerSortAreChecked() {
+        let schema: JSONValue = .object(["type": .string("object"), "additionalProperties": .bool(false), "x-byType": Self.table, "x-byTypeKey": .string("kind"),
+            "properties": .object(["kind": Self.kinds, "track": .object(["type": .string("string")]), "strength": .object(["type": .string("number")]),
+                                   "sensitivity": .object(["type": .string("number")]), "width": .object(["type": .string("number")])])])
+        let op = SiblingOperation(app: .jammer, name: "restore", description: "Restore.", params: schema)
+        #expect(op.stray(in: ["kind": .string("denoise"), "track": .string("a"), "strength": .number(0.4)]) == nil)
+        // A setting of another sort: refused for this one, with what this sort has. `track` belongs to no sort and is always allowed.
+        let stray = op.stray(in: ["kind": .string("denoise"), "track": .string("a"), "width": .number(2)])
+        #expect(stray?.name == "width for denoise" && stray?.allowed == ["strength"])
+        #expect(op.stray(in: ["kind": .string("declick"), "sensitivity": .number(0.2), "width": .number(2)]) == nil)
+        // A name the schema doesn't have at all is the ordinary refusal.
+        #expect(op.stray(in: ["kind": .string("denoise"), "amount": .number(1)])?.name == "amount")
+    }
+
+    /// Glimmer's own published table names its chooser.
+    @Test func glimmersOwnTablesNameTheirChooser() {
+        for name in ["add_adjustment", "apply_filter", "add_layer_effect"] {
+            let own = AgentAPI.operations.first { $0["name"] as? String == name }
+            let params = ((own?["params"] as? [String: Any])?["properties"] as? [String: Any])?["params"] as? [String: Any]
+            #expect(params?["x-byTypeKey"] as? String == "type" && params?["x-byType"] != nil, "\(name)")
+        }
     }
 
     /// A plan with a sibling step that carries an unknown name is known to be refused when it is made.

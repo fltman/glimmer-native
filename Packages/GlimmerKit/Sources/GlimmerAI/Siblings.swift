@@ -123,26 +123,39 @@ public struct SiblingOperation: Sendable, Equatable {
         if let name = params.keys.sorted().first(where: { properties[$0] == nil }) {
             return (name, properties.keys.filter { $0 != "rationale" }.sorted())
         }
-        // Settings that depend on a sort (SIBLINGS.md §3): a table under "x-byType" on the property
-        // that carries them, one closed schema per sort. Which sort is chosen is said by the
-        // property named in "x-byTypeKey" when the sibling gives one, else by the property whose
-        // allowed values are the table's sorts, else by "type" or "kind".
-        for (carrier, schema) in properties.sorted(by: { $0.key < $1.key }) {
-            guard let table = schema.object?["x-byType"]?.object, let given = params[carrier]?.object else { continue }
-            let sorts = Set(table.keys)
-            var chooser: String? = schema.object?["x-byTypeKey"]?.string
-            if chooser == nil {
-                for (key, other) in properties where key != carrier {
-                    guard case .array(let values)? = other.object?["enum"] else { continue }
-                    if Set(values.compactMap { $0.string }) == sorts { chooser = key; break }
-                }
+        // Settings that depend on a sort (SIBLINGS.md §3, as settled 2026-11-16): a table "x-byType"
+        // on the schema object whose properties depend on the sort, with the chooser named beside
+        // it in "x-byTypeKey". The table's keys are the chooser's values, each a closed schema.
+        // 1. On the operation's own schema: the sort's properties are top-level, beside the chooser.
+        if let table = schema["x-byType"]?.object, let chooser = schema["x-byTypeKey"]?.string,
+           let sort = params[chooser]?.string, let own = table[sort]?.object?["properties"]?.object {
+            // Every name some sort has; one that belongs to another sort than the chosen one is refused.
+            var dependent: Set<String> = []
+            for other in table.values { dependent.formUnion((other.object?["properties"]?.object ?? [:]).keys) }
+            if let name = params.keys.sorted().first(where: { dependent.contains($0) && own[$0] == nil }) {
+                return ("\(name) for \(sort)", own.keys.sorted())
             }
-            if chooser == nil { chooser = ["type", "kind"].first { properties[$0] != nil } }
-            guard let chooser, let sort = params[chooser]?.string, let nested = table[sort]?.object,
+        }
+        // 2. On a nested settings property: the settings are an object of their own.
+        for (carrier, nestedSchema) in properties.sorted(by: { $0.key < $1.key }) {
+            guard let table = nestedSchema.object?["x-byType"]?.object, let chooser = nestedSchema.object?["x-byTypeKey"]?.string,
+                  let given = params[carrier]?.object, let sort = params[chooser]?.string, let nested = table[sort]?.object,
                   nested["additionalProperties"]?.bool == false, let allowed = nested["properties"]?.object else { continue }
             if let name = given.keys.sorted().first(where: { allowed[$0] == nil }) {
                 return ("\(name) in \(carrier)", allowed.keys.sorted())
             }
+        }
+        return nil
+    }
+
+    /// A table of settings per sort that doesn't name its chooser ("x-byTypeKey"): Glimmer does
+    /// not guess which property chooses, so those settings go unchecked, and the plan says so.
+    /// Returns where the table is ("the step" or the property's name), or nil.
+    public func uncheckedTable(for params: [String: JSONValue]) -> String? {
+        guard let schema = self.params.object else { return nil }
+        if schema["x-byType"] != nil, schema["x-byTypeKey"]?.string == nil { return "the step" }
+        for (carrier, nested) in (schema["properties"]?.object ?? [:]).sorted(by: { $0.key < $1.key }) where params[carrier] != nil {
+            if nested.object?["x-byType"] != nil, nested.object?["x-byTypeKey"]?.string == nil { return carrier }
         }
         return nil
     }

@@ -19,6 +19,10 @@ public enum StepParameters {
         public let allowed: [String]
         public let op: String
 
+        /// What a person would call the thing that was asked: the adjustment's, filter's or effect's
+        /// name for a nested setting ("Exposure"), else the operation's ("Crop"). In English; the app says it in the person's language.
+        public var subject: String = ""
+
         /// "crop has no parameter named widht. It has: x, y, width, height, toSelection, aspect."
         public var message: String {
             let place = inside.map { " in \($0)" } ?? ""
@@ -28,7 +32,10 @@ public enum StepParameters {
     }
 
     /// Said in a plan's step that carries a parameter its operation doesn't have.
-    public static let strayNote = "this step will be refused: its operation has no parameter named"
+    public static let strayNote = "asks for a setting that doesn't exist"
+
+    /// Said in a plan's step in another app whose settings Glimmer could not check beforehand.
+    public static let uncheckedNote = "Glimmer could not check these settings before running: the other app doesn't say which value chooses them, in"
 
     /// The first parameter of the step that its operation doesn't have, or nil. Unknown
     /// operations are someone else's to refuse.
@@ -36,12 +43,14 @@ public enum StepParameters {
         guard let op = AgentPlanner.op(named: step.op) else { return nil }
         let allowed = op.params.map(\.name)
         if let name = step.params.keys.sorted().first(where: { !allowed.contains($0) && $0 != "rationale" }) {
-            return Stray(name: name, inside: nil, allowed: allowed, op: step.op)
+            return Stray(name: name, inside: nil, allowed: allowed, op: step.op, subject: step.op.replacingOccurrences(of: "_", with: " ").capitalized)
         }
         // The nested settings of the three operations that take them by type.
         guard case .object(let nested)? = step.params["params"], let keys = nestedKeys(op: step.op, type: step.string("type")) else { return nil }
         if let name = nested.keys.sorted().first(where: { !keys.contains($0) }) {
-            return Stray(name: name, inside: "params", allowed: keys, op: step.op)
+            let type = step.string("type") ?? ""
+            let subject = AdjustmentKind(rawValue: type)?.title ?? FilterKind(rawValue: type)?.title ?? type
+            return Stray(name: name, inside: "params", allowed: keys, op: step.op, subject: subject)
         }
         return nil
     }

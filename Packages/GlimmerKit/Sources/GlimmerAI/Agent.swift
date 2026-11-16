@@ -128,6 +128,9 @@ public struct AgentPlan: Sendable, Equatable {
     /// What is wrong with steps that carry a parameter their operation doesn't have
     /// (`StepParameters`, and a sibling's closed schema): a plan with one is not run at all.
     public var strayParameters: [String] = []
+    /// The same for a person: what was asked for a setting it doesn't have, and the setting's name (the first such step).
+    public var straySubject: String?
+    public var strayName: String?
 
     public init(steps: [AgentStep], message: String? = nil, droppedOps: [String] = []) {
         self.steps = steps
@@ -706,6 +709,7 @@ public enum AgentPlanner {
         for i in plan.steps.indices {
             guard let stray = StepParameters.stray(in: plan.steps[i]) else { continue }
             plan.strayParameters.append(stray.message)
+            if plan.straySubject == nil { plan.straySubject = stray.subject; plan.strayName = stray.name }
             plan.steps[i].rationale = [plan.steps[i].rationale, "(\(StepParameters.strayNote): \(stray.name))"].compactMap { $0 }.joined(separator: " ")
         }
         // The same for a step in a sibling app, against the list that app gave when the plan was
@@ -714,8 +718,15 @@ public enum AgentPlanner {
             guard let op = siblings.first(where: { $0.toolName == plan.steps[i].op }) else { continue }
             var params = plan.steps[i].params
             params.removeValue(forKey: "rationale"); params.removeValue(forKey: "document")
-            guard let stray = op.stray(in: params) else { continue }
+            guard let stray = op.stray(in: params) else {
+                // Settings per sort that the other app publishes without naming what chooses the sort: not checked, and said.
+                if let place = op.uncheckedTable(for: params) {
+                    plan.steps[i].rationale = [plan.steps[i].rationale, "(\(StepParameters.uncheckedNote) \(place))"].compactMap { $0 }.joined(separator: " ")
+                }
+                continue
+            }
             plan.strayParameters.append(SiblingError.strayParameter(op.toolName, stray.name, stray.allowed).errorDescription ?? "")
+            if plan.straySubject == nil { plan.straySubject = op.app.displayName; plan.strayName = stray.name }
             plan.steps[i].rationale = [plan.steps[i].rationale, "(\(StepParameters.strayNote): \(stray.name))"].compactMap { $0 }.joined(separator: " ")
         }
         checkFigures(&plan, goal: goal, context: context, history: history, siblingContext: siblingContext)

@@ -3888,17 +3888,6 @@
         }
       }
     },
-    "For %@ – ⌘S saves back": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "För %@ – ⌘S sparar tillbaka"
-          }
-        }
-      }
-    },
     "For your agent": {
       "extractionState": "manual",
       "localizations": {
@@ -10876,17 +10865,6 @@
         }
       }
     },
-    "For %@ – can't save back": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "För %@ – kan inte spara tillbaka"
-          }
-        }
-      }
-    },
     "%@ is no longer where it was, so Glimmer can't save it back to %@.": {
       "extractionState": "manual",
       "localizations": {
@@ -12317,17 +12295,6 @@
         }
       }
     },
-    "Developing": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Framkallar"
-          }
-        }
-      }
-    },
     "Developing the first picture": {
       "extractionState": "manual",
       "localizations": {
@@ -12625,13 +12592,24 @@
         }
       }
     },
-    "This plan can't run: %@ Nothing was changed. Ask again, perhaps in other words.": {
+    "The plan asks %@ for a setting it doesn't have (%@), so it can't run. Nothing was changed. Ask again, perhaps in other words.": {
       "extractionState": "manual",
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Den här planen kan inte köras: %@ Ingenting ändrades. Fråga igen, kanske med andra ord."
+            "value": "Planen ber %1$@ om en inställning som inte finns (%2$@), så den kan inte köras. Ingenting ändrades. Fråga igen, kanske med andra ord."
+          }
+        }
+      }
+    },
+    "Exact words": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exakt ordalydelse"
           }
         }
       }

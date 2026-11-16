@@ -173,6 +173,13 @@ private struct AssistantView: View {
                         .font(.callout)
                         .textSelection(.enabled)
                     if let plan = message.plan { PlanView(ai: ai, messageID: message.id, plan: plan) }
+                    if let exact = message.exactWords {
+                        DisclosureGroup("Exact words") {
+                            Text(verbatim: exact).font(.caption.monospaced()).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .font(.caption)
+                    }
                     if message.pendingCommand != nil {
                         HStack {
                             Spacer()
