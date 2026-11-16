@@ -431,7 +431,7 @@ final class EditorSession {
     }
 
     func report(_ error: Error) {
-        errorMessage = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+        errorMessage = PersonMessage.text(for: error)
     }
 
     // MARK: Live edits (sliders, colour wells)

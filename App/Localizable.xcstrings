@@ -12624,6 +12624,292 @@
           }
         }
       }
+    },
+    "This Photoshop file nests its settings deeper than Glimmer reads.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen har inställningar i fler nivåer än Glimmer läser."
+          }
+        }
+      }
+    },
+    "This Photoshop file's settings are damaged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inställningarna i den här Photoshop-filen är skadade."
+          }
+        }
+      }
+    },
+    "This Photoshop file is cut short or damaged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen är avklippt eller skadad."
+          }
+        }
+      }
+    },
+    "This Photoshop file has settings in a form Glimmer doesn't read.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen har inställningar i en form som Glimmer inte läser."
+          }
+        }
+      }
+    },
+    "This isn't a Photoshop file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här är ingen Photoshop-fil."
+          }
+        }
+      }
+    },
+    "This Photoshop file has a colour mode Glimmer doesn't know.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen har ett färgläge som Glimmer inte känner till."
+          }
+        }
+      }
+    },
+    "This Photoshop file's header is damaged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Huvudet i den här Photoshop-filen är skadat."
+          }
+        }
+      }
+    },
+    "This Photoshop file takes too long to read, so Glimmer gave up on it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen tar för lång tid att läsa, så Glimmer gav upp."
+          }
+        }
+      }
+    },
+    "A layer in this Photoshop file is larger than Glimmer can read.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ett lager i den här Photoshop-filen är större än Glimmer kan läsa."
+          }
+        }
+      }
+    },
+    "A layer in this Photoshop file has a damaged rectangle.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ett lager i den här Photoshop-filen har en skadad rektangel."
+          }
+        }
+      }
+    },
+    "A layer in this Photoshop file has too many channels.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ett lager i den här Photoshop-filen har för många kanaler."
+          }
+        }
+      }
+    },
+    "A layer in this Photoshop file is damaged.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ett lager i den här Photoshop-filen är skadat."
+          }
+        }
+      }
+    },
+    "A layer in this Photoshop file is compressed in a way Glimmer doesn't know.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ett lager i den här Photoshop-filen är komprimerat på ett sätt som Glimmer inte känner till."
+          }
+        }
+      }
+    },
+    "The image is too large for this Mac.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilden är för stor för den här datorn."
+          }
+        }
+      }
+    },
+    "This Photoshop file nests its groups deeper than Glimmer reads.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen har grupper i fler nivåer än Glimmer läser."
+          }
+        }
+      }
+    },
+    "Glimmer doesn't write the large document format yet.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer skriver inte formatet för stora dokument ännu."
+          }
+        }
+      }
+    },
+    "Glimmer writes Photoshop files in RGB or grayscale with 8 or 16 bits per channel.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer skriver Photoshop-filer i RGB eller gråskala med 8 eller 16 bitar per kanal."
+          }
+        }
+      }
+    },
+    "The flattened picture doesn't fit the document.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den sammanslagna bilden passar inte dokumentet."
+          }
+        }
+      }
+    },
+    "A Photoshop file from Glimmer can hold at most 8,000 layers.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En Photoshop-fil från Glimmer rymmer högst 8 000 lager."
+          }
+        }
+      }
+    },
+    "Glimmer writes Photoshop files with 8 or 16 bits per channel.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer skriver Photoshop-filer med 8 eller 16 bitar per kanal."
+          }
+        }
+      }
+    },
+    "This document nests its groups deeper than a Photoshop file from Glimmer can hold.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här dokumentet har grupper i fler nivåer än en Photoshop-fil från Glimmer rymmer."
+          }
+        }
+      }
+    },
+    "Glimmer couldn't read its own picture of the document.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer kunde inte läsa sin egen bild av dokumentet."
+          }
+        }
+      }
+    },
+    "macOS gives no picture for this RAW file. Which cameras and recording modes work is decided by macOS; another recording mode of the same camera may work.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS ger ingen bild för den här RAW-filen. Vilka kameror och inspelningslägen som fungerar avgörs av macOS; ett annat inspelningsläge på samma kamera kan fungera."
+          }
+        }
+      }
+    },
+    "macOS couldn't develop this RAW file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS kunde inte framkalla den här RAW-filen."
+          }
+        }
+      }
+    },
+    "This layer has no RAW file to develop.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här lagret har ingen RAW-fil att framkalla."
+          }
+        }
+      }
+    },
+    "This Photoshop file has nothing in it that Glimmer can show.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen innehåller inget som Glimmer kan visa."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

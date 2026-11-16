@@ -121,7 +121,7 @@ final class DocumentOpener {
             let type = UTType(filenameExtension: url.pathExtension)
             if url.pathExtension.lowercased() == "glimmer" || type?.conforms(to: .glimmerDocument) == true {
                 NSDocumentController.shared.openDocument(withContentsOf: url, display: true) { _, _, error in
-                    if let error { NSApp.presentError(error) }
+                    if let error { NSApp.presentError(PersonMessage.presentable(error)) }
                 }
             } else if url.pathExtension.lowercased() == "aips" {
                 openAips(url)
@@ -383,7 +383,7 @@ final class DocumentOpener {
                         self?.openImage(url, asPlainPicture: true)
                     } else {
                         openLog.error("couldn't develop \(url.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                        NSApp.presentError(error)
+                        NSApp.presentError(PersonMessage.presentable(error))
                     }
                 }
                 return
@@ -410,7 +410,7 @@ final class DocumentOpener {
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
         } catch {
             openLog.error("couldn't open \(url.lastPathComponent, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            NSApp.presentError(error)
+            NSApp.presentError(PersonMessage.presentable(error))
         }
     }
 
@@ -422,7 +422,7 @@ final class DocumentOpener {
             createDocument(try AipsImporter.importProject(Data(contentsOf: url)))
             NSDocumentController.shared.noteNewRecentDocumentURL(url)
         } catch {
-            NSApp.presentError(error)
+            NSApp.presentError(PersonMessage.presentable(error))
         }
     }
 

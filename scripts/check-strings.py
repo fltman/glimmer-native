@@ -52,6 +52,14 @@ for path in sorted(glob.glob(os.path.join(root, "App/*.swift"))):
         hits = [k for k in keys if re.match(pattern, k)]
         if not any("sv" in (catalog[k].get("localizations") or {}) or catalog[k].get("shouldTranslate") is False for k in hits):
             missing.append(f"{name}: {literal[:100]}")
+# The package's refusals about Photoshop and RAW files reach a person through the catalogue
+# (App/PersonMessage.swift): each one without a figure or a name in it needs Swedish there.
+for path in sorted(glob.glob(os.path.join(root, "Packages/GlimmerKit/Sources/GlimmerRender/Raw*.swift")) + glob.glob(os.path.join(root, "Packages/GlimmerKit/Sources/GlimmerCore/PSD/*.swift"))
+                   + glob.glob(os.path.join(root, "Packages/GlimmerKit/Sources/GlimmerRender/PSD*.swift"))):
+    for match in re.finditer(r'Problem\((?:message: )?"((?:[^"\\]|\\.)*)"', open(path).read()):
+        text = match.group(1)
+        if "\\(" in text: continue
+        if "sv" not in (catalog.get(text, {}).get("localizations") or {}): missing.append(f"{os.path.basename(path)} (a refusal shown to a person): {text[:90]}")
 numbered = [k for k in keys if re.search(r"%\d+\$", k)]
 for k in numbered: missing.append(f"catalogue key with a numbered placeholder (never found at run time): {k[:90]}")
 for line in sorted(set(missing)): print("✘", line)

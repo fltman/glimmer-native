@@ -100,7 +100,7 @@ struct PSDExportSheet: View {
         do {
             prepared = try await Task.detached(priority: .userInitiated) { try PSDExport.data(for: state, depth: depth, flattened: flattened, context: metal) }.value
         } catch {
-            problem = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            problem = PersonMessage.text(for: error)
         }
     }
 

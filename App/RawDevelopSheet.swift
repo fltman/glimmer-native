@@ -100,7 +100,7 @@ final class RawDevelopModel {
             case .success(let made):
                 picture = made.image; shown = made.settings; lastDraftSeconds = made.seconds; problem = nil
             case .failure(let error):
-                problem = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                problem = PersonMessage.text(for: error)
             }
         }
         // Started when the sheet opens, before any control is touched: the first render is the slow one.
@@ -320,7 +320,7 @@ struct RawDevelopSheet: View {
                 guard model.developRun == run else { return }
                 model.developRun = nil
                 model.isDeveloping = false
-                model.problem = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                model.problem = PersonMessage.text(for: error)
             }
         }
     }
