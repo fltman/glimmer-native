@@ -61,6 +61,14 @@ public enum GlimmerPackage {
                                 effects: layer.effects.hasEnabled || layer.effects != LayerEffects() ? layer.effects : nil)
             r.vectorMask = layer.vectorMask
             r.formerText = layer.formerText
+            if let raw = layer.raw, raw.data.count <= RawSource.maxBytes {
+                var changed = false
+                if case .raster(let grid) = layer.content { changed = raw.developedSignature != grid.contentSignature }
+                r.raw = .init(fileName: raw.fileName, settings: raw.settings, byteCount: raw.data.count, pixelsChanged: changed ? true : nil)
+                let file = FileWrapper(regularFileWithContents: raw.data)
+                file.preferredFilename = "\(id).raw"
+                tileFiles["\(id).raw"] = file
+            }
             if let mask = layer.mask {
                 r.mask = .init(defaultValue: mask.defaultValue, enabled: mask.isEnabled,
                                density: mask.density, feather: mask.feather)
@@ -171,6 +179,12 @@ public enum GlimmerPackage {
                              blendMode: r.blendMode, mask: mask, vectorMask: r.vectorMask, isClipped: r.clipped ?? false,
                              effects: r.effects ?? LayerEffects(), content: content)
             made.formerText = r.formerText.map { String($0.prefix(10_000)) }
+            // The RAW file is kept only when it is there whole: the layer's pixels stand without it.
+            if let raw = r.raw, case .raster(let grid) = content, let bytes = files["\(id).raw"]?.regularFileContents,
+               bytes.count == raw.byteCount, bytes.count <= RawSource.maxBytes {
+                made.raw = RawSource(data: bytes, fileName: String(raw.fileName.prefix(255)), settings: raw.settings,
+                                     developedSignature: raw.pixelsChanged == true ? nil : grid.contentSignature)
+            }
             return made
         }
 

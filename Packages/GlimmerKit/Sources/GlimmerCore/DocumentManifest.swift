@@ -62,6 +62,16 @@ public struct LayerRecord: Codable, Sendable {
     public var text: TextLayer?
     /// See `Layer.formerText`.
     public var formerText: String?
+    /// A layer developed from a RAW file: its settings, name and the signature of the developed
+    /// pixels. The file's bytes are in the package as `<id>.raw`.
+    public struct RawRecord: Codable, Sendable {
+        public var fileName: String
+        public var settings: RawSettings
+        public var byteCount: Int
+        /// True when the layer's pixels were changed after they were developed (painted on, say).
+        public var pixelsChanged: Bool?
+    }
+    public var raw: RawRecord?
     public var expanded: Bool?
     /// Groups only, bottom → top.
     public var children: [LayerRecord]?

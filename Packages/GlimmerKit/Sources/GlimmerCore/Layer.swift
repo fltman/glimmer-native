@@ -132,6 +132,9 @@ public struct Layer: Identifiable, Sendable {
     /// The words this layer held when it was a text layer in another program's file and came
     /// in as pixels (saved): what it says stays findable though it can't be edited as text.
     public var formerText: String?
+    /// A layer developed from a RAW file keeps the file and its settings (saved), so it can
+    /// be developed again. Its content is the developed picture, as ordinary pixels.
+    public var raw: RawSource?
     /// Clips to the nearest non-clipped sibling below.
     public var isClipped: Bool
     public var effects: LayerEffects

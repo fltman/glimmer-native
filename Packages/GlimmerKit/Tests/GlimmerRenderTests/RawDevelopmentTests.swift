@@ -165,3 +165,70 @@ enum DNGTestWriter {
         #expect(RawDevelopment.cameras.count > 100)
     }
 }
+
+/// A layer that keeps its RAW file: made, saved, read back and developed again.
+@Suite struct RawLayerTests {
+    @Test func aRawLayerKeepsItsFileThroughSavingAndCanBeDevelopedAgain() throws {
+        let data = DNGTestWriter.ramp
+        let (layer, width, height) = try RawLayer.make(from: data, fileName: "ramp.dng")
+        #expect(width == 640 && height == 480 && layer.name == "ramp" && layer.raw?.data == data && layer.raw?.settings.process != nil)
+        #expect(RawLayer.pixelsAreAsDeveloped(layer))
+        var state = DocumentState(width: width, height: height)
+        state.layers = [layer]
+        let before = try ImageExporter.flattenedSRGB(state, context: try context())
+        // Saved and read back: the file's bytes, its name and its settings are there, and the picture is the same.
+        let read = try GlimmerPackage.state(from: GlimmerPackage.fileWrapper(for: state))
+        let back = try #require(read.layers.first)
+        #expect(back.raw?.data == data && back.raw?.fileName == "ramp.dng" && back.raw?.settings == layer.raw?.settings && RawLayer.pixelsAreAsDeveloped(back))
+        let after = try ImageExporter.flattenedSRGB(read, context: try context())
+        #expect(RawDevelopmentTests.colour(before, x: 300, y: 100) == RawDevelopmentTests.colour(after, x: 300, y: 100))
+        // Developed again, brighter: new pixels, the same file, and the layer's own settings stay.
+        var masked = back
+        masked.opacity = 0.5; masked.blendMode = .multiply; masked.mask = LayerMask(defaultValue: 0.5)
+        var brighter = try #require(masked.raw?.settings)
+        brighter.exposure = 1
+        let again = try RawLayer.developed(masked, with: brighter)
+        #expect(again.raw?.data == data && again.raw?.settings.exposure == 1 && again.raw?.settings.process == layer.raw?.settings.process)
+        #expect(again.opacity == 0.5 && again.blendMode == .multiply && again.mask?.defaultValue == 0.5 && again.id == masked.id)
+        var bright = read
+        var plain = again; plain.opacity = 1; plain.blendMode = .normal; plain.mask = nil
+        bright.layers = [plain]
+        let brightPicture = try ImageExporter.flattenedSRGB(bright, context: try context())
+        #expect(RawDevelopmentTests.colour(brightPicture, x: 300, y: 100).g > RawDevelopmentTests.colour(after, x: 300, y: 100).g + 15)
+    }
+
+    @Test func pixelsChangedAfterDevelopingAreNoticedAlsoAfterSaving() throws {
+        let (layer, width, height) = try RawLayer.make(from: DNGTestWriter.ramp, fileName: "ramp.dng")
+        var painted = layer
+        painted.content = .raster(TileGrid.solid(SIMD4(1, 0, 0, 1), covering: PixelRect(x: 0, y: 0, width: 256, height: 256)))
+        #expect(!RawLayer.pixelsAreAsDeveloped(painted))
+        var state = DocumentState(width: width, height: height)
+        state.layers = [painted]
+        let back = try #require(try GlimmerPackage.state(from: GlimmerPackage.fileWrapper(for: state)).layers.first)
+        #expect(back.raw != nil && !RawLayer.pixelsAreAsDeveloped(back))
+        // A layer without a RAW file can't be developed, and says so.
+        #expect(throws: RawDevelopment.Problem.self) { _ = try RawLayer.developed(Layer(name: "Plain", content: .raster(TileGrid())), with: RawSettings()) }
+    }
+
+    @Test func aPackageWithoutItsRawFileStillOpensWithThePixels() throws {
+        let (layer, width, height) = try RawLayer.make(from: DNGTestWriter.ramp, fileName: "ramp.dng")
+        var state = DocumentState(width: width, height: height)
+        state.layers = [layer]
+        let wrapper = try GlimmerPackage.fileWrapper(for: state)
+        // The RAW file goes missing from the package, or is cut short: the layer opens as pixels, without it.
+        let layers = try #require(wrapper.fileWrappers?["layers"])
+        let name = "\(layer.id.uuidString).raw"
+        let file = try #require(layers.fileWrappers?[name])
+        layers.removeFileWrapper(file)
+        let without = try #require(try GlimmerPackage.state(from: wrapper).layers.first)
+        #expect(without.raw == nil && !without.content.isEmptyRaster)
+        let cut = FileWrapper(regularFileWithContents: Data(count: 100))
+        cut.preferredFilename = name
+        layers.addFileWrapper(cut)
+        #expect(try GlimmerPackage.state(from: wrapper).layers.first?.raw == nil)
+    }
+}
+
+private extension LayerContent {
+    var isEmptyRaster: Bool { if case .raster(let grid) = self { grid.isEmpty } else { true } }
+}

@@ -4,29 +4,6 @@ import CoreImage
 import Foundation
 import GlimmerCore
 
-/// How a RAW file is developed. Saved with the layer, so the same file gives the same picture
-/// again. Values left nil are the decoder's own for that file.
-public struct RawSettings: Codable, Hashable, Sendable {
-    /// In stops, added to the file's own exposure.
-    public var exposure: Double = 0
-    /// White balance in kelvin and tint; nil is as the camera shot it.
-    public var temperature: Double?
-    public var tint: Double?
-    /// 0…2; 1 leaves the shadows as they are, more lifts them.
-    public var shadows: Double = 1
-    public var contrast: Double?
-    public var highlightRecovery = true
-    public var luminanceNoise: Double?
-    public var colorNoise: Double?
-    public var sharpness: Double?
-    public var lensCorrection: Bool?
-    /// The decoder version the picture was developed with ("9", "9.dng" …). Kept, so that a
-    /// newer system doesn't change an old document's look; nil until the first development.
-    public var process: String?
-
-    public init() {}
-}
-
 /// What a RAW file's decoder says about it, before anything is developed.
 public struct RawInfo: Sendable, Equatable {
     public var width: Int, height: Int
