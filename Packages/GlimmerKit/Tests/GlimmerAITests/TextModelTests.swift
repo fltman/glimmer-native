@@ -145,3 +145,86 @@ final class ScriptedTextModel: TextModel, @unchecked Sendable {
         }
     }
 }
+
+import NetworkGuard
+
+/// The guard itself (Tests/Support/NetworkGuard).
+@Suite struct NetworkGuardTests {
+    @Test func itIsLoadedBeforeAnyTestAndFirstInLineEverywhere() {
+        #expect(URLSessionConfiguration.default.protocolClasses?.first == NetworkGuard.self)
+        #expect(URLSessionConfiguration.ephemeral.protocolClasses?.first == NetworkGuard.self)
+    }
+
+    @Test func itRefusesPublicHostsAndLeavesThisMacAlone() {
+        guard !NetworkGuard.allowsPublicHosts else { return }
+        #expect(NetworkGuard.canInit(with: URLRequest(url: URL(string: "https://api.berget.ai/v1/models")!)))
+        #expect(NetworkGuard.canInit(with: URLRequest(url: URL(string: "http://192.168.1.10:11434/api/tags")!)))
+        #expect(!NetworkGuard.canInit(with: URLRequest(url: URL(string: "http://127.0.0.1:11434/api/tags")!)))
+        #expect(!NetworkGuard.canInit(with: URLRequest(url: URL(string: "http://localhost:9001/glimmer")!)))
+        #expect(!NetworkGuard.canInit(with: URLRequest(url: URL(fileURLWithPath: "/tmp/x"))))
+    }
+
+    /// The fakes are the only sessions the tests build: a session with its own protocol
+    /// classes goes around the guard, so each one must answer everything itself.
+    @Test func onlyTheFakesBuildSessionsOfTheirOwn() throws {
+        let tests = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        var found: [String] = []
+        for case let file as URL in FileManager.default.enumerator(at: tests, includingPropertiesForKeys: nil)! where file.pathExtension == "swift" {
+            guard !file.path.contains("/Support/"), file.lastPathComponent != "TextModelTests.swift" else { continue }
+            let source = try String(contentsOf: file, encoding: .utf8)
+            for (i, line) in source.split(separator: "\n", omittingEmptySubsequences: false).enumerated() where line.contains("URLSession(") {
+                found.append("\(file.lastPathComponent):\(i + 1)")
+            }
+        }
+        #expect(found.sorted() == ["ProviderTests.swift:20", "SiblingTests.swift:88"], "\(found)")
+    }
+}
+
+/// A key never follows an address that came in a service's answer.
+@Suite struct KeyStaysHomeTests {
+    @Test func aRedirectToAnotherHostIsNotFollowed() async {
+        let delegate = KeyStaysHome.shared
+        var original = URLRequest(url: URL(string: "https://api.hedra.com/v3/jobs/j1")!)
+        original.setValue("Key secret", forHTTPHeaderField: "Authorization")
+        let task = FakeProvider.session.dataTask(with: original)   // never resumed
+        let response = HTTPURLResponse(url: original.url!, statusCode: 302, httpVersion: nil, headerFields: nil)!
+        func follows(_ to: String) async -> Bool {
+            await delegate.urlSession(FakeProvider.session, task: task, willPerformHTTPRedirection: response, newRequest: URLRequest(url: URL(string: to)!)) != nil
+        }
+        #expect(await follows("https://api.hedra.com/v3/jobs/j1/"))
+        #expect(await !follows("https://evil.example/collect"))
+        #expect(await !follows("http://api.hedra.com/v3/jobs/j1"))        // not down to plain http
+        #expect(await !follows("https://api.hedra.com.evil.example/x"))
+    }
+
+    @Test func linksAndIdentifiersFromAnAnswerAreNarrow() {
+        #expect(KeyStaysHome.fetchable("https://outputs.hedra.example/signed?x=1") != nil)
+        #expect(KeyStaysHome.fetchable("http://outputs.hedra.example/x") == nil && KeyStaysHome.fetchable("file:///etc/passwd") == nil && KeyStaysHome.fetchable(nil) == nil)
+        #expect(KeyStaysHome.pathSafe("job_1-A9") == "job_1-A9")
+        #expect(KeyStaysHome.pathSafe("../../files") == nil && KeyStaysHome.pathSafe("a/b") == nil && KeyStaysHome.pathSafe("j?x=1") == nil && KeyStaysHome.pathSafe("") == nil)
+    }
+
+    /// Every call that sends a key goes through the delegate: no plain `session.data(for: request)` in the adapters.
+    @Test func everyKeyedCallRefusesForeignRedirects() throws {
+        let sources = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().appending(path: "Sources/GlimmerAI")
+        for name in ["AnthropicTextModel.swift", "ImageProviders.swift", "ResponsesTextModel.swift", "Providers.swift", "OpenRouterClient.swift"] {
+            let source = try String(contentsOf: sources.appending(path: name), encoding: .utf8)
+            #expect(!source.contains("session.data(for: request)") && !source.contains("session.bytes(for: request)"), "\(name)")
+            #expect(source.contains("delegate: KeyStaysHome.shared"), "\(name)")
+        }
+    }
+}
+
+/// With the fake provider, so in the serialized suite that owns it.
+extension ChatAdapterTests {
+    @Test func hedraRefusesAJobIdThatWouldChangeThePathAndALinkThatIsNotHttps() async throws {
+        let model = HedraImageModel(key: "k", model: "m", session: FakeProvider.session, pollInterval: .milliseconds(5))
+        FakeProvider.script([(202, #"{"job_id":"../files"}"#)])
+        await #expect(throws: (any Error).self) { _ = try await model.generate(prompt: "p", images: [], seed: nil) }
+        #expect(FakeProvider.requests.count == 1)   // nothing was asked with that id
+        FakeProvider.script([(202, #"{"job_id":"job_3"}"#), (200, #"{"status":"COMPLETED"}"#),
+                             (200, #"{"outputs":[{"status":"COMPLETED","url":"http://127.0.0.1:9001/api/v1/status"}]}"#)])
+        await #expect(throws: (any Error).self) { _ = try await model.generate(prompt: "p", images: [], seed: nil) }
+        #expect(FakeProvider.requests.count == 3)   // the link was not fetched
+    }
+}

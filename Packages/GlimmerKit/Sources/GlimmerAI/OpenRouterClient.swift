@@ -359,7 +359,7 @@ public actor OpenRouterClient {
         let request = try request(path: "chat/completions", method: "POST", body: JSONSerialization.data(withJSONObject: body))
         var accumulator = StreamAccumulator()
         do {
-            let (bytes, response) = try await session.bytes(for: request)
+            let (bytes, response) = try await session.bytes(for: request, delegate: KeyStaysHome.shared)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
                 throw OpenRouterError.unavailable(status: (response as? HTTPURLResponse)?.statusCode ?? 0)
             }
@@ -489,7 +489,7 @@ public actor OpenRouterClient {
         let data: Data
         let response: URLResponse
         do {
-            (data, response) = try await session.data(for: request)
+            (data, response) = try await session.data(for: request, delegate: KeyStaysHome.shared)
         } catch {
             throw OpenRouterError.network(error.localizedDescription)
         }

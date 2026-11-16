@@ -6,7 +6,8 @@
 # (scripts/axread.swift), and the app must still be running. Empty panels proved too little:
 # on 2026-11-16 a message in the Assistant crashed the app for anyone using VoiceOver.
 #
-#   scripts/test-accessibility.sh
+#   scripts/test-accessibility.sh                          (no network: the offline copy)
+#   GLIMMER_NETWORK_TESTS=1 scripts/test-accessibility.sh  (also Settings › AI with Berget's public model list)
 #
 # Runs the Debug copy through scripts/test-app.sh (GUI lock, supervisor, no key). The states
 # come from the debug build's fixtures (App/DebugFixtures.swift). Exit 0 = all passed.
@@ -14,8 +15,15 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 if [[ -z "${GLIMMER_PORT:-}" ]]; then
   xcrun swiftc -O -o build/axread scripts/axread.swift 2>/dev/null || { echo "Couldn't build scripts/axread.swift"; exit 1; }
-  # Berget's model list is public: Settings › AI is read with a list loaded, without a key.
-  GLIMMER_ARGS="-ai.textProvider berget -ai.textModel.berget glimmer-test/not-a-model ${GLIMMER_ARGS:-}" exec scripts/test-app.sh "$0"
+  ARGS="-ai.textProvider berget -ai.textModel.berget glimmer-test/not-a-model ${GLIMMER_ARGS:-}"
+  if [[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]]; then
+    # NETWORK TEST, on purpose: Settings › AI is read with Berget's public model list loaded (no key).
+    GLIMMER_ARGS="$ARGS" exec scripts/test-app.sh "$0"
+  fi
+  # The default: a copy that macOS lets make no connection at all (scripts/offline-copy.sh),
+  # so nothing here can reach beyond this Mac.
+  COPY=$(scripts/offline-copy.sh | tail -1) || exit 1
+  GLIMMER_ARGS="$ARGS" GLIMMER_TEST_APP="$COPY" exec scripts/test-app.sh "$0"
 fi
 TOOLS="${THE_APPS_TOOLS:-}"
 for candidate in "$PWD/../the-apps/tools" "$HOME/Projekt/the-apps/tools"; do [[ -z "$TOOLS" && -x "$candidate/axaudit/axaudit" ]] && TOOLS="$candidate"; done
@@ -85,6 +93,7 @@ front; press 53
 front; "$MENU" --pid $GLIMMER_PID "Glimmer" "Settings…" >/dev/null 2>&1; sleep 1.5
 osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to click (first button of toolbar 1 of window 1 whose description is \"AI\" or title is \"AI\")" >/dev/null 2>&1
 sleep 5
+if [[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]]; then
 # The chosen model is one Berget doesn't have, so "(no longer listed)" shows only once the
 # service's list has loaded (it needs the network; Berget's list is public, no key).
 read_state "Settings › AI with Berget's model list loaded" "glimmer-test/not-a-model (no longer listed)"
@@ -95,6 +104,11 @@ listed=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>/dev/null | 
 kill -0 $GLIMMER_PID 2>/dev/null || { bad "the app is gone after the Model menu was read"; exit 1; }
 if (( listed > 0 )); then ok "the Model menu's names were read ($listed model ids from Berget's list)"; else bad "no model name was read from the open Model menu"; fi
 press 53
+else
+read_state "Settings › AI with Berget chosen (no network: the model list is not loaded)" "Berget"
+echo "– the model list from the service is a network test: GLIMMER_NETWORK_TESTS=1 scripts/test-accessibility.sh"
+fi
 
 echo
-if (( fails == 0 )); then echo "All accessibility checks passed."; else echo "$fails accessibility check(s) failed."; exit 1; fi
+MODE=$([[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]] && echo "NETWORK TEST (Berget's public model list was fetched)" || echo "no network (a copy that can make no connection)")
+if (( fails == 0 )); then echo "All accessibility checks passed. Run: $MODE."; else echo "$fails accessibility check(s) failed."; exit 1; fi

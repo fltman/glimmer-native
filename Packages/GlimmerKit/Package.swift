@@ -44,11 +44,16 @@ let package = Package(
         // times slower unoptimised, and the test copies of the app are debug builds.
         .target(name: "GlimmerHeal", swiftSettings: healSettings + [.unsafeFlags(["-O"], .when(configuration: .debug))]),
 
-        .testTarget(name: "GlimmerCoreTests", dependencies: ["GlimmerCore"]),
-        .testTarget(name: "GlimmerRenderTests", dependencies: ["GlimmerRender"]),
-        .testTarget(name: "GlimmerAITests", dependencies: ["GlimmerAI"]),
-        .testTarget(name: "GlimmerToolsTests", dependencies: ["GlimmerTools"]),
-        .testTarget(name: "GlimmerHealTests", dependencies: ["GlimmerHeal"], swiftSettings: healSettings),
+        // For the tests only: refuses, and fails the run on, any request to a host other than this
+        // Mac that a test has not replaced. The C part loads it before any test runs.
+        .target(name: "NetworkGuardLoader", path: "Tests/Support/NetworkGuardLoader"),
+        .target(name: "NetworkGuard", dependencies: ["NetworkGuardLoader"], path: "Tests/Support/NetworkGuard"),
+
+        .testTarget(name: "GlimmerCoreTests", dependencies: ["GlimmerCore", "NetworkGuard"]),
+        .testTarget(name: "GlimmerRenderTests", dependencies: ["GlimmerRender", "NetworkGuard"]),
+        .testTarget(name: "GlimmerAITests", dependencies: ["GlimmerAI", "NetworkGuard"]),
+        .testTarget(name: "GlimmerToolsTests", dependencies: ["GlimmerTools", "NetworkGuard"]),
+        .testTarget(name: "GlimmerHealTests", dependencies: ["GlimmerHeal", "NetworkGuard"], swiftSettings: healSettings),
     ],
     swiftLanguageModes: [.v6]
 )

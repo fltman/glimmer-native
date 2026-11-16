@@ -90,7 +90,7 @@ public struct ResponsesTextModel: TextModel {
         request.timeoutInterval = 240
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let data: Data, response: URLResponse
-        do { (data, response) = try await session.data(for: request) } catch {
+        do { (data, response) = try await session.data(for: request, delegate: KeyStaysHome.shared) } catch {
             throw OpenRouterError.network(error.localizedDescription)
         }
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {

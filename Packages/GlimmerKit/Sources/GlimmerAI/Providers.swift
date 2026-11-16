@@ -359,7 +359,7 @@ public enum ModelCatalog {
             }
         }
         let data: Data, response: URLResponse
-        do { (data, response) = try await session.data(for: request) } catch {
+        do { (data, response) = try await session.data(for: request, delegate: KeyStaysHome.shared) } catch {
             throw ListError(provider: provider.name, reason: error.localizedDescription)
         }
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {

@@ -12,7 +12,7 @@ enum ImageHTTP {
     /// Sends `request` and returns the body of a 2xx answer; anything else is the service's own words.
     static func send(_ request: URLRequest, provider: String, session: URLSession) async throws -> Data {
         let data: Data, response: URLResponse
-        do { (data, response) = try await session.data(for: request) } catch {
+        do { (data, response) = try await session.data(for: request, delegate: KeyStaysHome.shared) } catch {
             throw OpenRouterError.network(error.localizedDescription)
         }
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
@@ -163,7 +163,8 @@ public struct HedraImageModel: ImageModel {
         }
         let submit = try ImageHTTP.post(baseURL.appending(path: "models/\(model)"), headers: headers, body: ["input": input])
         let ack = try ImageHTTP.json(try await ImageHTTP.send(submit, provider: "Hedra", session: session), provider: "Hedra")
-        guard let job = ack["job_id"] as? String else {
+        // The job's id goes into the path of requests that carry the key: only a plain identifier is accepted.
+        guard let job = KeyStaysHome.pathSafe(ack["job_id"] as? String) else {
             throw ProviderHTTPError(provider: "Hedra", status: 202, message: "Hedra didn't return a job to wait for.")
         }
         let start = ContinuousClock.now
@@ -183,7 +184,7 @@ public struct HedraImageModel: ImageModel {
         for (name, value) in headers { get.setValue(value, forHTTPHeaderField: name) }
         let result = try ImageHTTP.json(try await ImageHTTP.send(get, provider: "Hedra", session: session), provider: "Hedra")
         guard let output = (result["outputs"] as? [[String: Any]])?.first, output["status"] as? String == "COMPLETED",
-              let link = (output["url"] as? String).flatMap(URL.init) else {
+              let link = KeyStaysHome.fetchable(output["url"] as? String) else {
             return try ImageHTTP.result(nil, provider: "Hedra")
         }
         // The signed URL carries its own authorisation: no key is sent with it, and it is not written anywhere.
