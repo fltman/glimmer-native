@@ -11568,6 +11568,17 @@
           }
         }
       }
+    },
+    "Was being edited for %@. %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigerades åt %@. %@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

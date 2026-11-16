@@ -17,6 +17,9 @@ else
   echo "✘ package tests failed (build/test.log)"; exit 1
 fi
 
+echo "▸ Texts with Swedish"
+scripts/check-strings.py
+
 echo "▸ Generating Xcode project"
 xcodegen generate --quiet
 
