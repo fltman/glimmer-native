@@ -125,12 +125,19 @@ final class ScriptedTextModel: TextModel, @unchecked Sendable {
             let lines = try String(contentsOf: file, encoding: .utf8).components(separatedBy: "\n")
             for (i, line) in lines.enumerated() where line.contains(".textSelection(.enabled)") {
                 // The modifiers chained on the same view: the lines before and after that start with a dot.
+                // A chain goes on through comment lines and blank lines (the splash's label sat under a comment).
+                func continues(_ line: String) -> Bool {
+                    let t = line.trimmingCharacters(in: .whitespaces)
+                    return t.hasPrefix(".") || t.hasPrefix("//") || t.isEmpty
+                }
                 var chain: [String] = []
                 var j = i - 1
-                while j >= 0, lines[j].trimmingCharacters(in: .whitespaces).hasPrefix(".") { chain.append(lines[j]); j -= 1 }
+                while j >= 0, continues(lines[j]) { chain.append(lines[j]); j -= 1 }
                 j = i + 1
-                while j < lines.count, lines[j].trimmingCharacters(in: .whitespaces).hasPrefix(".") { chain.append(lines[j]); j += 1 }
-                #expect(!chain.contains { $0.contains(".accessibilityLabel(") }, "\(file.lastPathComponent):\(i + 1): selectable text with an accessibility label of its own")
+                while j < lines.count, continues(lines[j]) { chain.append(lines[j]); j += 1 }
+                let code = chain.filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+                #expect(!code.contains { $0.contains(".accessibilityLabel(") || $0.contains(".accessibilityValue(") },
+                        "\(file.lastPathComponent):\(i + 1): selectable text with an accessibility label or value of its own")
             }
         }
     }

@@ -210,6 +210,18 @@ final class AIController {
         if jobs.count > 30 { jobs.removeLast() }
     }
 
+    #if DEBUG
+    /// For `showFixture("jobs")`: a job list with every state in it.
+    func showFixtureJobs() {
+        var running = Job(title: "Heal Selection"), failed = Job(title: "Generate"), done = Job(title: "Remove Background"), cancelled = Job(title: "Upscale")
+        running.status = .running
+        failed.status = .failed("OpenRouter rejected the API key.")
+        done.status = .done; done.cost = 0.134
+        cancelled.status = .cancelled
+        jobs = [running, failed, done, cancelled]
+    }
+    #endif
+
     private func finish(_ id: UUID, _ status: Job.Status, cost: Double? = nil) {
         if status != .done { isSegmenting = false }
         guard let i = jobs.firstIndex(where: { $0.id == id }) else { return }

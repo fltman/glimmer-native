@@ -37,18 +37,22 @@ struct AgentSplashView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 if let prompt = server.agentPrompt {
                     HStack(alignment: .top, spacing: 8) {
-                        Text(verbatim: prompt)
-                            .font(.system(.callout, design: .monospaced))
-                            .lineLimit(nil)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .textSelection(.enabled)
-                            .padding(10)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white.opacity(0.05), in: .rect(cornerRadius: 8))
-                            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Self.neon.opacity(0.8)))
-                            // The label names the field; the value is the text itself, so it's read out.
-                            .accessibilityLabel("Text for your agent")
-                            .accessibilityValue(Text(verbatim: prompt))
+                        // The field is named by this group, never by a label on the selectable text itself:
+                        // that makes SwiftUI ask itself for the label without end, and the app crashes as
+                        // soon as VoiceOver reads it (found in the Assistant's messages, 2026-11-16).
+                        VStack(spacing: 0) {
+                            Text(verbatim: prompt)
+                                .font(.system(.callout, design: .monospaced))
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .textSelection(.enabled)
+                                .padding(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .background(Color.white.opacity(0.05), in: .rect(cornerRadius: 8))
+                        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Self.neon.opacity(0.8)))
+                        .accessibilityElement(children: .contain)
+                        .accessibilityLabel("Text for your agent")
                         Button {
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(prompt, forType: .string)

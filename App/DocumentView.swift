@@ -361,8 +361,11 @@ private struct TitleChip: View {
     let session: EditorSession
 
     var body: some View {
+        // A group named "Document status" whose parts are each read. A label on a combined
+        // element replaced all of it: the name, the size and that the document is linked
+        // (or has lost its link) were never spoken.
         content
-            .accessibilityElement(children: .combine)
+            .accessibilityElement(children: .contain)
             .accessibilityLabel("Document status")
     }
 

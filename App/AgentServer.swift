@@ -239,6 +239,16 @@ enum AgentRouter {
                           "jobs": AgentJobs.shared.running.map(\.json),
                           // Which services have a key (never the key): paid steps need the one they use.
                           "providerKeys": Self.providerKeys()])
+        #if DEBUG
+        case ["api", "v1", "debug", "fixture"]:
+            // States for the accessibility checks (debug builds only; see DebugFixtures.swift).
+            try only("POST")
+            let name = (try? JSONSerialization.jsonObject(with: r.body) as? [String: Any])?["name"] as? String ?? ""
+            guard let session = AgentRegistry.shared.front ?? AgentRegistry.shared.sessions.first, session.ai.showFixture(name) else {
+                throw APIError.unprocessable("unknown_fixture", "No fixture named “\(name)”.")
+            }
+            return .json(["fixture": name])
+        #endif
         case ["api", "v1", "operations"]:
             try only("GET")
             return .json(["operations": AgentAPI.operations])

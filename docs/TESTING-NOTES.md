@@ -138,3 +138,9 @@ Images, one service at a time, by launch arguments (there is no picker for them 
 | Hedra | bytes uploaded to Hedra (private handle, one hour), a job, a signed download | Only pictures of yourself, by Hedra's rules. |
 
 Costs: Berget's and Grunden's lists give prices per million tokens (about €0.15–0.50 in), so a twelve-request run is a fraction of a euro cent. For the others no figure is given here, because their text prices were not read; the image prices per service are in `the-apps/research/providers-glimmer.md` and Flimmer's notes.
+
+## Accessibility is read with content in place
+
+`scripts/test-accessibility.sh` puts up each state through the debug build's fixtures (`App/DebugFixtures.swift`, `POST /api/v1/debug/fixture`), then runs `axaudit --strict` and reads every element (`scripts/axread.swift`). Each state names a text that must have been read, so a state that never appeared cannot pass. The first version of the script passed with the side panel closed: the element count was the same in five states, which is how it was caught.
+
+Found this way on 2026-11-16: the crash on reading a message in the Assistant; the same pattern in Agent Access ("Text for your agent"); and the status chip, whose label replaced its whole content, so the document's name, size and link state were never spoken.

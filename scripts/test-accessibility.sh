@@ -1,0 +1,91 @@
+#!/bin/zsh
+# Reads Glimmer through the accessibility API with content in place: a conversation in the
+# Assistant, a job list, many layers and history steps, every sheet and alert, the link bar
+# in its states, Settings › AI with a loaded model list, and Agent Access. After each state:
+# the-apps/tools/axaudit --strict (no unnamed controls) and a full read of every element
+# (scripts/axread.swift), and the app must still be running. Empty panels proved too little:
+# on 2026-11-16 a message in the Assistant crashed the app for anyone using VoiceOver.
+#
+#   scripts/test-accessibility.sh
+#
+# Runs the Debug copy through scripts/test-app.sh (GUI lock, supervisor, no key). The states
+# come from the debug build's fixtures (App/DebugFixtures.swift). Exit 0 = all passed.
+set -uo pipefail
+cd "$(dirname "$0")/.."
+if [[ -z "${GLIMMER_PORT:-}" ]]; then
+  xcrun swiftc -O -o build/axread scripts/axread.swift 2>/dev/null || { echo "Couldn't build scripts/axread.swift"; exit 1; }
+  # Berget's model list is public: Settings › AI is read with a list loaded, without a key.
+  GLIMMER_ARGS="-ai.textProvider berget ${GLIMMER_ARGS:-}" exec scripts/test-app.sh "$0"
+fi
+TOOLS="${THE_APPS_TOOLS:-}"
+for candidate in "$PWD/../the-apps/tools" "$HOME/Projekt/the-apps/tools"; do [[ -z "$TOOLS" && -x "$candidate/axaudit/axaudit" ]] && TOOLS="$candidate"; done
+AUDIT="$TOOLS/axaudit/axaudit"; MENU="$TOOLS/safemenu/safemenu"
+B=http://127.0.0.1:$GLIMMER_PORT/api/v1
+H=(-H 'X-Glimmer-Agent: 1' -H 'Content-Type: application/json')
+fails=0
+ok() { echo "✔ $1"; }
+bad() { echo "✘ $1"; fails=$((fails + 1)); }
+front() { perl -e 'alarm 15; exec @ARGV' osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to set frontmost to true" >/dev/null 2>&1; sleep 0.5; }
+fixture() { [[ "$(curl -s --max-time 10 -o /dev/null -w '%{http_code}' $H -X POST "$B/debug/fixture" -d "{\"name\":\"$1\"}")" == 200 ]]; }
+steps() { curl -s --max-time 60 -o /dev/null $H -X POST "$B/documents/$ID/steps" -d "{\"steps\":[$1]}"; }
+# read_state <name> <text that must be among what was read> [seconds to wait first]
+# Audits and reads everything on screen now. The app must survive both, and the expected
+# text must have been read: a state that never appeared can't pass as "nothing wrong found".
+read_state() {
+  sleep "${3:-1.2}"
+  local audit; audit=$("$AUDIT" --pid $GLIMMER_PID --strict 2>&1); local code=$?
+  local all; all=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>&1)
+  local seen; seen=$(echo "$all" | tail -1)
+  if ! kill -0 $GLIMMER_PID 2>/dev/null; then bad "$1: the app is gone after being read"; echo "    $seen"; exit 1; fi
+  if ! echo "$all" | grep -qF -- "$2"; then bad "$1: “$2” was not on screen, so this state was not read ($seen)"; return; fi
+  if (( code == 0 )); then ok "$1 ($seen; $(echo "$audit" | tail -1 | cut -d: -f1))"; else bad "$1: $(echo "$audit" | grep -E "UNNAMED|WEAK|OPAQUE|VALUE" | head -3 | tr '\n' ' ')"; fi
+}
+press() { osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to key code $1" >/dev/null 2>&1; sleep 0.6; }
+
+ID=$(curl -s --max-time 60 -H 'X-Glimmer-Agent: 1' -H 'Content-Type: image/jpeg' -X POST --data-binary @site/source-images/mug.jpg "$B/documents?name=accessibility" | python3 -c 'import sys,json;print(json.load(sys.stdin)["document"]["id"])')
+[[ -n "$ID" ]] || { echo "Couldn't open a document."; exit 1; }
+# Many layers of several kinds, and a history to go with them.
+for i in 1 2 3 4; do
+  steps "{\"op\":\"add_text\",\"params\":{\"text\":\"Layer $i\",\"y\":$((200 * i))}},{\"op\":\"add_adjustment\",\"params\":{\"type\":\"black_white\"}},{\"op\":\"new_layer\",\"params\":{\"name\":\"Paint $i\"}}"
+done
+steps '{"op":"select_rect","params":{"x":300,"y":300,"width":400,"height":300}}'
+front
+read_state "the document with a selection (selection bar)" "Deselect"
+
+"$MENU" --pid $GLIMMER_PID --check "Edit" "Heal Selection" >/dev/null 2>&1 && ok "Edit › Heal Selection is there and enabled" || bad "Edit › Heal Selection"
+# The side panel, each tab with content.
+fixture panel:layers && read_state "the Layers panel with 13 layers" "Paint 4" || bad "fixture panel:layers"
+fixture panel:paths && read_state "the Paths tab" "Paths" || bad "fixture panel:paths"
+fixture panel:channels && read_state "the Channels tab" "Channels" || bad "fixture panel:channels"
+fixture panel:history && read_state "the History tab with steps" "Agent Edit" || bad "fixture panel:history"
+fixture assistant && read_state "the Assistant: requests, a plan with a failed and a skipped step, an error, a refusal" "Claude declined this request (cyber). Nothing was changed." || bad "fixture assistant"
+read_state "the plan's failed step says why" "No font named “Nope” is installed."
+fixture jobs && read_state "the job list: running, failed, done with a cost, cancelled" "OpenRouter rejected the API key." || bad "fixture jobs"
+
+# The link bar.
+fixture linked && read_state "the bar of a linked document" "Editing frame-0412.png for Flimmer. Command-S saves it back." || bad "fixture linked"
+fixture brokenLink && read_state "the bar of a document whose link is broken" "no longer where it was" || bad "fixture brokenLink"
+fixture clear
+
+# Every sheet and alert, one at a time; Escape closes it.
+alert() { fixture $1 && read_state "alert: $1" "$2" || bad "fixture $1"; front; press 53; fixture clear; sleep 0.4; }
+alert healWarning "203 px across"
+alert firstUse "a small picture of it"
+alert firstUseNoPictures "takes no pictures, so none is sent"
+alert cantSee "This model can't look at pictures"
+alert error "Couldn't save photo.png"
+fixture imageSize && read_state "sheet: Image Size" "Image Size" 1.5 || bad "fixture imageSize"; front; press 53; fixture clear; sleep 0.5
+fixture canvasSize && read_state "sheet: Canvas Size" "Canvas Size" 1.5 || bad "fixture canvasSize"; front; press 53; fixture clear; sleep 0.5
+
+# Agent Access, with its selectable "text for your agent".
+fixture splash && read_state "Agent Access (the splash)" "Text for your agent" 1.5 || bad "fixture splash"
+front; press 53
+
+# Settings › AI with a model list loaded from the service.
+front; "$MENU" --pid $GLIMMER_PID "Glimmer" "Settings…" >/dev/null 2>&1; sleep 1.5
+osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to click (first button of toolbar 1 of window 1 whose description is \"AI\" or title is \"AI\")" >/dev/null 2>&1
+sleep 5
+read_state "Settings › AI with Berget chosen" "Berget"
+
+echo
+if (( fails == 0 )); then echo "All accessibility checks passed."; else echo "$fails accessibility check(s) failed."; exit 1; fi

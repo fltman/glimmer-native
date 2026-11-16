@@ -16,9 +16,16 @@ extension AIController {
 
     static func toldKey(_ slug: String) -> String { "ai.textNoticeShown.\(slug)" }
 
+    /// Set when the notice that was agreed to said that a picture of the document is sent.
+    static func toldPicturesKey(_ slug: String) -> String { "ai.textNoticeShown.\(slug).pictures" }
+
     /// Whether the person has been told what goes to `provider`. A local server needs no telling.
-    static func hasBeenTold(about provider: AIProvider) -> Bool {
-        provider.kind != .cloud || UserDefaults.standard.bool(forKey: toldKey(provider.slug))
+    /// Someone who agreed while a model without picture input was chosen was told that no
+    /// picture is sent, so the first request that does send one asks again.
+    static func hasBeenTold(about provider: AIProvider, sendsPictures: Bool) -> Bool {
+        guard provider.kind == .cloud else { return true }
+        let d = UserDefaults.standard
+        return d.bool(forKey: toldKey(provider.slug)) && (!sendsPictures || d.bool(forKey: toldPicturesKey(provider.slug)))
     }
 
     /// Runs `request` if it may go out now. Otherwise it puts up the notice that explains
@@ -35,13 +42,15 @@ extension AIController {
             return
         }
         // Without a key or a model there is nothing to ask about yet: the request itself says what is missing.
-        guard hasTextModel, !Self.hasBeenTold(about: provider) else { return request() }
+        let sendsPictures = chosen.vision != false   // the same rule as the request itself (AIController+Agent)
+        guard hasTextModel, !Self.hasBeenTold(about: provider, sendsPictures: sendsPictures) else { return request() }
         session.textNotice = TextNotice(
             kind: .firstUse,
             title: String(localized: "Send this to \(provider.name)?"),
-            message: Self.textNotice(for: provider, sendsPictures: chosen.vision != false) + " " + String(localized: "You can read this again in Settings › AI."),
+            message: Self.textNotice(for: provider, sendsPictures: sendsPictures) + " " + String(localized: "You can read this again in Settings › AI."),
             proceed: {
                 UserDefaults.standard.set(true, forKey: Self.toldKey(provider.slug))
+                if sendsPictures { UserDefaults.standard.set(true, forKey: Self.toldPicturesKey(provider.slug)) }
                 request()
             })
     }
@@ -54,7 +63,9 @@ extension AIController {
         parts.append(sendsPictures
             ? String(localized: "The Assistant sends what you typed, the list of Glimmer's operations, a description of your document (its size and layers) and a small picture of it to \(provider.name) (\(provider.host)).")
             : String(localized: "The Assistant sends what you typed, the list of Glimmer's operations and a description of your document (its size and layers) to \(provider.name) (\(provider.host)). The chosen model takes no pictures, so none is sent."))
-        parts.append(String(localized: "Suggest Edits and Find Distractions send a picture of the document too."))
+        parts.append(sendsPictures
+            ? String(localized: "Suggest Edits and Find Distractions send a picture of the document too.")
+            : String(localized: "Suggest Edits and Find Distractions need to see the document, so they don't run with this model."))
         if provider.kind == .cloud {
             if let place = provider.dataNote { parts.append(String(localized: "\(provider.name) says it processes this in \(place).")) }
             parts.append(String(localized: "\(provider.name) bills your key for each request."))
