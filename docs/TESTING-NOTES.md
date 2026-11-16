@@ -722,3 +722,5 @@ Decided by the coordinator on the Berget finding: the rule was written against a
 Tests: tonight's five cases as fixtures (1350 beside 16:9; 1200 and 800 for half; 3:2 and the megapixels; 2× and 4× from the upscale description; a named percentage), each with an invented figure beside it that still goes, and the held subjects.
 
 **A limit, known and tested as such:** the operations' descriptions hold most small whole numbers (0 to 5, 8, 9, 10, 12, 16, 50, 64, 100 and more through the adjustments' ranges), so a wrong small figure such as "a 4:3 image" for a 3:2 document is no longer caught. A wrong larger one is.
+
+Local evaluation after the change (qwen3:8b, the same 18 cases, GUI lock and model lock): **18 of 18**, median 2.6 s, slowest 30.7 s; no figure removed in any answer; the known gap 0 of 1 as before. Ollama empty afterwards. So the local model's result did not get worse. Whether Berget's two failures now pass is not known until Anders presses the button again.
