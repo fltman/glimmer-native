@@ -472,6 +472,8 @@ extension AIController {
 
     /// Runs one step; AI steps wait until their job has finished.
     private func execute(_ step: AgentStep) async throws {
+        // Refused before anything is applied, whoever sent the step (the API checks a whole request first; a plan says it in the step).
+        if let stray = StepParameters.stray(in: step) { throw StepError(stray.message, reason: "unknown_parameter") }
         let s = session
         let before = jobs.first?.id
         switch step.op {

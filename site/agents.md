@@ -496,6 +496,7 @@ Run an editor menu command.
 
 ## Good to know
 
+- A parameter an operation or an endpoint doesn't have is refused by name with 400, and nothing is applied: in a `steps` request no step runs. Settings go inside a step's `params`; the settings of `add_adjustment`, `apply_filter` and `add_layer_effect` are checked against their `type`. So a 200 means every value you sent was used.
 - Adjustment layers are non-destructive; filters change pixels. Prefer `add_adjustment` for tone and colour.
 - `auto_enhance` and `auto_color` add editable adjustment layers, worked out on the Mac.
 - After a step, `GET /api/v1/documents/{id}/image` shows you what the user sees.

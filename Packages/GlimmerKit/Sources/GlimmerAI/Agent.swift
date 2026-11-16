@@ -125,6 +125,9 @@ public struct AgentPlan: Sendable, Equatable {
     public var filledFromRequest = 0
     /// Figures the model stated that nobody gave it; their sentences were taken out (`AssistantNumbers`).
     public var removedFigures: [String] = []
+    /// What is wrong with steps that carry a parameter their operation doesn't have
+    /// (`StepParameters`): such a step is refused when it runs, and the plan says so first.
+    public var strayParameters: [String] = []
 
     public init(steps: [AgentStep], message: String? = nil, droppedOps: [String] = []) {
         self.steps = steps
@@ -689,6 +692,12 @@ public enum AgentPlanner {
         let completed = PlanCheck.completed(plan, request: goal, adjustments: AdjustmentKind.allCases.map(\.rawValue), filters: FilterKind.allCases.map(\.rawValue))
         plan = completed.plan
         plan.filledFromRequest = completed.filled
+        // A parameter the operation doesn't have: said in the step, as a kind taken from the request is, and the plan waits.
+        for i in plan.steps.indices {
+            guard let stray = StepParameters.stray(in: plan.steps[i]) else { continue }
+            plan.strayParameters.append(stray.message)
+            plan.steps[i].rationale = [plan.steps[i].rationale, "(\(StepParameters.strayNote): \(stray.name))"].compactMap { $0 }.joined(separator: " ")
+        }
         checkFigures(&plan, goal: goal, context: context, history: history, siblingContext: siblingContext)
         return (plan, response.cost)
     }

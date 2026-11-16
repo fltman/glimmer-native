@@ -46,7 +46,7 @@ BT=$(brightness $DOC)   # the picture with exposure 1 and 7,500 K: what undo mus
 steps $DOC '{"op":"develop_raw","params":{"exposure":7}}'
 check "a value outside the range is refused with the range, not clamped ($CODE $(reason): $(py 'd["error"]["message"]'))" '[[ $CODE == 422 && "$(reason)" == *out_of_range* ]]'
 steps $DOC '{"op":"develop_raw","params":{"brightness":1,"exposure":0}}'
-check "a parameter it doesn't have is refused by name, and the valid value beside it is not applied ($CODE $(reason); mean still $(brightness $DOC))" '[[ $CODE == 422 && "$(reason)" == *unknown_control* ]] && (( $(brightness $DOC) - BT < 3 && BT - $(brightness $DOC) < 3 ))'
+check "a parameter it doesn't have is refused by name before anything runs, and the valid value beside it is not applied ($CODE: $(py 'd["error"]["message"]' | cut -c1-90); mean still $(brightness $DOC))" '[[ $CODE == 400 && "$(py "d[\"error\"][\"message\"]")" == *"no parameter named brightness"* ]] && (( $(brightness $DOC) - BT < 3 && BT - $(brightness $DOC) < 3 ))'
 steps $DOC '{"op":"develop_raw","params":{}}'
 check "nothing given is refused ($CODE $(reason))" '[[ $CODE == 422 && "$(reason)" == *nothing_to_set* ]]'
 steps $DOC '{"op":"develop_raw","params":{"asShot":true}}'

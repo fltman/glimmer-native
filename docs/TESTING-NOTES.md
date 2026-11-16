@@ -508,3 +508,20 @@ The document's size estimate counts kept RAW files (`keptRawBytes`, tested).
 ### Test copies are silent
 
 The series' rule after sound escaped in the siblings' GUI passes. Glimmer's own sounds are three alert beeps (a paste with nothing to paste, a history state that cannot be restored, a palette item that cannot run). They go through `AppSound`, and `scripts/test-app.sh` always starts its copy with `-quiet YES`, which silences them. Glimmer plays no audio or video. Not covered: the alert sound AppKit itself plays for a key that nothing handles; the scripts send Return and Escape only where a sheet takes them.
+
+## A parameter nobody knows is refused, everywhere (2026-11-16)
+
+The series' rule after `develop_raw` passed over "brightness". `StepParameters` (GlimmerAI) reads everything from the register that describes each operation, so a new operation is covered without a line of its own.
+
+- **Steps.** A parameter the operation doesn't have: 400, by name, with what it does have, before any step of the request runs. The same for the nested settings of `add_adjustment`, `apply_filter` and `add_layer_effect`, checked against their `type`; for a setting put beside `"op"` instead of inside `"params"`; and for unknown names in the steps body.
+- **Endpoints.** Query parameters and JSON bodies: only the names each path takes.
+- **The assistant's plans.** A step with a parameter its operation doesn't have is said in the step ("this step will be refused: its operation has no parameter named …"), the plan is shown instead of run at once, and the step is refused if run. A kind taken from the request's words is still filled in first, as before.
+
+**What the walk found.**
+- Before the change, every one of the 34 operations let an unknown parameter through in silence; none checked. Now every one refuses (`StepParametersTests` walks the register; `scripts/test-unknown-parameters.sh` walks the running app's own `/operations` and each endpoint: 17 checks, all passed, the document untouched afterwards).
+- The worst case found was not an operation's own parameter but the nested settings: `add_adjustment` stored any key it was given and ignored it, so `{"type": "exposure", "params": {"brightness": 0.2}}` added an Exposure layer that did nothing and answered 200.
+- No parameter that an executor reads was missing from the register (52 names read, all registered).
+- Four operations (crop, resize_image, resize_canvas, select_rect) answered an unknown name with their "needs width…" message; the unknown name is now said first.
+- Nothing Glimmer's own scripts send was refused: the offline test (30 steps of many kinds), the Photoshop import script, the linked-file script (45 checks) and the RAW API script all pass unchanged, apart from the RAW script's own expectation (400 now, where it had 422).
+
+**Not checked:** what Flimmer and Jämmer send to Glimmer. If either sends a name Glimmer doesn't have, it was being ignored until now and is refused from now on. The on-device and local models: a model that adds a parameter of its own invention now gets its plan shown instead of run, so the local evaluation's "runs at once" cases may score differently; it was not rerun.

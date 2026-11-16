@@ -224,6 +224,11 @@ enum AgentRouter {
                 throw APIError(405, "method_not_allowed", "\(r.method) isn't allowed here; use \(methods.joined(separator: " or ")).")
             }
         }
+        // A query parameter the path doesn't take is refused by name, not passed over (the series' rule, 2026-11-16).
+        if s.count > 2, s[0] == "api", s[1] == "v1",
+           let message = StepParameters.strayMessage(r.query.keys, allowed: StepParameters.queryParameters(path: Array(s.dropFirst(2)), method: r.method), what: "\(r.method) \(r.path)") {
+            throw APIError.badRequest(message)
+        }
         switch s {
         case [], ["api"], ["api", "v1"]:
             try only("GET")
@@ -328,6 +333,7 @@ enum AgentRouter {
                 return try await steps(session, r)
             case ["undo"], ["redo"]:
                 try only("POST")
+                _ = try json(r, "undo")
                 return try undoRedo(session, redo: p.last == "redo")
             case ["export"]:
                 try only("POST")
@@ -456,10 +462,15 @@ enum AgentRouter {
         return d
     }
 
-    private static func json(_ r: AgentAPI.Request) throws -> [String: Any] {
+    /// The request's JSON body. `kind` names what it is for (`StepParameters.bodyParameters`): a
+    /// name the body doesn't have a place for is refused, not passed over.
+    private static func json(_ r: AgentAPI.Request, _ kind: String) throws -> [String: Any] {
         if r.body.isEmpty { return [:] }
         guard let obj = try? JSONSerialization.jsonObject(with: r.body) as? [String: Any] else {
             throw APIError.badRequest("The body isn't a JSON object.")
+        }
+        if let allowed = StepParameters.bodyParameters[kind], let message = StepParameters.strayMessage(obj.keys, allowed: allowed, what: "The body of \(r.method) \(r.path)") {
+            throw APIError.badRequest(message)
         }
         return obj
     }
@@ -471,7 +482,7 @@ enum AgentRouter {
         if type.hasPrefix("image/") || type == "application/octet-stream" {
             state = try await documentFromBytes(r.body, name: name ?? "Image")
         } else {
-            let obj = try json(r)
+            let obj = try json(r, "documents")
             name = obj["name"] as? String ?? name
             if let b64 = obj["image"] as? String {
                 guard let data = Data(base64Encoded: b64, options: .ignoreUnknownCharacters) else {
@@ -607,7 +618,7 @@ enum AgentRouter {
     }
 
     private static func export(_ session: EditorSession, _ r: AgentAPI.Request) async throws -> Response {
-        let obj = try json(r)
+        let obj = try json(r, "export")
         if let preset = obj["preset"] {
             guard preset as? String == "podcast-cover" else { throw APIError.badRequest("preset must be \"podcast-cover\".") }
             return try await podcastCover(session, obj)
@@ -699,7 +710,7 @@ enum AgentRouter {
         // An app sends the image's bytes; an assistant, which has none, names an open document.
         var source: EditorSession?
         if !(type.hasPrefix("image/") || type == "application/octet-stream") {
-            guard let key = (try? json(r))?["fromDocument"] as? String, !key.isEmpty else {
+            guard let key = try json(r, "layers")["fromDocument"] as? String, !key.isEmpty else {
                 throw APIError.badRequest("Send the image's bytes with Content-Type: image/…, or JSON {\"fromDocument\": \"<document id>\"}. The options go in the query.")
             }
             guard let other = AgentRegistry.shared.session(key) else {
@@ -760,7 +771,7 @@ enum AgentRouter {
     }
 
     private static func steps(_ session: EditorSession, _ r: AgentAPI.Request) async throws -> Response {
-        let obj = try json(r)
+        let obj = try json(r, "steps")
         guard let raw = obj["steps"] as? [Any], !raw.isEmpty else {
             throw APIError.badRequest("Send {\"steps\": [{\"op\": \"…\", \"params\": {…}}]}. GET /api/v1/operations lists the ops.")
         }
@@ -773,12 +784,18 @@ enum AgentRouter {
             guard AgentPlanner.op(named: op) != nil else {
                 throw APIError(404, "not_found", "Step \(i): unknown op \"\(op)\". GET /api/v1/operations lists them.")
             }
+            // A step's own names: a setting put beside "op" instead of inside "params" would otherwise vanish.
+            if let message = StepParameters.strayMessage(step.keys, allowed: StepParameters.bodyParameters["step"]!, what: "Step \(i)") {
+                throw APIError.badRequest(message + " An operation's settings go inside \"params\". No step of this request was run.")
+            }
             if step["params"] == nil { step["params"] = [String: Any]() }
             guard JSONSerialization.isValidJSONObject(step),
                   let data = try? JSONSerialization.data(withJSONObject: step),
                   let decoded = try? JSONDecoder().decode(AgentStep.self, from: data) else {
                 throw APIError.badRequest("Step \(i): \"params\" must be an object.")
             }
+            // The unknown name first: "crop needs width…" would hide that "widht" was the trouble.
+            if let stray = StepParameters.stray(in: decoded) { throw APIError.badRequest("Step \(i): \(stray.message) No step of this request was run.") }
             if let problem = CanvasSteps.malformed(decoded) { throw APIError.badRequest("Step \(i): \(problem)") }
             if AgentAPI.paidOps.contains(op) {
                 guard allowPaid else {
