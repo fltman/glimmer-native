@@ -82,6 +82,8 @@ public struct DocumentManifest: Codable, Sendable {
     public var aids: ViewAids?
     /// Present while the document is an edit of another app's file (see `DocumentLink`).
     public var link: DocumentLink?
+    /// The record of what a Photoshop file lost when this document was made from it.
+    public var importReport: PSDImportReport?
 
     public init(
         width: Int,

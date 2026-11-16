@@ -187,9 +187,7 @@ final class EditorSession {
     var isCanvasSizePresented = false
     /// What the import of a Photoshop file kept and lost, for this window. Shown once when the
     /// file opens and again from File › Import Report…. Not saved with the document.
-    #if GLIMMER_PSD
-    var importReport: PSDImportReport?
-    #endif
+    var importReport: PSDImportReport? { state.importReport }
     var isImportReportPresented = false
     var exportOptions = ExportOptions()
     var isExporting = false

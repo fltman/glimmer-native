@@ -319,10 +319,10 @@ enum AgentRouter {
         if let sel = st.selection?.bounds(in: st.bounds) { d["selectionBounds"] = ["x": sel.x, "y": sel.y, "width": sel.width, "height": sel.height] }
         // A document made from a Photoshop file says what came through and what did not.
         #if GLIMMER_PSD
-        if let report = session.importReport {
+        if let report = session.importReport {   // in English here; the window says it in the person's language
             var r: [String: Any] = ["source": report.source, "layersInFile": report.layersInFile, "layersKept": report.layersKept,
                                     "flattened": report.flattened, "looksTheSame": report.looksTheSame, "summary": report.lines.first ?? "",
-                                    "notes": report.notes.map { ["layer": $0.layer ?? NSNull(), "what": $0.what, "changesLook": $0.changesLook] as [String: Any] }]
+                                    "notes": report.notes.map { ["layer": $0.layer ?? NSNull(), "kind": $0.kind.rawValue, "what": $0.what, "changesLook": $0.changesLook] as [String: Any] }]
             if let mean = report.meanDifference, let share = report.shareVisiblyDifferent {
                 r["differenceFromFile"] = ["mean": mean, "shareVisiblyDifferent": share]
             }
@@ -470,9 +470,7 @@ enum AgentRouter {
         #if GLIMMER_PSD
         if DocumentOpener.isPhotoshopFile(data) {
             do {
-                let (state, report) = try PSDImport.document(from: data)
-                if let first = state.layers.first { DocumentOpener.shared.noteImport(report, file: data, firstLayer: first.id) }
-                return state
+                return try DocumentOpener.shared.importPhotoshopFile(data)
             } catch {
                 throw APIError.badRequest((error as? LocalizedError)?.errorDescription ?? "Glimmer couldn't read this Photoshop file.")
             }

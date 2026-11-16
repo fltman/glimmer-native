@@ -11767,13 +11767,189 @@
         }
       }
     },
-    "The Photoshop file itself is not changed. This is a new Glimmer document; you can read the report again under File › Import Report… while the window is open.": {
+    "Opened as one layer: the file's own flattened picture (%@).": {
       "extractionState": "manual",
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Själva Photoshop-filen ändras inte. Det här är ett nytt Glimmer-dokument; du kan läsa rapporten igen under Arkiv › Importrapport… så länge fönstret är öppet."
+            "value": "Öppnad som ett lager: filens egen sammanslagna bild (%@)."
+          }
+        }
+      }
+    },
+    "Everything came through: %1$lld layers, %2$lld of them groups (%3$@).": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allt kom med: %1$lld lager, varav %2$lld grupper (%3$@)."
+          }
+        }
+      }
+    },
+    "%1$lld of %2$lld layers came through as layers (%3$@). These things did not come through as they were:": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld av %2$lld lager kom med som lager (%3$@). Det här kom inte med som det var:"
+          }
+        }
+      }
+    },
+    "Glimmer's picture matches the one saved in the file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmers bild stämmer med den som är sparad i filen."
+          }
+        }
+      }
+    },
+    "Glimmer's picture differs from the one saved in the file: %1$@ %% of the pixels visibly, %2$@ of 255 on average.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmers bild skiljer sig från den som är sparad i filen: %1$@ %% av pixlarna synligt, %2$@ av 255 i genomsnitt."
+          }
+        }
+      }
+    },
+    "It was text and is now pixels: the words can't be edited as text.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det var text och är nu pixlar: orden går inte att redigera som text."
+          }
+        }
+      }
+    },
+    "It was a smart object and is now pixels. The file placed in it is not kept in this version.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det var ett smart objekt och är nu pixlar. Filen som låg i det sparas inte i den här versionen."
+          }
+        }
+      }
+    },
+    "It was a %@ adjustment layer. Adjustment layers are not read in this version, so it was left out.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det var ett justeringslager (%@). Justeringslager läses inte i den här versionen, så det lämnades utanför."
+          }
+        }
+      }
+    },
+    "It was a fill or shape layer (%@). Those are not read in this version, so it was left out.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det var ett fyllnings- eller formlager (%@). Sådana läses inte i den här versionen, så det lämnades utanför."
+          }
+        }
+      }
+    },
+    "Its layer effects (shadows, strokes, glows) were not read.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagrets effekter (skuggor, konturer, glöd) lästes inte."
+          }
+        }
+      }
+    },
+    "Its vector mask was not read; the layer's pixels are shown whole.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagrets vektormask lästes inte; lagrets pixlar visas hela."
+          }
+        }
+      }
+    },
+    "The blend mode %@ became Normal: Glimmer doesn't have it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blandningsläget %@ blev Normal: Glimmer har inte det läget."
+          }
+        }
+      }
+    },
+    "Its pixels are incomplete in the file, so the layer came in empty.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagrets pixlar är ofullständiga i filen, så lagret kom in tomt."
+          }
+        }
+      }
+    },
+    "The group's end is missing in the file; it came in empty.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gruppens slut saknas i filen; den kom in tom."
+          }
+        }
+      }
+    },
+    "A group in the file has no record of its own; its layers came in without the group.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En grupp i filen saknar egen post; dess lager kom in utan gruppen."
+          }
+        }
+      }
+    },
+    "Glimmer reads the layers of RGB and grayscale files with 8 or 16 bits per channel. This file is %@. Its layers were not read; the picture is the one saved in the file.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer läser lagren i RGB- och gråskalefiler med 8 eller 16 bitar per kanal. Den här filen är %@. Lagren lästes inte; bilden är den som är sparad i filen."
+          }
+        }
+      }
+    },
+    "The Photoshop file itself is not changed. This is a new Glimmer document, and the report is saved with it: File › Import Report… shows it again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Själva Photoshop-filen ändras inte. Det här är ett nytt Glimmer-dokument och rapporten sparas med det: Arkiv › Importrapport… visar den igen."
           }
         }
       }

@@ -104,6 +104,11 @@ xcodebuild archive -project Glimmer.xcodeproj -scheme Glimmer -configuration Rel
   -derivedDataPath build/DerivedData -archivePath "$OUT/Glimmer.xcarchive" \
   SPARKLE_PUBLIC_KEY="$PUBKEY" -quiet
 
+# A feature that Config/Features.xcconfig switches off must not be in the release at all.
+# Checked on the archive, before anything is signed for distribution or sent anywhere.
+scripts/check-release-binary.sh "$OUT/Glimmer.xcarchive/Products/Applications/Glimmer.app" \
+  || { echo "The release contains a switched-off feature (see above). Nothing was uploaded."; exit 1; }
+
 if [[ $DRY_RUN == 1 ]]; then
   # Rehearsal: sign with Developer ID locally, no notarization upload.
   cat > "$OUT/ExportOptions.plist" <<PLIST

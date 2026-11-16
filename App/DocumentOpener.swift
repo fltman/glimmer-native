@@ -193,35 +193,37 @@ final class DocumentOpener {
     private var pendingLinks: [UUID: LinkedImage] = [:]
 
     #if GLIMMER_PSD
-    /// Import reports of Photoshop files waiting for their window, by the id of the document's
-    /// first layer, with the file's bytes for measuring the picture against the file's own.
-    private var pendingReports: [UUID: (report: PSDImportReport, file: Data)] = [:]
+    /// Documents just made from a Photoshop file, by the id of their first layer: their window
+    /// shows the import report when it appears. (The report itself is in the document.)
+    private var reportsToShow: Set<UUID> = []
 
-    /// Called when a document window appears: an imported Photoshop file gets its report, and
-    /// the report is shown. No import reaches a window without it.
+    /// Called when a document window appears: a document just made from a Photoshop file shows its report.
     func claimImportReport(for session: EditorSession) {
-        guard let id = session.state.layers.first?.id, let pending = pendingReports.removeValue(forKey: id) else { return }
-        var report = pending.report
-        if !report.flattened, let metal = try? session.ai.metal, let difference = PSDAppearance.difference(of: session.state, from: pending.file, context: metal) {
-            report.meanDifference = difference.mean
-            report.shareVisiblyDifferent = difference.shareVisible
-        }
-        session.importReport = report
+        guard let id = session.state.layers.first?.id, reportsToShow.remove(id) != nil, session.importReport != nil else { return }
         session.isImportReportPresented = true
     }
-
-    /// For a document made from a Photoshop file elsewhere (the agent API): its report waits for the window the same way.
-    func noteImport(_ report: PSDImportReport, file: Data, firstLayer: UUID) { pendingReports[firstLayer] = (report, file) }
 
     /// Whether these bytes are a Photoshop file (by its signature, not its name).
     static func isPhotoshopFile(_ data: Data) -> Bool { data.prefix(4) == Data("8BPS".utf8) }
 
-    /// A Photoshop file opens as a new, untitled document with its layers, and a report of what did not come through.
-    private func openPhotoshopFile(_ data: Data, url: URL) throws {
-        let (state, report) = try PSDImport.document(from: data)
+    /// The document for a Photoshop file, with its report in it: what came through, and how
+    /// far Glimmer's picture of the layers is from the picture the file carries. The window
+    /// that gets this document shows the report. There is no other way in.
+    func importPhotoshopFile(_ data: Data) throws -> DocumentState {
+        var (state, report) = try PSDImport.document(from: data)
         guard let first = state.layers.first else { throw PSDFile.Problem("This Photoshop file has nothing in it that Glimmer can show.") }
-        pendingReports[first.id] = (report, data)
-        createDocument(state)
+        if !report.flattened, let metal = MetalContext.shared, let difference = PSDAppearance.difference(of: state, from: data, context: metal) {
+            report.meanDifference = difference.mean
+            report.shareVisiblyDifferent = difference.shareVisible
+        }
+        state.importReport = report
+        reportsToShow.insert(first.id)
+        return state
+    }
+
+    /// A Photoshop file opens as a new, untitled document with its layers.
+    private func openPhotoshopFile(_ data: Data, url: URL) throws {
+        createDocument(try importPhotoshopFile(data))
         NSDocumentController.shared.noteNewRecentDocumentURL(url)
     }
     #endif

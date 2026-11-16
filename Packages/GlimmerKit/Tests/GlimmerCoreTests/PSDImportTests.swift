@@ -33,7 +33,8 @@ import PSDTestSupport
         if case .raster(let tiles) = sky.content { #expect(!tiles.isEmpty) } else { Issue.record("not pixels") }
         // The report: four layers in the file (the group counts, its end mark doesn't), all kept, one note about the text.
         #expect(report.layersInFile == 4 && report.layersKept == 4 && report.groupsKept == 1 && !report.flattened)
-        #expect(report.notes == [.init(layer: "Hidden", what: "It was text and is now pixels: the words can't be edited as text.", changesLook: false)])
+        #expect(report.notes == [.init(.wasText, layer: "Hidden")])
+        #expect(state.importReport == report)   // the report travels in the document
         #expect(report.looksTheSame)
         #expect(report.lines.first == "4 of 4 layers came through as layers (RGB, \(depth) bits per channel). 1 thing did not come through as it was:")
         #expect(report.lines.last == "“Hidden”: It was text and is now pixels: the words can't be edited as text.")
@@ -108,5 +109,23 @@ import PSDTestSupport
             }
         }
         #expect(imported > 0)   // changes inside pixel data still import
+    }
+}
+
+/// The report is part of the document: saved with it and read back.
+@Suite struct PSDImportReportTests {
+    @Test func theReportIsSavedWithTheDocumentAndReadBack() throws {
+        var (state, report) = try PSDImport.document(from: PSDTestWriter.sample().data(), limits: PSDImportTests.limits)
+        report.meanDifference = 0.5; report.shareVisiblyDifferent = 0.25
+        state.importReport = report
+        let wrapper = try GlimmerPackage.fileWrapper(for: state)
+        let back = try GlimmerPackage.state(from: wrapper)
+        #expect(back.importReport == report && back.importReport?.notes.first?.kind == .wasText)
+        #expect(back.importReport?.matchesTheFile == false)
+        // A document that was never a Photoshop file has none, and its manifest doesn't mention one.
+        let plain = try GlimmerPackage.fileWrapper(for: DocumentState(width: 4, height: 4))
+        #expect(try GlimmerPackage.state(from: plain).importReport == nil)
+        let manifest = try #require(plain.fileWrappers?["manifest.json"]?.regularFileContents)
+        #expect(!String(decoding: manifest, as: UTF8.self).contains("importReport"))
     }
 }

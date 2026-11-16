@@ -35,7 +35,7 @@ DIFF=$(echo "$R" | field 'round(d["importReport"]["differenceFromFile"]["mean"],
 check "clean.psd: measured against the file's own picture in the app: mean and share $DIFF" '[[ -n "$DIFF" ]] && python3 -c "import sys; m, s = map(float, sys.argv[1:3]); sys.exit(0 if m < 1 and s == 0 else 1)" ${=DIFF}'
 sleep 1.5
 SEEN=$(perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID 2>&1)
-check "clean.psd: the report sheet is on screen and says everything came through" 'echo "$SEEN" | grep -qF "Everything came through: 2 layers (RGB, 8 bits per channel)."'
+check "clean.psd: the report sheet is on screen and says everything came through" 'echo "$SEEN" | grep -qF "Everything came through: 2 layers, 0 of them groups (RGB, 8 bits per channel)."'
 check "clean.psd: and that the picture matches the file's" 'echo "$SEEN" | grep -qF "Glimmer'"'"'s picture matches the one saved in the file."'
 "$TOOLS/axaudit/axaudit" --pid $GLIMMER_PID --strict >/dev/null 2>&1 && ok "the report sheet has no unnamed controls" || bad "the report sheet: axaudit found something"
 front; press 36

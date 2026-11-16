@@ -100,6 +100,7 @@ public enum GlimmerPackage {
         manifest.paths = state.paths.isEmpty ? nil : state.paths
         manifest.aids = state.aids == ViewAids() ? nil : state.aids
         manifest.link = state.link
+        manifest.importReport = state.importReport
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let manifestFile = FileWrapper(regularFileWithContents: try encoder.encode(manifest))
@@ -178,6 +179,7 @@ public enum GlimmerPackage {
         state.paths = manifest.paths ?? []
         state.aids = manifest.aids ?? ViewAids()
         state.link = manifest.link
+        state.importReport = manifest.importReport
         return state
     }
 

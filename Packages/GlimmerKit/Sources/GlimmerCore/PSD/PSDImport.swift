@@ -2,54 +2,6 @@
 import CoreGraphics
 import Foundation
 
-/// What an import of a Photoshop file kept, changed and lost. It is made by the same call that
-/// makes the document, so there is no way to import without one.
-public struct PSDImportReport: Sendable, Equatable, Codable {
-    public struct Note: Sendable, Equatable, Codable {
-        /// The layer the note is about; nil for the document as a whole.
-        public var layer: String?
-        public var what: String
-        /// True when the picture may look different because of it.
-        public var changesLook: Bool
-    }
-
-    /// "RGB, 8 bits per channel" and the like, as the file says.
-    public var source: String
-    /// How many layers and groups the file had, and how many of them came in as layers of their own.
-    public var layersInFile = 0
-    public var layersKept = 0
-    public var groupsKept = 0
-    /// True when only the file's flattened picture was used.
-    public var flattened = false
-    public var notes: [Note] = []
-    /// How far Glimmer's picture of the layers is from the picture the file carries: the mean
-    /// difference per channel on a scale of 0 to 255, and the share of pixels that differ by
-    /// more than 8. Filled in by the app, which can draw; nil when it wasn't measured.
-    public var meanDifference: Double?
-    public var shareVisiblyDifferent: Double?
-
-    public var looksTheSame: Bool { !notes.contains(where: \.changesLook) }
-
-    /// The report as lines for a person, the summary first.
-    public var lines: [String] {
-        var out: [String] = []
-        if flattened {
-            out.append("Opened as one layer: the file's own flattened picture (\(source)).")
-        } else if notes.isEmpty {
-            out.append("Everything came through: \(layersKept) \(layersKept == 1 ? "layer" : "layers")\(groupsKept > 0 ? " in \(groupsKept) \(groupsKept == 1 ? "group" : "groups")" : "") (\(source)).")
-        } else {
-            out.append("\(layersKept) of \(layersInFile) layers came through as layers (\(source)). \(notes.count) \(notes.count == 1 ? "thing" : "things") did not come through as it was:")
-        }
-        out += notes.map { ($0.layer.map { "“\($0)”: " } ?? "") + $0.what }
-        if let mean = meanDifference, let share = shareVisiblyDifferent {
-            out.append(share < 0.001 && mean < 1
-                ? "Glimmer's picture matches the one saved in the file."
-                : String(format: "Glimmer's picture differs from the one saved in the file: %.1f %% of the pixels visibly, %.1f of 255 on average.", share * 100, mean))
-        }
-        return out
-    }
-}
-
 /// Turns a Photoshop file into a Glimmer document and says what did not survive.
 ///
 /// First version: pixel layers, groups, masks, opacity, visibility, clipping and the blend
@@ -81,12 +33,12 @@ public enum PSDImport {
         var report = PSDImportReport(source: describe(header))
         let layered = (header.mode == .rgb || header.mode == .grayscale) && (header.depth == 8 || header.depth == 16)
         guard layered else {
-            return (try flattened(data, header: header, report: &report, why: "Glimmer reads the layers of RGB and grayscale files with 8 or 16 bits per channel. This file is \(report.source)."), report)
+            return (try flattened(data, header: header, report: &report, why: true), report)
         }
         let file = try PSDFile(data, limits: limits)
         report.layersInFile = file.layers.filter { $0.group != .end }.count
         guard !file.layers.isEmpty else {
-            return (try flattened(data, header: header, report: &report, why: nil), report)
+            return (try flattened(data, header: header, report: &report, why: false), report)
         }
         let space = colorSpace(for: file)
         // The file lists layers bottom to top; a group is everything between its end mark and its own record.
@@ -101,7 +53,7 @@ public enum PSDImport {
                 if stack.count > 1 {
                     children = stack.removeLast()
                 } else {
-                    report.notes.append(.init(layer: source.name, what: "The group's end is missing in the file; it came in empty.", changesLook: false))
+                    report.notes.append(.init(.groupEndMissing, layer: source.name))
                 }
                 var group = Layer(name: source.name, isVisible: source.isVisible, opacity: Double(source.opacity) / 255,
                                   blendMode: blendMode(source, isGroup: true, report: &report), isClipped: source.isClipped,
@@ -121,7 +73,7 @@ public enum PSDImport {
         while stack.count > 1 {
             let orphans = stack.removeLast()
             stack[stack.count - 1].append(contentsOf: orphans)
-            report.notes.append(.init(layer: nil, what: "A group in the file has no record of its own; its layers came in without the group.", changesLook: false))
+            report.notes.append(.init(.groupRecordMissing))
         }
         report.layersKept += report.groupsKept
         var state = DocumentState(width: header.width, height: header.height)
@@ -129,6 +81,7 @@ public enum PSDImport {
         state.blendSpace = .gamma
         state.layers = stack[0]
         state.activeLayerID = state.layers.last?.id
+        state.importReport = report
         return (state, report)
     }
 
@@ -147,17 +100,18 @@ public enum PSDImport {
     }
 
     /// The file's own flattened picture as one layer, converted by the system (which honours the embedded profile).
-    private static func flattened(_ data: Data, header: PSDFile.Header, report: inout PSDImportReport, why: String?) throws -> DocumentState {
+    private static func flattened(_ data: Data, header: PSDFile.Header, report: inout PSDImportReport, why: Bool) throws -> DocumentState {
         let image: CGImage
         do { image = try ImageImporter.image(from: data) } catch {
             throw PSDFile.Problem("This Photoshop file carries no flattened picture that macOS can read, and its layers are in a form Glimmer doesn't read (\(report.source)).")
         }
         report.flattened = true
-        if let why { report.notes.append(.init(layer: nil, what: why + " Its layers were not read; the picture is the one saved in the file.", changesLook: false)) }
+        if why { report.notes.append(.init(.layersNotRead, detail: report.source)) }
         var state = DocumentState(width: image.width, height: image.height)
         let layer = Layer(name: "Background", content: .raster(try ImageImporter.tiles(from: image)))
         state.layers = [layer]
         state.activeLayerID = layer.id
+        state.importReport = report
         return state
     }
 
@@ -170,7 +124,7 @@ public enum PSDImport {
     private static func blendMode(_ source: PSDFile.Layer, isGroup: Bool, report: inout PSDImportReport) -> BlendMode {
         if let mode = blendModes[source.blendKey] { return mode == .passThrough && !isGroup ? .normal : mode }
         let name = blendNames[source.blendKey] ?? "“\(source.blendKey.trimmingCharacters(in: .whitespaces))”"
-        report.notes.append(.init(layer: source.name, what: "The blend mode \(name) became Normal: Glimmer doesn't have it.", changesLook: true))
+        report.notes.append(.init(.blendModeBecameNormal, layer: source.name, detail: name, changesLook: true))
         return .normal
     }
 
@@ -196,16 +150,16 @@ public enum PSDImport {
     private static func noteExtras(_ source: PSDFile.Layer, isGroup: Bool, report: inout PSDImportReport) {
         let keys = Set(source.extraKeys)
         if !keys.isDisjoint(with: ["lfx2", "lrFX", "lmfx"]) {
-            report.notes.append(.init(layer: source.name, what: "Its layer effects (shadows, strokes, glows) were not read.", changesLook: true))
+            report.notes.append(.init(.effectsNotRead, layer: source.name, changesLook: true))
         }
         if !isGroup, !keys.isDisjoint(with: ["vmsk", "vsms"]), keys.isDisjoint(with: Set(fills.keys)) {
-            report.notes.append(.init(layer: source.name, what: "Its vector mask was not read; the layer's pixels are shown whole.", changesLook: true))
+            report.notes.append(.init(.vectorMaskNotRead, layer: source.name, changesLook: true))
         }
         if keys.contains("SoLd") || keys.contains("SoLE") || keys.contains("PlLd") || keys.contains("plLd") {
-            report.notes.append(.init(layer: source.name, what: "It was a smart object and is now pixels. The file placed in it is not kept in this version.", changesLook: false))
+            report.notes.append(.init(.wasSmartObject, layer: source.name))
         }
         if keys.contains("TySh") || keys.contains("tySh") {
-            report.notes.append(.init(layer: source.name, what: "It was text and is now pixels: the words can't be edited as text.", changesLook: false))
+            report.notes.append(.init(.wasText, layer: source.name))
         }
     }
 
@@ -213,11 +167,11 @@ public enum PSDImport {
     private static func pixelLayer(_ source: PSDFile.Layer, file: PSDFile, space: CGColorSpace, report: inout PSDImportReport) throws -> Layer? {
         let keys = Set(source.extraKeys)
         if let kind = keys.compactMap({ adjustments[$0] }).first {
-            report.notes.append(.init(layer: source.name, what: "It was a \(kind) adjustment layer. Adjustment layers are not read in this version, so it was left out.", changesLook: source.isVisible))
+            report.notes.append(.init(.adjustmentLeftOut, layer: source.name, detail: kind, changesLook: source.isVisible))
             return nil
         }
         if let kind = keys.compactMap({ fills[$0] }).first {
-            report.notes.append(.init(layer: source.name, what: "It was a \(kind) fill or shape layer. Those are not read in this version, so it was left out.", changesLook: source.isVisible))
+            report.notes.append(.init(.fillLeftOut, layer: source.name, detail: kind, changesLook: source.isVisible))
             return nil
         }
         var layer = Layer(name: source.name, isVisible: source.isVisible, opacity: Double(source.opacity) / 255,
@@ -227,7 +181,7 @@ public enum PSDImport {
         noteExtras(source, isGroup: false, report: &report)
         if source.rect.width > 0, source.rect.height > 0 {
             guard let image = image(source, gray: file.header.mode == .grayscale, space: space) else {
-                report.notes.append(.init(layer: source.name, what: "Its pixels are incomplete in the file, so the layer came in empty.", changesLook: source.isVisible))
+                report.notes.append(.init(.pixelsIncomplete, layer: source.name, changesLook: source.isVisible))
                 return layer
             }
             layer.content = .raster(try ImageImporter.tiles(from: image, origin: SIMD2(source.rect.left, source.rect.top)))

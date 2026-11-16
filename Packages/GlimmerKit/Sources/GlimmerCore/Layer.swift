@@ -234,6 +234,8 @@ public struct DocumentState: Sendable {
     /// restart). Only set on the copy that is being written or was just read; the editor
     /// keeps the live link itself.
     public var link: DocumentLink?
+    /// What was kept and lost when this document was made from a Photoshop file (saved).
+    public var importReport: PSDImportReport?
 
     public init(
         width: Int,
