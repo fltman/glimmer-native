@@ -31,7 +31,12 @@ fi
 LOCKER="$TOOLS/with-gui-lock.sh"
 if [[ "${GLIMMER_HOLDS_GUI_LOCK:-}" != 1 ]]; then
   [[ -n "$TOOLS" && -x "$LOCKER" ]] || { echo "Can't find with-gui-lock.sh: set THE_APPS_TOOLS to the-apps/tools."; exit 1; }
-  exec "$LOCKER" glimmer --wait "${GLIMMER_LOCK_WAIT:-600}" -- env GLIMMER_HOLDS_GUI_LOCK=1 "$0" "$@"
+  # Inside the lock, under the series' supervisor: a time limit (GLIMMER_TEST_LIMIT seconds,
+  # default 1800), and it ends when whoever started this script is gone, so a stopped agent
+  # can't leave the app running on screen. The trap below then stops the test copy by its pid.
+  SUPERVISOR="$TOOLS/run-supervised.sh"
+  [[ -x "$SUPERVISOR" ]] || { echo "Can't find run-supervised.sh in $TOOLS."; exit 1; }
+  exec "$LOCKER" glimmer --wait "${GLIMMER_LOCK_WAIT:-600}" -- "$SUPERVISOR" --timeout "${GLIMMER_TEST_LIMIT:-1800}" --watch "$PPID" -- env GLIMMER_HOLDS_GUI_LOCK=1 "$0" "$@"
 fi
 [[ "$(cat /tmp/gui-test.lock/owner 2>/dev/null)" == glimmer ]] || { echo "Not holding the GUI lock; not starting."; exit 75; }
 

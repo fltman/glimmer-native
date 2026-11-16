@@ -9,6 +9,16 @@
 # deletes the image again. No real volume is ever filled.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+# Under the series' supervisor (a time limit, and it ends when whoever started it is gone); the
+# trap below detaches the disk image.
+if [[ "${GLIMMER_SUPERVISED:-}" != 1 ]]; then
+  for candidate in "${THE_APPS_TOOLS:-}" "$PWD/../the-apps/tools" "$HOME/Projekt/the-apps/tools"; do
+    if [[ -n "$candidate" && -x "$candidate/run-supervised.sh" ]]; then
+      exec "$candidate/run-supervised.sh" --timeout "${GLIMMER_TEST_LIMIT:-900}" --watch "$PPID" -- env GLIMMER_SUPERVISED=1 "$0" "$@"
+    fi
+  done
+  echo "Can't find run-supervised.sh: set THE_APPS_TOOLS to the-apps/tools."; exit 1
+fi
 IMAGE="$PWD/build/diskfull/full.dmg"
 NAME="GlimmerFull$$"
 MOUNT="/Volumes/$NAME"

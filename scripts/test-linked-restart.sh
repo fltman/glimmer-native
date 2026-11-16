@@ -21,7 +21,9 @@ if [[ -z "$TOOLS" ]]; then
 fi
 [[ -n "$TOOLS" && -x "$TOOLS/with-gui-lock.sh" && -x "$TOOLS/safemenu/safemenu" ]] || { echo "Can't find the-apps/tools (with-gui-lock.sh, safemenu): set THE_APPS_TOOLS."; exit 1; }
 if [[ "${GLIMMER_HOLDS_GUI_LOCK:-}" != 1 ]]; then
-  exec "$TOOLS/with-gui-lock.sh" glimmer --wait "${GLIMMER_LOCK_WAIT:-600}" -- env GLIMMER_HOLDS_GUI_LOCK=1 "$0" "$@"
+  # Under the series' supervisor: a time limit, and it ends when whoever started it is gone; the trap stops the test copy by its pid.
+  [[ -x "$TOOLS/run-supervised.sh" ]] || { echo "Can't find run-supervised.sh in $TOOLS."; exit 1; }
+  exec "$TOOLS/with-gui-lock.sh" glimmer --wait "${GLIMMER_LOCK_WAIT:-600}" -- "$TOOLS/run-supervised.sh" --timeout "${GLIMMER_TEST_LIMIT:-1800}" --watch "$PPID" -- env GLIMMER_HOLDS_GUI_LOCK=1 "$0" "$@"
 fi
 [[ "$(cat /tmp/gui-test.lock/owner 2>/dev/null)" == glimmer ]] || { echo "Not holding the GUI lock; not starting."; exit 75; }
 MENU="$TOOLS/safemenu/safemenu"
