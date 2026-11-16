@@ -46,6 +46,8 @@ import Testing
         let guide = AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, heal: releaseHasHeal, psd: releaseHasPSD)
         #expect(guide.contains("heal_selection") == releaseHasHeal)
         #expect(guide.contains("importReport") == releaseHasPSD)
+        // RAW development has nothing in the agent API yet: a command that only opens a sheet is not offered to agents.
+        #expect(!guide.contains("developRaw"))
         #if GLIMMER_PSD
         #expect(AgentAPI.guide(port: AgentAPI.preferredPort, appVersion: Self.version, psd: true).contains("document.importReport"))
         #endif
