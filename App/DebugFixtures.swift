@@ -58,6 +58,18 @@ extension AIController {
             messages = [Message(fromUser: true, text: "Write a poem about the sea"), planned, Message(fromUser: true, text: "tidy up"), command, offer]
             stepStatus = [step.id: .pending, extra.id: .pending]
             planStatus = [planned.id: .proposed, offer.id: .proposed]
+        case "refusedPlan":
+            // A plan with a step its operation would refuse (a setting the adjustment doesn't have): shown, said to be unrunnable, no Run.
+            s.showLayersPanel = true; s.inspectorTab = .ai; s.aiSection = .assistant
+            let first = AgentStep(op: "crop", params: ["aspect": .string("1:1")], rationale: "Square.")
+            let second = AgentStep(op: "add_adjustment", params: ["type": .string("exposure"), "params": .object(["brightness": .number(0.3)])],
+                                   rationale: "Brighter. (\(StepParameters.strayNote): brightness)")
+            let why = StepParameters.stray(in: second)?.message ?? ""
+            var refused = Message(fromUser: false, text: "Cropping square and brightening. " + String(localized: "This plan can't run: \(why) Nothing was changed. Ask again, perhaps in other words."))
+            refused.plan = AgentPlan(steps: [first, second])
+            messages = [Message(fromUser: true, text: "Make it square and brighter"), refused]
+            stepStatus = [first.id: .skipped, second.id: .skipped]
+            planStatus = [refused.id: .failed]
         case "jobs":
             s.showLayersPanel = true; s.inspectorTab = .ai
             showFixtureJobs()
