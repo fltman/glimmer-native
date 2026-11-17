@@ -29,6 +29,17 @@ if [[ "${GLIMMER_HOLDS_GUI_LOCK:-}" != 1 ]]; then
 fi
 [[ "$(cat /tmp/gui-test.lock/owner 2>/dev/null)" == glimmer ]] || { echo "Not holding the GUI lock; not starting."; exit 75; }
 MENU="$TOOLS/safemenu/safemenu"
+# How the copy stands to the system's window restoration. The link must survive in all three (SIBLINGS.md §6):
+#   GLIMMER_RESTORE=on (default here)  windows are restored, as when "Close windows when quitting an application" is off
+#   GLIMMER_RESTORE=person             that setting on, which is how macOS comes: nothing is restored after Quit
+#   GLIMMER_RESTORE=guest              the guest rule's start line (-ApplePersistenceIgnoreState YES): nothing is ever restored
+case "${GLIMMER_RESTORE:-on}" in
+  on) RESTORE="-ApplePersistenceIgnoreState NO -NSQuitAlwaysKeepsWindows YES"; RESTORE_COLD="-NSQuitAlwaysKeepsWindows YES" ;;
+  person) RESTORE="-ApplePersistenceIgnoreState NO -NSQuitAlwaysKeepsWindows NO"; RESTORE_COLD="-NSQuitAlwaysKeepsWindows NO" ;;
+  guest) RESTORE="-ApplePersistenceIgnoreState YES"; RESTORE_COLD="-ApplePersistenceIgnoreState YES" ;;
+  *) echo "GLIMMER_RESTORE is on, person or guest."; exit 1 ;;
+esac
+echo "Window restoration: ${GLIMMER_RESTORE:-on} ($RESTORE)"
 HANDOVER="$PWD/build/handover"
 xcrun swiftc -O -o "$HANDOVER" scripts/handover.swift 2>/dev/null || { echo "Couldn't build scripts/handover.swift"; exit 1; }
 zmodload zsh/datetime
@@ -63,9 +74,9 @@ start() {  # sets PID and PORT; with a file: a cold start for that file
   if [[ -n "${1:-}" ]]; then
     # Cold start by a sibling handing a file over: Glimmer itself then restores no windows.
     # (Through NSWorkspace, as a sibling does: `open -n app file --args …` doesn't deliver the file as an open event.)
-    env -u OPENROUTER_API_KEY "$HANDOVER" "$APP" "$1" -skipWelcome -skipAgentSplash -AppleLanguages "(en)" -ai.noKeychain YES -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer || exit 1
+    env -u OPENROUTER_API_KEY "$HANDOVER" "$APP" "$1" -skipWelcome -skipAgentSplash -AppleLanguages "(en)" -ai.noKeychain YES ${=RESTORE_COLD} -linkAnyOpen Flimmer || exit 1
   else
-    env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -AppleLanguages "(en)" -ai.noKeychain YES -ApplePersistenceIgnoreState NO -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer
+    env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -AppleLanguages "(en)" -ai.noKeychain YES ${=RESTORE} -linkAnyOpen Flimmer
   fi
   for _ in {1..80}; do
     if [[ -z "$PID" ]]; then for p in $(running); do [[ "$before" != *" $p "* ]] && PID=$p; done; fi

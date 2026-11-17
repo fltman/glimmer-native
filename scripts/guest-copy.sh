@@ -18,10 +18,12 @@ OUT="$PWD/build/guest/Glimmer.app"
 [[ -d "$SRC" ]] || { echo "Build first: scripts/test.sh"; exit 1; }
 [[ "$OUT" == */build/guest/Glimmer.app ]] || exit 1
 mkdir -p "$PWD/build/guest"
+# The copy before this one is kept once (a visitor may still be running it); older ones and their set-aside extensions go.
+for old in "$PWD"/build/guest/old-*.app(N) "$PWD"/build/guest/PlugIns-unused-*(N); do rm -rf "$old"; done
 if [[ -d "$OUT" ]]; then mv "$OUT" "$PWD/build/guest/old-$$.app"; fi   # (replaced, not deleted in place)
 cp -R "$SRC" "$OUT"
 # The Quick Look and thumbnail extensions carry the original's ids and are not part of a visit.
-if [[ -d "$OUT/Contents/PlugIns" ]]; then mv "$OUT/Contents/PlugIns" "$PWD/build/guest/PlugIns-unused-$$"; fi
+if [[ -d "$OUT/Contents/PlugIns" ]]; then rm -rf "$OUT/Contents/PlugIns"; fi   # only the copy's; the Debug build keeps its own
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.brattoo.glimmer.debug.guest" "$OUT/Contents/Info.plist"
 ENT="$PWD/build/guest/guest.entitlements"
 codesign -d --entitlements - --xml "$SRC" 2>/dev/null > "$ENT"

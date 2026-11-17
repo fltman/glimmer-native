@@ -890,3 +890,16 @@ The lesson had been written down once already (PLAN.md: "XcodeGen skriver entitl
 **"canceled".** Glimmer's own API writes `canceled` for a stopped job and a stopped step (was `cancelled`); the guide and NEXT.md say so. The reader of a sibling's job ends the wait on `canceled` and on `cancelled`, goes on for `queued` and `running`, and ends with an error on anything else, also on a missing status (test `aStoppedOrUnknownJobEndsTheWait`).
 
 **Not run again after these changes:** the accessibility pass (both languages), test-agent-language.sh, the local model evaluation (the tool descriptions the model reads changed spelling: colour → color, centre → center).
+
+## A linked edit and the system's window restoration (2026-11-17; found by Flimmer's pass)
+
+**The link relied on the system.** The link record is written into the untitled document's manifest, which the system autosaves; it comes back only when the system restores the window (or when the same file is handed over again cold). `test-linked-restart.sh` always ran with restoration on, so its 45 of 45 said nothing about a Mac with "Close windows when quitting an application" on, which is how macOS comes.
+
+`GLIMMER_RESTORE=on|person|guest` now chooses the start line. Results before any mend:
+- **guest** (`-ApplePersistenceIgnoreState YES`): after Save Back, Quit is stopped by the system's sheet "Do you want to keep this new document “photo.png”?" (Save / Delete / Cancel, with a Save As panel). After a relaunch only "Background", no link. 3 checks failed and the script stopped (build/linked-runs/guest.txt).
+- **person** (`-NSQuitAlwaysKeepsWindows NO`): the same sheet at every Quit, also right after Save Back. "Glimmer quits from its menu" failed each time; the checks after it passed only because the script started a second copy while the first stood on its question, so they prove nothing (build/linked-runs/person.txt). Six copies were left standing on that sheet and were stopped by pid.
+- **on**: 45 of 45.
+
+The mend is the link journal (SIBLINGS.md §6.6 as rewritten 2026-11-17); see the next section when it is built.
+
+build/guest held fifteen old copies (523 MB); removed, and guest-copy.sh keeps at most one.
