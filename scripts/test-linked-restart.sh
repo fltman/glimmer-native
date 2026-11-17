@@ -11,7 +11,8 @@
 # Exit 0 = every check passed.
 set -uo pipefail
 cd "$(dirname "$0")/.."
-APP="$PWD/build/DerivedData/Build/Products/Debug/Glimmer.app"
+# GLIMMER_APP: another debug copy to test (for instance one signed without an entitlement, to see that this test notices).
+APP="${GLIMMER_APP:-$PWD/build/DerivedData/Build/Products/Debug/Glimmer.app}"
 [[ -d "$APP" ]] || { echo "Build first: scripts/test.sh"; exit 1; }
 TOOLS="${THE_APPS_TOOLS:-}"
 if [[ -z "$TOOLS" ]]; then
@@ -61,7 +62,7 @@ start() {  # sets PID and PORT; with a file: a cold start for that file
   if [[ -n "${1:-}" ]]; then
     # Cold start by a sibling handing a file over: Glimmer itself then restores no windows.
     # (Through NSWorkspace, as a sibling does: `open -n app file --args …` doesn't deliver the file as an open event.)
-    env -u OPENROUTER_API_KEY "$HANDOVER" "$APP" "$1" -skipWelcome -skipAgentSplash -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer || exit 1
+    env -u OPENROUTER_API_KEY "$HANDOVER" "$APP" "$1" -skipWelcome -skipAgentSplash -ai.noKeychain YES -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer || exit 1
   else
     env -u OPENROUTER_API_KEY open -n "$APP" --args -skipWelcome -skipAgentSplash -ai.noKeychain YES -ApplePersistenceIgnoreState NO -NSQuitAlwaysKeepsWindows YES -linkAnyOpen Flimmer
   fi
