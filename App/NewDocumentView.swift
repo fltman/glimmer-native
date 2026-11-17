@@ -50,7 +50,7 @@ struct NewDocumentView: View {
                     set: { if let p = $0 { width = p.width; height = p.height } }
                 )) {
                     Text("Custom").tag(Preset?.none)
-                    ForEach(Self.presets) { Text($0.name).tag(Optional($0)) }
+                    ForEach(Self.presets) { Text(LocalizedStringKey($0.name)).tag(Optional($0)) }
                 }
                 TextField("Width", value: $width, format: .number.grouping(.never))
                 TextField("Height", value: $height, format: .number.grouping(.never))

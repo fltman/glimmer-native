@@ -111,7 +111,7 @@ Paid steps can take a minute, so a `steps` request that contains a paid step alw
 {"job": {"id": "C1A2…", "kind": "steps", "document": "8F0C…", "status": "running", "progress": 0}}
 ```
 
-Poll `GET /api/v1/jobs/{id}` until `status` is `done`, `failed` or `cancelled` (it starts as `queued` or `running`). `progress` goes from 0 to 1 as steps finish. A finished job carries the same `result` a direct request would have returned (`results` and `document`), and a failed one also has `error` (`{"code": "step_failed", "message": "…", "step": 1}`). `DELETE /api/v1/jobs/{id}` cancels a running job; steps that didn't run are reported as `cancelled`. Running jobs are also listed under `jobs` in `GET /api/v1/status`. Finished jobs are kept for a while (the 50 most recent).
+Poll `GET /api/v1/jobs/{id}` until `status` is `done`, `failed` or `canceled` (it starts as `queued` or `running`; these five are all there are). Changed 2026-11-17: a stopped job and a stopped step were spelled `cancelled` before; accept both if you may meet an older Glimmer, and treat any status you do not know as an end, not as "still running". `progress` goes from 0 to 1 as steps finish. A finished job carries the same `result` a direct request would have returned (`results` and `document`), and a failed one also has `error` (`{"code": "step_failed", "message": "…", "step": 1}`). `DELETE /api/v1/jobs/{id}` cancels a running job; steps that didn't run are reported as `cancelled`. Running jobs are also listed under `jobs` in `GET /api/v1/status`. Finished jobs are kept for a while (the 50 most recent).
 
 ```sh
 JOB=$(curl -s -X POST -H 'X-Glimmer-Agent: 1' -d '{"steps": [{"op": "auto_enhance"}], "async": true}'       $BASE/api/v1/documents/$ID/steps | python3 -c 'import json,sys; print(json.load(sys.stdin)["job"]["id"])')
@@ -164,7 +164,7 @@ Add a non-destructive adjustment layer above the active layer (contrast, hue, bl
 | Param | Type | Description |
 |---|---|---|
 | `type` | string | Required. Which adjustment. One of: `brightness_contrast`, `levels`, `curves`, `exposure`, `hue_saturation`, `vibrance`, `color_balance`, `black_white`, `photo_filter`, `channel_mixer`, `invert`, `posterize`, `threshold`, `gradient_map` |
-| `params` | object | Required. Settings by key; omitted keys keep their default, {} is neutral. Keys (range, default) per type — brightness_contrast: brightness (-1…1, 0), contrast (-1…1, 0); exposure: exposure (-5…5, 0), offset (-0.5…0.5, 0), gamma (0.1…3, 1); hue_saturation: hue (-180…180, 0), saturation (-1…1, 0), lightness (-1…1, 0); vibrance: vibrance (-1…1, 0), saturation (-1…1, 0); color_balance: shadowsR (-1…1, 0), shadowsG (-1…1, 0), shadowsB (-1…1, 0), midtonesR (-1…1, 0), midtonesG (-1…1, 0), midtonesB (-1…1, 0), highlightsR (-1…1, 0), highlightsG (-1…1, 0), highlightsB (-1…1, 0), preserveLuminosity (true/false); black_white: red (-2…3, 0.4), yellow (-2…3, 0.6), green (-2…3, 0.4), cyan (-2…3, 0.6), blue (-2…3, 0.2), magenta (-2…3, 0.8); photo_filter: density (0…1, 0.25), preserveLuminosity (true/false), color (#RRGGBB); channel_mixer: rr (-2…2, 1), rg (-2…2, 0), rb (-2…2, 0), rc (-2…2, 0), gr (-2…2, 0), gg (-2…2, 1), gb (-2…2, 0), gc (-2…2, 0), br (-2…2, 0), bg (-2…2, 0), bb (-2…2, 1), bc (-2…2, 0), monochrome (true/false); posterize: levels (2…255, 4); threshold: level (0…1, 0.5). Moderate values look natural: exposure is in stops (±0.3–1), most −1…1 sliders are strong beyond ±0.4. For a colour cast use color_balance (positive B = bluer, positive R = redder) or photo_filter. |
+| `params` | object | Required. Settings by key; omitted keys keep their default, {} is neutral. Keys (range, default) per type — brightness_contrast: brightness (-1…1, 0), contrast (-1…1, 0); exposure: exposure (-5…5, 0), offset (-0.5…0.5, 0), gamma (0.1…3, 1); hue_saturation: hue (-180…180, 0), saturation (-1…1, 0), lightness (-1…1, 0); vibrance: vibrance (-1…1, 0), saturation (-1…1, 0); color_balance: shadowsR (-1…1, 0), shadowsG (-1…1, 0), shadowsB (-1…1, 0), midtonesR (-1…1, 0), midtonesG (-1…1, 0), midtonesB (-1…1, 0), highlightsR (-1…1, 0), highlightsG (-1…1, 0), highlightsB (-1…1, 0), preserveLuminosity (true/false); black_white: red (-2…3, 0.4), yellow (-2…3, 0.6), green (-2…3, 0.4), cyan (-2…3, 0.6), blue (-2…3, 0.2), magenta (-2…3, 0.8); photo_filter: density (0…1, 0.25), preserveLuminosity (true/false), color (#RRGGBB); channel_mixer: rr (-2…2, 1), rg (-2…2, 0), rb (-2…2, 0), rc (-2…2, 0), gr (-2…2, 0), gg (-2…2, 1), gb (-2…2, 0), gc (-2…2, 0), br (-2…2, 0), bg (-2…2, 0), bb (-2…2, 1), bc (-2…2, 0), monochrome (true/false); posterize: levels (2…255, 4); threshold: level (0…1, 0.5). Moderate values look natural: exposure is in stops (±0.3–1), most −1…1 sliders are strong beyond ±0.4. For a color cast use color_balance (positive B = bluer, positive R = redder) or photo_filter. |
 
 ### `apply_filter`
 
@@ -199,11 +199,11 @@ Add a one-line text layer above the active layer (it doesn't wrap: a long text a
 | Param | Type | Description |
 |---|---|---|
 | `text` | string | Required. The text. |
-| `color` | string | #RRGGBB colour (optional, default the foreground colour). |
+| `color` | string | #RRGGBB color (optional, default the foreground color). |
 | `size` | number | Font size in pixels (optional; default ~8% of the image height). |
 | `bold` | boolean | Optional. true for bold text. |
 | `fontName` | string | Optional. PostScript font name, e.g. Georgia-Bold (default Helvetica Neue). |
-| `position` | string | Optional. Centred horizontally; top and bottom leave 8 % of the image height to the edge; center is the default. One of: `top`, `center`, `bottom` |
+| `position` | string | Optional. Centerd horizontally; top and bottom leave 8 % of the image height to the edge; center is the default. One of: `top`, `center`, `bottom` |
 | `x` | number | Optional. Left edge of the text in document pixels (instead of position). |
 | `y` | number | Optional. Top edge of the text in document pixels (instead of position). |
 
@@ -225,13 +225,13 @@ Generate a new image from a text prompt as a new layer.
 
 ### `auto_enhance`
 
-Automatic tone and colour correction (on-device, free, instant) as editable adjustment layers. A good first step for "fix", "improve" or "make it look better" before any creative changes.
+Automatic tone and color correction (on-device, free, instant) as editable adjustment layers. A good first step for "fix", "improve" or "make it look better" before any creative changes.
 
 No params: `{"op": "auto_enhance"}`
 
 ### `auto_color`
 
-Neutralise a colour cast (on-device, free) with a Color Balance layer. For "too yellow/blue/green", "fix the white balance".
+Neutralize a color cast (on-device, free) with a Color Balance layer. For "too yellow/blue/green", "fix the white balance".
 
 No params: `{"op": "auto_color"}`
 
@@ -278,7 +278,7 @@ Upscale the whole image.
 
 ### `fill`
 
-Fill the selection (or the whole active layer) with a colour.
+Fill the selection (or the whole active layer) with a color.
 
 | Param | Type | Description |
 |---|---|---|
@@ -286,7 +286,7 @@ Fill the selection (or the whole active layer) with a colour.
 
 ### `set_foreground`
 
-Set the foreground (paint) colour.
+Set the foreground (paint) color.
 
 | Param | Type | Description |
 |---|---|---|
@@ -343,7 +343,7 @@ Move, scale, rotate, skew or distort a layer or a group, like Free Transform. To
 | `target` | string | Optional. The layer's or group's name or id; default the active layer. |
 | `scaleX` | number | Optional. Width in percent of the current size (default 100). |
 | `scaleY` | number | Optional. Height in percent of the current size (default 100). |
-| `degrees` | number | Optional. Rotation about the centre, clockwise. |
+| `degrees` | number | Optional. Rotation about the center, clockwise. |
 | `moveX` | number | Optional. Move right by this many document pixels (negative: left). |
 | `moveY` | number | Optional. Move down by this many document pixels (negative: up). |
 | `skewX` | number | Optional. Horizontal skew in degrees. |
@@ -353,7 +353,7 @@ Move, scale, rotate, skew or distort a layer or a group, like Free Transform. To
 
 ### `style_text`
 
-Give words in a text layer their own font, boldness, size or colour (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters; with neither, the whole text is styled. Stays editable text; one undo step. The step's info says which ranges changed.
+Give words in a text layer their own font, boldness, size or color (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters; with neither, the whole text is styled. Stays editable text; one undo step. The step's info says which ranges changed.
 
 | Param | Type | Description |
 |---|---|---|
@@ -378,7 +378,7 @@ Crop the canvas for every layer, like the Crop tool. Give exactly one of: a rect
 | `width` | number | Optional, with a rectangle. Width of the box in pixels. |
 | `height` | number | Optional, with a rectangle. Height of the box in pixels. |
 | `toSelection` | boolean | Optional, instead of a rectangle. true crops to the bounds of the selection. |
-| `aspect` | string | Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centred box of that shape. |
+| `aspect` | string | Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centerd box of that shape. |
 | `deletePixels` | boolean | Optional. true throws away what is outside the box; false (default) keeps it outside the canvas. |
 
 ### `resize_image`
@@ -401,7 +401,7 @@ Give the image more room, or less, without scaling it, like Image › Canvas Siz
 | `height` | number | Optional. New canvas height in pixels. |
 | `aspect` | string | Optional, instead of width and height. W:H, like 16:9: the smallest canvas of that shape that holds the whole image. |
 | `anchor` | string | Optional. Where the image stays (default center); new room goes on the other sides. One of: `top-left`, `top`, `top-right`, `left`, `center`, `right`, `bottom-left`, `bottom`, `bottom-right` |
-| `fill` | string | Optional. #RRGGBB: adds a colour fill layer at the bottom so the new room isn't transparent. Ignored when no room is added. |
+| `fill` | string | Optional. #RRGGBB: adds a color fill layer at the bottom so the new room isn't transparent. Ignored when no room is added. |
 
 ### `select_rect`
 
@@ -431,13 +431,13 @@ Change a layer's opacity, blend mode, visibility or name. One undo step.
 
 ### `add_waveform`
 
-Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolour, move and style.
+Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolor, move and style.
 
 | Param | Type | Description |
 |---|---|---|
 | `style` | string | Optional. bars (default) or wave (one outline). One of: `bars`, `wave` |
 | `bars` | number | Optional. How many bars, 16–400 (default 64). |
-| `color` | string | Optional. #RRGGBB; default the foreground colour. |
+| `color` | string | Optional. #RRGGBB; default the foreground color. |
 | `height` | number | Optional. Share of the canvas height, 0.05–1 (default 0.3). |
 | `width` | number | Optional. Share of the canvas width, 0.1–1 (default 0.8). |
 | `position` | string | Optional. center (default), top or bottom. One of: `center`, `top`, `bottom` |
@@ -521,7 +521,7 @@ Develop a RAW layer again from its camera file with other settings (on-device, f
 | `contrast` | number | Optional. 0…1, where the file has the control. |
 | `sharpness` | number | Optional. 0…1, where the file has the control. |
 | `luminanceNoise` | number | Optional. Noise reduction, 0…1, where the file has the control. |
-| `colorNoise` | number | Optional. Colour noise reduction, 0…1, where the file has the control. |
+| `colorNoise` | number | Optional. Color noise reduction, 0…1, where the file has the control. |
 | `highlightRecovery` | boolean | Optional. Recover detail in blown highlights (on by default), where the file has the switch. |
 | `lensCorrection` | boolean | Optional. Use the lens correction stored in the file, where there is one. It reshapes the whole picture a little, not only the corners. |
 | `asShot` | boolean | Optional. true first goes back to the camera's white balance and the standard values; other values given in the same step are then applied. |
@@ -537,7 +537,7 @@ Develop a RAW layer again from its camera file with other settings (on-device, f
 - `resize_canvas` adds room around the image (`crop` can only take room away). To get a shape such as 16:9: `crop` with `aspect` cuts the image down to it; `resize_canvas` with `aspect` and `anchor` adds room instead, for example beside a person for a title. Use `crop` when the image has more than you need, `resize_canvas` when it has too little.
 - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
 - What leaves the Mac through this API: nothing, except for paid steps. A paid step sends its prompt and the picture it works on (the document, or the selected area) to the picture service chosen in Glimmer's Settings (OpenRouter unless the person chose another; a refusal names it), billed to the user's key there, and only with `allowPaid: true` and `allowUnknownPrice: true`. The API never calls a text model: you are the one planning, so the text service chosen in Glimmer's Settings (OpenRouter, Berget or Grunden) is not used by anything you send here.
-- Removing an object from a photo has no free operation: `inpaint_selection` (paid) is the only one. Free steps can cut out a subject (`remove_background`), cover an area with a colour (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object).
+- Removing an object from a photo has no free operation: `inpaint_selection` (paid) is the only one. Free steps can cut out a subject (`remove_background`), cover an area with a color (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object).
 - A layer's `bounds` are where its visible content is, in document pixels, after its mask; they can reach outside the canvas when content hangs over the edge.
 - `maxSide` only ever makes an image smaller.
 - Size limits: a side is at most 30000 pixels; an opened image at most 256 megapixels; and a canvas may not need more than two fifths of the Mac's memory for one layer (8 bytes a pixel: 800 megapixels on a 16 GB Mac). A new document, `resize_image` or `resize_canvas` beyond that is refused with reason `too_large` and the numbers. Many large layers make a document slow long before that: 60 layers at 6000 × 4000 take about 5.5 GB.

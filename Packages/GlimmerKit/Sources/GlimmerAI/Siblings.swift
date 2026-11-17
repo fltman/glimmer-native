@@ -484,11 +484,16 @@ public actor SiblingClient {
             let (status, data) = try await send(app, "GET", "/api/v1/jobs/\(id)")
             guard status == 200, let root = try? JSONDecoder().decode([String: JSONValue].self, from: data),
                   let job = root["job"]?.object else { throw SiblingError.failed(app, Self.message(status, data)) }
-            switch job["status"]?.string {
+            // SIBLINGS.md §2: queued, running, done, failed or canceled. A stopped job ends the wait in either spelling
+            // (the series wrote "cancelled" before 2026-11-17), and a status that is none of these ends it with an error:
+            // waiting on for a word this version does not know would be waiting for ever.
+            let said = job["status"]?.string
+            switch said {
             case "done": return job["result"] ?? .null
             case "failed": throw SiblingError.failed(app, job["error"]?.object?["message"]?.string ?? "The job failed.")
-            case "cancelled": throw CancellationError()
-            default: continue
+            case "canceled", "cancelled": throw CancellationError()
+            case "queued", "running": continue
+            default: throw SiblingError.failed(app, "The job answered with a status Glimmer does not know (\(said ?? "none")), so Glimmer stopped waiting for it.")
             }
         }
     }

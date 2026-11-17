@@ -1515,17 +1515,6 @@
         }
       }
     },
-    "Cancelled": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Avbrutet"
-          }
-        }
-      }
-    },
     "Canvas": {
       "localizations": {
         "sv": {
@@ -1843,37 +1832,6 @@
         }
       }
     },
-    "Click + to save the foreground colour.": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Klicka på + för att spara förgrundsfärgen."
-          }
-        }
-      }
-    },
-    "Click a channel to see it alone, in grey. The eyes combine channels. Channel views don't change the image.": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Klicka på en kanal för att se den ensam, i grått. Ögonen kombinerar kanaler. Kanalvisningen ändrar inte bilden."
-          }
-        }
-      }
-    },
-    "Click a channel to view it in grey. Channel views don't change the image.": {
-      "extractionState": "stale",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Klicka på en kanal för att visa den i grått. Kanalvyer ändrar inte bilden."
-          }
-        }
-      }
-    },
     "Click an object to select it; ⌥-click to exclude. Return keeps, Esc cancels.": {
       "localizations": {
         "sv": {
@@ -2071,27 +2029,6 @@
         }
       }
     },
-    "Colour %@": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Färg %@"
-          }
-        }
-      }
-    },
-    "Colour swatch": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Färgruta"
-          }
-        }
-      }
-    },
     "Command Palette": {
       "localizations": {
         "sv": {
@@ -2205,27 +2142,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kopiera text i bilden"
-          }
-        }
-      }
-    },
-    "Corrects tone and colour as editable adjustment layers. Runs on this Mac, free. ⇧⌘L": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rättar ton och färg som redigerbara justeringslager. Körs på den här Macen, gratis. ⇧⌘L"
-          }
-        }
-      }
-    },
-    "Corrects tone and colour automatically on this Mac, like Image › Auto Enhance.": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Rättar ton och färg automatiskt på den här Macen, som Bild › Autoförbättra."
           }
         }
       }
@@ -2353,16 +2269,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Cyan"
-          }
-        }
-      }
-    },
-    "Dark Grey": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mörkgrå"
           }
         }
       }
@@ -2741,17 +2647,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Laddas ner första gången (%@)"
-          }
-        }
-      }
-    },
-    "Drag a corner; its neighbour mirrors it": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dra i ett hörn; grannhörnet speglar det"
           }
         }
       }
@@ -3469,16 +3364,6 @@
         }
       }
     },
-    "Fill colour of new shapes": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fyllnadsfärg för nya former"
-          }
-        }
-      }
-    },
     "Fill layers, shapes and smart filters are saved as pixels; the web app has no equivalent.": {
       "extractionState": "stale",
       "localizations": {
@@ -3486,26 +3371,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fyllningslager, former och smarta filter sparas som pixlar; webbappen har ingen motsvarighet."
-          }
-        }
-      }
-    },
-    "Fill new shapes with the foreground colour again": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fyll nya former med förgrundsfärgen igen"
-          }
-        }
-      }
-    },
-    "Fill the path with the foreground colour on the active layer": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fyll banan med förgrundsfärgen på det aktiva lagret"
           }
         }
       }
@@ -3539,16 +3404,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Fyll med mönster"
-          }
-        }
-      }
-    },
-    "Fill without tolerance (⌥⌫ fills with the foreground colour)": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Fyll utan tolerans (⌥⌫ fyller med förgrundsfärgen)"
           }
         }
       }
@@ -3842,16 +3697,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Förgrund"
-          }
-        }
-      }
-    },
-    "Foreground and background colours (X swaps, D resets)": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Förgrunds- och bakgrundsfärg (X byter, D återställer)"
           }
         }
       }
@@ -4191,16 +4036,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Generativa verktyg anropar OpenRouter med din egen nyckel. Verktyg som körs på enheten fungerar utan."
-          }
-        }
-      }
-    },
-    "Gives the active layer the colour grade of a reference image. Runs on this Mac.": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ger det aktiva lagret en referensbilds färgsättning. Körs på den här Macen."
           }
         }
       }
@@ -5153,16 +4988,6 @@
         }
       }
     },
-    "Layers, groups, masks, adjustment layers, layer styles, smart objects and text — non-destructive, in 16-bit linear colour.": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Lager, grupper, masker, justeringslager, lagerstilar, smarta objekt och text – icke-destruktivt, i 16-bitars linjär färg."
-          }
-        }
-      }
-    },
     "Layers, paths, channels and history (⌥⌘L)": {
       "localizations": {
         "sv": {
@@ -5274,16 +5099,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nivåhistogram"
-          }
-        }
-      }
-    },
-    "Light Grey": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ljusgrå"
           }
         }
       }
@@ -5702,16 +5517,6 @@
         }
       }
     },
-    "Mid Grey": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mellangrå"
-          }
-        }
-      }
-    },
     "Midpoint": {
       "extractionState": "manual",
       "localizations": {
@@ -6124,16 +5929,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Inga banor"
-          }
-        }
-      }
-    },
-    "No colour cast to correct.": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Inget färgstick att rätta."
           }
         }
       }
@@ -7525,16 +7320,6 @@
         }
       }
     },
-    "Removes a colour cast with a Color Balance layer. Runs on this Mac, free. ⇧⌘B": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tar bort ett färgstick med ett färgbalanslager. Körs på den här Macen, gratis. ⇧⌘B"
-          }
-        }
-      }
-    },
     "Rename": {
       "localizations": {
         "sv": {
@@ -8080,16 +7865,6 @@
         }
       }
     },
-    "Save the foreground colour": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spara förgrundsfärgen"
-          }
-        }
-      }
-    },
     "Save to": {
       "localizations": {
         "sv": {
@@ -8419,17 +8194,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Använd som bakgrund"
-          }
-        }
-      }
-    },
-    "Sets the foreground colour.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Väljer förgrundsfärgen."
           }
         }
       }
@@ -9180,16 +8944,6 @@
         }
       }
     },
-    "Suggested for this image (analysed on this Mac)": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Föreslaget för den här bilden (analyserat på den här Macen)"
-          }
-        }
-      }
-    },
     "Sunset": {
       "extractionState": "stale",
       "localizations": {
@@ -9883,16 +9637,6 @@
         }
       }
     },
-    "Uses the foreground and background colours": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Använder förgrunds- och bakgrundsfärgen"
-          }
-        }
-      }
-    },
     "Vertical Distortion": {
       "extractionState": "manual",
       "localizations": {
@@ -10522,16 +10266,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "↩ kör · ⌘↩ fråga AI · ⌘K palett"
-          }
-        }
-      }
-    },
-    "⇧ add · ⌥ subtract · while dragging: ⇧ square, ⌥ from the centre": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "⇧ lägg till · ⌥ dra ifrån · under dragning: ⇧ kvadrat, ⌥ från mitten"
           }
         }
       }
@@ -11719,28 +11453,6 @@
         }
       }
     },
-    "This document blends colours in linear light. Other programs blend these layers in gamma, so the layers will look different there; the flattened picture in the file is right.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Det här dokumentet blandar färger i linjärt ljus. Andra program blandar lagren i gamma, så lagren ser annorlunda ut där; den sammanslagna bilden i filen är rätt."
-          }
-        }
-      }
-    },
-    "The document's colours are Display P3; the file is written in sRGB.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dokumentets färger är Display P3; filen skrivs i sRGB."
-          }
-        }
-      }
-    },
     "All layers are merged into one, as chosen: the file looks right everywhere and has no layers to edit.": {
       "extractionState": "manual",
       "localizations": {
@@ -11935,17 +11647,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Som tagen"
-          }
-        }
-      }
-    },
-    "Click the picture to set what should be grey": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Klicka i bilden för att ange vad som ska vara grått"
           }
         }
       }
@@ -12155,17 +11856,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Brusreducering"
-          }
-        }
-      }
-    },
-    "Colour noise reduction": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Färgbrusreducering"
           }
         }
       }
@@ -12529,17 +12219,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Det här är ingen Photoshop-fil."
-          }
-        }
-      }
-    },
-    "This Photoshop file has a colour mode Glimmer doesn't know.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Den här Photoshop-filen har ett färgläge som Glimmer inte känner till."
           }
         }
       }
@@ -12995,17 +12674,6 @@
         }
       }
     },
-    "Indexed colour": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Indexerad färg"
-          }
-        }
-      }
-    },
     "Multichannel": {
       "extractionState": "manual",
       "localizations": {
@@ -13112,17 +12780,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "mönster"
-          }
-        }
-      }
-    },
-    "solid colour": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "enfärgad"
           }
         }
       }
@@ -13270,17 +12927,6 @@
         }
       }
     },
-    "For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognisable people.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "För yrkes- eller företagsbruk, och för personer som är 18 år eller äldre. Googles regler begränsar bilder av igenkännbara personer."
-          }
-        }
-      }
-    },
     "fal keeps what you send in its request history for 90 days by default. Glimmer sends your pictures inside the request and gets the result back the same way, so nothing is placed on fal's file storage, which is public by default.": {
       "extractionState": "manual",
       "localizations": {
@@ -13288,17 +12934,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "fal behåller det du skickar i sin förfrågningshistorik i 90 dagar som standard. Glimmer skickar dina bilder inuti förfrågan och får tillbaka resultatet på samma sätt, så ingenting läggs i fals fillagring, som är offentlig som standard."
-          }
-        }
-      }
-    },
-    "Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a licence to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ladda bara upp bilder på dig själv: Hedras regler förbjuder media av andra personer. Hedra får en licens till det du skapar med tjänsten. Dina bilder laddas upp till Hedra för jobbet; uppladdningen upphör efter en timme."
           }
         }
       }
@@ -13573,17 +13208,6 @@
         }
       }
     },
-    "Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay grey. Untick it to be asked again.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Glimmer kan inte säga vad en bild kostar innan den är gjord. Tills det här är ikryssat är knapparna som gör bilder grå. Ta bort krysset för att bli tillfrågad igen."
-          }
-        }
-      }
-    },
     "Swap Colors": {
       "localizations": {
         "sv": {
@@ -13808,6 +13432,635 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ljussätter och färgsätter det aktiva lagret så att det smälter in i scenen under."
+          }
+        }
+      }
+    },
+    "Canceled": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avbrutet"
+          }
+        }
+      }
+    },
+    "Click + to save the foreground color.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka på + för att spara förgrundsfärgen."
+          }
+        }
+      }
+    },
+    "Click a channel to see it alone, in gray. The eyes combine channels. Channel views don't change the image.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka på en kanal för att se den ensam, i grått. Ögonen kombinerar kanaler. Kanalvisningen ändrar inte bilden."
+          }
+        }
+      }
+    },
+    "Click a channel to view it in gray. Channel views don't change the image.": {
+      "extractionState": "stale",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka på en kanal för att visa den i grått. Kanalvyer ändrar inte bilden."
+          }
+        }
+      }
+    },
+    "Color %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färg %@"
+          }
+        }
+      }
+    },
+    "Color swatch": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgruta"
+          }
+        }
+      }
+    },
+    "Corrects tone and color as editable adjustment layers. Runs on this Mac, free. ⇧⌘L": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rättar ton och färg som redigerbara justeringslager. Körs på den här Macen, gratis. ⇧⌘L"
+          }
+        }
+      }
+    },
+    "Corrects tone and color automatically on this Mac, like Image › Auto Enhance.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rättar ton och färg automatiskt på den här Macen, som Bild › Autoförbättra."
+          }
+        }
+      }
+    },
+    "Dark Gray": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mörkgrå"
+          }
+        }
+      }
+    },
+    "Drag a corner; its neighbor mirrors it": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dra i ett hörn; grannhörnet speglar det"
+          }
+        }
+      }
+    },
+    "Fill color of new shapes": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyllnadsfärg för nya former"
+          }
+        }
+      }
+    },
+    "Fill new shapes with the foreground color again": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll nya former med förgrundsfärgen igen"
+          }
+        }
+      }
+    },
+    "Fill the path with the foreground color on the active layer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll banan med förgrundsfärgen på det aktiva lagret"
+          }
+        }
+      }
+    },
+    "Fill without tolerance (⌥⌫ fills with the foreground color)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll utan tolerans (⌥⌫ fyller med förgrundsfärgen)"
+          }
+        }
+      }
+    },
+    "Foreground and background colors (X swaps, D resets)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förgrunds- och bakgrundsfärg (X byter, D återställer)"
+          }
+        }
+      }
+    },
+    "Gives the active layer the color grade of a reference image. Runs on this Mac.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ger det aktiva lagret en referensbilds färgsättning. Körs på den här Macen."
+          }
+        }
+      }
+    },
+    "Layers, groups, masks, adjustment layers, layer styles, smart objects and text — non-destructive, in 16-bit linear color.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lager, grupper, masker, justeringslager, lagerstilar, smarta objekt och text – icke-destruktivt, i 16-bitars linjär färg."
+          }
+        }
+      }
+    },
+    "Light Gray": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljusgrå"
+          }
+        }
+      }
+    },
+    "Mid Gray": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mellangrå"
+          }
+        }
+      }
+    },
+    "No color cast to correct.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget färgstick att rätta."
+          }
+        }
+      }
+    },
+    "Removes a color cast with a Color Balance layer. Runs on this Mac, free. ⇧⌘B": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tar bort ett färgstick med ett färgbalanslager. Körs på den här Macen, gratis. ⇧⌘B"
+          }
+        }
+      }
+    },
+    "Save the foreground color": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara förgrundsfärgen"
+          }
+        }
+      }
+    },
+    "Sets the foreground color.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Väljer förgrundsfärgen."
+          }
+        }
+      }
+    },
+    "Suggested for this image (analyzed on this Mac)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föreslaget för den här bilden (analyserat på den här Macen)"
+          }
+        }
+      }
+    },
+    "Uses the foreground and background colors": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använder förgrunds- och bakgrundsfärgen"
+          }
+        }
+      }
+    },
+    "⇧ add · ⌥ subtract · while dragging: ⇧ square, ⌥ from the center": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇧ lägg till · ⌥ dra ifrån · under dragning: ⇧ kvadrat, ⌥ från mitten"
+          }
+        }
+      }
+    },
+    "This document blends colors in linear light. Other programs blend these layers in gamma, so the layers will look different there; the flattened picture in the file is right.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här dokumentet blandar färger i linjärt ljus. Andra program blandar lagren i gamma, så lagren ser annorlunda ut där; den sammanslagna bilden i filen är rätt."
+          }
+        }
+      }
+    },
+    "The document's colors are Display P3; the file is written in sRGB.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dokumentets färger är Display P3; filen skrivs i sRGB."
+          }
+        }
+      }
+    },
+    "Click the picture to set what should be gray": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klicka i bilden för att ange vad som ska vara grått"
+          }
+        }
+      }
+    },
+    "Color noise reduction": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Färgbrusreducering"
+          }
+        }
+      }
+    },
+    "This Photoshop file has a color mode Glimmer doesn't know.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Photoshop-filen har ett färgläge som Glimmer inte känner till."
+          }
+        }
+      }
+    },
+    "Indexed color": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indexerad färg"
+          }
+        }
+      }
+    },
+    "solid color": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "enfärgad"
+          }
+        }
+      }
+    },
+    "For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognizable people.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "För yrkes- eller företagsbruk, och för personer som är 18 år eller äldre. Googles regler begränsar bilder av igenkännbara personer."
+          }
+        }
+      }
+    },
+    "Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a license to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladda bara upp bilder på dig själv: Hedras regler förbjuder media av andra personer. Hedra får en licens till det du skapar med tjänsten. Dina bilder laddas upp till Hedra för jobbet; uppladdningen upphör efter en timme."
+          }
+        }
+      }
+    },
+    "Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay gray. Untick it to be asked again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer kan inte säga vad en bild kostar innan den är gjord. Tills det här är ikryssat är knapparna som gör bilder grå. Ta bort krysset för att bli tillfrågad igen."
+          }
+        }
+      }
+    },
+    "No obvious distractions found.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hittade inget uppenbart som stör."
+          }
+        }
+      }
+    },
+    "Valid": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giltig"
+          }
+        }
+      }
+    },
+    "Valid · %@ left": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Giltig · %@ kvar"
+          }
+        }
+      }
+    },
+    "Reading OpenRouter's list…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läser OpenRouters lista…"
+          }
+        }
+      }
+    },
+    "OpenRouter's list states no price for this model.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenRouters lista anger inget pris för den här modellen."
+          }
+        }
+      }
+    },
+    "OpenRouter's list has no model with this id, so its price is not known.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenRouters lista har ingen modell med det här id:t, så priset är inte känt."
+          }
+        }
+      }
+    },
+    "Light color": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljusfärg"
+          }
+        }
+      }
+    },
+    "%@ in, %@ out per million tokens": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ in, %2$@ ut per miljon token"
+          }
+        }
+      }
+    },
+    "Generated": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genererad"
+          }
+        }
+      }
+    },
+    "Edited": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redigerad"
+          }
+        }
+      }
+    },
+    "Reflections Removed": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reflexer borttagna"
+          }
+        }
+      }
+    },
+    "Square 1024": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kvadrat 1024"
+          }
+        }
+      }
+    },
+    "Square 2048": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kvadrat 2048"
+          }
+        }
+      }
+    },
+    "Portrait 1080 × 1350": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porträtt 1080 × 1350"
+          }
+        }
+      }
+    },
+    "A4 at 150 ppi": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A4 med 150 ppi"
+          }
+        }
+      }
+    },
+    "That preset no longer exists.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den preseten finns inte längre."
+          }
+        }
+      }
+    },
+    "That action no longer exists.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den åtgärden finns inte längre."
+          }
+        }
+      }
+    },
+    "The image has no pixel layer to work on.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilden har inget pixellager att arbeta på."
+          }
+        }
+      }
+    },
+    "Unknown preset.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okänd preset."
+          }
+        }
+      }
+    },
+    "Unknown adjustment.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okänd justering."
+          }
+        }
+      }
+    },
+    "Unknown filter.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Okänt filter."
+          }
+        }
+      }
+    },
+    "This Mac has no Metal GPU available.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den här Macen har ingen tillgänglig Metal-GPU."
+          }
+        }
+      }
+    },
+    "Couldn't read the Glimmer document.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det gick inte att läsa Glimmer-dokumentet."
           }
         }
       }

@@ -10,6 +10,8 @@ cd "$(dirname "$0")/.."
 if [[ -z "${GLIMMER_PORT:-}" ]]; then
   FAKE_PORT=$(python3 -c 'import socket;s=socket.socket();s.bind(("127.0.0.1",0));print(s.getsockname()[1])')
   export FAKE_PORT FAKE_MODE=$(mktemp -t glimmer-fake-mode)
+  # GLIMMER_LANG=sv: the same against a copy in Swedish. What comes back to the agent must be English all the same.
+  [[ "${GLIMMER_LANG:-en}" == en ]] || export GLIMMER_ARGS="-AppleLanguages (${GLIMMER_LANG}) -AppleLocale ${GLIMMER_LANG}_SE ${GLIMMER_ARGS:-}"
   GLIMMER_FAKE_SERVICE="http://127.0.0.1:$FAKE_PORT" exec scripts/test-app.sh "$0"
 fi
 python3 -I - "$FAKE_PORT" "$FAKE_MODE" <<'PY' &
@@ -56,7 +58,7 @@ def calls():
     try: return len(open(mode_file + ".calls").read().split())
     except FileNotFoundError: return 0
 steps = {"generate_layer": {"prompt": "a red ball"}, "image_edit_composite": {"instruction": "make the mug red"}}
-import time
+import time, re
 def finished(code, raw):
     """A paid step runs as a job: wait for it and give back what it ended as."""
     try: job = json.loads(raw).get("job")
@@ -103,6 +105,8 @@ for mode, what in (("refusal", "a refusal (HTTP 422 with the service's own sente
         failed = '"failed"' in text or code >= 400
         check(f"{op}, {what}: reported as failed, not done", failed and '"status" : "done"' not in text, text[:300])
         if mode == "refusal": check(f"{op}: the service's own words come back", "the account is restricted (ref 7Q-ZETA)" in text, text[:400])
+        told = " ".join(re.findall(r'"(?:message|error)"\s*:\s*"((?:[^"\\]|\\.)*)"', text))
+        check(f"{op}, {what}: what the agent is told is English ({told[:70]})", told and not re.search(r"[åäöÅÄÖ]|\\u00e[45]|\\u00f6|\b(och|inte|för|att|svarade|tjänsten|bild)\b", told), told[:300])
         check(f"{op}, {what}: the document is as it was (layers, size, selection)", fingerprint() == before)
         code, raw = call("POST", f"/documents/{doc}/undo")
         check(f"{op}, {what}: no undo step was made (Undo takes back the step from before the failure)", code == 200 and fingerprint() == opened, raw[:160].decode("utf8", "replace"))

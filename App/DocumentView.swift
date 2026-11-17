@@ -502,7 +502,7 @@ private struct ColorSwatches: View {
                 .frame(width: 40, height: 24)
         }
         .frame(width: 66, height: 44, alignment: .topLeading)
-        .help("Foreground and background colours (X swaps, D resets)")
+        .help("Foreground and background colors (X swaps, D resets)")
         HStack(spacing: 2) {
             Button { session.swapColors() } label: { Image(systemName: "arrow.left.arrow.right").frame(width: 30, height: 20) }
                 .help("Swap foreground and background (X)")
@@ -564,10 +564,10 @@ private struct SwatchesView: View {
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
-                .help("Save the foreground colour")
+                .help("Save the foreground color")
             }
             if saved.isEmpty {
-                Text("Click + to save the foreground colour.").font(.caption).foregroundStyle(.secondary)
+                Text("Click + to save the foreground color.").font(.caption).foregroundStyle(.secondary)
             } else {
                 grid(saved, removable: true)
             }
@@ -603,8 +603,8 @@ private struct SwatchesView: View {
                             }
                         }
                     }
-                    .accessibilityLabel(Text("Colour \(Self.hex(c))"))
-                    .accessibilityHint(Text("Sets the foreground colour."))
+                    .accessibilityLabel(Text("Color \(Self.hex(c))"))
+                    .accessibilityHint(Text("Sets the foreground color."))
                     .accessibilityAction(named: Text("Set as Background")) { session.background = c }
             }
         }

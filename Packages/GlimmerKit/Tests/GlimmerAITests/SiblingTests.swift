@@ -73,6 +73,12 @@ final class FakeJammer: URLProtocol, @unchecked Sendable {
         case ("GET", "/api/v1/documents/D1/analysis"): return (200, ["analysis": ["lufs": -16]])
         case ("POST", "/api/v1/documents/D1/restore"): return (202, ["job": ["id": "J1", "status": "running"]])
         case ("GET", "/api/v1/jobs/J1"): return (200, ["job": ["id": "J1", "status": "done", "result": ["ok": true]]])
+        // A stopped job in the series' spelling and in the one from before 2026-11-17, and a status no version knows.
+        case ("GET", "/api/v1/jobs/STOPPED"): return (200, ["job": ["id": "STOPPED", "status": "canceled"]])
+        case ("GET", "/api/v1/jobs/STOPPED-OLD"): return (200, ["job": ["id": "STOPPED-OLD", "status": "cancelled"]])
+        case ("GET", "/api/v1/jobs/STRANGE"): return (200, ["job": ["id": "STRANGE", "status": "paused"]])
+        case ("GET", "/api/v1/jobs/SILENT"): return (200, ["job": ["id": "SILENT"]])
+        case ("GET", "/api/v1/jobs/WAITING"): return (200, ["job": ["id": "WAITING", "status": "queued"]])
         case ("GET", "/api/v1/documents/D1/waveform"):
             let width = Int(URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems?.first { $0.name == "width" }?.value ?? "4") ?? 4
             let left = (0..<width).map { i in [-0.1 * Double(i % 5), 0.1 * Double(i % 5)] }
@@ -160,6 +166,32 @@ final class FakeJammer: URLProtocol, @unchecked Sendable {
         let post = try #require(FakeJammer.requests.last { $0.method == "POST" })
         let body = try #require(try JSONSerialization.jsonObject(with: post.body ?? Data()) as? [String: Any])
         #expect(body["strength"] as? Double == 0.5)
+    }
+
+    /// SIBLINGS.md §2: a stopped job ends the wait in either spelling, and a status that is not one of the five
+    /// ends it with an error. (Jämmer began to write "canceled" on 2026-11-17; a reader that knew only
+    /// "cancelled" would have waited for ever.)
+    @Test func aStoppedOrUnknownJobEndsTheWait() async throws {
+        FakeJammer.reset()
+        let client = FakeJammer.client()
+        for id in ["STOPPED", "STOPPED-OLD"] {
+            await #expect(throws: CancellationError.self) { try await client.follow(.jammer, job: id, interval: .milliseconds(5)) }
+        }
+        for (id, word) in [("STRANGE", "paused"), ("SILENT", "none")] {
+            do {
+                _ = try await client.follow(.jammer, job: id, interval: .milliseconds(5))
+                Issue.record("\(id): the wait went on")
+            } catch let error as SiblingError {
+                #expect(error.errorDescription?.contains("a status Glimmer does not know (\(word))") == true, "\(error.errorDescription ?? "")")
+            }
+        }
+        // A job that is only queued is still waited for: asked again and again until the caller gives up.
+        let waiting = Task { try await client.follow(.jammer, job: "WAITING", interval: .milliseconds(5)) }
+        try await Task.sleep(for: .milliseconds(120))
+        #expect(FakeJammer.requests.filter { $0.url.path.hasSuffix("/jobs/WAITING") }.count >= 3)
+        waiting.cancel()
+        // Given up by the caller: the wait ends (as a cancellation, or as the cancelled request's own error).
+        await #expect(throws: (any Error).self) { try await waiting.value }
     }
 
     @Test func refusalsAndErrors() async throws {

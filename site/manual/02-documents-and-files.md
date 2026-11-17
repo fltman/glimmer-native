@@ -70,10 +70,10 @@ What comes through as it was, for RGB and grayscale files with 8 or 16 bits per 
 - Groups, open or closed, and clipping.
 - Layer masks, including masks that are switched off.
 - The blend modes Glimmer has, which is all of Photoshop's except Dissolve.
-- Solid colour fill layers, and shapes filled with one colour: they come in as fill layers with their outline, which you can go on editing.
+- Solid color fill layers, and shapes filled with one color: they come in as fill layers with their outline, which you can go on editing.
 - Levels, Curves and Invert adjustment layers. A Curves layer from a Photoshop file keeps its points and runs between them as Photoshop draws it.
 
-The document is set to blend colours the way Photoshop does (**Image › Blend Colors in Gamma Space**), so that half-transparent layers look as they did.
+The document is set to blend colors the way Photoshop does (**Image › Blend Colors in Gamma Space**), so that half-transparent layers look as they did.
 
 What does not come through in this version, and what happens instead:
 
@@ -82,7 +82,7 @@ What does not come through in this version, and what happens instead:
 - The other **adjustment layers**, **gradient and pattern fills**, and shapes with an inverted outline are left out.
 - **Layer effects** such as shadows, strokes and glows, and **vector masks**, are not read.
 - A layer in the **Dissolve** blend mode comes in as Normal.
-- Files in **other colour modes** (CMYK, Lab, indexed colour, duotone, multichannel, bitmap) and files with **32 bits per channel** open as one layer: the flattened picture saved in the file, converted to RGB by macOS. Their layers are not read.
+- Files in **other color modes** (CMYK, Lab, indexed color, duotone, multichannel, bitmap) and files with **32 bits per channel** open as one layer: the flattened picture saved in the file, converted to RGB by macOS. Their layers are not read.
 
 Nothing is dropped silently. When the file has opened, an **Import Report** lists, layer by layer, what did not come through and what was done instead; if everything came through, it says so in one line. Glimmer also compares its own picture of the layers with the flattened picture that the file carries, and the report says whether they match or how much they differ. The report is saved with the Glimmer document: **File › Import Report…** shows it again, also after you have closed and reopened the document.
 
@@ -91,7 +91,7 @@ A file larger than Glimmer's limit for your Mac is refused, with the same messag
 Glimmer reads these files with its own code, written from Adobe's published description of the format. What that has been tried against:
 
 - Files that Glimmer's own tests generate, and fifty small test files from two open-source projects, most of them written by Photoshop, and two large layered files (the larger a 228 MB PSB of 3,642 × 2,160 pixels with ten layers, nine of them smart objects).
-- In those files, Glimmer's picture of the layers matches the picture saved in the file for: layers of pixels, groups, shapes filled with one colour, layer masks, half-transparent layers, 16 bits per channel, the large-document form PSB, the Normal, Multiply, Darker Color and Lighter Color blend modes, Levels, Curves and Invert adjustment layers, smart objects (as pixels), and text (as pixels) in most of the files.
+- In those files, Glimmer's picture of the layers matches the picture saved in the file for: layers of pixels, groups, shapes filled with one color, layer masks, half-transparent layers, 16 bits per channel, the large-document form PSB, the Normal, Multiply, Darker Color and Lighter Color blend modes, Levels, Curves and Invert adjustment layers, smart objects (as pixels), and text (as pixels) in most of the files.
 - Text differs slightly along the edges of the letters in a few files (under 1 % of the pixels). That is consistent with a Photoshop setting for how text is blended, which is not stored in the file; it has not been confirmed.
 - The picture differs, and the report says why, for: the Dissolve blend mode, the adjustment layers Glimmer leaves out, layer effects, and vector masks on layers of pixels.
 - CMYK and Lab files and files with 32 bits per channel opened as their flattened picture, as described above.
@@ -108,11 +108,11 @@ The two large files opened in two and six seconds on the Mac they were tried on,
 
 Choose **File › Export…** and click **Photoshop File…**. A sheet shows what the file will hold before you save it; choose 8 or 16 bits per channel, then **Save…**.
 
-Written as what they are: layers of pixels, groups, masks, names, opacity, visibility, clipping, blend modes, solid colour fills, shapes with their outline, and Levels, Curves and Invert adjustment layers. The file also holds a flattened picture of the whole document, so a program that doesn't read layers still shows the right image.
+Written as what they are: layers of pixels, groups, masks, names, opacity, visibility, clipping, blend modes, solid color fills, shapes with their outline, and Levels, Curves and Invert adjustment layers. The file also holds a flattened picture of the whole document, so a program that doesn't read layers still shows the right image.
 
 Written as layers of pixels that look the same: text, smart objects, gradient and pattern fills, and layers with effects. You can't edit them as text, smart objects or effects in the file. Not written as layers: the other adjustment layers; the flattened picture still shows what they do. A mask's feather and density are not written. The sheet lists each of these for your document.
 
-If your document blends colours in linear light (**Image › Blend Colors in Gamma Space** is off, which is Glimmer's default), other programs will blend the same layers differently. The sheet says so, with how different they will look measured on your document, and lets you choose between writing the layers as they are and merging them into one layer that looks right everywhere.
+If your document blends colors in linear light (**Image › Blend Colors in Gamma Space** is off, which is Glimmer's default), other programs will blend the same layers differently. The sheet says so, with how different they will look measured on your document, and lets you choose between writing the layers as they are and merging them into one layer that looks right everywhere.
 
 What has been verified: Glimmer reads its own Photoshop files back with every setting above intact and the picture unchanged, and macOS (Preview, Quick Look) shows their flattened picture. The layers have not been tried in Photoshop itself, or in any other program that reads them. Keep the Glimmer document; the Photoshop file is a copy for someone else.
 
@@ -147,7 +147,7 @@ When you place, paste or drop an image whose name says nothing about it, such as
 
 A camera's RAW file (DNG, CR3, RAF, ORF, RW2 and others) opens as a new document with one layer that keeps the RAW file itself. The picture you see is developed from it, and you can develop it again at any time with other settings, without losing quality: choose **Layer › Develop…** with that layer selected.
 
-The Develop sheet shows the picture and these controls: **Exposure** (in stops), **Temperature** and **Tint** (white balance; tick *Click the picture to set what should be grey* and click something that should be neutral), **Shadows**, and, where the file allows it, **Contrast**, **Sharpness**, **Noise reduction**, **Colour noise reduction**, **Recover highlights** and **Lens correction**. **As Shot** goes back to the camera's own white balance and the standard values. **Develop** puts the new picture in the layer as one undo step.
+The Develop sheet shows the picture and these controls: **Exposure** (in stops), **Temperature** and **Tint** (white balance; tick *Click the picture to set what should be gray* and click something that should be neutral), **Shadows**, and, where the file allows it, **Contrast**, **Sharpness**, **Noise reduction**, **Color noise reduction**, **Recover highlights** and **Lens correction**. **As Shot** goes back to the camera's own white balance and the standard values. **Develop** puts the new picture in the layer as one undo step.
 
 The picture in the sheet follows the controls as fast as your Mac develops the file. For most cameras that is at once; for very large files (around 50 megapixels) it can lag by up to a second or two, and the first picture after the sheet opens takes a few seconds. A line under the picture says when it is catching up. What you see when it has caught up is what you get.
 
@@ -252,7 +252,7 @@ Choose what to do to every image under **Apply**:
 
 | Recipe | What it does |
 | --- | --- |
-| Auto Enhance | Analyses each photo on your Mac and corrects its tone and color, as **Image › Auto Enhance** does. This is the default. |
+| Auto Enhance | Analyzes each photo on your Mac and corrects its tone and color, as **Image › Auto Enhance** does. This is the default. |
 | Remove Background | Finds the subject on your Mac and masks out the background. |
 | Nothing (convert only) | Changes only the format, size or quality. |
 | Presets | Any of the looks: Cinematic Teal & Orange, Vintage Film, B&W Noir, HDR Pop, Golden Hour, Cool Cyberpunk, Matte Fade, Bleach Bypass, Cross Process, Dreamy Soft. |

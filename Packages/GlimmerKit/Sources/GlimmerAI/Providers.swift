@@ -94,7 +94,7 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
             p.built = [.text, .image]; p.offered = [.text, .image]
             p.fromDocumentationOnly = true
             p.keysURL = "https://aistudio.google.com/apikey"; p.pricesURL = "https://ai.google.dev/gemini-api/docs/pricing"
-            p.termsNote = "For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognisable people."
+            p.termsNote = "For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognizable people."
             p.termsURL = "https://ai.google.dev/gemini-api/terms"
             return p
         }(),
@@ -132,7 +132,7 @@ public struct AIProvider: Sendable, Identifiable, Equatable {
             p.built = [.image]; p.offered = [.image]
             p.fromDocumentationOnly = true
             p.keysURL = "https://www.hedra.com/develop"; p.pricesURL = "https://www.hedra.com/pricing"
-            p.termsNote = "Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a licence to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour."
+            p.termsNote = "Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a license to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour."
             p.termsURL = "https://www.hedra.com/terms"
             return p
         }(),
@@ -368,8 +368,17 @@ public enum ModelCatalog {
                     m.inputPrice = number(price["input_per_1m_tokens"]); m.outputPrice = number(price["output_per_1m_tokens"])
                     m.currency = (price["input_per_1m_tokens"] as? [String: Any])?["currency"] as? String
                 }
+            case "openrouter":
+                // From OpenRouter's documentation of GET /models (not yet read from a real answer by Glimmer):
+                // {"pricing": {"prompt": "0.000003", "completion": "0.000015"}, "architecture": {"input_modalities": ["text", "image"]},
+                //  "supported_parameters": ["tools", …]}. The prices are US dollars per token, written as text.
+                if let price = entry["pricing"] as? [String: Any], let i = number(price["prompt"]), let o = number(price["completion"]), i >= 0, o >= 0 {
+                    m.inputPrice = i * 1_000_000; m.outputPrice = o * 1_000_000; m.currency = "USD"
+                }
+                if let parameters = entry["supported_parameters"] as? [String] { m.tools = parameters.contains("tools") }
+                if let inputs = (entry["architecture"] as? [String: Any])?["input_modalities"] as? [String] { m.vision = inputs.contains("image") }
             default:
-                break   // ids only (OpenRouter's own list, Ollama, MLX)
+                break   // ids only (Ollama, MLX)
             }
             models.append(m)
         }

@@ -117,7 +117,7 @@ public struct PSDFile: Sendable {
         try r.skip(6)
         let channels = Int(try r.u16()), height = Int(try r.u32()), width = Int(try r.u32())
         let depth = Int(try r.u16())
-        guard let mode = ColorMode(rawValue: try r.u16()) else { throw Problem("This Photoshop file has a colour mode Glimmer doesn't know.") }
+        guard let mode = ColorMode(rawValue: try r.u16()) else { throw Problem("This Photoshop file has a color mode Glimmer doesn't know.") }
         let side = version == 2 ? 300_000 : 30_000
         guard (1...56).contains(channels), (1...side).contains(width), (1...side).contains(height), [1, 8, 16, 32].contains(depth) else {
             throw Problem("This Photoshop file's header is damaged.")

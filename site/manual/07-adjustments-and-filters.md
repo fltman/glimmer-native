@@ -5,7 +5,7 @@ Glimmer changes tone and color in two ways.
 - **Adjustment layers** sit in the layer stack and change how the layers below them look. They never touch pixels. You can change their settings, hide them, mask them or delete them at any time.
 - **Filters** change the pixels of a layer when you click OK. Blur, sharpen, noise and the other effects in the Filter menu are filters. To keep a filter editable, apply it to a smart object (see [Smart filters](#smart-filters)).
 
-Use adjustment layers for tone and color. Use filters for effects that need neighbouring pixels, such as blurring and sharpening.
+Use adjustment layers for tone and color. Use filters for effects that need neighboring pixels, such as blurring and sharpening.
 
 ## Adjustment layers
 

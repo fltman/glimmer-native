@@ -827,8 +827,8 @@ enum AgentRouter {
                 if let failed = results.firstIndex(where: { $0.status == "failed" }) {
                     job.status = "failed"
                     job.error = stepFailure(results, failed)
-                } else if results.contains(where: { $0.status == "cancelled" }) {
-                    job.status = "cancelled"
+                } else if results.contains(where: { $0.status == "canceled" }) {
+                    job.status = "canceled"
                 } else {
                     job.status = "done"
                     job.progress = 1

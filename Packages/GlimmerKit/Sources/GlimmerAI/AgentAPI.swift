@@ -265,7 +265,7 @@ public enum AgentAPI {
         let format: [String: Any] = ["type": "string", "enum": formats, "description": "Optional. Default png."]
         let maxSide: [String: Any] = ["type": "integer", "minimum": 16, "description": "Optional. Scale so the longer side fits, in pixels."]
         return [
-            op("export", "Render the document to an image file and return its bytes (JSON body). With preset podcast-cover: the centre square at exactly 3000 or 1400 pixels, JPEG or PNG, under maxBytes.", "POST", "export", [
+            op("export", "Render the document to an image file and return its bytes (JSON body). With preset podcast-cover: the center square at exactly 3000 or 1400 pixels, JPEG or PNG, under maxBytes.", "POST", "export", [
                 "preset": ["type": "string", "enum": ["podcast-cover"],
                            "description": "Optional. podcast-cover: square cover art in podcast sizes (format jpeg by default, or png)."],
                 "size": ["type": "integer", "enum": [3000, 1400],
@@ -282,8 +282,8 @@ public enum AgentAPI {
                 "name": ["type": "string", "x-in": "query", "description": "Optional. The layer's name (default: the source document's name, or Image)."],
                 "fit": ["type": "string", "enum": CanvasSteps.Fit.allCases.map(\.rawValue), "x-in": "query",
                         "description": "Optional. contain (default): scaled down to fit the canvas, never up. cover: scaled to cover the whole canvas. none: at its own size."],
-                "x": ["type": "number", "x-in": "query", "description": "Optional. Left edge in document pixels (default: centred)."],
-                "y": ["type": "number", "x-in": "query", "description": "Optional. Top edge in document pixels (default: centred)."],
+                "x": ["type": "number", "x-in": "query", "description": "Optional. Left edge in document pixels (default: centerd)."],
+                "y": ["type": "number", "x-in": "query", "description": "Optional. Top edge in document pixels (default: centerd)."],
                 "smartObject": ["type": "boolean", "x-in": "query",
                                 "description": "Optional. true (default) keeps the image's own pixels, so later scaling doesn't soften it; false makes a plain pixel layer."],
             ], undoable: true),
@@ -299,7 +299,7 @@ public enum AgentAPI {
     /// build has Heal Selection (Config/Features.xcconfig).
     /// A build without the feature has no text about it at all, whatever `heal` says.
     static func objectRemovalNote(heal: Bool) -> String {
-        let patch = "Free steps can cut out a subject (`remove_background`), cover an area with a colour (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object)."
+        let patch = "Free steps can cut out a subject (`remove_background`), cover an area with a color (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object)."
         #if GLIMMER_HEAL
         if heal {
             return "To take something out of a photo: select it (`select_rect`, or `select_subject` when it is the main subject), then `heal_selection` fills the area from what surrounds it, on the Mac and free. It suits dust, scratches, wires and things up to about 120 px across on grass, sky, walls and the like; it copies existing image, it does not invent, so a large object or one in front of a complicated scene needs `inpaint_selection` (paid). An area over about 120 px across is refused with `area_too_large` unless `allowLarge` is true, and over 250 px or too much work always (`hard` is then true). " + patch
@@ -473,7 +473,7 @@ public enum AgentAPI {
         {"job": {"id": "C1A2…", "kind": "steps", "document": "8F0C…", "status": "running", "progress": 0}}
         ```
 
-        Poll `GET /api/v1/jobs/{id}` until `status` is `done`, `failed` or `cancelled` (it starts as `queued` or `running`). `progress` goes from 0 to 1 as steps finish. A finished job carries the same `result` a direct request would have returned (`results` and `document`), and a failed one also has `error` (`{"code": "step_failed", "message": "…", "step": 1}`). `DELETE /api/v1/jobs/{id}` cancels a running job; steps that didn't run are reported as `cancelled`. Running jobs are also listed under `jobs` in `GET /api/v1/status`. Finished jobs are kept for a while (the 50 most recent).
+        Poll `GET /api/v1/jobs/{id}` until `status` is `done`, `failed` or `canceled` (it starts as `queued` or `running`; these five are all there are). Changed 2026-11-17: a stopped job and a stopped step were spelled `cancelled` before; accept both if you may meet an older Glimmer, and treat any status you do not know as an end, not as "still running". `progress` goes from 0 to 1 as steps finish. A finished job carries the same `result` a direct request would have returned (`results` and `document`), and a failed one also has `error` (`{"code": "step_failed", "message": "…", "step": 1}`). `DELETE /api/v1/jobs/{id}` cancels a running job; steps that didn't run are reported as `cancelled`. Running jobs are also listed under `jobs` in `GET /api/v1/status`. Finished jobs are kept for a while (the 50 most recent).
 
         ```sh
         JOB=$(curl -s -X POST -H '\(agentHeader): 1' -d '{"steps": [{"op": "auto_enhance"}], "async": true}' \

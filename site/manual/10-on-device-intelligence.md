@@ -10,7 +10,7 @@ The one-click corrections need an image to work on. On a new, empty document the
 
 ### Auto Enhance
 
-Choose **Image › Auto Enhance** (⇧⌘L). Glimmer analyses the image with Core Image's automatic adjustments and adds the result as a group named **Auto Enhance** at the top of the layer stack. The group can hold up to three adjustment layers:
+Choose **Image › Auto Enhance** (⇧⌘L). Glimmer analyzes the image with Core Image's automatic adjustments and adds the result as a group named **Auto Enhance** at the top of the layer stack. The group can hold up to three adjustment layers:
 
 - **Curves**, for tone: brightness, contrast, and a lift in the shadows or a softer top end where the image needs it.
 - **Color Balance**, only when the image has a clear color cast.
@@ -141,7 +141,7 @@ Renaming happens on your Mac, a moment after the layer appears. It is not an und
 
 ## Suggestions for the open image
 
-When you click in the omnibar at the bottom of the canvas, Glimmer analyses the open image on your Mac and shows up to four suggestions for it, marked with a wand. They depend on what it finds:
+When you click in the omnibar at the bottom of the canvas, Glimmer analyzes the open image on your Mac and shows up to four suggestions for it, marked with a wand. They depend on what it finds:
 
 | Glimmer finds | It suggests |
 |---|---|

@@ -66,6 +66,26 @@ extension AIController {
     /// Set when the person has said, once for this service, that they know it states no price in advance. Taken back in Settings › AI.
     static func textUnknownPriceKey(_ slug: String) -> String { "ai.unknownPriceAgreed.text.\(slug)" }
 
+    /// The service's model list, as Settings reads it. A debug build takes a list given at launch instead
+    /// (`-ai.modelListJSON.<slug> <the answer of GET /models, base64>`: as plain JSON the defaults system would read it as a
+    /// property list, not a text), so a test copy that makes no connection can show a listed price.
+    static func textModelList(for provider: AIProvider, key: String?) async throws -> [ProviderModel] {
+        #if DEBUG
+        if let given = UserDefaults.standard.string(forKey: "ai.modelListJSON.\(provider.slug)") {
+            return try ModelCatalog.textModels(slug: provider.slug, data: Data(base64Encoded: given) ?? Data(given.utf8))
+        }
+        #endif
+        return try await ModelCatalog.fetchTextModels(provider, key: key)
+    }
+
+    /// A model's listed price in the app's language ("€0.25 in, €0.50 out per million tokens"), or nil when the list has none.
+    static func priceText(_ model: ProviderModel?) -> String? {
+        guard let model, let i = model.inputPrice, let o = model.outputPrice else { return nil }
+        let sign = model.currency == "EUR" ? "€" : model.currency == "USD" ? "$" : (model.currency.map { $0 + " " } ?? "")
+        func amount(_ v: Double) -> String { sign + v.formatted(.number.precision(.fractionLength(2))) }
+        return String(localized: "\(amount(i)) in, \(amount(o)) out per million tokens")
+    }
+
     /// Called when Settings has read the service's model list: keeps the chosen model's listed price with the time, or forgets it when the list has none.
     static func rememberTextPrice(_ slug: String, model: String, line: String?) {
         let d = UserDefaults.standard

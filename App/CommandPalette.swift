@@ -298,7 +298,7 @@ struct Omnibar: View {
                         .frame(height: 22)
                         .overlay { Capsule().strokeBorder(Theme.accent.opacity(0.6)) }
                         .contentShape(.capsule)
-                        .help("Suggested for this image (analysed on this Mac)")
+                        .help("Suggested for this image (analyzed on this Mac)")
                     }
                     ForEach((blank ? Self.generateSuggestions : Self.editSuggestions).prefix(max(2, 5 - smart.count)), id: \.self) { suggestion in
                         Button(LocalizedStringKey(suggestion)) {

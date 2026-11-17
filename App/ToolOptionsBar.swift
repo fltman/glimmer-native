@@ -42,7 +42,7 @@ struct ToolOptionsBar: View {
                     }
                     .menuStyle(.borderlessButton)
                     .fixedSize()
-                    .help("Fill without tolerance (⌥⌫ fills with the foreground colour)")
+                    .help("Fill without tolerance (⌥⌫ fills with the foreground color)")
                 case .gradient:
                     Picker("Style", selection: $session.gradientStyle) {
                         ForEach(GradientStyle.allCases, id: \.self) { Text(LocalizedStringKey($0.title)).tag($0) }
@@ -60,7 +60,7 @@ struct ToolOptionsBar: View {
                     Text("⇧ add · ⌥ subtract · ⇧⌥ intersect").foregroundStyle(.secondary)
                 case .rectangleMarquee, .ellipseMarquee:
                     featherOption
-                    Text("⇧ add · ⌥ subtract · while dragging: ⇧ square, ⌥ from the centre").foregroundStyle(.secondary)
+                    Text("⇧ add · ⌥ subtract · while dragging: ⇧ square, ⌥ from the center").foregroundStyle(.secondary)
                 case .magicSelect:
                     if session.ai.magicPoints.isEmpty {
                         Text("Click an object · ⌥-click to exclude").foregroundStyle(.secondary)
@@ -100,10 +100,10 @@ struct ToolOptionsBar: View {
                         }), supportsOpacity: false)
                         .labelsHidden()
                         .fixedSize()
-                        .help("Fill colour of new shapes")
+                        .help("Fill color of new shapes")
                     if session.shapeFillColor != nil {
                         Button("Use Foreground") { session.shapeFillColor = nil }
-                            .help("Fill new shapes with the foreground colour again")
+                            .help("Fill new shapes with the foreground color again")
                     }
                     slider("Stroke", $session.shapeStrokeWidth, 0...100,
                            display: session.shapeStrokeWidth < 1 ? String(localized: "Off") : "\(Int(session.shapeStrokeWidth)) px")
@@ -140,7 +140,7 @@ struct ToolOptionsBar: View {
                     }
                     .frame(width: 140)
                     slider("Scale", $session.patternScale, 4...256, display: "\(Int(session.patternScale)) px")
-                    Text("Uses the foreground and background colours").foregroundStyle(.secondary)
+                    Text("Uses the foreground and background colors").foregroundStyle(.secondary)
                 case .blur, .sharpen, .smudge:
                     retouchBrushOptions
                     slider("Strength", $session.retouchStrength, 0.01...1, percent: true)
@@ -211,7 +211,7 @@ struct ToolOptionsBar: View {
                 Text("corners keep proportions, ⇧ frees them · drag just outside a corner to rotate · click away to apply · ⌘-drag a corner to distort").foregroundStyle(.secondary)
             } else {
                 Text(t.mode == .skew ? "Drag an edge to slant it" : t.mode == .perspective
-                     ? "Drag a corner; its neighbour mirrors it" : "Drag corners freely").foregroundStyle(.secondary)
+                     ? "Drag a corner; its neighbor mirrors it" : "Drag corners freely").foregroundStyle(.secondary)
             }
             Button("Cancel") { session.cancelTransform(); session.tool = .move }
             Button("Apply") { session.commitTransform(); session.tool = .move }

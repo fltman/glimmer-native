@@ -216,7 +216,7 @@ struct RawDevelopSheet: View {
                 slider("Exposure", value: $model.settings.exposure, in: -3...3, shown: stops(model.settings.exposure))
                 slider("Temperature", value: $model.temperature, in: 2_000...12_000, shown: String(localized: "\(Int(model.temperature.rounded())) K"))
                 slider("Tint", value: $model.tint, in: -100...100, shown: "\(Int(model.tint.rounded()))")
-                Toggle("Click the picture to set what should be grey", isOn: $model.isPickingNeutral).toggleStyle(.checkbox)
+                Toggle("Click the picture to set what should be gray", isOn: $model.isPickingNeutral).toggleStyle(.checkbox)
                 slider("Shadows", value: $model.settings.shadows, in: 0...2, shown: model.settings.shadows.formatted(.number.precision(.fractionLength(2))))
                 if model.info.supportsContrast {
                     slider("Contrast", value: optional($model.settings.contrast, model.info.contrast), in: 0...1, shown: percent(model.settings.contrast ?? model.info.contrast))
@@ -228,7 +228,7 @@ struct RawDevelopSheet: View {
                     slider("Noise reduction", value: optional($model.settings.luminanceNoise, model.info.luminanceNoise), in: 0...1, shown: percent(model.settings.luminanceNoise ?? model.info.luminanceNoise))
                 }
                 if model.info.supportsColorNoise {
-                    slider("Colour noise reduction", value: optional($model.settings.colorNoise, model.info.colorNoise), in: 0...1, shown: percent(model.settings.colorNoise ?? model.info.colorNoise))
+                    slider("Color noise reduction", value: optional($model.settings.colorNoise, model.info.colorNoise), in: 0...1, shown: percent(model.settings.colorNoise ?? model.info.colorNoise))
                 }
                 if model.info.supportsHighlightRecovery {
                     Toggle("Recover highlights", isOn: $model.settings.highlightRecovery).toggleStyle(.checkbox)

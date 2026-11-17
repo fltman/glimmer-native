@@ -70,7 +70,7 @@ if (( ${#F} == 4 )); then
 else bad "no frame for the Exposure slider"; fi
 # The grey point: tick the box, click the middle of the picture, and the white balance changes.
 TEMP_BEFORE=$(echo "$SEEN" | grep -E "^[0-9].{0,8} K$" | head -1)
-perl -e 'alarm 20; exec @ARGV' build/axread $GLIMMER_PID --press AXCheckBox "Click the picture to set what should be grey" >/dev/null 2>&1
+perl -e 'alarm 20; exec @ARGV' build/axread $GLIMMER_PID --press AXCheckBox "Click the picture to set what should be gray" >/dev/null 2>&1
 P=($(frame_of any "Preview of the developed picture"))
 if (( ${#P} == 4 )); then
   front

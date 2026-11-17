@@ -27,7 +27,7 @@ public enum PSDImport {
         "vibA": "Vibrance", "blnc": "Color Balance", "blwh": "Black & White", "phfl": "Photo Filter", "mixr": "Channel Mixer",
         "nvrt": "Invert", "post": "Posterize", "thrs": "Threshold", "grdm": "Gradient Map", "selc": "Selective Color", "clrL": "Color Lookup",
     ]
-    static let fills: [String: String] = ["SoCo": "solid colour", "GdFl": "gradient", "PtFl": "pattern"]
+    static let fills: [String: String] = ["SoCo": "solid color", "GdFl": "gradient", "PtFl": "pattern"]
 
     public static func document(from data: Data, limits: PSDFile.Limits = PSDFile.Limits()) throws -> (state: DocumentState, report: PSDImportReport) {
         let header = try PSDFile.readHeader(data)
@@ -91,7 +91,7 @@ public enum PSDImport {
         let mode: String = switch header.mode {
         case .bitmap: "Bitmap"
         case .grayscale: "Grayscale"
-        case .indexed: "Indexed colour"
+        case .indexed: "Indexed color"
         case .rgb: "RGB"
         case .cmyk: "CMYK"
         case .multichannel: "Multichannel"

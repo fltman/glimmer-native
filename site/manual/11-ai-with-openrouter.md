@@ -37,11 +37,11 @@ The table lists every service Glimmer can use. Where the notes say a service is 
 | OpenAI | text (the Assistant), images | your own, in **Settings › AI** | see the service's terms | Built from OpenAI's documentation; not yet tried with a real call. |
 | Anthropic | text (the Assistant) | your own, in **Settings › AI** | see the service's terms | Built from Anthropic's documentation; not yet tried with a real call. |
 | xAI | text (the Assistant) | your own, in **Settings › AI** | see the service's terms | Built from xAI's documentation; not yet tried with a real call. |
-| Google | text (the Assistant), images | your own, in **Settings › AI** | see the service's terms | Built from Google's documentation; not yet tried with a real call. For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognisable people. |
+| Google | text (the Assistant), images | your own, in **Settings › AI** | see the service's terms | Built from Google's documentation; not yet tried with a real call. For professional or business use, and for people who are 18 or older. Google's rules restrict pictures of recognizable people. |
 | Berget | text (the Assistant) | your own, in **Settings › AI** | Stockholm, Sweden | Berget AI runs open models in Stockholm. Its terms say it never stores the content of prompts or answers. |
 | Grunden | text (the Assistant) | your own, in **Settings › AI** | Sweden | Built from Grunden's documentation; not yet tried with a real call. Grunden AI runs open models in Sweden and says all processing happens there. |
 | fal.ai | images | your own, in **Settings › AI** | see the service's terms | Built from fal.ai's documentation; not yet tried with a real call. fal keeps what you send in its request history for 90 days by default. Glimmer sends your pictures inside the request and gets the result back the same way, so nothing is placed on fal's file storage, which is public by default. |
-| Hedra | images | your own, in **Settings › AI** | see the service's terms | Built from Hedra's documentation; not yet tried with a real call. Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a licence to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour. |
+| Hedra | images | your own, in **Settings › AI** | see the service's terms | Built from Hedra's documentation; not yet tried with a real call. Upload only pictures of yourself: Hedra's rules forbid media of other people. Hedra gets a license to what you make with it. Your pictures are uploaded to Hedra for the job; the upload expires after an hour. |
 | Ollama | text (the Assistant) | none (shown only while it is running on your Mac) | This Mac | Runs on this Mac with Ollama: nothing is sent anywhere and nothing is billed. Slower than a cloud model; an answer can take up to a minute on a busy Mac. |
 <!-- providers:end -->
 
@@ -96,9 +96,9 @@ Requests that the assistant handles on your Mac with Apple Intelligence cost not
 
 Glimmer cannot tell you what a picture will cost before it is made. No picture service states the price of one job in a form Glimmer can read: OpenRouter reports the charge in its answer afterwards, and the other services' answers carry no cost at all. Glimmer never shows an estimate in place of a price.
 
-So every panel that makes a picture, and every assistant plan with a paid step, shows the line **Price not known in advance**. The first time you use a service, a tick box stands under that line: **<service> does not state a price in advance; I know**. Until you tick it, the button that starts the job is grey. You tick it once per service. It is kept in **Glimmer › Settings › AI**, under **Pictures**, where you can untick it to be asked again.
+So every panel that makes a picture, and every assistant plan with a paid step, shows the line **Price not known in advance**. The first time you use a service, a tick box stands under that line: **<service> does not state a price in advance; I know**. Until you tick it, the button that starts the job is gray. You tick it once per service. It is kept in **Glimmer › Settings › AI**, under **Pictures**, where you can untick it to be asked again.
 
-The Generate and Remove buttons in the bar under a selection have no room for the line: they stay grey until the tick is made, and their tooltips say why.
+The Generate and Remove buttons in the bar under a selection have no room for the line: they stay gray until the tick is made, and their tooltips say why.
 
 The assistant's own requests (planning, Suggest Edits, the quality check, Find Distractions) cost money too when the text service is not on your Mac. For those, Glimmer goes by the service's own model list:
 
@@ -219,11 +219,11 @@ A preset adds a group of adjustment layers above the active layer. Some presets 
 The bottom of the AI panel shows **Activity**, a list of the jobs in this window, newest first. On-device jobs such as Remove Background and Lens Blur appear there too.
 
 - A running job shows a spinner and a stop button. Click the stop button to cancel the job. Nothing is added to your document.
-- A finished job shows a green check. A failed job shows a warning sign and the reason. A cancelled job shows a cross.
+- A finished job shows a green check. A failed job shows a warning sign and the reason. A canceled job shows a cross.
 - A job that cost money shows its cost in US dollars, as OpenRouter reported it.
 - The heading shows the total cost of this window's jobs. A finished paid job whose service reported no cost is not in that sum; the heading counts such jobs beside it, as in **2 without a price**. What they cost stands on the service's own usage page.
 - A paid job that failed after the request had been sent is counted there too, and its row says **May have been charged**: the service may have billed it, and Glimmer cannot know.
-- **Clear** removes finished, failed and cancelled jobs from the list.
+- **Clear** removes finished, failed and canceled jobs from the list.
 
 The list keeps the 30 most recent jobs.
 

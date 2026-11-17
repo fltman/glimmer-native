@@ -414,7 +414,7 @@ private struct LayerRow: View {
 
     private var detail: String {
         var parts: [String] = []
-        if layer.blendMode != .normal && layer.blendMode != .passThrough { parts.append(layer.blendMode.title) }
+        if layer.blendMode != .normal && layer.blendMode != .passThrough { parts.append(String(localized: String.LocalizationValue(layer.blendMode.title))) }
         if layer.opacity < 1 { parts.append("\(Int((layer.opacity * 100).rounded())) %") }
         return parts.joined(separator: " · ")
     }

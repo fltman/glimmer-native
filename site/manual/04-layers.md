@@ -117,8 +117,8 @@ The blend mode decides how a layer's colors mix with the layers below. Choose it
 | Group | Modes | What they do |
 | --- | --- | --- |
 | Normal | Normal | The layer covers what is below, according to its opacity |
-| Darken | Darken, Multiply, Color Burn, Linear Burn, Darker Color | The result is darker; white has no effect in Multiply. Darker Color keeps the whole colour of whichever is darker, the layer or what is below, instead of mixing their channels |
-| Lighten | Lighten, Screen, Color Dodge, Linear Dodge (Add), Lighter Color | The result is lighter; black has no effect in Screen. Lighter Color keeps the whole colour of whichever is lighter |
+| Darken | Darken, Multiply, Color Burn, Linear Burn, Darker Color | The result is darker; white has no effect in Multiply. Darker Color keeps the whole color of whichever is darker, the layer or what is below, instead of mixing their channels |
+| Lighten | Lighten, Screen, Color Dodge, Linear Dodge (Add), Lighter Color | The result is lighter; black has no effect in Screen. Lighter Color keeps the whole color of whichever is lighter |
 | Contrast | Overlay, Soft Light, Hard Light, Vivid Light, Linear Light, Pin Light, Hard Mix | Darkens the dark parts and lightens the light parts. Vivid Light burns or dodges, Linear Light darkens or lightens by brightness, Pin Light replaces colors, and Hard Mix pushes every channel to full or none, giving flat posterized colors |
 | Difference | Difference, Exclusion, Subtract, Divide | Compares colors; useful for comparing layers and for effects. Subtract takes the layer's colors away from the image, Divide brightens by dividing by them |
 | Color | Hue, Saturation, Color, Luminosity | Takes one quality of color from the layer and the rest from below |

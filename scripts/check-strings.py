@@ -70,6 +70,26 @@ for name, pattern in (("Providers.swift", r'termsNote\s*=\s*"((?:[^"\\]|\\.)*)"'
         if "sv" not in (catalog.get(text, {}).get("localizations") or {}): missing.append(f"{name} (said about a service): {text[:90]}")
 numbered = [k for k in keys if re.search(r"%\d+\$", k)]
 for k in numbered: missing.append(f"catalogue key with a numbered placeholder (never found at run time): {k[:90]}")
+# American English throughout, as Apple's (the-apps/SIBLINGS.md, "Språk"): Color, Center, Gray, Canceled.
+# Read in every English text of the catalogue and in every quoted text of the sources (what an agent is told is English too).
+# Left alone: the API's status word "cancelled" (a word of the protocol, not prose) and the lists of words a person may
+# type (PlanCheck, PlanClaims), which must know both spellings.
+BRITISH = re.compile(r"(?<![A-Za-z])\w*(?:colour|centre|centring|grey|cancell|analys(?!is|es\b)|licence|neighbour|recognis|behaviour|normalis|labell|travell|minimis|maximis|organis|customis|optimis|summaris|neutralis|harmonis|favourite|rasteris|visualis|synchronis|initialis|judgement|artefact|catalogue|dialogue|programme)\w*", re.I)
+british = []
+for k in keys:
+    hit = BRITISH.search(k)
+    if hit: british.append(f"catalogue: “{hit.group(0)}” in: {k[:80]}")
+quoted = re.compile(r'"(?:[^"\\\n]|\\.)*"')
+for path in sorted(glob.glob(os.path.join(root, "App/**/*.swift"), recursive=True) + glob.glob(os.path.join(root, "Packages/GlimmerKit/Sources/**/*.swift"), recursive=True)):
+    if os.path.basename(path) in ("PlanCheck.swift", "PlanClaims.swift"): continue
+    for number, line in enumerate(open(path, encoding="utf8"), 1):
+        for m in quoted.finditer(line.split("//")[0]):
+            text = re.sub(r"\\\((?:[^()]|\([^()]*\))*\)", "X", m.group(0))
+            hit = BRITISH.search(text)
+            # The reader of a sibling's job still accepts the series' old spelling of a stopped job.
+            if hit and not (text == '"cancelled"' and os.path.basename(path) == "Siblings.swift"): british.append(f"{os.path.relpath(path, root)}:{number}: “{hit.group(0)}” in {text[:70]}")
 for line in sorted(set(missing)): print("✘", line)
+for line in british: print("✘ British spelling:", line)
 print(f"{len(set(missing))} text(s) without Swedish." if missing else "Every text found has Swedish.")
-sys.exit(1 if missing else 0)
+if british: print(f"{len(british)} British spelling(s) in English texts; the series writes American English.")
+sys.exit(1 if missing or british else 0)

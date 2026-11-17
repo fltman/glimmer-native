@@ -334,7 +334,7 @@ extension AIController {
                 stepStatus[step.id] = .done
             } catch {
                 failed = true
-                stepStatus[step.id] = .failed((error as? LocalizedError)?.errorDescription ?? error.localizedDescription)
+                stepStatus[step.id] = .failed(PersonMessage.text(for: error))   // the plan is the window's: in the person's language
                 noteSiblingFailure(error)
             }
         }
@@ -366,7 +366,7 @@ extension AIController {
         for (i, step) in steps.enumerated() {
             if stopped || Task.isCancelled {
                 stopped = true
-                results.append(APIStepResult(op: step.op, status: Task.isCancelled ? "cancelled" : "skipped", error: nil))
+                results.append(APIStepResult(op: step.op, status: Task.isCancelled ? "canceled" : "skipped", error: nil))
                 continue
             }
             do {
@@ -375,7 +375,7 @@ extension AIController {
                 results.append(APIStepResult(op: step.op, status: "done", error: nil, info: stepInfo))
             } catch is CancellationError {
                 stopped = true
-                results.append(APIStepResult(op: step.op, status: "cancelled", error: nil))
+                results.append(APIStepResult(op: step.op, status: "canceled", error: nil))
             } catch {
                 stopped = true
                 results.append(APIStepResult(op: step.op, status: "failed",
@@ -568,11 +568,11 @@ extension AIController {
             let scale = (step.number("scale") ?? 2) >= 3 ? 4 : 2
             upscale(scale: scale, neural: max(s.state.width, s.state.height) * scale <= 16_384, enhance: false, creativity: 0)
         case "fill":
-            guard let color = parseHexColor(step.string("color")) else { throw StepError("Invalid colour.") }
+            guard let color = parseHexColor(step.string("color")) else { throw StepError("Invalid color.") }
             try ensurePixelLayer()
             try fillSelection(color)
         case "set_foreground":
-            guard let color = parseHexColor(step.string("color")) else { throw StepError("Invalid colour.") }
+            guard let color = parseHexColor(step.string("color")) else { throw StepError("Invalid color.") }
             s.foreground = color
         case "select_all": s.perform(.selectAll)
         case "deselect": s.perform(.deselect)
@@ -628,7 +628,7 @@ extension AIController {
             while let current = jobs.first(where: { $0.id == job.id }), current.status == .running {
                 try await Task.sleep(for: .milliseconds(200))
             }
-            if case .failed(let message)? = jobs.first(where: { $0.id == job.id })?.status { throw StepError(message) }
+            if let failed = jobs.first(where: { $0.id == job.id }), case .failed(let message) = failed.status { throw StepError(failed.failureForAgent ?? message) }
             if jobs.first(where: { $0.id == job.id })?.status == .cancelled { throw CancellationError() }
         }
     }

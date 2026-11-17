@@ -49,7 +49,7 @@ extension AIController {
         }
         guard let layer = s.state.layer(id: id) else { throw StepError("There's no such layer.", reason: "unknown_layer") }
         guard let raw = layer.raw else {
-            throw StepError("“\(layer.name)” has no RAW file to develop: it was not opened from a camera's RAW file. Use add_adjustment to change its tone or colour.", reason: "not_raw")
+            throw StepError("“\(layer.name)” has no RAW file to develop: it was not opened from a camera's RAW file. Use add_adjustment to change its tone or color.", reason: "not_raw")
         }
         if !RawLayer.pixelsAreAsDeveloped(layer), step.params["replaceChanges"]?.bool != true {
             throw StepError("“\(layer.name)” has been painted on or changed since it was developed, and developing again replaces those changes. Send replaceChanges: true to do it anyway.", reason: "replaces_changes")

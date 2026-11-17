@@ -14,8 +14,8 @@ extension PSDExportReport.Note {
         case .adjustmentLeftOut: String(localized: "It is a \(detail) adjustment layer, which Glimmer can't write as one. It is not among the file's layers; the flattened picture in the file still shows it.")
         case .maskSimplified: String(localized: "Its mask is written without its feather and density.")
         case .clippedToCanvas: String(localized: "It reaches outside the canvas, and what is outside is not written.")
-        case .linearBlending: String(localized: "This document blends colours in linear light. Other programs blend these layers in gamma, so the layers will look different there; the flattened picture in the file is right.")
-        case .writtenInSRGB: String(localized: "The document's colours are Display P3; the file is written in sRGB.")
+        case .linearBlending: String(localized: "This document blends colors in linear light. Other programs blend these layers in gamma, so the layers will look different there; the flattened picture in the file is right.")
+        case .writtenInSRGB: String(localized: "The document's colors are Display P3; the file is written in sRGB.")
         case .curveDrawnDifferently: String(localized: "It is written as a Curves layer with points added along the curve, so that it looks the same in programs that draw curves their own way. It has more points to edit there.")
         case .flattenedByChoice: String(localized: "All layers are merged into one, as chosen: the file looks right everywhere and has no layers to edit.")
         }

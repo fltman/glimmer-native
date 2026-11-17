@@ -185,7 +185,7 @@ private struct AISettingsView: View {
                     if !PaidPrice.knownInAdvance(service: AIController.imageProvider.slug) {
                         VStack(alignment: .leading, spacing: 4) {
                             UnknownPriceTick(provider: AIController.imageProvider).id(imageProvider)
-                            Text("Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay grey. Untick it to be asked again.")
+                            Text("Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay gray. Untick it to be asked again.")
                                 .font(.callout).foregroundStyle(.secondary)
                         }
                     }
@@ -211,6 +211,7 @@ private struct AISettingsView: View {
                 TextField("Text model", text: $textModel)
                     .disabled(textProvider != "openrouter")
                     .help(textProvider == "openrouter" ? "" : "Used when the text service is OpenRouter")
+                if textProvider == "openrouter" { OpenRouterTextPrice(model: textModel) }
                 Button("Restore Defaults") {
                     imageModel = AIDefaults.imageModel
                     textModel = AIDefaults.textModel
@@ -252,7 +253,7 @@ private struct AISettingsView: View {
             savedKey = try ProviderKeys.keychain.key(for: "openrouter") ?? ""
             apiKey = savedKey
         } catch {
-            status = .failed(error.localizedDescription)
+            status = .failed(PersonMessage.text(for: error))
         }
     }
 
@@ -264,7 +265,7 @@ private struct AISettingsView: View {
             savedKey = trimmed
             status = .idle
         } catch {
-            status = .failed(error.localizedDescription)
+            status = .failed(PersonMessage.text(for: error))
         }
     }
 
@@ -281,16 +282,16 @@ private struct AISettingsView: View {
                 let info = try await OpenRouterClient(apiKey: key).keyInfo()
                 status = .valid(describe(info))
             } catch {
-                status = .failed(error.localizedDescription)
+                status = .failed(PersonMessage.text(for: error))
             }
         }
     }
 
     private func describe(_ info: OpenRouterKeyInfo) -> String {
         if let remaining = info.limitRemaining {
-            return "Valid · \(remaining.formatted(.currency(code: "USD"))) left"
+            return String(localized: "Valid · \(remaining.formatted(.currency(code: "USD"))) left")
         }
-        return "Valid"
+        return String(localized: "Valid")
     }
 }
 
@@ -306,7 +307,7 @@ private struct ModelSettingsView: View {
                 ForEach(OnDeviceModel.allCases, id: \.self) { model in
                     HStack {
                         VStack(alignment: .leading) {
-                            Text(model.title)
+                            Text(LocalizedStringKey(model.title))
                             Text(installed.contains(model) ? "Downloaded" : "Downloads on first use (\(model.approximateSize))")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -352,9 +353,9 @@ enum Preferences {
         var title: LocalizedStringResource {
             switch self {
             case .system: "Match System"
-            case .light: "Light Grey"
-            case .mid: "Mid Grey"
-            case .dark: "Dark Grey"
+            case .light: "Light Gray"
+            case .mid: "Mid Gray"
+            case .dark: "Dark Gray"
             case .black: "Black"
             }
         }
@@ -611,7 +612,7 @@ private struct ProviderTextSettings: View {
                 if m.vision == false {
                     Label("This model can't take pictures, so the Assistant plans without looking at the document, and suggestions and Find Distractions won't work with it.", systemImage: "eye.slash")
                 }
-                if let price = m.priceLine {
+                if let price = AIController.priceText(m) {
                     Text("\(provider.name)'s list: \(price). \(provider.name) bills you for what you use.")
                     if let priceRead { Text("Read \(priceRead.formatted(date: .abbreviated, time: .shortened)).") }
                 } else {
@@ -640,7 +641,7 @@ private struct ProviderTextSettings: View {
             savedKey = trimmed
             keyError = nil
         } catch {
-            keyError = error.localizedDescription
+            keyError = PersonMessage.text(for: error)
         }
     }
 
@@ -652,18 +653,57 @@ private struct ProviderTextSettings: View {
         if let tools = m?.tools { d.set(tools, forKey: modelKey + ".tools") } else { d.removeObject(forKey: modelKey + ".tools") }
         if let vision = m?.vision { d.set(vision, forKey: modelKey + ".vision") } else { d.removeObject(forKey: modelKey + ".vision") }
         // The price is known only as far as this list states it; kept with the time it was read.
-        if !models.isEmpty { AIController.rememberTextPrice(provider.slug, model: id, line: m?.priceLine); priceRead = AIController.listedTextPrice(for: provider)?.read }
+        if !models.isEmpty { AIController.rememberTextPrice(provider.slug, model: id, line: AIController.priceText(m)); priceRead = AIController.listedTextPrice(for: provider)?.read }
     }
 
     private func loadModels() async {
         loading = true
         defer { loading = false }
         do {
-            models = try await ModelCatalog.fetchTextModels(provider, key: savedKey.isEmpty ? nil : savedKey)
+            models = try await AIController.textModelList(for: provider, key: savedKey.isEmpty ? nil : savedKey)
             listError = nil
             if !chosen.isEmpty { choose(chosen) }   // refresh what the list says about the chosen model
         } catch {
-            listError = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+            listError = PersonMessage.text(for: error)
+        }
+    }
+}
+
+/// What OpenRouter's own list says the typed text model costs. The id is typed, not picked, so the list is read
+/// for that id: its price is then known (with the time it was read), and the Assistant does not have to ask.
+private struct OpenRouterTextPrice: View {
+    let model: String
+    private enum Found: Equatable { case reading, price(String, Date), noPrice, notListed, failed(String) }
+    @State private var found = Found.reading
+
+    var body: some View {
+        Group {
+            switch found {
+            case .reading: Text("Reading OpenRouter's list…")
+            case .price(let line, let read):
+                Text("\(AIProvider.openRouter.name)'s list: \(line). \(AIProvider.openRouter.name) bills you for what you use.")
+                Text("Read \(read.formatted(date: .abbreviated, time: .shortened)).")
+            case .noPrice: Text("OpenRouter's list states no price for this model.")
+            case .notListed: Text("OpenRouter's list has no model with this id, so its price is not known.")
+            case .failed(let why): Label(why, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            }
+        }
+        .font(.callout).foregroundStyle(.secondary)
+        .task(id: model) {
+            found = .reading
+            try? await Task.sleep(for: .milliseconds(700))   // while the id is being typed
+            guard !Task.isCancelled else { return }
+            let id = model.trimmingCharacters(in: .whitespaces)
+            do {
+                let list = try await AIController.textModelList(for: .openRouter, key: nil)
+                guard !Task.isCancelled else { return }
+                let entry = list.first { $0.id == id }
+                AIController.rememberTextPrice("openrouter", model: id, line: AIController.priceText(entry))
+                if let line = AIController.priceText(entry), let read = AIController.listedTextPrice(for: .openRouter)?.read { found = .price(line, read) }
+                else { found = entry == nil ? .notListed : .noPrice }
+            } catch {
+                found = .failed(PersonMessage.text(for: error))
+            }
         }
     }
 }
@@ -740,7 +780,7 @@ private struct ProviderImageSettings: View {
             savedKey = trimmed
             keyError = nil
         } catch {
-            keyError = error.localizedDescription
+            keyError = PersonMessage.text(for: error)
         }
     }
 }

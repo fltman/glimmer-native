@@ -216,7 +216,7 @@ public enum AgentPlanner {
     public static let ops: [AgentOp] = [
         AgentOp("add_adjustment", "Add a non-destructive adjustment layer above the active layer (contrast, hue, black & white, curves …).", [
             AgentParam("type", "string", "Which adjustment.", options: AdjustmentKind.allCases.map(\.rawValue)),
-            AgentParam("params", "object", "Settings by key; omitted keys keep their default, {} is neutral. Keys (range, default) per type — " + adjustmentReference + ". Moderate values look natural: exposure is in stops (±0.3–1), most −1…1 sliders are strong beyond ±0.4. For a colour cast use color_balance (positive B = bluer, positive R = redder) or photo_filter."),
+            AgentParam("params", "object", "Settings by key; omitted keys keep their default, {} is neutral. Keys (range, default) per type — " + adjustmentReference + ". Moderate values look natural: exposure is in stops (±0.3–1), most −1…1 sliders are strong beyond ±0.4. For a color cast use color_balance (positive B = bluer, positive R = redder) or photo_filter."),
         ]),
         AgentOp("apply_filter", "Apply a destructive pixel filter to the active pixel layer (inside the selection if there is one).", [
             AgentParam("type", "string", "Which filter.", options: FilterKind.allCases.map(\.rawValue)),
@@ -231,11 +231,11 @@ public enum AgentPlanner {
         ]),
         AgentOp("add_text", "Add a one-line text layer above the active layer (it doesn't wrap: a long text at a big size runs past the canvas, so check the bounds in the step's info and lower size if needed). Place it with position, or exactly with x and y; move it later with transform_layer (moveX, moveY). The step's info gives the new layer's id and bounds.", [
             AgentParam("text", "string", "The text."),
-            AgentParam("color", "string", "#RRGGBB colour (optional, default the foreground colour)."),
+            AgentParam("color", "string", "#RRGGBB color (optional, default the foreground color)."),
             AgentParam("size", "number", "Font size in pixels (optional; default ~8% of the image height)."),
             AgentParam("bold", "boolean", "Optional. true for bold text."),
             AgentParam("fontName", "string", "Optional. PostScript font name, e.g. Georgia-Bold (default Helvetica Neue)."),
-            AgentParam("position", "string", "Optional. Centred horizontally; top and bottom leave 8 % of the image height to the edge; center is the default.", options: ["top", "center", "bottom"]),
+            AgentParam("position", "string", "Optional. Centerd horizontally; top and bottom leave 8 % of the image height to the edge; center is the default.", options: ["top", "center", "bottom"]),
             AgentParam("x", "number", "Optional. Left edge of the text in document pixels (instead of position)."),
             AgentParam("y", "number", "Optional. Top edge of the text in document pixels (instead of position)."),
         ]),
@@ -245,8 +245,8 @@ public enum AgentPlanner {
         AgentOp("generate_layer", "Generate a new image from a text prompt as a new layer.", [
             AgentParam("prompt", "string", "What to generate."),
         ], aiJob: true),
-        AgentOp("auto_enhance", "Automatic tone and colour correction (on-device, free, instant) as editable adjustment layers. A good first step for \"fix\", \"improve\" or \"make it look better\" before any creative changes."),
-        AgentOp("auto_color", "Neutralise a colour cast (on-device, free) with a Color Balance layer. For \"too yellow/blue/green\", \"fix the white balance\"."),
+        AgentOp("auto_enhance", "Automatic tone and color correction (on-device, free, instant) as editable adjustment layers. A good first step for \"fix\", \"improve\" or \"make it look better\" before any creative changes."),
+        AgentOp("auto_color", "Neutralize a color cast (on-device, free) with a Color Balance layer. For \"too yellow/blue/green\", \"fix the white balance\"."),
         AgentOp("select_sky", "Select the sky (on-device, free). Use before replacing or adjusting the sky."),
         AgentOp("select_people", "Select every person in the image (on-device, free, more precise than select_subject for people)."),
         AgentOp("remove_background", "Cut the main subject out of the active layer onto transparency (adds a mask; on-device, free). Works on a pixel layer or a smart object, such as an image just added with add_image."),
@@ -258,10 +258,10 @@ public enum AgentPlanner {
         AgentOp("upscale", "Upscale the whole image.", [
             AgentParam("scale", "number", "2 or 4 (on-device Real-ESRGAN, free)."),
         ], ),
-        AgentOp("fill", "Fill the selection (or the whole active layer) with a colour.", [
+        AgentOp("fill", "Fill the selection (or the whole active layer) with a color.", [
             AgentParam("color", "string", "#RRGGBB or #RRGGBBAA."),
         ]),
-        AgentOp("set_foreground", "Set the foreground (paint) colour.", [
+        AgentOp("set_foreground", "Set the foreground (paint) color.", [
             AgentParam("color", "string", "#RRGGBB."),
         ]),
         AgentOp("select_all", "Select the whole canvas."),
@@ -276,7 +276,7 @@ public enum AgentPlanner {
             AgentParam("target", "string", "Optional. The layer's or group's name or id; default the active layer."),
             AgentParam("scaleX", "number", "Optional. Width in percent of the current size (default 100)."),
             AgentParam("scaleY", "number", "Optional. Height in percent of the current size (default 100)."),
-            AgentParam("degrees", "number", "Optional. Rotation about the centre, clockwise."),
+            AgentParam("degrees", "number", "Optional. Rotation about the center, clockwise."),
             AgentParam("moveX", "number", "Optional. Move right by this many document pixels (negative: left)."),
             AgentParam("moveY", "number", "Optional. Move down by this many document pixels (negative: up)."),
             AgentParam("skewX", "number", "Optional. Horizontal skew in degrees."),
@@ -284,7 +284,7 @@ public enum AgentPlanner {
             AgentParam("corners", "points", "Optional. Four corners in document pixels, top-left, top-right, bottom-right, bottom-left, for distort or perspective (replaces move, scale, rotation and skew). They say where the corners of the layer's bounds (as GET document reports them) end up."),
             AgentParam("allowRasterize", "boolean", "Optional. Let corners turn text layers into pixels (default false)."),
         ]),
-        AgentOp("style_text", "Give words in a text layer their own font, boldness, size or colour (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters; with neither, the whole text is styled. Stays editable text; one undo step. The step's info says which ranges changed.", [
+        AgentOp("style_text", "Give words in a text layer their own font, boldness, size or color (the rest of the text keeps its style). Find the words with match (preferred), or give from and length in characters; with neither, the whole text is styled. Stays editable text; one undo step. The step's info says which ranges changed.", [
             AgentParam("target", "string", "Optional. The text layer's name or id; default the active layer."),
             AgentParam("match", "string", "Optional. The word or phrase to style (exact text, or ignoring case if the exact text isn't there). Preferred over from/length."),
             AgentParam("occurrence", "string", "Optional. Which matches to style (default all).", options: ["all", "first"]),
@@ -301,7 +301,7 @@ public enum AgentPlanner {
             AgentParam("width", "number", "Optional, with a rectangle. Width of the box in pixels."),
             AgentParam("height", "number", "Optional, with a rectangle. Height of the box in pixels."),
             AgentParam("toSelection", "boolean", "Optional, instead of a rectangle. true crops to the bounds of the selection."),
-            AgentParam("aspect", "string", "Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centred box of that shape."),
+            AgentParam("aspect", "string", "Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centerd box of that shape."),
             AgentParam("deletePixels", "boolean", "Optional. true throws away what is outside the box; false (default) keeps it outside the canvas."),
         ]),
         AgentOp("resize_image", "Resample the whole image to a new size, like Image › Image Size: every layer, mask, path and guide is scaled. Give width or height alone to keep the proportions; give both for exactly that size (the proportions may change); or give scale. Text and smart objects stay editable. One undo step.", [
@@ -314,7 +314,7 @@ public enum AgentPlanner {
             AgentParam("height", "number", "Optional. New canvas height in pixels."),
             AgentParam("aspect", "string", "Optional, instead of width and height. W:H, like 16:9: the smallest canvas of that shape that holds the whole image."),
             AgentParam("anchor", "string", "Optional. Where the image stays (default center); new room goes on the other sides.", options: CanvasSteps.anchorNames),
-            AgentParam("fill", "string", "Optional. #RRGGBB: adds a colour fill layer at the bottom so the new room isn't transparent. Ignored when no room is added."),
+            AgentParam("fill", "string", "Optional. #RRGGBB: adds a color fill layer at the bottom so the new room isn't transparent. Ignored when no room is added."),
         ]),
         AgentOp("select_rect", "Select a rectangle or an ellipse. A box partly outside the canvas is clipped to it.", [
             AgentParam("x", "number", "Left edge in document pixels."),
@@ -332,10 +332,10 @@ public enum AgentPlanner {
             AgentParam("visible", "boolean", "Optional. Show or hide the layer."),
             AgentParam("name", "string", "Optional. The new name."),
         ]),
-        AgentOp("add_waveform", "Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolour, move and style.", [
+        AgentOp("add_waveform", "Draw the waveform of the sound open in Jämmer (the series' audio editor, a separate app) as a new shape layer, for a cover or poster. It stays a vector shape the user can recolor, move and style.", [
             AgentParam("style", "string", "Optional. bars (default) or wave (one outline).", options: SiblingWaveform.Style.allCases.map(\.rawValue)),
             AgentParam("bars", "number", "Optional. How many bars, 16–400 (default 64)."),
-            AgentParam("color", "string", "Optional. #RRGGBB; default the foreground colour."),
+            AgentParam("color", "string", "Optional. #RRGGBB; default the foreground color."),
             AgentParam("height", "number", "Optional. Share of the canvas height, 0.05–1 (default 0.3)."),
             AgentParam("width", "number", "Optional. Share of the canvas width, 0.1–1 (default 0.8)."),
             AgentParam("position", "string", "Optional. center (default), top or bottom.", options: ["center", "top", "bottom"]),
@@ -359,7 +359,7 @@ public enum AgentPlanner {
             AgentParam("contrast", "number", "Optional. 0…1, where the file has the control."),
             AgentParam("sharpness", "number", "Optional. 0…1, where the file has the control."),
             AgentParam("luminanceNoise", "number", "Optional. Noise reduction, 0…1, where the file has the control."),
-            AgentParam("colorNoise", "number", "Optional. Colour noise reduction, 0…1, where the file has the control."),
+            AgentParam("colorNoise", "number", "Optional. Color noise reduction, 0…1, where the file has the control."),
             AgentParam("highlightRecovery", "boolean", "Optional. Recover detail in blown highlights (on by default), where the file has the switch."),
             AgentParam("lensCorrection", "boolean", "Optional. Use the lens correction stored in the file, where there is one. It reshapes the whole picture a little, not only the corners."),
             AgentParam("asShot", "boolean", "Optional. true first goes back to the camera's white balance and the standard values; other values given in the same step are then applied."),
@@ -540,7 +540,7 @@ public enum AgentPlanner {
     - inpaint_selection needs a selection. If there is none and the goal needs one, make one first (select_subject, select_all …) or ask a clarifying question.
     - Colours are #RRGGBB hex strings. When unsure about a setting, pass {} to get sensible defaults rather than guessing exotic numbers.
     - Give each call a one-sentence "rationale".
-    - Alongside the calls, reply with one short sentence summarising the plan, in the user's language.
+    - Alongside the calls, reply with one short sentence summarizing the plan, in the user's language.
     - If the goal is ambiguous, contradictory or impossible with these tools, call no tools and ask a short clarifying question.
     - If the user is only chatting or asking about the editor, answer briefly without calling tools.
     - When a picture of the current image is attached, look at it: choose settings that suit this photo (its exposure, colours and subject) rather than generic ones.

@@ -108,7 +108,7 @@ extension AIController {
         Task { [weak self] in
             guard let self else { return }
             do {
-                if try await !self.performAutoColor() { self.session.showToast(String(localized: "No colour cast to correct.")) }
+                if try await !self.performAutoColor() { self.session.showToast(String(localized: "No color cast to correct.")) }
             } catch {
                 self.session.report(error)
             }

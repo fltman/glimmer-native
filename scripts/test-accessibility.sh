@@ -95,7 +95,7 @@ if [[ "$(build/axread $GLIMMER_PID --enabled AXButton "$(M "Run")")" == disabled
 fixture paidPanel && read_state "the Harmonize panel: the price is not known, the tick, its button off" "Harmonize Layer" || bad "fixture paidPanel"
 if [[ "$(build/axread $GLIMMER_PID --enabled AXButton "$(M "Harmonize Layer")")" == disabled ]]; then ok "Harmonize Layer is off until the tick is made"; else bad "Harmonize Layer is not off before the tick"; fi
 fixture refusedPlan && read_state "a plan that can't run because a step would be refused: said, and no Run" "The plan asks Exposure for a setting it doesn't have (brightness), so it can't run. Nothing was changed. Ask again, perhaps in other words." || bad "fixture refusedPlan"
-fixture jobs && read_state "the job list: running, failed, done with a cost, cancelled" "OpenRouter rejected the API key." || bad "fixture jobs"
+fixture jobs && read_state "the job list: running, failed, done with a cost, canceled" "OpenRouter rejected the API key." || bad "fixture jobs"
 fixture clear   # the job list's running job must not put its spinner in the pictures that follow
 
 # The link bar.
@@ -141,7 +141,7 @@ fi
 echo
 # The picture service chosen in Settings › AI (hidden in release builds until a service is offered).
 read_state "Settings › AI, Pictures with fal chosen" "Model for editing"
-read_state "Settings › AI, Pictures: the tick that the service states no price in advance" "Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay grey. Untick it to be asked again."
+read_state "Settings › AI, Pictures: the tick that the service states no price in advance" "Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay gray. Untick it to be asked again."
 
 # English buttons and menu items in Title Case (SIBLINGS.md, "Språk"): every menu item, and every button of the states read above,
 # as the running app names them, so titles that come from a variable or a register are checked too.

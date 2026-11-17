@@ -77,7 +77,7 @@ struct ChannelsPanel: View {
                     .controlSize(.small)
                     .padding(.bottom, 6)
             }
-            Text("Click a channel to see it alone, in grey. The eyes combine channels. Channel views don't change the image.")
+            Text("Click a channel to see it alone, in gray. The eyes combine channels. Channel views don't change the image.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(8)

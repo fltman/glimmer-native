@@ -113,7 +113,7 @@ extension Preset {
                 filt("add_noise", ["amount": 0.05, "monochrome": 1]),
                ]),
         Preset(id: "cross_process", name: "Cross Process",
-               description: "C-41-in-E6 colour shift: green shadows, yellow highlights.", swatch: ("#3c5a2e", "#e8d24a"),
+               description: "C-41-in-E6 color shift: green shadows, yellow highlights.", swatch: ("#3c5a2e", "#e8d24a"),
                steps: [
                 adj(.curves, ["r": pts([(0, 0), (0.5, 0.58), (1, 0.95)]), "g": pts([(0, 0.06), (0.5, 0.5), (1, 1)]),
                               "b": pts([(0, 0.14), (0.5, 0.42), (1, 0.85)])]),

@@ -308,7 +308,7 @@ struct RunActionIntent: AppIntent {
 
 struct AutoEnhanceIntent: AppIntent {
     static let title: LocalizedStringResource = "Auto Enhance Image"
-    static let description = IntentDescription("Corrects tone and colour automatically on this Mac, like Image › Auto Enhance.")
+    static let description = IntentDescription("Corrects tone and color automatically on this Mac, like Image › Auto Enhance.")
     static var supportedModes: IntentModes { .background }
 
     @Parameter(title: "Image", supportedContentTypes: [.image])

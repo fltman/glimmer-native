@@ -59,9 +59,9 @@ struct AIPanel: View {
                     section("On This Mac", id: "local", symbol: "cpu") {
                         VStack(alignment: .leading, spacing: 8) {
                             Button("Auto Enhance", systemImage: "wand.and.rays") { ai.autoEnhance() }
-                                .help("Corrects tone and colour as editable adjustment layers. Runs on this Mac, free. ⇧⌘L")
+                                .help("Corrects tone and color as editable adjustment layers. Runs on this Mac, free. ⇧⌘L")
                             Button("Auto Color", systemImage: "eyedropper.halffull") { ai.autoColor() }
-                                .help("Removes a colour cast with a Color Balance layer. Runs on this Mac, free. ⇧⌘B")
+                                .help("Removes a color cast with a Color Balance layer. Runs on this Mac, free. ⇧⌘B")
                             Button("Auto Straighten", systemImage: "level") { ai.autoStraighten() }
                                 .help("Finds a tilted horizon and opens Crop, levelled. Runs on this Mac, free.")
                             Button("Suggest Crop", systemImage: "crop") { ai.suggestCrop() }
@@ -273,11 +273,7 @@ private struct AssistantView: View {
                 .font(.caption2)
                 .foregroundStyle(Theme.muted)
             // What a request to the chosen text service costs, as far as its own list said; nothing when it runs on this Mac.
-            if let price = AIController.textPriceLine(for: AIController.textProvider) {
-                Text(verbatim: price)
-                    .font(.caption2)
-                    .foregroundStyle(Theme.muted)
-            }
+            TextPriceLine()
         }
     }
 
@@ -582,7 +578,7 @@ private struct ColorMatchView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Gives the active layer the colour grade of a reference image. Runs on this Mac.")
+            Text("Gives the active layer the color grade of a reference image. Runs on this Mac.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             ParameterSlider(label: "Strength", value: strength * 100, range: 0...100, step: 1,
@@ -610,6 +606,22 @@ private struct ColorMatchView: View {
     }
 
     @State private var isTargeted = false
+}
+
+/// What a request to the chosen text service costs, as far as its own list said; nothing when it runs on this Mac.
+/// Read again whenever a setting changes: Settings reads the list and chooses the service while this is on screen.
+private struct TextPriceLine: View {
+    @State private var line = AIController.textPriceLine(for: AIController.textProvider)
+
+    var body: some View {
+        Group {
+            if let line { Text(verbatim: line).font(.caption2).foregroundStyle(Theme.muted) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification).receive(on: RunLoop.main)) { _ in
+            let now = AIController.textPriceLine(for: AIController.textProvider)
+            if now != line { line = now }
+        }
+    }
 }
 
 private struct JobsView: View {
@@ -645,7 +657,7 @@ private struct JobsView: View {
                             case .running: ProgressView().controlSize(.small).accessibilityLabel("Running")
                             case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityLabel("Done")
                             case .failed: Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).accessibilityLabel("Failed")
-                            case .cancelled: Image(systemName: "xmark.circle").foregroundStyle(.secondary).accessibilityLabel("Cancelled")
+                            case .cancelled: Image(systemName: "xmark.circle").foregroundStyle(.secondary).accessibilityLabel("Canceled")
                             }
                         }
                         VStack(alignment: .leading, spacing: 1) {

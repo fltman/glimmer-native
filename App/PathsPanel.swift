@@ -45,7 +45,7 @@ struct PathsPanel: View {
             HStack(spacing: 12) {
                 let id = session.activePathID
                 Button("Fill", systemImage: "paintbrush.fill") { id.map(session.fillPath) }
-                    .help("Fill the path with the foreground colour on the active layer")
+                    .help("Fill the path with the foreground color on the active layer")
                 Button("Stroke", systemImage: "paintbrush.pointed") { id.map(session.strokePath) }
                     .help("Stroke the path with the current brush")
                 Button("Selection", systemImage: "lasso") { id.map(session.makeSelection(fromPath:)) }

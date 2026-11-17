@@ -60,7 +60,7 @@ import PSDTestSupport
         let said = report.notes.map { "\($0.layer ?? "-"): \($0.what)" }
         #expect(said == [
             "Levels 1: It was a Levels adjustment layer. That kind is not read in this version, so it was left out.",
-            "Color Fill 1: It was a solid colour fill or shape layer. That kind is not read in this version, so it was left out.",
+            "Color Fill 1: It was a solid color fill or shape layer. That kind is not read in this version, so it was left out.",
             "Glow: The blend mode Dissolve became Normal: Glimmer doesn't have it.",
             "Glow: Its layer effects (shadows, strokes, glows) were not read.",
             "Glow: It was a smart object and is now pixels. The file placed in it is not kept in this version.",

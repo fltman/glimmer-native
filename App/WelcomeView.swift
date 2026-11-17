@@ -8,7 +8,7 @@ struct WelcomeView: View {
     @Environment(\.openSettings) private var openSettings
 
     private let features: [(String, LocalizedStringKey, LocalizedStringKey)] = [
-        ("square.3.layers.3d", "A real layer editor", "Layers, groups, masks, adjustment layers, layer styles, smart objects and text — non-destructive, in 16-bit linear colour."),
+        ("square.3.layers.3d", "A real layer editor", "Layers, groups, masks, adjustment layers, layer styles, smart objects and text — non-destructive, in 16-bit linear color."),
         ("paintbrush.pointed", "Paint and retouch", "Brushes with pressure, clone and healing, dodge and burn, liquify and 14 filters that respect your selection."),
         ("sparkles", "AI with your own key", "Generate, fill, expand, relight and more through OpenRouter. Subject selection, depth blur and background removal run on this Mac."),
         ("sparkle.magnifyingglass", "Just ask", "Press ⌘K to find any command, or describe an edit and the assistant plans it with the editor's own tools."),

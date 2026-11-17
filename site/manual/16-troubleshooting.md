@@ -27,7 +27,7 @@ The active layer is a group or an adjustment layer. Select a pixel layer in the 
 - The brush opacity or flow is very low, or the foreground color's opacity is 0%. Press D to reset the colors.
 - The mask is the paint target (the mask thumbnail is highlighted). Click the layer thumbnail to paint pixels instead.
 
-### Filters are greyed out
+### Filters are grayed out
 
 Filters change pixels, so they need a pixel layer or a smart object. Select one in the Layers panel.
 
@@ -117,7 +117,7 @@ Check **Color profile** in the Export sheet. Display P3 keeps more saturated col
 
 ### A Photoshop file opened as a single layer
 
-Glimmer reads the layers of RGB and grayscale Photoshop files with 8 or 16 bits per channel. A file in another colour mode (CMYK, Lab, indexed colour and others) or with 32 bits per channel opens as one layer, the flattened picture saved in the file. **File › Import Report…** says which it was. See [Photoshop files](02-documents-and-files.md#photoshop-files).
+Glimmer reads the layers of RGB and grayscale Photoshop files with 8 or 16 bits per channel. A file in another color mode (CMYK, Lab, indexed color and others) or with 32 bits per channel opens as one layer, the flattened picture saved in the file. **File › Import Report…** says which it was. See [Photoshop files](02-documents-and-files.md#photoshop-files).
 
 ### Batch Process skipped steps or failed on some files
 
@@ -163,7 +163,7 @@ The step goes to the picture service chosen in **Glimmer › Settings › AI** (
 
 The step is paid and Glimmer does not know its price in advance, which today is true of every paid step. `allowPaid` alone does not mean "whatever it costs": the agent must also send `"allowUnknownPrice": true`, on every call. Nothing was run.
 
-### A button that makes a picture is grey
+### A button that makes a picture is gray
 
 Tick **<service> does not state a price in advance; I know**, under the line **Price not known in advance** beside the button, or in **Glimmer › Settings › AI** under **Pictures**. See [What costs money](11-ai-with-openrouter.md#what-costs-money).
 

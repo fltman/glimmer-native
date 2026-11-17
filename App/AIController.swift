@@ -25,6 +25,8 @@ final class AIController {
         var paid = false
         /// A paid job that failed after the request had gone to the service: the service may have billed it, and Glimmer can't know.
         var mayHaveBeenCharged = false
+        /// Why it failed, in the words an agent is told (English); `status` carries them in the person's language.
+        var failureForAgent: String?
         @ObservationIgnored var task: Task<Void, Never>?
     }
 
@@ -259,7 +261,7 @@ final class AIController {
                 // A paid job's work is the request itself (what can be refused before it is refused before the job starts),
                 // so a failure here came after it was sent, unless the Mac never got a connection.
                 let unsent = [URLError.notConnectedToInternet, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed].contains((error as? URLError)?.code ?? .unknown)
-                self?.finish(id, .failed(PersonMessage.text(for: error)), mayHaveBeenCharged: paid && !unsent)
+                self?.finish(id, .failed(PersonMessage.text(for: error)), mayHaveBeenCharged: paid && !unsent, forAgent: AgentAPI.words(for: error))
                 self?.session.report(error)
             }
         }
@@ -286,11 +288,12 @@ final class AIController {
     func clearFixtureJobs() { jobs = [] }
     #endif
 
-    private func finish(_ id: UUID, _ status: Job.Status, cost: Double? = nil, mayHaveBeenCharged: Bool = false) {
+    private func finish(_ id: UUID, _ status: Job.Status, cost: Double? = nil, mayHaveBeenCharged: Bool = false, forAgent: String? = nil) {
         if status != .done { isSegmenting = false }
         guard let i = jobs.firstIndex(where: { $0.id == id }) else { return }
         jobs[i].status = status
         jobs[i].mayHaveBeenCharged = mayHaveBeenCharged
+        jobs[i].failureForAgent = forAgent
         jobs[i].cost = cost
     }
 
@@ -334,7 +337,7 @@ final class AIController {
                 let k = min(1, Double(docSize.x) / Double(image.width), Double(docSize.y) / Double(image.height))
                 let fitted = k < 1 ? image.resized(width: Int(Double(image.width) * k), height: Int(Double(image.height) * k)) : image
                 let origin = SIMD2((docSize.x - fitted.width) / 2, (docSize.y - fitted.height) / 2)
-                try self?.addLayer(fitted, name: "Generated", origin: origin, action: "Generate Image")
+                try self?.addLayer(fitted, name: String(localized: "Generated"), origin: origin, action: "Generate Image")
             })
         } catch {
             session.report(error)
@@ -351,7 +354,7 @@ final class AIController {
                 let r = try await AIPipelines.edit(source, instruction: instruction, model: model)
                 return (r.image, r.cost)
             }, apply: { [weak self] image in
-                try self?.addLayer(image, name: "Edited", origin: .zero, action: "Edit Image")
+                try self?.addLayer(image, name: String(localized: "Edited"), origin: .zero, action: "Edit Image")
             })
         } catch {
             session.report(error)
@@ -515,7 +518,7 @@ final class AIController {
                 let r = try await AIPipelines.removeReflections(source, roi: roi, strength: strength, model: model)
                 return ((r.image, r.origin), r.cost)
             }, apply: { [weak self] result in
-                try self?.addLayer(result.0, name: "Reflections Removed", origin: result.1, action: "Remove Reflections")
+                try self?.addLayer(result.0, name: String(localized: "Reflections Removed"), origin: result.1, action: "Remove Reflections")
             })
         } catch {
             session.report(error)
@@ -610,7 +613,7 @@ final class AIController {
                 return ((r.items, r.message), r.cost)
             }, apply: { [weak self] result in
                 self?.distractions = result.0
-                self?.distractionMessage = result.1 ?? (result.0.isEmpty ? "No obvious distractions found." : nil)
+                self?.distractionMessage = result.1 ?? (result.0.isEmpty ? String(localized: "No obvious distractions found.") : nil)
             })
         } catch {
             session.report(error)

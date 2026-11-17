@@ -207,6 +207,12 @@ final class FakeProvider: URLProtocol, @unchecked Sendable {
     }
 
     @Test func aPlainListGivesIdsOnlyAndNoPrice() throws {
+        // OpenRouter's list states prices per token, as text; Glimmer shows them per million tokens. A model without prices has none.
+        let listed = try ModelCatalog.textModels(slug: "openrouter", data: Data(#"{"data":[{"id":"acme/large","pricing":{"prompt":"0.000003","completion":"0.000015"},"architecture":{"input_modalities":["text","image"]},"supported_parameters":["tools","temperature"]},{"id":"acme/bare"},{"id":"acme/free","pricing":{"prompt":"0","completion":"0"}}]}"#.utf8))
+        #expect(listed.first { $0.id == "acme/large" }?.priceLine == "$3.00 in, $15.00 out per million tokens")
+        #expect(listed.first { $0.id == "acme/large" }?.tools == true && listed.first { $0.id == "acme/large" }?.vision == true)
+        #expect(listed.first { $0.id == "acme/bare" }?.priceLine == nil)
+        #expect(listed.first { $0.id == "acme/free" }?.priceLine == "$0.00 in, $0.00 out per million tokens")
         let models = try ModelCatalog.textModels(slug: "ollama", data: Data(#"{"object":"list","data":[{"id":"qwen3:8b","object":"model"}]}"#.utf8))
         #expect(models == [ProviderModel(id: "qwen3:8b")])
         #expect(models[0].priceLine == nil && models[0].tools == nil)
