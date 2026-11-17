@@ -238,11 +238,11 @@ When every photo is rated:
 
 - **Best First** sorts the list from best to worst.
 - The **Keep** menu removes photos from the list:
-  - **Without blurry photos**
-  - **Without documents and screenshots**
-  - **4 stars and up**
-  - **Best half**
-  - **Best quarter**
+  - **Without Blurry Photos**
+  - **Without Documents and Screenshots**
+  - **4 Stars and Up**
+  - **Best Half**
+  - **Best Quarter**
 
 These choices only change the list. They never delete files.
 

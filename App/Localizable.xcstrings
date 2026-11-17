@@ -276,16 +276,6 @@
       }
     },
     "3:2": {},
-    "4 stars and up": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "4 stjärnor och uppåt"
-          }
-        }
-      }
-    },
     "4:3": {},
     "4:5": {},
     "4×": {},
@@ -1205,26 +1195,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bäst först"
-          }
-        }
-      }
-    },
-    "Best half": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bästa hälften"
-          }
-        }
-      }
-    },
-    "Best quarter": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bästa fjärdedelen"
           }
         }
       }
@@ -7679,7 +7649,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "På begäran av %@"
+            "value": "Begärt av %@"
           }
         }
       }
@@ -10269,26 +10239,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bredd i pixlar"
-          }
-        }
-      }
-    },
-    "Without blurry photos": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Utan oskarpa foton"
-          }
-        }
-      }
-    },
-    "Without documents and screenshots": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Utan dokument och skärmdumpar"
           }
         }
       }
@@ -13600,6 +13550,56 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gjort: %1$@. Inte gjort: %2$@."
+          }
+        }
+      }
+    },
+    "Without Blurry Photos": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utan oskarpa foton"
+          }
+        }
+      }
+    },
+    "Without Documents and Screenshots": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utan dokument och skärmdumpar"
+          }
+        }
+      }
+    },
+    "4 Stars and Up": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 stjärnor och uppåt"
+          }
+        }
+      }
+    },
+    "Best Half": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bästa hälften"
+          }
+        }
+      }
+    },
+    "Best Quarter": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bästa fjärdedelen"
           }
         }
       }

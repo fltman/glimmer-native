@@ -322,12 +322,12 @@ struct BatchSheet: View {
                     files.sort { (runner.ratings[$0]?.score ?? -9) > (runner.ratings[$1]?.score ?? -9) }
                 }
                 Menu("Keep") {
-                    Button("Without blurry photos") { files.removeAll { runner.ratings[$0]?.isBlurry == true } }
-                    Button("Without documents and screenshots") { files.removeAll { runner.ratings[$0]?.isUtility == true } }
+                    Button("Without Blurry Photos") { files.removeAll { runner.ratings[$0]?.isBlurry == true } }
+                    Button("Without Documents and Screenshots") { files.removeAll { runner.ratings[$0]?.isUtility == true } }
                     Divider()
-                    Button("4 stars and up") { files.removeAll { (runner.ratings[$0]?.stars ?? 0) < 4 } }
-                    Button("Best half") { keepBest(fraction: 0.5) }
-                    Button("Best quarter") { keepBest(fraction: 0.25) }
+                    Button("4 Stars and Up") { files.removeAll { (runner.ratings[$0]?.stars ?? 0) < 4 } }
+                    Button("Best Half") { keepBest(fraction: 0.5) }
+                    Button("Best Quarter") { keepBest(fraction: 0.25) }
                 }
                 .fixedSize()
             }
