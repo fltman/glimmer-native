@@ -94,6 +94,13 @@ extension AIController {
             let provider = AIProvider.named("grunden")!
             s.textNotice = TextNotice(kind: .firstUse, title: String(localized: "Send this to \(provider.name)?"),
                                       message: Self.textNotice(for: provider, sendsPictures: false) + " " + String(localized: "You can read this again in Settings › AI."), proceed: nil)
+        case "unknownTextPrice":
+            // The once-per-service question before a text request whose price the service's list did not state.
+            s.textNotice = TextNotice(kind: .unknownPrice, title: String(localized: "\("Berget") states no price in advance"),
+                                      message: String(localized: "Glimmer has read no price for \("glimmer-test/not-a-model") from \("Berget")'s list, so it cannot say what a request costs. \("Berget") bills your key for each request. You are asked this once for \("Berget"); it is kept in Settings › AI, where you can take it back."), proceed: nil)
+        case "paidPanel":
+            // A panel that makes a picture: the line that the price is not known, the tick, and its button grey.
+            s.showLayersPanel = true; s.inspectorTab = .ai; s.aiSection = .harmonize
         case "cantSee":
             s.textNotice = TextNotice(kind: .cantSee, title: String(localized: "This model can't look at pictures"),
                                       message: String(localized: "\("Berget") lists \("mistralai/Mistral-Small-3.2-24B-Instruct-2506") as a model without picture input, and this needs to see your document. Nothing was sent. Choose a model that takes pictures in Settings › AI."))

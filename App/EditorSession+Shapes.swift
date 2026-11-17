@@ -75,6 +75,6 @@ extension EditorSession {
             stroke.position = .center
             layer.effects.stroke = stroke
         }
-        edit(String(localized: "New \(String(localized: String.LocalizationValue(shapeKind.title)))")) { $0.insertLayerAboveActive(layer) }
+        edit(stepName("New \(String(localized: String.LocalizationValue(shapeKind.title)))", english: "New \(shapeKind.title)")) { $0.insertLayerAboveActive(layer) }
     }
 }

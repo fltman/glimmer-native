@@ -48,6 +48,7 @@ LANG_="${GLIMMER_LANG:-en}"; SHOTS=build/a11y-shots$([[ $LANG_ == en ]] || echo 
 T() { scripts/catalog-text.py "$LANG_" "$1"; }                          # a text of the app, as a pattern, in the copy's language
 M() { scripts/catalog-text.py --exact "$LANG_" "$1" | sed 's/\\\(.\)/\1/g'; }  # the same as plain words, for a menu title
 shots=0; mkdir -p $SHOTS; rm -f $SHOTS/*.png
+TITLES=build/a11y-titles-$LANG_.txt; : > "$TITLES"
 read_state() {
   sleep "${3:-1.2}"
   local audit; audit=$("$AUDIT" --pid $GLIMMER_PID --strict 2>&1); local code=$?
@@ -59,6 +60,8 @@ read_state() {
   # What the state is about is brought into view first: a picture of the top of a window is not a look at what is further down.
   perl -e 'alarm 15; exec @ARGV' build/axread $GLIMMER_PID --show any "$(echo "$want" | sed 's/\\\(.\)/\1/g; s/\.\*.*//')" >/dev/null 2>&1; sleep 0.4
   # A picture of each state too (the app's own windows only): a read does not see a sheet that is cut off or a label that wraps.
+  # Every menu item and every button of this state, for the Title Case check at the end.
+  perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID --titles >> "$TITLES" 2>/dev/null
   shots=$((shots + 1)); build/window-shot $GLIMMER_PID $SHOTS "$(printf '%02d' $shots)-$(echo "$1" | tr -c 'A-Za-z0-9' '-' | cut -c1-48)" >/dev/null 2>&1
   if (( code == 0 )); then ok "$1 ($seen; $(echo "$audit" | tail -1 | cut -d: -f1))"; else bad "$1: $(echo "$audit" | grep -E "UNNAMED|WEAK|OPAQUE|VALUE|SILENT|SAMEID" | head -3 | tr '\n' ' ')"; fi
 }
@@ -89,6 +92,8 @@ fixture waiting && read_state "a plan and a command that wait for Run, because t
 read_state "an extra step the model added, offered and waiting" "The assistant also suggests Auto Enhance, which you didn't ask for. Run it now on the picture as it is?"
 fixture paidPlan && read_state "a plan with a paid step: the price is not known, and the tick for the service" "Price not known in advance" || bad "fixture paidPlan"
 if [[ "$(build/axread $GLIMMER_PID --enabled AXButton "$(M "Run")")" == disabled ]]; then ok "Run on that plan is off until the tick is made"; else bad "Run on a paid plan is not off before the tick"; fi
+fixture paidPanel && read_state "the Harmonize panel: the price is not known, the tick, its button off" "Harmonize Layer" || bad "fixture paidPanel"
+if [[ "$(build/axread $GLIMMER_PID --enabled AXButton "$(M "Harmonize Layer")")" == disabled ]]; then ok "Harmonize Layer is off until the tick is made"; else bad "Harmonize Layer is not off before the tick"; fi
 fixture refusedPlan && read_state "a plan that can't run because a step would be refused: said, and no Run" "The plan asks Exposure for a setting it doesn't have (brightness), so it can't run. Nothing was changed. Ask again, perhaps in other words." || bad "fixture refusedPlan"
 fixture jobs && read_state "the job list: running, failed, done with a cost, cancelled" "OpenRouter rejected the API key." || bad "fixture jobs"
 fixture clear   # the job list's running job must not put its spinner in the pictures that follow
@@ -104,6 +109,7 @@ alert healWarning "The area is 203 px across at its thickest. Heal Selection giv
 alert firstUse "a small picture of it"
 alert firstUseNoPictures "takes no pictures, so none is sent"
 alert cantSee "This model can't look at pictures"
+alert unknownTextPrice "You are asked this once for"
 alert error "Couldn't save photo.png: The file “photo.png” couldn’t be opened because you don’t have permission to view it."
 fixture imageSize && read_state "sheet: Image Size" "Image Size" 1.5 || bad "fixture imageSize"; front; press 53; fixture clear; sleep 0.5
 fixture canvasSize && read_state "sheet: Canvas Size" "Canvas Size" 1.5 || bad "fixture canvasSize"; front; press 53; fixture clear; sleep 0.5
@@ -136,6 +142,12 @@ echo
 # The picture service chosen in Settings › AI (hidden in release builds until a service is offered).
 read_state "Settings › AI, Pictures with fal chosen" "Model for editing"
 read_state "Settings › AI, Pictures: the tick that the service states no price in advance" "Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay grey. Untick it to be asked again."
+
+# English buttons and menu items in Title Case (SIBLINGS.md, "Språk"): every menu item, and every button of the states read above,
+# as the running app names them, so titles that come from a variable or a register are checked too.
+if [[ $LANG_ == en ]]; then
+  if case_report=$(scripts/check-title-case.py "$TITLES"); then ok "$case_report"; else echo "$case_report" | sed 's/^/    /'; bad "buttons or menu items that are not in Title Case (above)"; fi
+fi
 
 MODE=$([[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]] && echo "NETWORK TEST (Berget's public model list was fetched)" || echo "no network (a copy that can make no connection)")
 # What was read is the debug build, which has every switched feature. A release has only those

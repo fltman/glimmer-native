@@ -23,6 +23,8 @@ final class AIController {
         var cost: Double?
         /// A service bills for this job (a picture service, or a text service that isn't on this Mac).
         var paid = false
+        /// A paid job that failed after the request had gone to the service: the service may have billed it, and Glimmer can't know.
+        var mayHaveBeenCharged = false
         @ObservationIgnored var task: Task<Void, Never>?
     }
 
@@ -64,7 +66,8 @@ final class AIController {
     @ObservationIgnored var planTask: Task<Void, Never>?
     var totalCost: Double { jobs.compactMap(\.cost).reduce(0, +) }
     /// Finished paid jobs whose service's answer carried no cost: never summed as if they had one, and counted beside the sum.
-    var jobsWithoutPrice: Int { jobs.filter { $0.paid && $0.status == .done && ($0.cost ?? 0) <= 0 }.count }
+    /// So are paid jobs that failed after the service was reached: they may have been charged.
+    var jobsWithoutPrice: Int { jobs.filter { $0.paid && ($0.cost ?? 0) <= 0 && ($0.status == .done || $0.mayHaveBeenCharged) }.count }
     var isBusy: Bool { jobs.contains { $0.status == .running } }
 
     @ObservationIgnored unowned let session: EditorSession
@@ -78,6 +81,12 @@ final class AIController {
     // MARK: Setup
 
     var hasAPIKey: Bool { (try? Self.apiKey()) != nil }
+    /// Whether the picture service chosen in Settings has a key saved (OpenRouter unless another is chosen).
+    static var hasImageKey: Bool {
+        let p = imageProvider
+        if p.slug == "openrouter" { return (try? apiKey()) != nil }
+        return ((try? ProviderKeys.keychain.key(for: p.slug)) ?? nil) != nil
+    }
     /// Said once per window: the chosen text model can't take pictures.
     @ObservationIgnored var saidModelCantSee = false
 
@@ -112,6 +121,7 @@ final class AIController {
         return (id, flag(".tools"), flag(".vision"))
     }
 
+    /// Its words are English, as an agent is told them; the window says them in the person's language (`PersonMessage`).
     struct TextSetupError: LocalizedError { let errorDescription: String? }
 
     /// The model every text request goes to (the Assistant, suggestions, Find Distractions).
@@ -122,10 +132,10 @@ final class AIController {
     static func textModel(for provider: AIProvider) throws -> any TextModel {
         if provider.slug == "ollama" {
             let chosen = chosenTextModel(for: provider).id
-            guard !chosen.isEmpty else { throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI.")) }
+            guard !chosen.isEmpty else { throw TextSetupError(errorDescription: "Choose a \(provider.name) model in Settings › AI.") }
             let address = UserDefaults.standard.string(forKey: "ai.address.ollama").flatMap(URL.init) ?? URL(string: provider.baseURL)!
             guard let made = provider.textModel(key: "", model: chosen, baseURL: address) else {
-                throw TextSetupError(errorDescription: String(localized: "Glimmer can't use \(provider.name) for text yet."))
+                throw TextSetupError(errorDescription: "Glimmer can't use \(provider.name) for text yet.")
             }
             return made
         }
@@ -141,11 +151,11 @@ final class AIController {
         }
         let model = chosenTextModel(for: provider).id
         guard !model.isEmpty else {
-            throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI."))
+            throw TextSetupError(errorDescription: "Choose a \(provider.name) model in Settings › AI.")
         }
         // OpenRouter keeps its endpoint setting; the others go to their own address.
         guard let made = provider.textModel(key: key, model: model, baseURL: provider.slug == "openrouter" ? AIDefaults.endpoint : nil) else {
-            throw TextSetupError(errorDescription: String(localized: "Glimmer can't use \(provider.name) for text yet."))
+            throw TextSetupError(errorDescription: "Glimmer can't use \(provider.name) for text yet.")
         }
         return made
     }
@@ -191,7 +201,7 @@ final class AIController {
         // The last stop before a paid picture job; the buttons that lead here are grey until the tick is made.
         guard Self.unknownPriceAgreed || agentAllowsUnknownPrice else {
             let name = Self.imageProvider.name
-            throw TextSetupError(errorDescription: String(localized: "\(name) does not state a price in advance. Tick that you know in Settings › AI, and run it again."))
+            throw TextSetupError(errorDescription: "\(name) does not state a price in advance. Tick that you know in Settings › AI, and run it again.")
         }
         // Another image service, when one is chosen. For a test:
         // `-ai.imageProvider openai -ai.imageModel.openai <id>` (fal: also `-ai.imageEditModel.fal <id>`).
@@ -200,12 +210,12 @@ final class AIController {
             if provider.offers(.image) {
                 // What goes to the service was said, and agreed to, when it was chosen in Settings.
                 guard d.bool(forKey: Self.imageToldKey(slug)) else {
-                    throw TextSetupError(errorDescription: String(localized: "Choose \(provider.name) again in Settings › AI and confirm what is sent to it."))
+                    throw TextSetupError(errorDescription: "Choose \(provider.name) again in Settings › AI and confirm what is sent to it.")
                 }
                 guard let key = try ProviderKeys.keychain.key(for: slug) else { throw TextSetupError(errorDescription: provider.missingKeyMessage) }
                 guard let id = d.string(forKey: Self.imageModelKey(slug)), !id.isEmpty,
                       let model = provider.imageModel(key: key, model: id, editModel: d.string(forKey: Self.imageEditModelKey(slug))) else {
-                    throw TextSetupError(errorDescription: String(localized: "Choose a \(provider.name) model in Settings › AI."))
+                    throw TextSetupError(errorDescription: "Choose a \(provider.name) model in Settings › AI.")
                 }
                 return model
             }
@@ -245,8 +255,11 @@ final class AIController {
             } catch is CancellationError {
                 self?.finish(id, .cancelled)
             } catch {
-                let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
-                self?.finish(id, .failed(message))
+                // The job list is the window's: in the person's language.
+                // A paid job's work is the request itself (what can be refused before it is refused before the job starts),
+                // so a failure here came after it was sent, unless the Mac never got a connection.
+                let unsent = [URLError.notConnectedToInternet, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed].contains((error as? URLError)?.code ?? .unknown)
+                self?.finish(id, .failed(PersonMessage.text(for: error)), mayHaveBeenCharged: paid && !unsent)
                 self?.session.report(error)
             }
         }
@@ -262,19 +275,22 @@ final class AIController {
         var unpriced = Job(title: "Relight"); unpriced.status = .done; unpriced.paid = true
         running.status = .running
         failed.status = .failed("OpenRouter rejected the API key.")
+        // A paid job that failed after the service was reached.
+        var lost = Job(title: "Expand"); lost.status = .failed("The service answered with no picture."); lost.paid = true; lost.mayHaveBeenCharged = true
         done.status = .done; done.cost = 0.134
         cancelled.status = .cancelled
-        jobs = [running, failed, done, unpriced, cancelled]
+        jobs = [running, failed, lost, done, unpriced, cancelled]
     }
 
     /// Takes the fixture's jobs away again (they are not real: nothing is running).
     func clearFixtureJobs() { jobs = [] }
     #endif
 
-    private func finish(_ id: UUID, _ status: Job.Status, cost: Double? = nil) {
+    private func finish(_ id: UUID, _ status: Job.Status, cost: Double? = nil, mayHaveBeenCharged: Bool = false) {
         if status != .done { isSegmenting = false }
         guard let i = jobs.firstIndex(where: { $0.id == id }) else { return }
         jobs[i].status = status
+        jobs[i].mayHaveBeenCharged = mayHaveBeenCharged
         jobs[i].cost = cost
     }
 
@@ -630,7 +646,7 @@ final class AIController {
         if !preset.filterSteps.isEmpty, !session.applyFilterSteps(preset.filterSteps) {
             messages.append(Message(fromUser: false, text: "“\(preset.name)” also uses filters (\(preset.filterSteps.map(\.0).joined(separator: ", "))). Select a pixel layer and apply it again to include them."))
         }
-        session.document.edit(String(localized: "Apply \(preset.name)"), undoManager: session.undoManager) {
+        session.document.edit(stepName("Apply \(preset.name)"), undoManager: session.undoManager) {
             $0.insertLayerAboveActive(preset.makeGroup())
         }
     }

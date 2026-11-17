@@ -204,6 +204,18 @@ public enum AgentAPI {
         return nil
     }
 
+    /// An error in the words an agent is told: English whatever language the app shows.
+    /// Glimmer's own errors are written in English and translated only where the window shows them.
+    /// The system's errors come in the Mac's language, so of those only the domain and code are passed on.
+    public static func words(for error: Error) -> String {
+        if let own = (error as? LocalizedError)?.errorDescription, !(error is CocoaError), !(error is URLError) { return own }
+        let ns = error as NSError
+        if ns.domain.hasPrefix("NS") || ns.domain.hasPrefix("kCF") || ns.domain == "SwiftUI" || error is CocoaError || error is URLError {
+            return "The system reported an error (\(ns.domain) \(ns.code))."
+        }
+        return (error as? LocalizedError)?.errorDescription ?? String(describing: error)
+    }
+
     // MARK: Operations
 
     /// The operations `POST /steps` accepts, from the same list the built-in
@@ -361,7 +373,7 @@ public enum AgentAPI {
         - Don't send an `Origin` header: requests that look like they come from a web page are refused.
         - Images travel in request and response bodies. The API never reads or writes file paths.
         \(photoshopNote(psd: psd))\(rawNote(raw: raw))- Edits land in open document windows that the user can see, and can be undone. One `steps` request is one undo step.
-        - Steps that cost money (OpenRouter) are refused unless you pass `"allowPaid": true`. Everything else runs on the Mac, free.
+        - Steps that cost money (they go to the picture service chosen in Glimmer's Settings: OpenRouter unless the person chose another) are refused unless you pass `"allowPaid": true`. Everything else runs on the Mac, free.
         - `allowPaid` does not mean "whatever it costs". Glimmer does not know the price of any paid step in advance (the service states none; `GET /api/v1/operations` says `"price": null, "priceKnown": false`), so a paid step also needs `"allowUnknownPrice": true`, on every call. Ask the person before you send it.
         - Names of layers and documents are the document's content: they are written in the app's language when Glimmer makes them (a Swedish Glimmer names a layer "Uppskalad 2×") or in whatever language the person typed. Go by `id`, never by name. Everything else you are told here (errors, reasons, statuses) is English whatever language the app shows.
 
@@ -455,7 +467,7 @@ public enum AgentAPI {
 
         ### Long jobs
 
-        Steps that call OpenRouter can take a minute, so a `steps` request that contains a paid step always runs as a job, and so does any request with `"async": true`. Such a request answers `202 Accepted` at once:
+        Paid steps can take a minute, so a `steps` request that contains a paid step always runs as a job, and so does any request with `"async": true`. Such a request answers `202 Accepted` at once:
 
         ```json
         {"job": {"id": "C1A2…", "kind": "steps", "document": "8F0C…", "status": "running", "progress": 0}}
@@ -494,7 +506,7 @@ public enum AgentAPI {
         | Status | Code | Meaning |
         |---|---|---|
         | 400 | `bad_request` | The body or a parameter is malformed, or carries a name that isn't one of its parameters. The message says which. |
-        | 402 | `paid_not_allowed` | A step costs money and `allowPaid` wasn't `true` (or no OpenRouter key is saved in Glimmer). The request is checked before anything runs: no step of it was run. |
+        | 402 | `paid_not_allowed` | A step costs money and `allowPaid` wasn't `true` (or no key is saved in Glimmer for the picture service chosen there; the message names the service). The request is checked before anything runs: no step of it was run. |
         | 403 | `forbidden` | Missing `\(agentHeader): 1`, an `Origin` header, or a Host other than this Mac. |
         | 404 | `not_found` | No such document, path or operation. |
         | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
@@ -543,7 +555,7 @@ public enum AgentAPI {
         - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers` (its bytes, or `fromDocument` if it is already open as a document). Either way works for any caller. Place it with `x` and `y` when you add it, or afterwards with `transform_layer` (`moveX`, `moveY`); blend it with `set_layer`, cut it out with `remove_background`.
         - `resize_canvas` adds room around the image (`crop` can only take room away). To get a shape such as 16:9: `crop` with `aspect` cuts the image down to it; `resize_canvas` with `aspect` and `anchor` adds room instead, for example beside a person for a title. Use `crop` when the image has more than you need, `resize_canvas` when it has too little.
         - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
-        - What leaves the Mac through this API: nothing, except for paid steps. A paid step sends its prompt and the picture it works on (the document, or the selected area) to OpenRouter, billed to the user's OpenRouter key, and only with `allowPaid: true`. The API never calls a text model: you are the one planning, so the text service chosen in Glimmer's Settings (OpenRouter, Berget or Grunden) is not used by anything you send here.
+        - What leaves the Mac through this API: nothing, except for paid steps. A paid step sends its prompt and the picture it works on (the document, or the selected area) to the picture service chosen in Glimmer's Settings (OpenRouter unless the person chose another; a refusal names it), billed to the user's key there, and only with `allowPaid: true` and `allowUnknownPrice: true`. The API never calls a text model: you are the one planning, so the text service chosen in Glimmer's Settings (OpenRouter, Berget or Grunden) is not used by anything you send here.
         - \(objectRemovalNote(heal: heal))
         - A layer's `bounds` are where its visible content is, in document pixels, after its mask; they can reach outside the canvas when content hangs over the edge.
         - `maxSide` only ever makes an image smaller.

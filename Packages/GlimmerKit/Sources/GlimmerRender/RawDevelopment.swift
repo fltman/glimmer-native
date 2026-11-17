@@ -20,6 +20,8 @@ public struct RawInfo: Sendable, Equatable {
 public enum RawDevelopment {
     public struct Problem: Error, LocalizedError, Equatable, Sendable {
         public let message: String
+        /// The file is larger than Glimmer or this Mac takes. Said here, so that nothing has to read it out of the message's words.
+        public var tooLarge = false
         public var errorDescription: String? { message }
     }
 
@@ -44,7 +46,7 @@ public enum RawDevelopment {
         }
         let (pixels, overflow) = width.multipliedReportingOverflow(by: height)
         guard !overflow, pixels <= maxPixels, width <= DocumentManifest.maxDimension, height <= DocumentManifest.maxDimension else {
-            throw Problem(message: DocumentLimits.refusal(width: width, height: height) ?? "This RAW file is \(width) × \(height) pixels, more than this Mac handles.")
+            throw Problem(message: DocumentLimits.refusal(width: width, height: height) ?? "This RAW file is \(width) × \(height) pixels, more than this Mac handles.", tooLarge: true)
         }
         return RawInfo(width: width, height: height, processes: f.supportedDecoderVersions.map(\.rawValue),
                        supportsLensCorrection: f.isLensCorrectionSupported, supportsHighlightRecovery: f.isHighlightRecoverySupported,

@@ -85,7 +85,7 @@ extension AIController {
         let made = try await Task.detached(priority: .userInitiated) { try RawLayer.developedTimed(layer, with: settings) }.value
         // The layer may have gone or changed while the file was developed.
         guard s.state.layer(id: id)?.raw != nil else { throw StepError("The layer was removed while it was being developed.", reason: "unknown_layer") }
-        s.edit(String(localized: "Develop RAW")) { state in state.updateLayer(id) { $0 = made.layer } }
+        s.edit(stepName("Develop RAW")) { state in state.updateLayer(id) { $0 = made.layer } }
         stepInfo = ["layer": id.uuidString, "settings": Self.settingsJSON(made.layer.raw?.settings ?? settings), "process": made.layer.raw?.settings.process ?? NSNull(),
                     "seconds": ((made.decoderSeconds + made.tileSeconds) * 10).rounded() / 10]
     }

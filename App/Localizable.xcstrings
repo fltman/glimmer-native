@@ -1365,39 +1365,6 @@
         }
       }
     },
-    "Bottom center": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nederst i mitten"
-          }
-        }
-      }
-    },
-    "Bottom left": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nederst till vänster"
-          }
-        }
-      }
-    },
-    "Bottom right": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nederst till höger"
-          }
-        }
-      }
-    },
     "Brightness": {
       "extractionState": "manual",
       "localizations": {
@@ -5449,17 +5416,6 @@
         }
       }
     },
-    "Load %@ as selection": {
-      "extractionState": "stale",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Läs in %@ som markering"
-          }
-        }
-      }
-    },
     "Load Channel": {
       "extractionState": "manual",
       "localizations": {
@@ -7675,16 +7631,6 @@
         }
       }
     },
-    "Reset colours": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Återställ färger"
-          }
-        }
-      }
-    },
     "Reset the adjustment": {
       "localizations": {
         "sv": {
@@ -9265,16 +9211,6 @@
         }
       }
     },
-    "Swap colours": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Byt färger"
-          }
-        }
-      }
-    },
     "Swap foreground and background (X)": {
       "localizations": {
         "sv": {
@@ -9608,39 +9544,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ovanifrån"
-          }
-        }
-      }
-    },
-    "Top center": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Överst i mitten"
-          }
-        }
-      }
-    },
-    "Top left": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Överst till vänster"
-          }
-        }
-      }
-    },
-    "Top right": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Överst till höger"
           }
         }
       }
@@ -13648,17 +13551,6 @@
         }
       }
     },
-    "Paid jobs whose service's answer carried no cost. They are not in the sum; the service's usage page has what they cost.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Betalda jobb där tjänstens svar inte innehöll någon kostnad. De ingår inte i summan; vad de kostade står på tjänstens sida för förbrukning."
-          }
-        }
-      }
-    },
     "Fill the selection from the prompt": {
       "extractionState": "manual",
       "localizations": {
@@ -13688,6 +13580,234 @@
           "stringUnit": {
             "state": "translated",
             "value": "Glimmer kan inte säga vad en bild kostar innan den är gjord. Tills det här är ikryssat är knapparna som gör bilder grå. Ta bort krysset för att bli tillfrågad igen."
+          }
+        }
+      }
+    },
+    "Swap Colors": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt färger"
+          }
+        }
+      }
+    },
+    "Reset Colors": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ färger"
+          }
+        }
+      }
+    },
+    "Top Left": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Överst till vänster"
+          }
+        }
+      }
+    },
+    "Top Center": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Överst i mitten"
+          }
+        }
+      }
+    },
+    "Top Right": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Överst till höger"
+          }
+        }
+      }
+    },
+    "Bottom Left": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nederst till vänster"
+          }
+        }
+      }
+    },
+    "Bottom Center": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nederst i mitten"
+          }
+        }
+      }
+    },
+    "Bottom Right": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nederst till höger"
+          }
+        }
+      }
+    },
+    "Load %@ as Selection": {
+      "extractionState": "stale",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs in %@ som markering"
+          }
+        }
+      }
+    },
+    "Load Luminosity as Selection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läs in luminansen som markering"
+          }
+        }
+      }
+    },
+    "%@ states no price in advance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ anger inget pris i förväg"
+          }
+        }
+      }
+    },
+    "May have been charged": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kan ha debiterats"
+          }
+        }
+      }
+    },
+    "Paid jobs whose service's answer carried no cost, and paid jobs that failed after the request was sent and may have been charged. They are not in the sum; the service's usage page has what they cost.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betalda jobb där tjänstens svar inte innehöll någon kostnad, och betalda jobb som misslyckades efter att förfrågan hade skickats och kan ha debiterats. De ingår inte i summan; vad de kostade står på tjänstens sida för förbrukning."
+          }
+        }
+      }
+    },
+    "I Know, Send": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jag vet, skicka"
+          }
+        }
+      }
+    },
+    "Glimmer has read no price for the chosen model from this service's list, so it cannot say what a request to the Assistant costs. Until this is ticked, the first request asks.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer har inte läst något pris för den valda modellen i tjänstens lista och kan därför inte säga vad en förfrågan till assistenten kostar. Tills det här är ikryssat frågar den första förfrågan."
+          }
+        }
+      }
+    },
+    "Read %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Läst %@."
+          }
+        }
+      }
+    },
+    "Glimmer has read no price for %@ from %@'s list, so it cannot say what a request costs. %@ bills your key for each request. You are asked this once for %@; it is kept in Settings › AI, where you can take it back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer har inte läst något pris för %1$@ i listan från %2$@ och kan därför inte säga vad en förfrågan kostar. %3$@ debiterar din nyckel för varje förfrågan. Du får den här frågan en gång för %4$@; svaret sparas i Inställningar › AI, där du kan ta tillbaka det."
+          }
+        }
+      }
+    },
+    "%@'s list, read %@: %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listan från %1$@, läst %2$@: %3$@."
+          }
+        }
+      }
+    },
+    "Harmonize Layer": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Harmonisera lager"
+          }
+        }
+      }
+    },
+    "Removes glare from glass, water and screens — in the selection, or the whole image.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tar bort reflexer från glas, vatten och skärmar – i markeringen eller i hela bilden."
+          }
+        }
+      }
+    },
+    "Relights and grades the active layer so it sits naturally in the scene below.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ljussätter och färgsätter det aktiva lagret så att det smälter in i scenen under."
           }
         }
       }

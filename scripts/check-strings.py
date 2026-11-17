@@ -16,7 +16,7 @@ keys = list(catalog)
 SKIP_FILES = {"DebugFixtures.swift"}
 # Debug-only texts (the paid test of a model) and literals that are not prose.
 SKIP = ("Run Glimmer's Test of This Model…", "Running the test", "Send \\(", "Each request carries the list", "sk-or-v1-…", "sRGB")
-CALLS = r'(?:String\(localized: |Text\(|Button\(|Label\(|Toggle\(|Picker\(|Section\(|\.help\(|\.accessibilityLabel\(|\.navigationTitle\(|Menu\()"((?:[^"\\]|\\.)*)"'
+CALLS = r'(?:String\(localized: |stepName\(|Text\(|Button\(|Label\(|Toggle\(|Picker\(|Section\(|\.help\(|\.accessibilityLabel\(|\.navigationTitle\(|Menu\()"((?:[^"\\]|\\.)*)"'
 
 def parts(literal):
     out, i = [], 0

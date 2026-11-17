@@ -9,9 +9,10 @@ import Foundation
 //   axread <pid> --press <role> <name>   → presses the first element of that role with that name (to open a menu to read)
 //   axread <pid> --show <role> <text>    → scrolls the first element with that name, or a text that contains it, into view (before a picture is taken)
 //   axread <pid> --enabled <role> <name> → prints "enabled" or "disabled" for that element (a button that must be grey)
+//   axread <pid> --titles                → prints "menu<TAB>title" for every item of every menu and "button<TAB>title" for every button in the windows (scripts/check-title-case.py)
 //   axread <pid> --frame <role> <name>   → prints that element's place on screen as "x y width height" (points), for the-apps/tools/safepointer
 let arguments = CommandLine.arguments
-guard arguments.count == 2 || (arguments.count == 5 && ["--press", "--frame", "--show", "--enabled"].contains(arguments[2])), let pid = pid_t(arguments[1]) else {
+guard arguments.count == 2 || (arguments.count == 3 && arguments[2] == "--titles") || (arguments.count == 5 && ["--press", "--frame", "--show", "--enabled"].contains(arguments[2])), let pid = pid_t(arguments[1]) else {
     print("usage: axread <pid> [--press <role> <name> | --frame <role> <name> | --show <role> <text> | --enabled <role> <name>]"); exit(2)
 }
 func attribute(_ element: AXUIElement, _ name: String) -> AnyObject? {
@@ -41,6 +42,24 @@ func read(_ element: AXUIElement, depth: Int) {
 let app = AXUIElementCreateApplication(pid)
 AXUIElementSetMessagingTimeout(app, 5)
 let windows = attribute(app, kAXWindowsAttribute as String) as? [AXUIElement] ?? []
+if arguments.count == 3 {
+    func titles(_ element: AXUIElement, depth: Int, menu: Bool) {
+        let role = attribute(element, kAXRoleAttribute as String) as? String ?? ""
+        // A SwiftUI button says its title as its description.
+        let said = [kAXTitleAttribute, kAXDescriptionAttribute].compactMap { attribute(element, $0 as String) as? String }.first { !$0.isEmpty }
+        if let title = said {
+            if menu, role == kAXMenuItemRole as String || role == kAXMenuBarItemRole as String { print("menu\t\(title)") }
+            if !menu, [kAXButtonRole as String, kAXMenuButtonRole as String].contains(role) { print("button\t\(title)") }
+        }
+        // Not Glimmer's own titles: the Apple menu, the files the person opened lately, the system's services.
+        if menu, let said, ["Apple", "Open Recent", "Services"].contains(said) { return }
+        guard depth < 60, let children = attribute(element, kAXChildrenAttribute as String) as? [AXUIElement] else { return }
+        for child in children { titles(child, depth: depth + 1, menu: menu) }
+    }
+    if let bar = attribute(app, kAXMenuBarAttribute as String) { titles(bar as! AXUIElement, depth: 0, menu: true) }
+    for window in windows { titles(window, depth: 0, menu: false) }
+    exit(0)
+}
 if arguments.count == 5 {
     func find(_ element: AXUIElement, depth: Int) -> AXUIElement? {
         if arguments[3] == "any" || attribute(element, kAXRoleAttribute as String) as? String == arguments[3] {   // "any": whatever its role

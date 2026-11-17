@@ -100,6 +100,11 @@ So every panel that makes a picture, and every assistant plan with a paid step, 
 
 The Generate and Remove buttons in the bar under a selection have no room for the line: they stay grey until the tick is made, and their tooltips say why.
 
+The assistant's own requests (planning, Suggest Edits, the quality check, Find Distractions) cost money too when the text service is not on your Mac. For those, Glimmer goes by the service's own model list:
+
+- When the list states a price for the model you chose, the Assistant shows it under its text field with where it comes from and when it was read, as in **Berget's list, read 17 Nov 2026 at 09:12: €0.25 in, €0.50 out per million tokens.** That is a rate, not the cost of one request. Settings › AI reads the list when you open it or click **Refresh**.
+- When Glimmer has read no price for the chosen model, the line says **Price not known in advance**, and the first request asks once for that service: **I Know, Send** or **Not Now**. Your answer is kept in **Glimmer › Settings › AI**, under the text service, where you can untick it.
+
 ## The AI panel
 
 The AI panel is a tab in the inspector. Each section opens when you choose its command in the **AI** menu, and you can also open and close sections by clicking their titles.
@@ -217,6 +222,7 @@ The bottom of the AI panel shows **Activity**, a list of the jobs in this window
 - A finished job shows a green check. A failed job shows a warning sign and the reason. A cancelled job shows a cross.
 - A job that cost money shows its cost in US dollars, as OpenRouter reported it.
 - The heading shows the total cost of this window's jobs. A finished paid job whose service reported no cost is not in that sum; the heading counts such jobs beside it, as in **2 without a price**. What they cost stands on the service's own usage page.
+- A paid job that failed after the request had been sent is counted there too, and its row says **May have been charged**: the service may have billed it, and Glimmer cannot know.
 - **Clear** removes finished, failed and cancelled jobs from the list.
 
 The list keeps the 30 most recent jobs.

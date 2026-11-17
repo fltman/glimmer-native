@@ -196,6 +196,12 @@ final class GlimmerDocument: Document {
         registerUndo(actionName, undoManager: undoManager, restoring: before)
     }
 
+    /// The app's English texts, whatever language it shows (for what an agent is told).
+    static let englishBundle: Bundle = Bundle.main.url(forResource: "en", withExtension: "lproj").flatMap(Bundle.init(url:)) ?? .main
+
+    /// The Edit menu's (translated) action names, back to the English they were registered with.
+    @MainActor static var englishActionNames: [String: String] = [:]
+
     @MainActor
     func beginTransaction(_ actionName: String) {
         guard transaction == nil else { return }
@@ -261,7 +267,10 @@ final class GlimmerDocument: Document {
             document.registerUndo(actionName, undoManager: undoManager, restoring: current)
         }
         // Action names are catalog keys: the Edit menu shows "Undo <localized name>".
-        undoManager.setActionName(String(localized: String.LocalizationValue(actionName)))
+        let shown = String(localized: String.LocalizationValue(actionName))
+        undoManager.setActionName(shown)
+        // What an agent is told stays English: the API answers undo and redo with the name as written here.
+        if shown != actionName { Self.englishActionNames[shown] = actionName }
     }
 
     /// Moves the oldest in-memory snapshots to disk until the rest fit the memory budget.
@@ -338,4 +347,15 @@ final class GlimmerDocument: Document {
         while historyIndex > index, undoManager.canUndo { undoManager.undo() }
         while historyIndex < index, undoManager.canRedo { undoManager.redo() }
     }
+}
+
+/// The name of an undo step: in the app's language for the Edit menu and the History panel, and remembered
+/// in English for the agent API, which answers undo and redo with it (SIBLINGS.md, "Språk").
+/// `english`: only when a value inside the name was itself translated.
+@MainActor
+func stepName(_ value: String.LocalizationValue, english: String? = nil) -> String {
+    let shown = String(localized: value)
+    let plain = english ?? String(localized: value, bundle: GlimmerDocument.englishBundle)
+    if shown != plain { GlimmerDocument.englishActionNames[shown] = plain }
+    return shown
 }

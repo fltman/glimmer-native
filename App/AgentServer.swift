@@ -213,7 +213,7 @@ enum AgentRouter {
         } catch let error as APIError {
             return .error(error)
         } catch {
-            return .error(.internalError((error as? LocalizedError)?.errorDescription ?? error.localizedDescription))
+            return .error(.internalError(AgentAPI.words(for: error)))
         }
     }
 
@@ -262,7 +262,7 @@ enum AgentRouter {
             let failure: Error? = await withCheckedContinuation { done in
                 DocumentOpener.shared.openRawFile(r.body, fileName: r.query["name"] ?? "sample.dng") { done.resume(returning: $0) }
             }
-            if let failure { throw APIError.unprocessable("raw_not_developed", (failure as? LocalizedError)?.errorDescription ?? failure.localizedDescription) }
+            if let failure { throw APIError.unprocessable("raw_not_developed", AgentAPI.words(for: failure)) }
             return .json(["opened": true])
         case ["api", "v1", "debug", "raw-develop-trace"]:
             try only("GET")
@@ -543,8 +543,7 @@ enum AgentRouter {
         if DocumentOpener.isRawData(data) || DocumentOpener.isRawFile(URL(fileURLWithPath: name)) {
             // The size is read from the header first: a file too large for this Mac is refused before anything is decoded.
             do { _ = try RawDevelopment.info(data) } catch let problem as RawDevelopment.Problem {
-                let tooLarge = problem.message.contains("megapixels") || problem.message.contains("more than this Mac")
-                throw APIError.unprocessable(tooLarge ? "too_large" : "raw_not_developed", problem.message)
+                throw APIError.unprocessable(problem.tooLarge ? "too_large" : "raw_not_developed", problem.message)
             }
             do {
                 let made = try await Task.detached(priority: .userInitiated) { try RawLayer.make(from: data, fileName: name) }.value
@@ -583,8 +582,8 @@ enum AgentRouter {
     /// Why an image wasn't opened, for an agent: what was wrong and what to send instead.
     static func imageRefusal(_ error: ImageImportError) -> String {
         switch error {
-        case .tooLarge: error.localizedDescription + " Send a smaller image."
-        case .damaged: error.localizedDescription + " Send the whole file."
+        case .tooLarge: AgentAPI.words(for: error) + " Send a smaller image."
+        case .damaged: AgentAPI.words(for: error) + " Send the whole file."
         case .unreadable: "Glimmer couldn't read this as an image. Send PNG, JPEG, HEIC, TIFF or WebP bytes."
         }
     }
@@ -741,7 +740,7 @@ enum AgentRouter {
             do {
                 image = try ImageExporter.flattenedSRGB(source.state, context: source.ai.metal)
             } catch {
-                throw APIError.internalError(error.localizedDescription)
+                throw APIError.internalError(AgentAPI.words(for: error))
             }
         } else {
             guard !r.body.isEmpty else { throw APIError.unprocessable("bad_image", "The image body is empty.") }
@@ -763,7 +762,7 @@ enum AgentRouter {
         do {
             layer = try session.addImageLayer(image, name: name ?? source.flatMap { $0.explicitName ?? $0.state.layers.first?.name } ?? String(localized: "Image"), fit: fit, x: x, y: y, smartObject: smart)
         } catch {
-            throw APIError.internalError(error.localizedDescription)
+            throw APIError.internalError(AgentAPI.words(for: error))
         }
         showRequester(r, in: session)
         var info: [String: Any] = ["id": layer.id.uuidString, "name": layer.name]
@@ -801,13 +800,14 @@ enum AgentRouter {
             if let stray = StepParameters.stray(in: decoded) { throw APIError.badRequest("Step \(i): \(stray.message) No step of this request was run.") }
             if let problem = CanvasSteps.malformed(decoded) { throw APIError.badRequest("Step \(i): \(problem)") }
             if AgentAPI.paidOps.contains(op) {
-                guard allowPaid else {
-                    throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) calls OpenRouter and costs money. Pass \"allowPaid\": true to allow it. No step of this request was run.")
-                }
-                guard session.ai.hasAPIKey else {
-                    throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) needs an OpenRouter key, and none is saved in Glimmer › Settings. No step of this request was run.")
-                }
+                // The picture service chosen in Glimmer's Settings: said by name, since that is where the picture goes.
                 let service = AIController.imageProvider
+                guard allowPaid else {
+                    throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) calls \(service.name) and costs money. Pass \"allowPaid\": true to allow it. No step of this request was run.")
+                }
+                guard AIController.hasImageKey else {
+                    throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) needs a key for \(service.name), the picture service chosen in Glimmer, and none is saved in Glimmer › Settings. No step of this request was run.")
+                }
                 guard PaidPrice.known(op: op, service: service.slug) != nil || allowUnknownPrice else {
                     throw APIError.unprocessable(PaidPrice.reason, "Step \(i) (\(op)) is paid, and Glimmer does not know its price in advance: \(service.name) states none. Pass \"allowUnknownPrice\": true as well to run it without knowing the price. No step of this request was run.")
                 }
@@ -888,12 +888,12 @@ enum AgentRouter {
         guard let undo = session.undoManager else { throw APIError.unprocessable("no_history", "The document has no undo history yet.") }
         if redo {
             guard undo.canRedo else { throw APIError.unprocessable("nothing_to_redo", "Nothing to redo.") }
-            let name = undo.redoActionName
+            let name = GlimmerDocument.englishActionNames[undo.redoActionName] ?? undo.redoActionName
             undo.redo()
             return .json(["redone": name, "document": detail(session)])
         }
         guard undo.canUndo else { throw APIError.unprocessable("nothing_to_undo", "Nothing to undo.") }
-        let name = undo.undoActionName
+        let name = GlimmerDocument.englishActionNames[undo.undoActionName] ?? undo.undoActionName
         undo.undo()
         return .json(["undone": name, "document": detail(session)])
     }

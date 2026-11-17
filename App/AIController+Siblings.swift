@@ -25,7 +25,7 @@ extension AIController {
         let color = parseHexColor(step.string("color")) ?? s.foreground
         let mask = await Task.detached { path.asSelection.asMask }.value
         let layer = Layer(name: path.name, mask: mask, vectorMask: path, content: .fill(.solid(color)))
-        s.edit(String(localized: "Add Waveform")) { $0.insertLayerAboveActive(layer) }
+        s.edit(stepName("Add Waveform")) { $0.insertLayerAboveActive(layer) }
     }
 
     /// Where the waveform goes: centred horizontally, in the middle, top or bottom band.

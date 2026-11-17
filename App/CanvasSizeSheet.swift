@@ -17,7 +17,7 @@ struct CanvasSizeSheet: View {
     /// Why this Mac can't hold a canvas of that size, when it can't.
     private var tooLarge: String? { sidesValid ? DocumentLimits.refusal(width: width, height: height) : nil }
     private var isValid: Bool { sidesValid && tooLarge == nil }
-    private static let anchorNames = [["Top left", "Top center", "Top right"], ["Left", "Center", "Right"], ["Bottom left", "Bottom center", "Bottom right"]]
+    private static let anchorNames = [["Top Left", "Top Center", "Top Right"], ["Left", "Center", "Right"], ["Bottom Left", "Bottom Center", "Bottom Right"]]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -82,7 +82,7 @@ struct CanvasSizeSheet: View {
                     let box = CanvasSteps.canvasBox(old: (oldWidth, oldHeight), new: (width, height), anchor: (anchorX, anchorY))
                     if width != oldWidth || height != oldHeight {
                         do {
-                            try session.cropCanvas(to: box, deletePixels: false, actionName: String(localized: "Canvas Size"))
+                            try session.cropCanvas(to: box, deletePixels: false, actionName: stepName("Canvas Size"))
                         } catch {
                             session.report(error)
                         }

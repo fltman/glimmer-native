@@ -295,7 +295,7 @@ extension EditorSession {
         guard width != state.width || height != state.height else { return }
         commitLiveEdit()
         let scale = GlimmerCore.AffineTransform(a: Double(width) / Double(state.width), d: Double(height) / Double(state.height))
-        try transformCanvas(scale, width: width, height: height, actionName: String(localized: "Image Size"), metal: metal, scaling: true)
+        try transformCanvas(scale, width: width, height: height, actionName: stepName("Image Size"), metal: metal, scaling: true)
         canvas.perform(.fitToWindow)
     }
 

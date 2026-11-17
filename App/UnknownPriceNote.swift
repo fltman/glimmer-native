@@ -28,11 +28,13 @@ struct UnknownPriceTick: View {
     @AppStorage private var agreed: Bool
     @State private var shownAtStart: Bool
 
-    init(provider: AIProvider, onlyUntilMade: Bool = false) {
+    /// `key`: the picture service's tick unless another is given (the text service has its own).
+    init(provider: AIProvider, key: String? = nil, onlyUntilMade: Bool = false) {
         self.provider = provider
         self.onlyUntilMade = onlyUntilMade
-        _agreed = AppStorage(wrappedValue: false, AIController.unknownPriceKey(provider.slug))
-        _shownAtStart = State(initialValue: !UserDefaults.standard.bool(forKey: AIController.unknownPriceKey(provider.slug)))
+        let key = key ?? AIController.unknownPriceKey(provider.slug)
+        _agreed = AppStorage(wrappedValue: false, key)
+        _shownAtStart = State(initialValue: !UserDefaults.standard.bool(forKey: key))
     }
 
     var body: some View {

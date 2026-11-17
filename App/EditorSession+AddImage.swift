@@ -26,7 +26,7 @@ extension EditorSession {
             content = .raster(try SmartObjectRenderer(context: metal).render(smart, limit: smart.bounds))
         }
         let layer = Layer(name: name, content: content)
-        document.edit(String(localized: "Add Image"), undoManager: undoManager, separateStep: true) { $0.insertLayerAboveActive(layer) }
+        document.edit(stepName("Add Image"), undoManager: undoManager, separateStep: true) { $0.insertLayerAboveActive(layer) }
         return layer
     }
 }

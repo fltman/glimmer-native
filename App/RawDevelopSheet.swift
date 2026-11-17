@@ -342,7 +342,7 @@ struct RawDevelopSheet: View {
                 // Cancelled or given up meanwhile: the document stays as it was.
                 guard model.developRun == run else { RawDevelopTrace.last = "finished after being abandoned (\(Int(Date().timeIntervalSince(began))) s)"; return }
                 let beforeEdit = Date()
-                session.edit(String(localized: "Develop RAW")) { state in state.updateLayer(model.layerID) { $0 = made.layer } }
+                session.edit(stepName("Develop RAW")) { state in state.updateLayer(model.layerID) { $0 = made.layer } }
                 let edited = Date()
                 model.developRun = nil
                 dismiss()

@@ -83,7 +83,7 @@ extension AIController {
                 // Commands that only open a dialog ("Vignette…") don't carry out a request by themselves,
                 // and settings, views and files never do ("fix the colors" is not "Blend Colors in Gamma Space").
                 let candidates = CommandSearch.candidates(for: goal, in: Palette.allItems).filter {
-                    !$0.title.hasSuffix("…") && !Self.notRoutable($0)
+                    !$0.title.hasSuffix("…") && !Self.notRoutable($0)   // text-logic: ok (the register's own key, never the shown title; its ellipsis is the register's mark for "asks first")
                 }.map {
                     OnDeviceRouter.Candidate(id: $0.id, title: $0.title, subtitle: $0.subtitle)
                 }
@@ -359,7 +359,7 @@ extension AIController {
         agentAllowsUnknownPrice = allowUnknownPrice
         defer { agentAllowsUnknownPrice = false }
         session.commitLiveEdit()
-        session.document.beginTransaction(String(localized: "Agent Edit"))
+        session.document.beginTransaction("Agent Edit")   // a catalogue key, like every action name: translated where the window shows it
         defer { session.document.endTransaction(undoManager: session.undoManager) }
         var results: [APIStepResult] = []
         var stopped = false
@@ -379,7 +379,7 @@ extension AIController {
             } catch {
                 stopped = true
                 results.append(APIStepResult(op: step.op, status: "failed",
-                                             error: (error as? LocalizedError)?.errorDescription ?? error.localizedDescription,
+                                             error: AgentAPI.words(for: error),
                                              reason: (error as? StepError)?.reason, hard: (error as? StepError)?.hard ?? false))
             }
             progress?(i + 1)
@@ -525,7 +525,7 @@ extension AIController {
         case "add_adjustment":
             guard let kind = AdjustmentKind(rawValue: step.string("type") ?? "") else { throw StepError("Unknown adjustment.") }
             let adjustment = Self.adjustment(kind, step.object("params"))
-            s.addLayer(Layer(name: layerName(kind.title), content: .adjustment(adjustment)), actionName: String(localized: "New \(String(localized: String.LocalizationValue(kind.title)))"))
+            s.addLayer(Layer(name: layerName(kind.title), content: .adjustment(adjustment)), actionName: stepName("New \(String(localized: String.LocalizationValue(kind.title)))", english: "New \(kind.title)"))
         case "apply_filter":
             guard let kind = FilterKind(rawValue: step.string("type") ?? "") else { throw StepError("Unknown filter.") }
             try ensurePixelLayer()

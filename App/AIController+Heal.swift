@@ -168,11 +168,11 @@ extension AIController {
         let layerID: UUID
         if let id = job.layerID {
             layerID = id
-            session.edit(String(localized: "Heal Selection")) { $0.updateLayer(id) { $0.tiles = grid } }
+            session.edit(stepName("Heal Selection")) { $0.updateLayer(id) { $0.tiles = grid } }
         } else {
             let layer = Layer(name: String(localized: "Heal"), content: .raster(grid))
             layerID = layer.id
-            session.edit(String(localized: "Heal Selection")) { $0.insertLayerAboveActive(layer) }
+            session.edit(stepName("Heal Selection")) { $0.insertLayerAboveActive(layer) }
         }
         var info: [String: Any] = ["method": result.method.rawValue, "pixels": result.filled,
                                    "width": Int(job.thickness.rounded()), "layer": layerID.uuidString]

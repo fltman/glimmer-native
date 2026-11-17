@@ -157,7 +157,7 @@ Every POST needs the header `X-Glimmer-Agent: 1`. Requests with an `Origin` head
 
 ### The agent gets 402 paid_not_allowed
 
-The step uses OpenRouter. The agent must send `"allowPaid": true`, and an OpenRouter key must be saved in Glimmer.
+The step goes to the picture service chosen in **Glimmer › Settings › AI** (OpenRouter unless you chose another); the message names it. The agent must send `"allowPaid": true`, and a key for that service must be saved in Glimmer.
 
 ### The agent gets 422 with the reason unknown_price
 

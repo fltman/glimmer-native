@@ -22,6 +22,6 @@ extension AIController {
             throw StepError(refusal.message, reason: refusal.reason)
         }
         let id = layer.id
-        s.edit(String(localized: "Style Text")) { $0.updateLayer(id) { $0.content = .text(text) } }
+        s.edit(stepName("Style Text")) { $0.updateLayer(id) { $0.content = .text(text) } }
     }
 }

@@ -52,7 +52,7 @@ struct ChannelsPanel: View {
                         Button {
                             session.loadChannelAsSelection(row.id)
                         } label: {
-                            Label(row.id == 0 ? "Load luminosity as selection" : "Load \(row.name) as selection",
+                            Label(row.id == 0 ? "Load Luminosity as Selection" : "Load \(row.name) as Selection",
                                   systemImage: "selection.pin.in.out")
                                 .labelStyle(.iconOnly)
                         }

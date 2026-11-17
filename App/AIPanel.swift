@@ -272,6 +272,12 @@ private struct AssistantView: View {
             Text("Enter to send")
                 .font(.caption2)
                 .foregroundStyle(Theme.muted)
+            // What a request to the chosen text service costs, as far as its own list said; nothing when it runs on this Mac.
+            if let price = AIController.textPriceLine(for: AIController.textProvider) {
+                Text(verbatim: price)
+                    .font(.caption2)
+                    .foregroundStyle(Theme.muted)
+            }
         }
     }
 
@@ -626,7 +632,7 @@ private struct JobsView: View {
                         Text("\(ai.jobsWithoutPrice) without a price")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .help("Paid jobs whose service's answer carried no cost. They are not in the sum; the service's usage page has what they cost.")
+                            .help("Paid jobs whose service's answer carried no cost, and paid jobs that failed after the request was sent and may have been charged. They are not in the sum; the service's usage page has what they cost.")
                     }
                     Button("Clear") { ai.clearFinished() }
                         .controlSize(.small)
@@ -646,6 +652,9 @@ private struct JobsView: View {
                             Text(LocalizedStringKey(job.title)).lineLimit(2).font(.callout)
                             if case .failed(let message) = job.status {
                                 Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
+                            }
+                            if job.mayHaveBeenCharged {
+                                Text("May have been charged").font(.caption).foregroundStyle(.secondary)
                             }
                         }
                         Spacer(minLength: 0)
@@ -670,8 +679,9 @@ private struct JobsView: View {
 
 private struct StrengthAction: View {
     let ai: AIController
-    let note: String
-    let button: String
+    // Catalogue keys: a plain String here was shown as written, in English, whatever the app's language.
+    let note: LocalizedStringKey
+    let button: LocalizedStringKey
     let initial: Double
     let action: (Double) -> Void
     @State private var strength: Double?

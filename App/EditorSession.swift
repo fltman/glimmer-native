@@ -570,7 +570,7 @@ final class EditorSession {
     func perform(_ id: CommandID) {
         guard canPerform(id) else { return }
         if let kind = id.adjustmentKind {
-            addLayer(Layer(name: layerName(kind.title), content: .adjustment(Adjustment(kind))), actionName: String(localized: "New \(String(localized: String.LocalizationValue(kind.title)))"))
+            addLayer(Layer(name: layerName(kind.title), content: .adjustment(Adjustment(kind))), actionName: stepName("New \(String(localized: String.LocalizationValue(kind.title)))", english: "New \(kind.title)"))
             return
         }
         if let kind = id.filterKind {

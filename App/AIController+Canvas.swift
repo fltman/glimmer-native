@@ -41,13 +41,13 @@ extension AIController {
         if fillText != nil, fill == nil { throw StepError("fill must be #RRGGBB.", reason: "bad_color") }
         if s.cropSession != nil { s.cropSession = nil }
         if box.width != w || box.height != h {
-            try s.cropCanvas(to: box, deletePixels: false, actionName: String(localized: "Canvas Size"))
+            try s.cropCanvas(to: box, deletePixels: false, actionName: stepName("Canvas Size"))
         }
         var info = Self.json(box)
         if let fill {
             if box.width > w || box.height > h {
                 let layer = Layer(name: String(localized: "Canvas Fill"), content: .fill(.solid(fill)))
-                s.edit(String(localized: "Canvas Size")) { $0.layers.insert(layer, at: 0) }
+                s.edit(stepName("Canvas Size")) { $0.layers.insert(layer, at: 0) }
                 info["fill"] = "added"
             } else {
                 info["fill"] = "not_needed"
@@ -70,7 +70,7 @@ extension AIController {
         case "intersect": .intersect
         default: .replace
         }
-        s.edit(String(localized: "Select")) { state in
+        s.edit(stepName("Select")) { state in
             if let current = state.selection, mode != .replace {
                 state.selection = current.combined(with: shape, mode)
             } else {
@@ -94,7 +94,7 @@ extension AIController {
         var isGroup = false
         if case .group = layer.content { isGroup = true }
         let change = try refusing { try CanvasSteps.layerChange(step, isGroup: isGroup) }
-        s.edit(String(localized: "Layer Properties")) { state in
+        s.edit(stepName("Layer Properties")) { state in
             state.updateLayer(id) { l in
                 if let v = change.opacity { l.opacity = v }
                 if let v = change.blendMode { l.blendMode = v }

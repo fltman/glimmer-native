@@ -105,7 +105,7 @@ extension EditorSession {
             smartFilterEditIndex = nil
             document.state = before
             lastFilter = settings
-            edit(String(localized: "Smart Filter")) { state in
+            edit(stepName("Smart Filter")) { state in
                 state.updateLayer(layer.id) { l in
                     if case .smart(var s) = l.content { s.filters = filters; l.content = .smart(s) }
                 }
@@ -120,7 +120,7 @@ extension EditorSession {
         do {
             let result = try engine.apply(settings, to: layer.tiles, frame: state.bounds, selection: state.selection)
             lastFilter = settings
-            edit(String(localized: String.LocalizationValue(settings.kind.title))) { $0.updateLayer(layer.id) { $0.tiles = result } }
+            edit(stepName(String.LocalizationValue(settings.kind.title), english: settings.kind.title)) { $0.updateLayer(layer.id) { $0.tiles = result } }
         } catch {
             report(error)
         }

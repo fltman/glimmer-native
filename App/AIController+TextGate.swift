@@ -5,7 +5,7 @@ import GlimmerAI
 /// cloud service, and the refusal to send a picture to a model that takes none.
 extension AIController {
     struct TextNotice: Identifiable {
-        enum Kind { case firstUse, cantSee }
+        enum Kind { case firstUse, cantSee, unknownPrice }
         let id = UUID()
         let kind: Kind
         let title: String
@@ -43,6 +43,8 @@ extension AIController {
         }
         // Without a key or a model there is nothing to ask about yet: the request itself says what is missing.
         let sendsPictures = chosen.vision != false   // the same rule as the request itself (AIController+Agent)
+        // Then the price: known from the service's own list, or the person's once-per-service word that it is not.
+        let request: @MainActor () -> Void = { [weak self] in self?.gateTextPrice(provider, model: chosen.id, request) }
         guard hasTextModel, !Self.hasBeenTold(about: provider, sendsPictures: sendsPictures) else { return request() }
         session.textNotice = TextNotice(
             kind: .firstUse,
@@ -53,6 +55,60 @@ extension AIController {
                 if sendsPictures { UserDefaults.standard.set(true, forKey: Self.toldPicturesKey(provider.slug)) }
                 request()
             })
+    }
+
+    // MARK: The price of a text request (the-apps/SIBLINGS.md, "Okänt pris")
+
+    /// What the service's own list said the chosen model costs, and when Glimmer read it (Settings › AI reads the list).
+    struct ListedPrice { let line: String; let read: Date }
+
+    static func textPriceKey(_ slug: String) -> String { "ai.textPrice.\(slug)" }
+    /// Set when the person has said, once for this service, that they know it states no price in advance. Taken back in Settings › AI.
+    static func textUnknownPriceKey(_ slug: String) -> String { "ai.unknownPriceAgreed.text.\(slug)" }
+
+    /// Called when Settings has read the service's model list: keeps the chosen model's listed price with the time, or forgets it when the list has none.
+    static func rememberTextPrice(_ slug: String, model: String, line: String?) {
+        let d = UserDefaults.standard
+        if let line { d.set(["model": model, "line": line, "read": Date()] as [String: Any], forKey: textPriceKey(slug)) }
+        else { d.removeObject(forKey: textPriceKey(slug)) }
+    }
+
+    /// The listed price of the model now chosen for `provider`, if the list had one when it was last read.
+    static func listedTextPrice(for provider: AIProvider) -> ListedPrice? {
+        guard let kept = UserDefaults.standard.dictionary(forKey: textPriceKey(provider.slug)),
+              kept["model"] as? String == chosenTextModel(for: provider).id,
+              let line = kept["line"] as? String, let read = kept["read"] as? Date else { return nil }
+        return ListedPrice(line: line, read: read)
+    }
+
+    /// Whether a text request to `provider` may go without asking about the price: nothing is billed (this Mac), the price is listed, or the person has said they know it is not.
+    static func textPriceSettled(for provider: AIProvider) -> Bool {
+        provider.kind != .cloud || listedTextPrice(for: provider) != nil || UserDefaults.standard.bool(forKey: textUnknownPriceKey(provider.slug))
+    }
+
+    /// The line the Assistant shows about what a request costs; nil when nothing is billed.
+    static func textPriceLine(for provider: AIProvider) -> String? {
+        guard provider.kind == .cloud else { return nil }
+        if let listed = listedTextPrice(for: provider) {
+            return String(localized: "\(provider.name)'s list, read \(listed.read.formatted(date: .abbreviated, time: .shortened)): \(listed.line).")
+        }
+        return String(localized: "Price not known in advance")
+    }
+
+    private func gateTextPrice(_ provider: AIProvider, model: String, _ request: @escaping @MainActor () -> Void) {
+        guard hasTextModel, !Self.textPriceSettled(for: provider) else { return request() }
+        // After the alert before this one (if any) has gone: it clears the notice as it closes.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(450))
+            self?.session.textNotice = TextNotice(
+                kind: .unknownPrice,
+                title: String(localized: "\(provider.name) states no price in advance"),
+                message: String(localized: "Glimmer has read no price for \(model) from \(provider.name)'s list, so it cannot say what a request costs. \(provider.name) bills your key for each request. You are asked this once for \(provider.name); it is kept in Settings › AI, where you can take it back."),
+                proceed: {
+                    UserDefaults.standard.set(true, forKey: Self.textUnknownPriceKey(provider.slug))
+                    request()
+                })
+        }
     }
 
     /// What a text request sends to `provider`, said before the first one (the-apps/PROVIDERS.md,

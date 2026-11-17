@@ -52,6 +52,7 @@ run zsh-path zsh_path
 run features scripts/apply-features.py --check
 run strings scripts/check-strings.py
 run entitlements scripts/check-entitlements.sh
+run text-logic scripts/check-text-logic.py
 run tests tests
 timed_tests
 run debug-build debug_build

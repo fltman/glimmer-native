@@ -141,6 +141,14 @@ private struct AISettingsView: View {
                     TextModelTrial(provider: provider)
                 }
                 #endif
+                // Asked once per service when its list states no price for the chosen model; kept here, taken back here.
+                if let provider = AIProvider.named(textProvider), provider.offers(.text), provider.kind == .cloud, AIController.listedTextPrice(for: provider) == nil {
+                    VStack(alignment: .leading, spacing: 4) {
+                        UnknownPriceTick(provider: provider, key: AIController.textUnknownPriceKey(provider.slug)).id(provider.slug)
+                        Text("Glimmer has read no price for the chosen model from this service's list, so it cannot say what a request to the Assistant costs. Until this is ticked, the first request asks.")
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
+                }
                 if let provider = AIProvider.named(textProvider), provider.offers(.text) {
                     DisclosureGroup("What is sent to \(provider.name)") {
                         Text(verbatim: AIController.textNotice(for: provider, sendsPictures: AIController.chosenTextModel(for: provider).vision != false))
@@ -535,6 +543,8 @@ private struct ProviderTextSettings: View {
     @State private var models: [ProviderModel] = []
     @State private var listError: String?
     @State private var loading = false
+    /// When the chosen model's price was read from the service's list.
+    @State private var priceRead: Date?
     @State private var chosen = ""
 
     private var store: any SecretStore { ProviderKeys.keychain.store(for: provider.slug) }
@@ -603,6 +613,7 @@ private struct ProviderTextSettings: View {
                 }
                 if let price = m.priceLine {
                     Text("\(provider.name)'s list: \(price). \(provider.name) bills you for what you use.")
+                    if let priceRead { Text("Read \(priceRead.formatted(date: .abbreviated, time: .shortened)).") }
                 } else {
                     Text("Billed by \(provider.name) at their rates.")
                 }
@@ -640,6 +651,8 @@ private struct ProviderTextSettings: View {
         let m = models.first { $0.id == id }
         if let tools = m?.tools { d.set(tools, forKey: modelKey + ".tools") } else { d.removeObject(forKey: modelKey + ".tools") }
         if let vision = m?.vision { d.set(vision, forKey: modelKey + ".vision") } else { d.removeObject(forKey: modelKey + ".vision") }
+        // The price is known only as far as this list states it; kept with the time it was read.
+        if !models.isEmpty { AIController.rememberTextPrice(provider.slug, model: id, line: m?.priceLine); priceRead = AIController.listedTextPrice(for: provider)?.read }
     }
 
     private func loadModels() async {

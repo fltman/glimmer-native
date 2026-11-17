@@ -182,6 +182,9 @@ struct DocumentView: View {
                 case .firstUse:
                     Button("Send") { notice.proceed?() }
                     Button("Not Now", role: .cancel) {}
+                case .unknownPrice:
+                    Button("I Know, Send") { notice.proceed?() }
+                    Button("Not Now", role: .cancel) {}
                 case .cantSee:
                     Button("Open Settings…") { openSettings() }
                     Button("OK", role: .cancel) {}
@@ -503,10 +506,10 @@ private struct ColorSwatches: View {
         HStack(spacing: 2) {
             Button { session.swapColors() } label: { Image(systemName: "arrow.left.arrow.right").frame(width: 30, height: 20) }
                 .help("Swap foreground and background (X)")
-                .accessibilityLabel("Swap colours")
+                .accessibilityLabel("Swap Colors")
             Button { session.resetColors() } label: { Image(systemName: "circle.lefthalf.filled").frame(width: 30, height: 20) }
                 .help("Reset to black and white (D)")
-                .accessibilityLabel("Reset colours")
+                .accessibilityLabel("Reset Colors")
         }
         .buttonStyle(.plain)
         .font(.caption)
