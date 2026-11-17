@@ -30,10 +30,25 @@ The single-letter tool keys work when the canvas has the keyboard. The full list
 
 Decorative icons, such as the sparkles beside titles and the color dots in the Channels panel, are hidden from VoiceOver.
 
+## Errors, warnings and notices
+
+Glimmer tells them apart by their sign and by a word, not by color alone. That holds in Light and Dark mode and for anyone who cannot tell red from green.
+
+| Sign | Means | The text says |
+|---|---|---|
+| An octagon with a cross | An error: something could not be done | What could not be done |
+| A triangle with an exclamation mark | A warning | What follows from it, so you can act |
+| An *i* in a circle | A notice | Something worth knowing |
+| A check in a circle | Done | What was done |
+| A spinning indicator | Work under way | What is being done |
+
+Each sign means one thing in the whole app. The color sits on the sign; the text beside it stays in the ordinary text color, so it reads at full contrast. VoiceOver says the kind first, as in "Error: …" or "Warning: …".
+
 ## Contrast and text size
 
 - Text in the dark editing window meets the WCAG contrast level for normal text (at least 4.5 : 1). Buttons filled with Glimmer's indigo use a deeper shade so white text on them stays readable, and the outline of the assistant's text field stands out from the panel.
 - The Welcome window, Settings and dialogs use the system's colors and follow Light or Dark mode.
+- The signs for errors, warnings, notices and done stand out from every surface they are shown on by at least 3 : 1, and by at least 4.5 : 1 in the editing window and on light surfaces.
 - Glimmer's text uses the system text styles, and buttons and chips grow with their text rather than cutting it off.
 
 ## If something can't be reached

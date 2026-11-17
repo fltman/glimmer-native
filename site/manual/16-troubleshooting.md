@@ -121,7 +121,7 @@ Glimmer reads the layers of RGB and grayscale Photoshop files with 8 or 16 bits 
 
 ### Batch Process skipped steps or failed on some files
 
-Batch Process runs the same code as Shortcuts, without a window. Steps from a saved action that need the window or a paid AI job are not run. The list shows an orange warning with the reason for each file that failed.
+Batch Process runs the same code as Shortcuts, without a window. Steps from a saved action that need the window or a paid AI job are not run. The list shows the error sign, an octagon with a cross, with the reason for each file that failed.
 
 ## Memory and speed
 

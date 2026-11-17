@@ -286,4 +286,4 @@ Each result is named after its original, plus the suffix and the new extension. 
 
 ### Running the batch
 
-Click **Process N Images**. The button is available once you have images and a folder. Glimmer works through the images one at a time and shows the progress. A green check marks each finished image. Images that fail get a warning sign, and the reason is listed below the progress bar. Click **Stop** to cancel. When the batch is done, **Show in Finder** shows the new files.
+Click **Process N Images**. The button is available once you have images and a folder. Glimmer works through the images one at a time and shows the progress. A check in a circle marks each finished image. Images that fail get the error sign, an octagon with a cross, and the reason is listed below the progress bar. Click **Stop** to cancel. When the batch is done, **Show in Finder** shows the new files.
