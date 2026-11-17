@@ -2,7 +2,7 @@
 
 Glimmer 0.2.0 is a native macOS photo editor with layers, adjustment layers, filters, selections, text and on-device AI (subject, people and sky selection, auto enhance, perspective correction). This page tells an agent how to drive the running app through its local HTTP API.
 
-- Base URL: `http://127.0.0.1:9001` (this Mac only; the server listens on loopback). Glimmer uses port 9001, or the first free port from 9101 to 9119 when 9001 is taken; the address in Glimmer's **Help › Agent Access** window is always the real one.
+- Base URL: `http://127.0.0.1:9001` (this Mac only; the server listens on loopback). Glimmer uses port 9001, or the first free port from 9101 to 9119 when 9001 is taken; the address in Glimmer's **Help › Agent Access…** window is always the real one.
 - Check that `app.name` in `GET /api/v1/status` is `"Glimmer"` before you send changes, so you never edit with a different app that happens to listen on the port.
 - Every POST needs the header **`X-Glimmer-Agent: 1`**. Without it you get `403 forbidden`.
 - Don't send an `Origin` header: requests that look like they come from a web page are refused.

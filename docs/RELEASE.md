@@ -60,7 +60,7 @@ Take `/tmp/gui-test.lock` before launching the test app (the update relaunches i
    `$(find build/DerivedData/SourcePackages/artifacts -path "*Sparkle/bin" -type d | head -1)/generate_keys -p`
    must print the key starting `68SC/iBt…`. If it prints nothing, import the backup with `generate_keys -f <file>`. **Never** release with a new key.
 5. **Anders:** signed in under Xcode › Settings › Accounts with the Brattoo AB team (notarization uses it).
-6. Release notes in `docs/release-notes/<version>.html` (0.3.0's are written, brought up to date 2026-11-17 with everything from `NEXT.md`; the version is 0.3.0 by Anders's decision that day).
+6. Release notes in `docs/release-notes/<version>.html` (0.3.0's are written, brought up to date 2026-11-17 with everything from `NEXT.md`; the version is 0.3.0 by Anders's decision that day), and in Swedish in `docs/release-notes/<version>.sv.html` (written 2026-11-17 on Anders's yes). The appcast links the Swedish page with `xml:lang="sv"`, and Sparkle shows it to someone whose Mac prefers Swedish. Change both when one changes.
 7. `glimmer.brattoo.com` ready to serve `https://glimmer.brattoo.com/appcast.xml` (see After). Until it does, the released app finds no updates.
 8. **Anders, once:** the series' notarytool profile, so the DMG is notarized too: `xcrun notarytool store-credentials brattoo-notary --apple-id <apple-id> --team-id V783A2L763` (with an app-specific password from account.apple.com). The script stops before building if it's missing (`NOTARY_PROFILE=<name>` picks another).
 
@@ -80,11 +80,13 @@ This runs the tests, bumps the version, archives, exports and notarizes through 
 
 ### After
 
-1. **Anders: host the appcast.** Copy `build/release/updates/appcast.xml` to `https://glimmer.brattoo.com/appcast.xml` (the app's SUFeedURL). It must be HTTPS. Put it in the site's output (the glimmer site in `the-apps/site/dist/glimmer/`) or upload it beside it, and keep the file at that path for every later release.
+1. **Anders: host the appcast and the release notes.** Copy `build/release/updates/appcast.xml` to `https://glimmer.brattoo.com/appcast.xml` (the app's SUFeedURL), and `Glimmer-<version>.html` and `Glimmer-<version>.sv.html` from the same folder beside it: generate_appcast links the release notes from the feed's own address (`https://glimmer.brattoo.com/Glimmer-0.3.0.html`), so without them the update window shows no notes. It must be HTTPS. Put it in the site's output (the glimmer site in `the-apps/site/dist/glimmer/`) or upload it beside it, and keep the file at that path for every later release.
 2. **Anders: DNS and hosting** for `glimmer.brattoo.com` (and the site), with a valid certificate.
 3. Check it from outside:
    ```sh
    curl -sI https://glimmer.brattoo.com/appcast.xml | head -1      # 200
+   curl -sI https://glimmer.brattoo.com/Glimmer-0.3.0.html | head -1      # 200
+   curl -sI https://glimmer.brattoo.com/Glimmer-0.3.0.sv.html | head -1   # 200
    curl -s https://glimmer.brattoo.com/appcast.xml | grep -E "sparkle:version|enclosure"
    curl -sIL "$(curl -s https://glimmer.brattoo.com/appcast.xml | grep -o 'url="[^"]*"' | cut -d'"' -f2)" | grep -E "^HTTP|content-length"
    ```

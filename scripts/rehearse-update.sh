@@ -39,6 +39,7 @@ hdiutil create -volname "Glimmer $VERSION" -srcfolder "$STAGE" -ov -format ULFO 
 codesign --sign "$IDENTITY" --timestamp "$WORK/feed/Glimmer-$VERSION.dmg"
 # The release notes beside the DMG, as release.sh puts them, so the update window shows them here too.
 [[ -f "docs/release-notes/$VERSION.html" ]] && cp "docs/release-notes/$VERSION.html" "$WORK/feed/Glimmer-$VERSION.html"
+for notes in docs/release-notes/$VERSION.*.html(N); do cp "$notes" "$WORK/feed/Glimmer-$VERSION.${${notes:t}#$VERSION.}"; done
 
 SPARKLE_BIN=$(find build/DerivedData/SourcePackages/artifacts -path "*Sparkle/bin" -type d | head -1)
 "$SPARKLE_BIN/generate_appcast" --download-url-prefix "http://localhost:8765/" "$WORK/feed"

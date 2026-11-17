@@ -190,8 +190,13 @@ echo "▸ Sparkle appcast"
 mkdir -p "$OUT/updates"
 cp "$DMG" "$OUT/updates/"
 # Release notes: docs/release-notes/<version>.html, shown in Sparkle's update window.
+# A translation beside it (docs/release-notes/<version>.sv.html) becomes the appcast's xml:lang="sv" link,
+# which Sparkle shows to someone whose Mac prefers Swedish. Both are linked from glimmer.brattoo.com, beside the appcast.
 if [[ -f "docs/release-notes/$VERSION.html" ]]; then
   cp "docs/release-notes/$VERSION.html" "$OUT/updates/Glimmer-$VERSION.html"
+  for notes in docs/release-notes/$VERSION.*.html(N); do
+    cp "$notes" "$OUT/updates/Glimmer-$VERSION.${${notes:t}#$VERSION.}"
+  done
 else
   echo "  (no docs/release-notes/$VERSION.html: the update window will show no release notes)"
 fi
