@@ -27,7 +27,9 @@ packages:
     path: Packages/GlimmerKit
   Sparkle:
     url: https://github.com/sparkle-project/Sparkle
-    from: 2.7.0
+    # One version, and Config/Package.resolved pins its revision: a build never picks up a newer Sparkle by itself.
+    # To move to another version: Anders's yes to the fetch, then change both (scripts/packages-offline.sh).
+    exactVersion: 2.10.1
 
 targets:
   Glimmer:

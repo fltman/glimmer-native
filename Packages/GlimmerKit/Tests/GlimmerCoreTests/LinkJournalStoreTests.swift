@@ -163,3 +163,42 @@ import Testing
         #expect(try Self.onDisk(folder).state.layers.count == old.state.layers.count + 1)
     }
 }
+
+/// The tight bounds of a layer's content, tile by tile.
+@Suite struct TileBoundsTests {
+    /// A tile that is transparent except for one opaque rectangle.
+    static func tile(opaque rect: (x: Int, y: Int, w: Int, h: Int)) -> Tile {
+        let s = TileGeometry.size
+        var px = [Float16](repeating: 0, count: s * s * 4)
+        for y in rect.y..<(rect.y + rect.h) { for x in rect.x..<(rect.x + rect.w) { let i = (y * s + x) * 4; px[i] = 0.5; px[i + 3] = 1 } }
+        return px.withUnsafeBytes { Tile.make(pixels: $0.baseAddress!, bytesPerRow: TileGeometry.bytesPerRow)! }
+    }
+
+    @Test func theBoundsAreTightAndOnlyChangedTilesAreReadAgain() {
+        let s = TileGeometry.size
+        var tiles: [TileCoord: Tile] = [:]
+        for y in 0..<4 { for x in 0..<4 { tiles[TileCoord(x, y)] = gradientTile(seed: Float(x + y) * 0.01) } }
+        tiles[TileCoord(0, 0)] = Self.tile(opaque: (10, 20, 30, 40))        // the top-left corner starts at (10, 20)
+        tiles[TileCoord(3, 3)] = Self.tile(opaque: (0, 0, 100, 50))         // the bottom-right ends at (3s + 100, 3s + 50)
+        tiles[TileCoord(5, 1)] = .solid(SIMD4(0, 0, 0, 0))                  // a transparent solid tile outside counts for nothing
+        let grid = TileGrid(tiles)
+        let cache = TileBoundsCache()
+        let all = grid.contentBounds(cache: cache)
+        // Row 0 and column 0 have opaque gradient tiles, so the bounds start at 0, 0; they end where the gradient tiles end.
+        #expect(all == PixelRect(x: 0, y: 0, width: 4 * s, height: 4 * s))
+        let readFirst = cache.tilesRead
+        #expect(readFirst == 16)
+        // The same grid again: nothing is read.
+        _ = grid.contentBounds(cache: cache)
+        #expect(cache.tilesRead == readFirst)
+        // One tile changed (a step): one tile is read.
+        var changed = grid
+        changed[TileCoord(2, 2)] = gradientTile(seed: 0.3)
+        _ = changed.contentBounds(cache: cache)
+        #expect(cache.tilesRead == readFirst + 1)
+        // Tight, when the edges are partly transparent.
+        let sparse = TileGrid([TileCoord(0, 0): Self.tile(opaque: (10, 20, 30, 40)), TileCoord(1, 1): Self.tile(opaque: (0, 0, 100, 50))])
+        #expect(sparse.contentBounds(cache: cache) == PixelRect(x: 10, y: 20, width: s + 100 - 10, height: s + 50 - 20))
+        #expect(TileGrid([TileCoord(0, 0): .solid(SIMD4(0, 0, 0, 0))]).contentBounds(cache: cache) == nil)
+    }
+}

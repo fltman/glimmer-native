@@ -170,7 +170,8 @@ Flimmer can hand you a picture to edit in Glimmer, such as a frame or a title ca
 - **Quitting with edits that are not saved back asks nothing.** The edits are kept, and the next time Glimmer starts the window is back, still linked, with your layers. It says **Kept from last time: not saved back yet**, and Undo starts from there. This does not depend on the macOS setting for reopening windows.
 - **If Glimmer stops on its own** (a crash, a power cut), the window comes back the same way and says **Brought back: not saved back yet**. At most the step that was under way is lost.
 - **Closing the window** with edits that are not saved back asks, and says how many steps wait: **Save Back**, **Keep for Later**, **Discard** or **Cancel**. Keep for Later closes the window and keeps the edits; Discard moves the layered copy to the Trash and leaves the image itself as it is.
-- **File › Linked Files Waiting…** lists what is kept and not open, with the app it is for, the file and its age. **Open** brings one back; **Discard…** asks once and moves it to the Trash.
+- **File › Linked Files Waiting…** lists what is kept and not open, with the app it is for, the file, how many steps wait, its age and how much room it takes. **Open** brings one back; **Discard…** asks once and moves it to the Trash.
+- If the disk has no room to keep a step, the window says so once and **Latest steps not kept: disk full** stays at the top until there is room again. What was kept before is still kept; the steps since are only in the window until you save back.
 - A linked window with nothing waiting follows the macOS setting like any other window: it comes back after Quit only if macOS reopens windows.
 - If the image has been renamed or moved in the meantime, Glimmer follows it.
 - If you send the picture from Flimmer again while edits of it are waiting, Glimmer shows those, with their layers, rather than opening the file afresh.

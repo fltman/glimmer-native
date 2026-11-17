@@ -131,6 +131,14 @@ DIR="$PWD/build/linktest"; rm -rf "$DIR"; mkdir -p "$DIR"; FILE="$DIR/photo.png"
 cp site/source-images/mug.png "$FILE"
 clean || exit 1
 
+echo "== hand over into the start document and Quit at once, nothing changed"
+# The picture takes the place of Glimmer's untouched start document. Nothing was edited: Quit must ask nothing.
+start
+open -a "$APP" "$FILE"; sleep 4
+check "the handed-over file is linked, in the start document's window: $(docs | tr '\n' ' ')" '[[ -n "$(linked)" && $(docs | wc -l) -eq 1 ]]'
+check "Glimmer quits from its menu, without a question" 'quit'
+clean
+
 echo "== hand over, edit, save back"
 start
 open -a "$APP" "$FILE"; sleep 3

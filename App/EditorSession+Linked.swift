@@ -204,6 +204,17 @@ extension EditorSession {
         return nil
     }
 
+    /// The same, in the words an agent is told (`linkedFile.reason`): English whatever language the window shows.
+    static func linkTroubleForAgent(path: String, name: String, requester: String) -> String {
+        guard FileManager.default.fileExists(atPath: path) else {
+            return "\(name) is no longer where it was, so Glimmer can't save it back to \(requester)."
+        }
+        guard FileManager.default.isWritableFile(atPath: path), (try? FileHandle(forUpdating: URL(fileURLWithPath: path)))?.closeFile() != nil else {
+            return "Glimmer is no longer allowed to write \(name), so it can't save it back to \(requester)."
+        }
+        return "Glimmer can't save \(name) back to \(requester) as it is."
+    }
+
     /// Brings the link's state in line with the file as it is now. A file that has gone makes
     /// the link a broken one (the bar, the menu and the agent API's `available` follow, and
     /// Save explains instead of failing); a file that is back, or has been replaced by a new
@@ -241,6 +252,10 @@ extension EditorSession {
                     return
                 }
                 self.refreshLinkedFile()
+                // A linked document never counts as changed for the system, whatever changed it: also what is not a step
+                // (the picture placed into the start document at a hand-over marked it changed a moment after it was
+                // linked, and Quit then met the system's question; found by Flimmer's pass, 2026-11-17).
+                if self.journalID != nil { self.leaveSystemSaving() }
             }
         }
     }

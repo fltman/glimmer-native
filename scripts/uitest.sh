@@ -11,7 +11,8 @@ set -euo pipefail
 if [[ "${GLIMMER_LIVE_AI:-0}" != 1 ]]; then unset OPENROUTER_API_KEY; fi
 cd "$(dirname "$0")/.."
 xcodegen generate --quiet
-xcodebuild test -project Glimmer.xcodeproj -scheme GlimmerUITests -destination 'platform=macOS' \
+PACKAGE_FLAGS=$(scripts/packages-offline.sh "${GLIMMER_DERIVED_DATA:-build/DerivedData}") || exit 1   # never fetches Sparkle by itself
+xcodebuild test ${=PACKAGE_FLAGS} -project Glimmer.xcodeproj -scheme GlimmerUITests -destination 'platform=macOS' \
   -derivedDataPath build/DerivedData "$@"
 # The sandboxed runner can't delete what the app saved.
 rm -rf /private/tmp/GlimmerUITest-*

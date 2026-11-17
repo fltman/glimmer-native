@@ -27,6 +27,7 @@ echo "▸ Generating Xcode project"
 xcodegen generate --quiet
 
 echo "▸ Building app"
-xcodebuild -project Glimmer.xcodeproj -scheme Glimmer -configuration Debug \
+PACKAGE_FLAGS=$(scripts/packages-offline.sh build/DerivedData) || exit 1   # never fetches Sparkle by itself
+xcodebuild ${=PACKAGE_FLAGS} -project Glimmer.xcodeproj -scheme Glimmer -configuration Debug \
   -destination 'platform=macOS' -derivedDataPath build/DerivedData build -quiet
 echo "✔ Glimmer.app built: build/DerivedData/Build/Products/Debug/Glimmer.app"

@@ -13,9 +13,20 @@ final class Updater: ObservableObject {
 
     var isConfigured: Bool { controller != nil }
 
-    private init() {
+    /// Whether this build may ask for updates at all: a release build under Glimmer's own bundle id, with the key.
+    /// A Debug build, a guest copy or any copy under another id never starts Sparkle, whatever key or feed stands
+    /// in its Info.plist (scripts/check-fetching.sh holds this).
+    static var mayUpdate: Bool {
+        #if DEBUG
+        return false
+        #else
         let key = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String ?? ""
-        guard !key.isEmpty else {
+        return !key.isEmpty && Bundle.main.bundleIdentifier == "com.brattoo.glimmer"
+        #endif
+    }
+
+    private init() {
+        guard Self.mayUpdate else {
             controller = nil
             return
         }

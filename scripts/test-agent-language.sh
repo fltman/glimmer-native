@@ -17,8 +17,11 @@ if grep -rnE '(Error|APIError)[A-Za-z]*\([^)]*String\(localized' App --include='
 fi
 if [[ -z "${GLIMMER_PORT:-}" ]]; then
   COPY=$(scripts/offline-copy.sh | tail -1) || exit 1
-  GLIMMER_ARGS="-AppleLanguages (sv) -AppleLocale sv_SE -ai.imageProvider fal -ai.imageNoticeShown.fal YES" GLIMMER_TEST_LIMIT=240 GLIMMER_TEST_APP="$COPY" exec scripts/test-app.sh "$0"
+  GLIMMER_ARGS="-AppleLanguages (sv) -AppleLocale sv_SE -ai.imageProvider fal -ai.imageNoticeShown.fal YES -linkAnyOpen Flimmer" GLIMMER_TEST_LIMIT=240 GLIMMER_TEST_APP="$COPY" exec scripts/test-app.sh "$0"
 fi
+# A file handed over as by a sibling, then taken away: the document's linkedFile says why it can't be saved back.
+LINKDIR="$PWD/build/agent-language-link"; rm -rf "$LINKDIR"; mkdir -p "$LINKDIR"; cp site/source-images/mug.png "$LINKDIR/handed.png"
+open -a "$GLIMMER_APP" "$LINKDIR/handed.png"; sleep 4; rm -rf "$LINKDIR"; sleep 3
 SHOWN=$(perl -e 'alarm 15; exec @ARGV' osascript -e "tell application \"System Events\" to tell (first process whose unix id is $GLIMMER_PID) to get name of every menu bar item of menu bar 1" 2>/dev/null)
 python3 -I - "$GLIMMER_PORT" "$PWD/site/source-images/mug.jpg" "$SHOWN" "$PWD/App/Localizable.xcstrings" <<'PY'
 import json, re, sys, urllib.request, urllib.error
@@ -59,6 +62,9 @@ def told(raw):
         if d.get(k): out.append(d[k])
     return out
 check(f"the copy is showing Swedish (its menus: {shown[:60]})", "Arkiv" in shown and "File" not in shown, shown)
+linked = [d["linkedFile"] for d in json.loads(call("GET", "/documents")[1])["documents"] if d.get("linkedFile")]
+reason = linked[0].get("reason", "") if linked else ""
+check(f"a linked file that is gone: its reason is told in English ({reason[:90]})", linked and linked[0].get("available") is False and "no longer where it was" in reason and not swedish(reason), str(linked)[:200])
 code, raw = call("POST", "/documents?name=walk", open(image, "rb").read(), "image/jpeg")
 doc = json.loads(raw)["document"]["id"]
 S = f"/documents/{doc}/steps"

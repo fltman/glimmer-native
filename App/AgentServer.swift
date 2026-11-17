@@ -411,10 +411,13 @@ enum AgentRouter {
     /// The tight bounds of a pixel layer's visible content (tile bounds are up to a tile too
     /// big on each side). Kept per layer until its pixels change.
     private static var boundsCache: [UUID: (signature: Int, bounds: PixelRect?)] = [:]
+    private static let tileBounds = TileBoundsCache()
     private static func contentBounds(_ grid: TileGrid, id: UUID) -> PixelRect? {
         let signature = grid.contentSignature.hashValue
         if let hit = boundsCache[id], hit.signature == signature { return hit.bounds }
-        let bounds = grid.tileBounds.flatMap { Selection(tiles: grid.mapAlphaOnly()).bounds(in: $0) }
+        // Per tile, remembered by the tile's identity: a step that changed a few tiles reads those few again, not the
+        // layer. (Reading a 24-megapixel layer through after every pixel step cost about two seconds of each answer.)
+        let bounds = grid.contentBounds(cache: tileBounds)
         if boundsCache.count > 2000 { boundsCache.removeAll() }
         boundsCache[id] = (signature, bounds)
         return bounds
@@ -884,7 +887,9 @@ enum AgentRouter {
             return d
         }
         if let broken = session.brokenLink {
-            var d: [String: Any] = ["name": broken.link.fileName, "requester": broken.link.requester, "available": false, "reason": broken.reason]
+            // The reason in English: the window's own sentence (`broken.reason`) is in the person's language.
+            var d: [String: Any] = ["name": broken.link.fileName, "requester": broken.link.requester, "available": false,
+                                    "reason": EditorSession.linkTroubleForAgent(path: broken.link.path, name: broken.link.fileName, requester: broken.link.requester)]
             Self.addWaiting(session, to: &d)
             if let format = LinkedImage.format(for: URL(fileURLWithPath: broken.link.path)) { d["format"] = format.rawValue }
             return d

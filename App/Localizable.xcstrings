@@ -14351,17 +14351,6 @@
         }
       }
     },
-    "The %lld step(s) you made in Glimmer are not saved back to %@ and will no longer be here. %@ itself stays as it is. The layered copy goes to the Trash, where you can still get it.": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "De %1$lld steg du gjorde i Glimmer är inte sparade tillbaka till %2$@ och kommer inte längre att finnas här. Själva %3$@ ligger kvar som den är. Kopian med lager hamnar i papperskorgen, där du fortfarande kan hämta den."
-          }
-        }
-      }
-    },
     "1 step not saved back": {
       "extractionState": "manual",
       "localizations": {
@@ -14413,6 +14402,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Det finns inte plats på den här Macen för att spara dina senaste steg i %1$@ säkert: %2$@ behövs och %3$@ är ledigt. Det som sparades tidigare finns kvar. Stegen efter det finns bara i det här fönstret tills du sparar tillbaka dem eller frigör utrymme."
+          }
+        }
+      }
+    },
+    "The step you made in Glimmer is not saved back to %@ and will no longer be here. %@ itself stays as it is. The layered copy goes to the Trash, where you can still get it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Steget du gjorde i Glimmer är inte sparat tillbaka till %1$@ och kommer inte längre att finnas här. Själva %2$@ ligger kvar som den är. Kopian med lager hamnar i papperskorgen, där du fortfarande kan hämta den."
+          }
+        }
+      }
+    },
+    "The %lld steps you made in Glimmer are not saved back to %@ and will no longer be here. %@ itself stays as it is. The layered copy goes to the Trash, where you can still get it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De %1$lld steg du gjorde i Glimmer är inte sparade tillbaka till %2$@ och kommer inte längre att finnas här. Själva %3$@ ligger kvar som den är. Kopian med lager hamnar i papperskorgen, där du fortfarande kan hämta den."
           }
         }
       }

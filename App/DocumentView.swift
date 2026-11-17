@@ -404,7 +404,10 @@ private struct TitleChip: View {
                 // (Seen as "For Fli…" in a picture of the bar, 2026-11-16; the accessibility read had the whole sentence.)
                 HStack(spacing: 4) {
                     Label("For \(link.requester)", systemImage: "link").lineLimit(1).fixedSize()
-                    Text("– ⌘S saves back").lineLimit(1).truncationMode(.tail).layoutPriority(-1)
+                    // The hint gives way to what must be said about a window that was kept or brought back.
+                    if !session.recovered && session.journalRoomTrouble == nil {
+                        Text("– ⌘S saves back").lineLimit(1).truncationMode(.tail).layoutPriority(-1)
+                    }
                 }
                 .foregroundStyle(Theme.accent)
                 .accessibilityElement(children: .ignore)

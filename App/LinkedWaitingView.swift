@@ -27,11 +27,14 @@ struct LinkedWaitingView: View {
                         }
                         .layoutPriority(1)
                         Spacer(minLength: 8)
+                        // The buttons are never cut short; the line under the name wraps instead.
                         Button("Open") {
                             if DocumentOpener.shared.open(entry) { close() }
                             else { problem = String(localized: "Glimmer couldn't read these edits. They are left where they are.") }
                         }
+                        .fixedSize()
                         Button("Discard…") { asked = entry }
+                            .fixedSize()
                     }
                     .accessibilityElement(children: .contain)
                     Divider()
@@ -56,7 +59,10 @@ struct LinkedWaitingView: View {
             Button("Cancel", role: .cancel) {}
         } message: { entry in
             // What is lost, and that the file itself is not touched.
-            Text("The \(entry.record.unreturnedSteps ?? 1) step(s) you made in Glimmer are not saved back to \(entry.record.link.requester) and will no longer be here. \(entry.record.fileName) itself stays as it is. The layered copy goes to the Trash, where you can still get it.")
+            let steps = entry.record.unreturnedSteps ?? 1
+            Text(steps == 1
+                 ? "The step you made in Glimmer is not saved back to \(entry.record.link.requester) and will no longer be here. \(entry.record.fileName) itself stays as it is. The layered copy goes to the Trash, where you can still get it."
+                 : "The \(steps) steps you made in Glimmer are not saved back to \(entry.record.link.requester) and will no longer be here. \(entry.record.fileName) itself stays as it is. The layered copy goes to the Trash, where you can still get it.")
         }
     }
 

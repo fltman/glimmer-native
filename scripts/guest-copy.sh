@@ -9,7 +9,9 @@
 # Bundle id: com.brattoo.glimmer.debug.guest. Signed ad hoc with the Debug build's own
 # entitlements (it can reach other apps on this Mac, as a real Glimmer can; the no-network
 # copy for our own tests is scripts/offline-copy.sh). Start it silently and without restored
-# windows:  open -n <path> --args -skipWelcome -skipAgentSplash -quiet YES -ai.noKeychain YES -ApplePersistenceIgnoreState YES
+# windows:  open -n <path> --args -skipWelcome -skipAgentSplash -skipStartCard YES -quiet YES -ai.noKeychain YES -ApplePersistenceIgnoreState YES
+# (-skipStartCard: the start document without its card "Drop a file anywhere…", which is not the Welcome window.)
+# After the visit: scripts/guest-clean.sh empties what the guest kept and says what it removed.
 # It takes the first free port of 9001, 9101–9119; GET /api/v1/status says its bundle id, port and pid.
 set -euo pipefail
 cd "$(dirname "$0")/.."

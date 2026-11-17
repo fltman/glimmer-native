@@ -76,7 +76,8 @@ rm -rf "$OUT" && mkdir -p "$OUT"
 
 echo "▸ Glimmer $VERSION (build $BUILD)"
 xcodegen generate >/dev/null
-xcodebuild -resolvePackageDependencies -project Glimmer.xcodeproj -scheme Glimmer -derivedDataPath build/DerivedData >/dev/null
+# Sparkle as it is checked out, at the pinned revision; a release never fetches by itself (scripts/packages-offline.sh).
+PACKAGE_FLAGS=$(scripts/packages-offline.sh build/DerivedData) || exit 1
 
 SPARKLE_BIN=$(find build/DerivedData/SourcePackages/artifacts -path "*Sparkle/bin" -type d | head -1)
 [[ -n "$SPARKLE_BIN" ]] || { echo "Sparkle tools not found"; exit 1; }
@@ -102,7 +103,7 @@ fi
 [[ "${SKIP_SPARKLE:-0}" == 1 || "$PUBKEY" =~ ^[A-Za-z0-9+/=]{40,}$ ]] || { echo "Bad Sparkle public key: $PUBKEY"; exit 1; }
 
 echo "▸ Archiving"
-xcodebuild archive -project Glimmer.xcodeproj -scheme Glimmer -configuration Release \
+xcodebuild archive ${=PACKAGE_FLAGS} -project Glimmer.xcodeproj -scheme Glimmer -configuration Release \
   -derivedDataPath build/DerivedData -archivePath "$OUT/Glimmer.xcarchive" \
   SPARKLE_PUBLIC_KEY="$PUBKEY" -quiet
 

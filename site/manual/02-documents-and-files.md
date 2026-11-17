@@ -35,7 +35,19 @@ An image you open can have up to 256 megapixels.
 
 Glimmer uses the standard Mac document system, so you save, rename, duplicate and move documents with the usual commands in the **File** menu. Choose **File › Save** (⌘S) to give a new document a name and a place.
 
-Glimmer saves your changes in the background as you work. Untitled documents are kept too, so they come back after you quit and reopen Glimmer. To go back to an earlier state of a saved document, use **File › Revert To**.
+Glimmer saves your changes in the background as you work. Untitled documents are kept too, so they come back after you quit and reopen Glimmer (when macOS reopens windows; if it does not, macOS asks at Quit whether to keep a new document). To go back to an earlier state of a saved document, use **File › Revert To**.
+
+#### What a sudden stop costs
+
+If Glimmer stops without quitting (a crash, a forced quit, a power cut), this is what is lost. The figures were measured on one Mac in November 2026.
+
+| The document | Kept | What a sudden stop can cost |
+|---|---|---|
+| A document under about 100 MB when saved | A second after each step | The step under way, and at most what you did in the last second or so. A stop 3 seconds after an edit kept the edit. |
+| A larger document | When macOS autosaves, on its own clock | What you did since the last autosave. A stop 6 seconds after an edit lost the edit; 20 seconds after, it was kept. |
+| An image you are editing for Flimmer or Jämmer | After every step, in Glimmer's own record, whatever its size | The step under way. |
+
+For an image from Flimmer or Jämmer, a step that changes pixels writes the whole layer it touched (43 MB took about a quarter of a second for a 24-megapixel layer), without holding up your work. If the disk has no room for a step, the window says so and what was kept before stays kept.
 
 Every edit is an undo step. Choose **Edit › Undo** (⌘Z) and **Edit › Redo** (⇧⌘Z, or ⌘Y). The menu names the step, for example "Undo Brush Stroke". How many steps Glimmer keeps, and how much memory they may use, is set in **Settings › Performance**.
 

@@ -38,9 +38,11 @@ timed_tests() {
     grep "recorded an issue" "$LOGS/timed.log" | sed 's/\x1b\[[0-9;]*m//g' | cut -c1-200 | sed 's/^/    /'
   fi
 }
-debug_build() { xcodebuild -project Glimmer.xcodeproj -scheme Glimmer -configuration Debug -derivedDataPath build/DerivedData build 2>&1 | grep -E "error:|BUILD" | tee /dev/stderr | grep -q "BUILD SUCCEEDED"; }
+# Offline: Sparkle is used as it is checked out; when it is not there the build stops instead of fetching (scripts/packages-offline.sh).
+debug_build() { local flags; flags=$(scripts/packages-offline.sh build/DerivedData) || return 1; xcodebuild ${=flags} -project Glimmer.xcodeproj -scheme Glimmer -configuration Debug -derivedDataPath build/DerivedData build 2>&1 | grep -E "error:|BUILD" | tee /dev/stderr | grep -q "BUILD SUCCEEDED"; }
 release_build() {
-  xcodebuild -project Glimmer.xcodeproj -scheme Glimmer -configuration Release -derivedDataPath build/DerivedData-release \
+  local flags; flags=$(scripts/packages-offline.sh build/DerivedData-release) || return 1
+  xcodebuild ${=flags} -project Glimmer.xcodeproj -scheme Glimmer -configuration Release -derivedDataPath build/DerivedData-release \
     CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= build 2>&1 | grep -E "error:|BUILD" | tee /dev/stderr | grep -q "BUILD SUCCEEDED" \
     && scripts/check-release-binary.sh build/DerivedData-release/Build/Products/Release/Glimmer.app
 }
@@ -53,6 +55,7 @@ run features scripts/apply-features.py --check
 run strings scripts/check-strings.py
 run entitlements scripts/check-entitlements.sh
 run text-logic scripts/check-text-logic.py
+run fetching scripts/check-fetching.sh
 run tests tests
 timed_tests
 run debug-build debug_build

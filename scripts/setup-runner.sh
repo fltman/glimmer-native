@@ -25,6 +25,8 @@ fi
 
 mkdir -p "$DIR" && cd "$DIR"
 if [[ ! -x ./config.sh ]]; then
+  # This downloads and unpacks third-party code (GitHub's runner): only after Anders's yes in the session's window.
+  [[ "${GLIMMER_ALLOW_FETCH:-0}" == 1 ]] || { echo "This would download GitHub's actions runner v$VERSION from github.com. After Anders's yes: GLIMMER_ALLOW_FETCH=1 $0 $*"; exit 1; }
   curl -sL -o runner.tar.gz "https://github.com/actions/runner/releases/download/v$VERSION/actions-runner-osx-arm64-$VERSION.tar.gz"
   echo "$SHA  runner.tar.gz" | shasum -a 256 -c -
   tar xzf runner.tar.gz && rm runner.tar.gz

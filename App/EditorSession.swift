@@ -174,7 +174,7 @@ final class EditorSession {
         didSet { UserDefaults.standard.set(classicLayout, forKey: Self.classicLayoutKey) }
     }
     /// The start card on an untouched blank document can be put away.
-    var startCardDismissed = CommandLine.arguments.contains("-uiTestingNewDocument")
+    var startCardDismissed = CommandLine.arguments.contains("-uiTestingNewDocument") || UserDefaults.standard.bool(forKey: "skipStartCard")   // `-skipStartCard YES`: a visiting test's start line
     /// The window title (document name), shown in the chip at the top left.
     var documentName = "Untitled"
     var isExportSheetPresented = false
