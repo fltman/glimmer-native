@@ -88,6 +88,15 @@ for path in sorted(glob.glob(os.path.join(root, "App/**/*.swift"), recursive=Tru
             hit = BRITISH.search(text)
             # The reader of a sibling's job still accepts the series' old spelling of a stopped job.
             if hit and not (text == '"cancelled"' and os.path.basename(path) == "Siblings.swift"): british.append(f"{os.path.relpath(path, root)}:{number}: “{hit.group(0)}” in {text[:70]}")
+# The agent guide is one long text between triple quotes, which the quoted-text search above does not see
+# (it let "tone and colour" and a mangled "Centerd" through, 2026-11-17): every line of it is read, and the
+# generated site/agents.md too. The one sentence that names the old spelling of "canceled" is left alone.
+for path in (os.path.join(root, "Packages/GlimmerKit/Sources/GlimmerAI/AgentAPI.swift"), os.path.join(root, "site/agents.md")):
+    for number, line in enumerate(open(path, encoding="utf8"), 1):
+        text = line.split("//")[0] if path.endswith(".swift") else line
+        text = text.replace("were spelled `cancelled` before", "")
+        hit = BRITISH.search(text) or re.search(r"\b[Cc]enterd\b", text)
+        if hit: british.append(f"{os.path.relpath(path, root)}:{number}: “{hit.group(0)}”")
 for line in sorted(set(missing)): print("✘", line)
 for line in british: print("✘ British spelling:", line)
 print(f"{len(set(missing))} text(s) without Swedish." if missing else "Every text found has Swedish.")

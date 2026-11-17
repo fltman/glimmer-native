@@ -303,7 +303,7 @@ struct PlanView: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(Self.describe(step)).font(.callout)
                         if case .failed(let message)? = ai.stepStatus[step.id] {
-                            // The step's own sign (the octagon beside its name) says that it failed; this is why. One sign, not two.
+                            // The step's own sign (the cross in a square beside its name) says that it failed; this is why. One sign, not two.
                             Text(verbatim: message).font(.caption).foregroundStyle(.secondary)
                         } else if let r = step.rationale {
                             Text(verbatim: Self.note(r)).font(.caption).foregroundStyle(.secondary)

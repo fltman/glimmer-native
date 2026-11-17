@@ -7,7 +7,7 @@ An error, a warning, a notice and a success must be told apart without colour, s
 symbol for a state by itself: `StatusLine` and `StatusSymbol` (App/StatusLine.swift) give the symbol, its colour
 and the word VoiceOver says. This fails on, anywhere else in App/:
   - .red, .orange, .yellow or .green used as a colour or a style
-  - the status symbols (the warning triangle, the octagon, the info circle, the check in a circle, the
+  - the status symbols (the warning triangle, the cross in a square (and the octagon it replaced), the info circle, the check in a circle, the
     exclamation mark in a circle) written as a symbol name
 
 What is a colour of something else (a colour channel, the navigator's frame) stands in Config/status-exceptions.txt.
@@ -25,7 +25,7 @@ def entries(text):
     return out
 allowed = entries(open(os.path.join(root, LIST), encoding="utf8").read())
 COLOUR = re.compile(r"(?<![A-Za-z0-9_])(?:Color)?\.(red|orange|yellow|green)\b(?!\s*[:,]\s*(?:Double|CGFloat|Float))")
-SYMBOL = re.compile(r'"(exclamationmark\.triangle[a-z.]*|xmark\.octagon[a-z.]*|info\.circle[a-z.]*|checkmark\.circle[a-z.]*|exclamationmark\.circle[a-z.]*)"')
+SYMBOL = re.compile(r'"(exclamationmark\.triangle[a-z.]*|xmark\.octagon[a-z.]*|xmark\.square[a-z.]*|info\.circle[a-z.]*|checkmark\.circle[a-z.]*|exclamationmark\.circle[a-z.]*)"')
 found, used = [], set()
 for path in sorted(glob.glob(os.path.join(root, "App/**/*.swift"), recursive=True)):
     name = os.path.basename(path)

@@ -221,7 +221,7 @@ A preset adds a group of adjustment layers above the active layer. Some presets 
 The bottom of the AI panel shows **Activity**, a list of the jobs in this window, newest first. On-device jobs such as Remove Background and Lens Blur appear there too.
 
 - A running job shows a spinner and a stop button. Click the stop button to cancel the job. Nothing is added to your document.
-- A finished job shows a check in a circle. A failed job shows the error sign, an octagon with a cross, and the reason. A canceled job shows a cross.
+- A finished job shows a check in a circle. A failed job shows the error sign, a cross in a square, and the reason. A canceled job shows a cross.
 - A job that cost money shows its cost in US dollars, as OpenRouter reported it.
 - The heading shows the total cost of this window's jobs. A finished paid job whose service reported no cost is not in that sum; the heading counts such jobs beside it, as in **2 without a price**. What they cost stands on the service's own usage page.
 - A paid job that failed after the request had been sent is counted there too, and its row says **May have been charged**: the service may have billed it, and Glimmer cannot know.

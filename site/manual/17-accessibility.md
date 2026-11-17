@@ -36,7 +36,7 @@ Glimmer tells them apart by their sign and by a word, not by color alone. That h
 
 | Sign | Means | The text says |
 |---|---|---|
-| An octagon with a cross | An error: something could not be done | What could not be done |
+| A cross in a square | An error: something could not be done | What could not be done |
 | A triangle with an exclamation mark | A warning | What follows from it, so you can act |
 | An *i* in a circle | A notice | Something worth knowing |
 | A check in a circle | Done | What was done |

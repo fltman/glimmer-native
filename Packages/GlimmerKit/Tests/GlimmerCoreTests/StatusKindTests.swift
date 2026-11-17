@@ -20,7 +20,10 @@ import Testing
         let symbols = StatusKind.allCases.compactMap(\.symbol)
         #expect(Set(symbols).count == symbols.count, "one symbol, one meaning")
         #expect(StatusKind.warning.symbol?.contains("triangle") == true)
-        #expect(StatusKind.error.symbol?.contains("octagon") == true && StatusKind.error.symbol?.contains("triangle") == false)
+        // A square for the error, a circle for done, a triangle for the warning: three outlines that differ at every size.
+        #expect(StatusKind.error.symbol?.contains("square") == true && StatusKind.error.symbol?.contains("triangle") == false)
+        #expect(StatusKind.error.symbol?.contains("circle") == false && StatusKind.error.symbol?.contains("octagon") == false)
+        #expect(StatusKind.success.symbol?.contains("circle") == true)
         #expect(StatusKind.working.symbol == nil)
         #expect(StatusKind.error.prefix == "Error:" && StatusKind.warning.prefix == "Warning:")
     }

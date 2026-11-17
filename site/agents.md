@@ -32,7 +32,7 @@ curl -s -X POST -H 'X-Glimmer-Agent: 1' -H 'Content-Type: image/jpeg' \
 # → {"document": {"id": "8F0C…", "width": 3840, "height": 2160, …}}
 ID=8F0C…
 
-# 3. Edit it: automatic tone and colour, then a little more vibrance.
+# 3. Edit it: automatic tone and color, then a little more vibrance.
 curl -s -X POST -H 'X-Glimmer-Agent: 1' -H 'Content-Type: application/json' \
      -d '{"steps": [{"op": "auto_enhance"},
                     {"op": "add_adjustment", "params": {"type": "vibrance", "params": {"vibrance": 0.25}}}]}' \
@@ -54,7 +54,7 @@ Opening a document answers `201 Created`. To start from a blank canvas instead, 
 | Method | Path | What it does |
 |---|---|---|
 | GET | `/glimmer` | This guide (Markdown). |
-| GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents, the running `jobs`, and `providerKeys`: for each AI service Glimmer can use with a key (`openrouter`, `berget`, `grunden`), whether the user has entered one (true or false, never the key). Paid steps make pictures through OpenRouter and need `openrouter` to be true. `linkJournal` says what Glimmer keeps of linked files: `entries`, `unreturned` (how many have steps not saved back) and `broken` (kept edits that can't be read; they are never removed by Glimmer). |
+| GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents, the running `jobs`, and `providerKeys`: for each AI service Glimmer can use with a key (`openrouter`, `berget`, `grunden`), whether the user has entered one (true or false, never the key). Paid steps make pictures through the picture service chosen in Glimmer's Settings and need that service's key (for OpenRouter, `openrouter` true). `linkJournal` says what Glimmer keeps of linked files: `entries`, `unreturned` (how many have steps not saved back) and `broken` (kept edits that can't be read; they are never removed by Glimmer). |
 | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. A paid operation also has `"price"` (null when Glimmer doesn't know it) and `"priceKnown"`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `add_image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
 | GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; Glimmer's own empty start document, which the first image you open replaces (keeping its id), has `"startDocument": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`, `available`), and ⌘S writes it back. The link survives a restart of Glimmer; `available` is false, with a `reason`, when the file can no longer be reached or written after one. `unreturnedSteps` (when above 0) is how many steps are not saved back yet; `kept: true` means the person left it so at Quit or with Keep for Later and it was opened again, `recovered: true` that Glimmer stopped on its own and the document was brought back. Both go when it is saved back. |
 | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\|"black"\|"transparent", "name"}`). `name` names the document's window and, for an image, its layer. Glimmer's untouched start document is replaced instead of leaving an empty window. |
@@ -64,7 +64,7 @@ Opening a document answers `201 Created`. To start from a blank canvas instead, 
 | GET | `/api/v1/jobs` | Recent jobs (see Long jobs). |
 | GET | `/api/v1/jobs/{id}` | One job: status, progress and, when finished, the result. |
 | DELETE | `/api/v1/jobs/{id}` | Cancel a job that is still running. |
-| POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document, or JSON `{"fromDocument": "<id>"}` to use another open document's picture. Query: `name`; `fit` against the canvas (`contain`, the default: scaled down to fit inside it, never up; `cover`: scaled to cover it; `none`: its own size); `x`, `y`: where its top-left goes after fitting (default: centred); `smartObject=true\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
+| POST | `/api/v1/documents/{id}/layers` | Add an image as a new layer (`add_image`). Body: the image's bytes, as when you open a document, or JSON `{"fromDocument": "<id>"}` to use another open document's picture. Query: `name`; `fit` against the canvas (`contain`, the default: scaled down to fit inside it, never up; `cover`: scaled to cover it; `none`: its own size); `x`, `y`: where its top-left goes after fitting (default: centered); `smartObject=true\|false`. Answers 201 with `{"layer": {"id", "name", "bounds"}, "document": …}`. One undo step. |
 | POST | `/api/v1/documents/{id}/undo` | Undo the last change (a whole `steps` request counts as one; the selection goes back too). Answers `{"undone": "<name of the change>", "document": …}`; a steps request is named `Agent Edit`. |
 | POST | `/api/v1/documents/{id}/redo` | Redo. Answers `{"redone": "<name>", "document": …}`. |
 | POST | `/api/v1/documents/{id}/export` | The finished image as bytes. Body: `{"format": "png\|jpeg\|heic\|tiff\|webp", "quality": 0.9, "maxSide": 2048, "maxBytes": 500000}`; all optional (PNG by default). `"preset": "podcast-cover"` with `"size": 3000\|1400` gives square cover art (see Export size limits). |
@@ -111,7 +111,7 @@ Paid steps can take a minute, so a `steps` request that contains a paid step alw
 {"job": {"id": "C1A2…", "kind": "steps", "document": "8F0C…", "status": "running", "progress": 0}}
 ```
 
-Poll `GET /api/v1/jobs/{id}` until `status` is `done`, `failed` or `canceled` (it starts as `queued` or `running`; these five are all there are). Changed 2026-11-17: a stopped job and a stopped step were spelled `cancelled` before; accept both if you may meet an older Glimmer, and treat any status you do not know as an end, not as "still running". `progress` goes from 0 to 1 as steps finish. A finished job carries the same `result` a direct request would have returned (`results` and `document`), and a failed one also has `error` (`{"code": "step_failed", "message": "…", "step": 1}`). `DELETE /api/v1/jobs/{id}` cancels a running job; steps that didn't run are reported as `cancelled`. Running jobs are also listed under `jobs` in `GET /api/v1/status`. Finished jobs are kept for a while (the 50 most recent).
+Poll `GET /api/v1/jobs/{id}` until `status` is `done`, `failed` or `canceled` (it starts as `queued` or `running`; these five are all there are). Changed 2026-11-17: a stopped job and a stopped step were spelled `cancelled` before; accept both if you may meet an older Glimmer, and treat any status you do not know as an end, not as "still running". `progress` goes from 0 to 1 as steps finish. A finished job carries the same `result` a direct request would have returned (`results` and `document`), and a failed one also has `error` (`{"code": "step_failed", "message": "…", "step": 1}`). `DELETE /api/v1/jobs/{id}` cancels a running job; steps that didn't run are reported as `canceled`. Running jobs are also listed under `jobs` in `GET /api/v1/status`. Finished jobs are kept for a while (the 50 most recent).
 
 ```sh
 JOB=$(curl -s -X POST -H 'X-Glimmer-Agent: 1' -d '{"steps": [{"op": "auto_enhance"}], "async": true}'       $BASE/api/v1/documents/$ID/steps | python3 -c 'import json,sys; print(json.load(sys.stdin)["job"]["id"])')
@@ -124,7 +124,7 @@ Glimmer's siblings, Flimmer and Jämmer, call this API like any agent and add `X
 
 ### Export size limits
 
-**Podcast covers:** `POST /api/v1/documents/{id}/export` with `{"preset": "podcast-cover", "maxBytes": 512000}` returns the centre square of the image at exactly 3000 × 3000 pixels, as an opaque JPEG (or `"format": "png"`). Only the quality goes down to meet `maxBytes`; when 3000 can't, it's 1400 × 1400, and `"size": 3000` or `1400` fixes the size. If the limit can't be met, the answer is `422 unprocessable` with `reason` `over_byte_limit`.
+**Podcast covers:** `POST /api/v1/documents/{id}/export` with `{"preset": "podcast-cover", "maxBytes": 512000}` returns the center square of the image at exactly 3000 × 3000 pixels, as an opaque JPEG (or `"format": "png"`). Only the quality goes down to meet `maxBytes`; when 3000 can't, it's 1400 × 1400, and `"size": 3000` or `1400` fixes the size. If the limit can't be met, the answer is `422 unprocessable` with `reason` `over_byte_limit`.
 
 `maxSide` scales the image down so its longer side fits; it never enlarges. The podcast preset is the exception: it always gives its exact size, enlarging a smaller image. `quality` defaults to 0.9. `maxBytes` (JPEG, HEIC and WebP only; PNG and TIFF ignore it) lowers the quality until the file fits, and scales the image down too if even low quality is too big, so the limit is met.
 
@@ -203,7 +203,7 @@ Add a one-line text layer above the active layer (it doesn't wrap: a long text a
 | `size` | number | Font size in pixels (optional; default ~8% of the image height). |
 | `bold` | boolean | Optional. true for bold text. |
 | `fontName` | string | Optional. PostScript font name, e.g. Georgia-Bold (default Helvetica Neue). |
-| `position` | string | Optional. Centerd horizontally; top and bottom leave 8 % of the image height to the edge; center is the default. One of: `top`, `center`, `bottom` |
+| `position` | string | Optional. Centered horizontally; top and bottom leave 8 % of the image height to the edge; center is the default. One of: `top`, `center`, `bottom` |
 | `x` | number | Optional. Left edge of the text in document pixels (instead of position). |
 | `y` | number | Optional. Top edge of the text in document pixels (instead of position). |
 
@@ -378,7 +378,7 @@ Crop the canvas for every layer, like the Crop tool. Give exactly one of: a rect
 | `width` | number | Optional, with a rectangle. Width of the box in pixels. |
 | `height` | number | Optional, with a rectangle. Height of the box in pixels. |
 | `toSelection` | boolean | Optional, instead of a rectangle. true crops to the bounds of the selection. |
-| `aspect` | string | Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centerd box of that shape. |
+| `aspect` | string | Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centered box of that shape. |
 | `deletePixels` | boolean | Optional. true throws away what is outside the box; false (default) keeps it outside the canvas. |
 
 ### `resize_image`
@@ -541,7 +541,7 @@ Fill the SELECTED area from what surrounds it, to take out a blemish, a wire or 
 ## Good to know
 
 - A parameter an operation or an endpoint doesn't have is refused by name with 400, and nothing is applied: in a `steps` request no step runs. Settings go inside a step's `params`; the settings of `add_adjustment`, `apply_filter` and `add_layer_effect` are checked against their `type`. So a 200 means every value you sent was used.
-- Adjustment layers are non-destructive; filters change pixels. Prefer `add_adjustment` for tone and colour.
+- Adjustment layers are non-destructive; filters change pixels. Prefer `add_adjustment` for tone and color.
 - `auto_enhance` and `auto_color` add editable adjustment layers, worked out on the Mac.
 - After a step, `GET /api/v1/documents/{id}/image` shows you what the user sees.
 - To combine two images: open the first as a document, then send the second to `POST /api/v1/documents/{id}/layers` (its bytes, or `fromDocument` if it is already open as a document). Either way works for any caller. Place it with `x` and `y` when you add it, or afterwards with `transform_layer` (`moveX`, `moveY`); blend it with `set_layer`, cut it out with `remove_background`.

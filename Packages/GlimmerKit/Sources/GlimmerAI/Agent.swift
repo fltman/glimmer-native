@@ -235,7 +235,7 @@ public enum AgentPlanner {
             AgentParam("size", "number", "Font size in pixels (optional; default ~8% of the image height)."),
             AgentParam("bold", "boolean", "Optional. true for bold text."),
             AgentParam("fontName", "string", "Optional. PostScript font name, e.g. Georgia-Bold (default Helvetica Neue)."),
-            AgentParam("position", "string", "Optional. Centerd horizontally; top and bottom leave 8 % of the image height to the edge; center is the default.", options: ["top", "center", "bottom"]),
+            AgentParam("position", "string", "Optional. Centered horizontally; top and bottom leave 8 % of the image height to the edge; center is the default.", options: ["top", "center", "bottom"]),
             AgentParam("x", "number", "Optional. Left edge of the text in document pixels (instead of position)."),
             AgentParam("y", "number", "Optional. Top edge of the text in document pixels (instead of position)."),
         ]),
@@ -301,7 +301,7 @@ public enum AgentPlanner {
             AgentParam("width", "number", "Optional, with a rectangle. Width of the box in pixels."),
             AgentParam("height", "number", "Optional, with a rectangle. Height of the box in pixels."),
             AgentParam("toSelection", "boolean", "Optional, instead of a rectangle. true crops to the bounds of the selection."),
-            AgentParam("aspect", "string", "Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centerd box of that shape."),
+            AgentParam("aspect", "string", "Optional, instead of a rectangle. W:H, like 16:9 or 1:1: the largest centered box of that shape."),
             AgentParam("deletePixels", "boolean", "Optional. true throws away what is outside the box; false (default) keeps it outside the canvas."),
         ]),
         AgentOp("resize_image", "Resample the whole image to a new size, like Image › Image Size: every layer, mask, path and guide is scaled. Give width or height alone to keep the proportions; give both for exactly that size (the proportions may change); or give scale. Text and smart objects stay editable. One undo step.", [
@@ -388,7 +388,7 @@ public enum AgentPlanner {
     - Order steps the way an expert retoucher would (select before inpainting; remove the background before adding a drop shadow).
     - Prefer the editor's native, non-destructive ops (add_adjustment, apply_preset, add_layer_effect, apply_filter, selection ops). Use image_edit_composite and generate_layer only for content changes the native ops cannot express: they cost money and take time.
     - inpaint_selection needs a selection. If there is none and the goal needs one, add a step that makes one (select_subject, select_all + invert_selection …) or ask a clarifying question.
-    - Colours are #RRGGBB hex strings.
+    - Colors are #RRGGBB hex strings.
     - When unsure about a param, send {} (or omit it) to get sensible defaults rather than guessing exotic numbers.
     - If the goal is ambiguous, contradictory or impossible with these ops, return an empty "steps" array and put a short clarifying question in "message".
     - If the user is only chatting or asking a question about the editor, answer briefly in "message" with no steps.
@@ -498,8 +498,8 @@ public enum AgentPlanner {
     }
 
     static let suggestionPrompt = """
-    You are a photo retoucher looking at a user's image in a photo editor. Propose exactly three different edits that would genuinely improve or creatively transform THIS photo, based on what you see (its light, colours, subject, flaws). Make them distinct: for example one corrective, one mood, one bold.
-    The editor can do: tonal and colour adjustments, black & white, blur/sharpen/vignette/grain filters, photo looks, text, removing the background, and AI edits of content.
+    You are a photo retoucher looking at a user's image in a photo editor. Propose exactly three different edits that would genuinely improve or creatively transform THIS photo, based on what you see (its light, colors, subject, flaws). Make them distinct: for example one corrective, one mood, one bold.
+    The editor can do: tonal and color adjustments, black & white, blur/sharpen/vignette/grain filters, photo looks, text, removing the background, and AI edits of content.
     Return ONLY JSON: {"suggestions": [{"title": "<2-3 words>", "goal": "<one sentence instructing the edit, specific to this photo>"}]}
     Write title and goal in the language with code "%@".
     """
@@ -538,12 +538,12 @@ public enum AgentPlanner {
     - Call tools in the order an expert retoucher would (select before inpainting; remove the background before adding a drop shadow).
     - Prefer the editor's native, non-destructive tools (add_adjustment, apply_preset, add_layer_effect, apply_filter, selection tools). Use image_edit_composite and generate_layer only for content changes the native tools cannot express: they cost money and take time.
     - inpaint_selection needs a selection. If there is none and the goal needs one, make one first (select_subject, select_all …) or ask a clarifying question.
-    - Colours are #RRGGBB hex strings. When unsure about a setting, pass {} to get sensible defaults rather than guessing exotic numbers.
+    - Colors are #RRGGBB hex strings. When unsure about a setting, pass {} to get sensible defaults rather than guessing exotic numbers.
     - Give each call a one-sentence "rationale".
     - Alongside the calls, reply with one short sentence summarizing the plan, in the user's language.
     - If the goal is ambiguous, contradictory or impossible with these tools, call no tools and ask a short clarifying question.
     - If the user is only chatting or asking about the editor, answer briefly without calling tools.
-    - When a picture of the current image is attached, look at it: choose settings that suit this photo (its exposure, colours and subject) rather than generic ones.
+    - When a picture of the current image is attached, look at it: choose settings that suit this photo (its exposure, colors and subject) rather than generic ones.
     - Tools whose names start with jammer_ or flimmer_ (when present) act in Glimmer's sibling apps Jämmer (audio) and Flimmer (video), which run separately. Use them only when the user asks for something in that app. To bring Jämmer's sound into the image, use add_waveform.
     """
 
@@ -553,7 +553,7 @@ public enum AgentPlanner {
     Judge whether the result meets what the user asked for.
     - If it does (or is close enough), call no tools and reply with one short sentence saying what was done, in the user's language.
     - If it clearly falls short (too weak, too strong, wrong direction, something asked for is missing), call at most three tools to correct it, building on the current result, and say in one short sentence what you are adjusting. Do not repeat steps that already worked.
-    Colours are #RRGGBB. Pass {} for default settings.
+    Colors are #RRGGBB. Pass {} for default settings.
     """
 
     /// The JSON Schema of an op's params. The assistant's tools, the API's operation
@@ -804,7 +804,7 @@ public enum AgentError: Error, LocalizedError {
     }
 }
 
-/// `#RRGGBB` / `#RRGGBBAA` → sRGB colour (alpha ignored).
+/// `#RRGGBB` / `#RRGGBBAA` → sRGB color (alpha ignored).
 public func parseHexColor(_ text: String?) -> SRGBColor? {
     guard var s = text?.trimmingCharacters(in: .whitespaces) else { return nil }
     if s.hasPrefix("#") { s.removeFirst() }

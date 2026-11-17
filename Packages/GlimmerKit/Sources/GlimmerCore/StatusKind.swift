@@ -24,7 +24,10 @@ public enum StatusKind: String, CaseIterable, Sendable {
     /// The SF Symbol; nil for `working`.
     public var symbol: String? {
         switch self {
-        case .error: "xmark.octagon.fill"
+        // A cross in a filled square. Not the octagon: at 12 to 16 points it can't be told from the circle that carries
+        // the check for "done", and for someone who can't tell red from green the two have the same colour (Flimmer's
+        // simulation, 2026-11-17). Square against circle against triangle shows at every size.
+        case .error: "xmark.square.fill"
         case .warning: "exclamationmark.triangle.fill"
         case .notice: "info.circle"
         case .success: "checkmark.circle.fill"
