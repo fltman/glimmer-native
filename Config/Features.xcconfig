@@ -4,10 +4,11 @@
 // scripts/export-agents-guide.sh.
 //
 // Heal Selection (Edit › Heal Selection, the agent's heal_selection): fills a selected area
-// from its surroundings with classic methods, no model. NO until Anders has seen results
-// (docs/PATENTS.md has the rules the code keeps to and why). The menu item, /operations,
-// the guide, the manual and the FAQ follow this (Config/site-features.json).
-GLIMMER_HEAL = NO
+// from its surroundings with classic methods, no model. YES since 2026-11-17 by Anders's
+// decision ("heal på", for 0.3.0); it was NO until then. docs/PATENTS.md has the rules the
+// code keeps to and why. The menu item, /operations, the guide, the manual and the FAQ
+// follow this (Config/site-features.json).
+GLIMMER_HEAL = YES
 
 // Photoshop files with their layers (File › Open… on a PSD or PSB, the agent API's import,
 // File › Import Report…, File › Export… › Photoshop File…). YES since 2026-11-16: eighteen

@@ -225,6 +225,32 @@ The Healing Brush works like the Clone Stamp, with the same options and the same
 
 Larger brush sizes blend over a wider area.
 
+## Heal Selection
+
+Heal Selection takes something out of a photo by filling the selected area with image from around it: a speck of dust, a scratch, a power line, a small object on grass, sand, sky or a wall. It runs on your Mac, needs no key and costs nothing.
+
+1. Select what should go, with any selection tool. Cover the whole object, shadow included, but keep close to it; Glimmer grows the selection by 3 pixels by itself, so the object's edge goes too. If part of the object is left outside, the fill continues it.
+2. Choose **Edit › Heal Selection**, or click **Heal** (the bandage) in the selection bar.
+
+The fill lands in a new layer named **Heal**, above the active layer and holding only the filled area, so the photo underneath is unchanged. Hide or delete the layer to get the object back. The whole thing is one undo step, and the selection stays, so you can undo, adjust the selection and try again. A feathered selection gives a softer join.
+
+Heal Selection copies what is already in the photo. It does not invent anything. Glimmer looks at the image just around the area and picks one of two ways to fill it:
+
+- An area that is very thin, or that sits on an even surface, is filled smoothly from its edges inward.
+- An area on a textured surface is filled piece by piece with small patches copied from the surroundings, starting where lines and edges run into the area so that they continue across it.
+
+What to expect depends on how wide the area is at its thickest. A long power line 6 pixels thick counts as 6 pixels, however long it is.
+
+| Width at the thickest | Result |
+|---|---|
+| Up to about 120 px | Usually good on sky, water, grass, sand, wood, walls and similar. About a second. |
+| 120 to 250 px | Glimmer asks first. The fill may smear or show repeats. Several seconds. |
+| Over 250 px | Not filled. Use Remove Object instead. |
+
+It works less well where fine detail crosses the area, such as branches against a cloud or the edge between two different surfaces: the fill then picks one of them and the detail is lost. So heal a long thing in sections. For a power line, select and heal the stretch across the sky first, then the stretch across the cloud, and leave the short part that crosses a tree top for the Clone Stamp or for Remove Object. For a large object, or one in front of a complicated scene, use **AI › Remove Object**, which generates new image and needs an OpenRouter key (see [AI with OpenRouter](11-ai-with-openrouter.md)).
+
+Heal Selection reads everything that is visible, so it works whatever kind of layer is active. A progress entry with a Cancel button shows in the AI panel's job list while it runs; canceling leaves the document as it was.
+
 ## Pattern Stamp
 
 Pick the Pattern Stamp in the tool palette (it has no key). It paints a pattern in the foreground and background colors.

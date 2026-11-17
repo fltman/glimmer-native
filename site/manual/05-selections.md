@@ -123,11 +123,12 @@ When you have a selection, a small bar appears just below it (or above it, when 
 
 - **A text field**, "Describe what to add here…". Type what should appear in the selection and press Return or click **Generate**. This runs Generative Fill and needs an OpenRouter key in **Glimmer › Settings › AI** (see [AI with OpenRouter](11-ai-with-openrouter.md)).
 - **Remove** (eraser). Removes what is inside the selection and fills the area to match its surroundings. This also needs an OpenRouter key.
+- **Heal** (bandage). Fills the selection with image from around it, on your Mac and without a key. It suits small things; see [Heal Selection](06-painting-and-retouching.md#heal-selection).
 - **Invert**. Same as **Select › Inverse**.
 - **Feather**. Opens the Feather dialog.
 - **Deselect**. Same as **Select › Deselect**.
 
-The Remove, Invert, Feather and Deselect buttons show while the text field is empty. Once you type, they make way for **Generate**.
+The Remove, Heal, Invert, Feather and Deselect buttons show while the text field is empty. Once you type, they make way for **Generate**.
 
 The bar hides while you transform, crop, liquify, edit text, use a filter dialog or the command palette. To turn it off, clear **Show the action bar at the selection** in **Glimmer › Settings › General**.
 

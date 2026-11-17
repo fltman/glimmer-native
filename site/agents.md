@@ -527,6 +527,17 @@ Develop a RAW layer again from its camera file with other settings (on-device, f
 | `asShot` | boolean | Optional. true first goes back to the camera's white balance and the standard values; other values given in the same step are then applied. |
 | `replaceChanges` | boolean | Optional. A layer that was painted on or filtered after it was developed is refused (replaces_changes) unless this is true: developing again replaces those changes. |
 
+### `heal_selection`
+
+Fill the SELECTED area from what surrounds it, to take out a blemish, a wire or a small object (on-device, free, no model). Requires a selection. Copies existing image, so it suits areas up to about 120 px across on texture or even surfaces; larger areas are refused with reason area_too_large unless allowLarge is true. The step's info gives the method used, the pixels filled, the area's width at its thickest and the layer. One undo step; the selection stays.
+
+| Param | Type | Description |
+|---|---|---|
+| `method` | string | Optional. auto (default) picks; smooth suits thin lines and even areas; texture copies patches of the surroundings. One of: `auto`, `smooth`, `texture` |
+| `expand` | number | Optional. Pixels the selection is grown by first, 0–50 (default 3), so the object's edge and halo go with it. |
+| `sampleAllLayers` | boolean | Optional. true (default): reads what is visible and puts the fill in a new layer named Heal above the active layer. false: reads and changes the active pixel layer itself. |
+| `allowLarge` | boolean | Optional. true fills an area over about 120 px across anyway; the result may smear or repeat (info.quality is then may_repeat). |
+
 ## Good to know
 
 - A parameter an operation or an endpoint doesn't have is refused by name with 400, and nothing is applied: in a `steps` request no step runs. Settings go inside a step's `params`; the settings of `add_adjustment`, `apply_filter` and `add_layer_effect` are checked against their `type`. So a 200 means every value you sent was used.
@@ -537,7 +548,7 @@ Develop a RAW layer again from its camera file with other settings (on-device, f
 - `resize_canvas` adds room around the image (`crop` can only take room away). To get a shape such as 16:9: `crop` with `aspect` cuts the image down to it; `resize_canvas` with `aspect` and `anchor` adds room instead, for example beside a person for a title. Use `crop` when the image has more than you need, `resize_canvas` when it has too little.
 - `crop`, `resize_image`, `resize_canvas` and `select_rect` count in document pixels, from the top-left corner. A crop that contradicts itself (a rectangle and an aspect, say) is a 400, not a failed step.
 - What leaves the Mac through this API: nothing, except for paid steps. A paid step sends its prompt and the picture it works on (the document, or the selected area) to the picture service chosen in Glimmer's Settings (OpenRouter unless the person chose another; a refusal names it), billed to the user's key there, and only with `allowPaid: true` and `allowUnknownPrice: true`. The API never calls a text model: you are the one planning, so the text service chosen in Glimmer's Settings (OpenRouter, Berget or Grunden) is not used by anything you send here.
-- Removing an object from a photo has no free operation: `inpaint_selection` (paid) is the only one. Free steps can cut out a subject (`remove_background`), cover an area with a color (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object).
+- To take something out of a photo: select it (`select_rect`, or `select_subject` when it is the main subject), then `heal_selection` fills the area from what surrounds it, on the Mac and free. It suits dust, scratches, wires and things up to about 120 px across on grass, sky, walls and the like; it copies existing image, it does not invent, so a large object or one in front of a complicated scene needs `inpaint_selection` (paid). An area over about 120 px across is refused with `area_too_large` unless `allowLarge` is true, and over 250 px or too much work always (`hard` is then true). Free steps can cut out a subject (`remove_background`), cover an area with a color (`fill`) or patch it with a copy of another part (`select_rect` with a `feather`, then `run_command` `layer.viaCopy`, which copies the selected, feathered part of the active layer to a new layer, then `transform_layer` with `moveX`/`moveY` to put the copy over the object).
 - A layer's `bounds` are where its visible content is, in document pixels, after its mask; they can reach outside the canvas when content hangs over the edge.
 - `maxSide` only ever makes an image smaller.
 - Size limits: a side is at most 30000 pixels; an opened image at most 256 megapixels; and a canvas may not need more than two fifths of the Mac's memory for one layer (8 bytes a pixel: 800 megapixels on a 16 GB Mac). A new document, `resize_image` or `resize_canvas` beyond that is refused with reason `too_large` and the numbers. Many large layers make a document slow long before that: 60 layers at 6000 × 4000 take about 5.5 GB.

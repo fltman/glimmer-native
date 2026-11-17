@@ -144,6 +144,8 @@ Glimmer sends the selected area plus some surrounding context. It matches the co
 
 **AI › Remove Object** runs Remove right away on the current selection, without the panel.
 
+For a small thing on an even or textured background, **Edit › Heal Selection** fills the area from its surroundings on your Mac, free and without a key. See [Heal Selection](06-painting-and-retouching.md#heal-selection).
+
 When you have a selection, the action bar next to it offers the same two things: type in **Describe what to add here…** and click **Generate** to fill, or click **Remove** with the field empty.
 
 ### Expand

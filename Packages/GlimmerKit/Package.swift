@@ -7,7 +7,7 @@ import PackageDescription
 // Xcode keeps a package manifest's result until the manifest's own text changes, so a changed
 // switch alone would not reach a release build. scripts/apply-features.py rewrites the next
 // line from Config/Features.xcconfig; that change is what makes Xcode read the file again.
-// features: HEAL=NO PSD=YES RAW=YES
+// features: HEAL=YES PSD=YES RAW=YES
 let features = (try? String(contentsOfFile: Context.packageDirectory + "/../../Config/Features.xcconfig", encoding: .utf8)) ?? ""
 let releaseHasHeal = features.split(separator: "\n").contains { $0.replacingOccurrences(of: " ", with: "") == "GLIMMER_HEAL=YES" }
 // Photoshop import is switched the same way (GLIMMER_PSD).

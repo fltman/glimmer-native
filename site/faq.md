@@ -22,7 +22,7 @@ If Glimmer is useful to you, you can support the work on [Patreon](https://www.p
 
 Only the ones that use OpenRouter. Generating images, editing with a prompt, Generative Fill, Remove Object, Expand, Relight, Harmonize, Remove Reflections, Clean Up and the assistant's planning call OpenRouter with your own API key, and OpenRouter bills you for what you use. What a call costs depends on the model you choose in Settings. Glimmer shows the cost of each job in the AI panel's job list when OpenRouter reports it.
 
-Everything that runs on the Mac is free: Auto Enhance, Auto Color, Match Color, Auto Straighten, Suggest Crop, Select Subject, Select People, Select Sky, Magic Select, Remove Background, Lens Blur, Straighten Document, Image Text to Layers, Real-ESRGAN upscaling, Batch Process and photo rating, and simple requests that Apple Intelligence answers.
+Everything that runs on the Mac is free: Auto Enhance, Auto Color, Match Color, Auto Straighten, Suggest Crop, Select Subject, Select People, Select Sky, Magic Select, Remove Background, Heal Selection, Lens Blur, Straighten Document, Image Text to Layers, Real-ESRGAN upscaling, Batch Process and photo rating, and simple requests that Apple Intelligence answers.
 
 ## How do I get an OpenRouter key?
 
