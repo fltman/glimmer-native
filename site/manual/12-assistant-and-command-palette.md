@@ -60,7 +60,7 @@ Type what you want in the field and press Enter, or click **Send** (⌘↩). You
 - add a generated layer ("add a red bird"),
 - combine several steps ("black and white with a vignette and a title at the top").
 
-The assistant uses the text model you chose in **Settings › AI**. It needs your OpenRouter key, and each request costs money. See [AI with OpenRouter](11-ai-with-openrouter.md). Simple one-command requests can run on your Mac for free first, with Apple Intelligence. See [Simple requests with Apple Intelligence](10-on-device-intelligence.md#simple-requests-with-apple-intelligence).
+The assistant uses the text model you chose in **Settings › AI**. It needs a key for the text service (OpenRouter unless you chose another; none for a model in Ollama on your Mac), and each request to a service costs money. See [AI with OpenRouter](11-ai-with-openrouter.md). Simple one-command requests can run on your Mac for free first, with Apple Intelligence. See [Simple requests with Apple Intelligence](10-on-device-intelligence.md#simple-requests-with-apple-intelligence).
 
 The assistant remembers the last few turns of the conversation, so you can follow up with "a bit less" or "now add a title".
 
@@ -74,7 +74,7 @@ What happens next depends on the plan:
 - One case is handled more gently. If the only thing you didn't ask for is **Auto Enhance** or **Auto Color** beside what you did ask for, Glimmer runs what you asked for straight away and shows the extra as an offer of its own: "The assistant also suggests Auto Enhance, which you didn't ask for." Click **Run** to apply it to the picture as it is then, or **Dismiss**.
 - If a step came without saying which adjustment or filter it means, and your own words can mean only one (as in "make it black and white"), Glimmer fills it in and the step says **type taken from your request**. If your words fit more than one, such as "brighter", nothing is guessed and the step fails.
 - A single command picked on your Mac for a short request works the same way: if your words don't name it, the assistant says which command it thinks you mean and waits for **Run**.
-- A plan with steps that call OpenRouter shows **Uses AI credits** and waits. Those steps are AI edits of the whole image, generated layers, and Generative Fill or Remove on a selection. Steps that run on your Mac, such as Select Subject, Remove Background and upscaling, never make a plan wait. Click **Run** to carry it out, or **Dismiss** to drop it. While it runs, click **Stop** to cancel it.
+- A plan with steps that go to the picture service (OpenRouter unless you chose another) shows **Uses AI credits** and waits. Those steps are AI edits of the whole image, generated layers, and Generative Fill or Remove on a selection. Steps that run on your Mac, such as Select Subject, Remove Background and upscaling, never make a plan wait. Click **Run** to carry it out, or **Dismiss** to drop it. While it runs, click **Stop** to cancel it.
 - Such a plan also shows **Price not known in advance**. Until you have ticked, once for the picture service, that it states no price in advance, **Run** is gray and the tick box stands under the plan. See [What costs money](11-ai-with-openrouter.md#what-costs-money).
 
 The whole plan is one undo step, named after your request, such as "Assistant: make it warmer". Press ⌘Z once to undo all of it.
@@ -114,7 +114,7 @@ The check sees numbers, not claims. If the assistant says that something is free
 
 ### Suggest Edits
 
-When you have an OpenRouter key, the Assistant section has a **Suggest Edits** button. The assistant looks at the image and proposes three different edits for this photo, for example one correction, one mood and one bold change, in the language the app runs in. Click a suggestion to send it as a request. Suggest Edits is one request to the text model.
+When a text service is set up, the Assistant section has a **Suggest Edits** button. The assistant looks at the image and proposes three different edits for this photo, for example one correction, one mood and one bold change, in the language the app runs in. Click a suggestion to send it as a request. Suggest Edits is one request to the text model.
 
 ### Saving a plan as an action
 

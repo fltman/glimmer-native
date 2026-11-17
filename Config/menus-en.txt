@@ -1,0 +1,198 @@
+Glimmer › About Glimmer	
+Glimmer › Settings…	⌘,
+Glimmer › Hide Glimmer	⌘H
+Glimmer › Hide Others	⌥⌘H
+Glimmer › Show All	
+Glimmer › Quit Glimmer	⌘Q
+Glimmer › Quit and Keep Windows	⌥⌘Q
+File › New…	⌘N
+File › Open…	⌘O
+File › Close	⌘W
+File › Save	⌘S
+File › Duplicate	⇧⌘S
+File › Rename…	
+File › Move To…	
+File › Revert To	
+File › Revert To › Last Saved Version	
+File › Revert To › Browse All Versions…	
+File › Linked Files Waiting…	
+File › Place Image…	⌥⌘P
+File › Export…	⌥⇧⌘W
+File › Export PNG…	
+File › Export for Web…	
+File › Batch Process…	
+File › Export Web Project (.aips)…	
+File › Import Report…	
+Edit › Redo	⇧⌘Z
+Edit › Cut	⌘X
+Edit › Copy	⌘C
+Edit › Paste	⌘V
+Edit › Delete	
+Edit › Select All	⌘A
+Edit › Fill with Foreground Color	
+Edit › Fill with Background Color	
+Edit › Fill with Pattern	
+Edit › Heal Selection	
+Edit › Copy Text in Image	
+Edit › Writing Tools	
+Edit › Writing Tools › Show Writing Tools	
+Edit › Writing Tools › Proofread	
+Edit › Writing Tools › Rewrite	
+Edit › Writing Tools › Make Friendly	
+Edit › Writing Tools › Make Professional	
+Edit › Writing Tools › Make Concise	
+Edit › Writing Tools › Summarize	
+Edit › Writing Tools › Create Key Points	
+Edit › Writing Tools › Make List	
+Edit › Writing Tools › Make Table	
+Edit › Writing Tools › Compose…	
+Edit › AutoFill	
+Edit › AutoFill › Contact…	
+Edit › AutoFill › Passwords…	
+Edit › AutoFill › Credit Card…	
+Edit › Start Dictation	🎤
+Edit › Emoji & Symbols	🌐
+View › Show Tab Bar	
+View › Show All Tabs	⇧⌘'
+View › Zoom In	⌘+
+View › Zoom Out	⌘-
+View › Fit on Screen	⌘0
+View › Actual Pixels (100%)	⌘1
+View › Rotate View Left 15°	
+View › Rotate View Right 15°	
+View › Reset View Rotation	
+View › Clear Guides	
+View › Command Palette…	⌘K
+View › Show/Hide Layers	⌥⌘L
+View › Hide Interface	
+View › Classic Layout	
+View › Navigator	⌥⌘N
+View › Rulers	⌘R
+View › Grid	⌘¨
+View › Snap	⇧⌘Å
+View › Enter Full Screen	F
+Image › Adjustments	
+Image › Adjustments › Brightness/Contrast	
+Image › Adjustments › Levels	
+Image › Adjustments › Curves	
+Image › Adjustments › Exposure	
+Image › Adjustments › Hue/Saturation	
+Image › Adjustments › Vibrance	
+Image › Adjustments › Color Balance	
+Image › Adjustments › Black & White	
+Image › Adjustments › Photo Filter	
+Image › Adjustments › Channel Mixer	
+Image › Adjustments › Invert	
+Image › Adjustments › Posterize	
+Image › Adjustments › Threshold	
+Image › Adjustments › Gradient Map	
+Image › Auto Enhance	⇧⌘L
+Image › Auto Color	⇧⌘B
+Image › Auto Straighten	
+Image › Image Size…	⌥⌘I
+Image › Canvas Size…	⌥⌘C
+Image › Free Transform	⌘T
+Image › Crop	
+Image › Suggest Crop	
+Image › Straighten Document	
+Image › Rotate 90° Clockwise	
+Image › Rotate 90° Counterclockwise	
+Image › Rotate 180°	
+Image › Flip Horizontal	
+Image › Flip Vertical	
+Image › Blend Colors in Gamma Space	
+Filter › Repeat Last Filter	⌃⌘F
+Filter › Liquify…	⇧⌘X
+Filter › Blur	
+Filter › Blur › Gaussian Blur…	
+Filter › Blur › Lens Blur…	
+Filter › Blur › Motion Blur…	
+Filter › Sharpen	
+Filter › Sharpen › Sharpen…	
+Filter › Sharpen › Unsharp Mask…	
+Filter › Sharpen › Clarity…	
+Filter › Noise	
+Filter › Noise › Add Noise…	
+Filter › Pixelate	
+Filter › Pixelate › Pixelate…	
+Filter › Pixelate › Halftone…	
+Filter › Stylize	
+Filter › Stylize › Find Edges	
+Filter › Stylize › Emboss…	
+Filter › Stylize › Oil Paint…	
+Filter › Lens	
+Filter › Lens › Vignette…	
+Filter › Lens › Chromatic Aberration…	
+Select › All	
+Select › Deselect	⌘D
+Select › Inverse	⇧⌘I
+Select › Subject	
+Select › People	
+Select › Sky	
+Select › Feather…	
+Select › Expand…	
+Select › Contract…	
+AI › Assistant	⇧⌘K
+AI › Generate Image…	
+AI › Edit Image with Prompt…	
+AI › Generative Fill…	
+AI › Remove Object	
+AI › Expand…	
+AI › Remove Background	
+AI › Match Color…	
+AI › Relight…	
+AI › Remove Reflections…	
+AI › Harmonize Layer…	
+AI › Upscale…	
+AI › Find Distractions…	
+AI › Presets…	
+AI › Lens Blur…	
+Layer › New	
+Layer › New › New Layer	⇧⌘N
+Layer › New › New Group	
+Layer › New Adjustment Layer	
+Layer › New Adjustment Layer › Brightness/Contrast	
+Layer › New Adjustment Layer › Levels	
+Layer › New Adjustment Layer › Curves	
+Layer › New Adjustment Layer › Exposure	
+Layer › New Adjustment Layer › Hue/Saturation	
+Layer › New Adjustment Layer › Vibrance	
+Layer › New Adjustment Layer › Color Balance	
+Layer › New Adjustment Layer › Black & White	
+Layer › New Adjustment Layer › Photo Filter	
+Layer › New Adjustment Layer › Channel Mixer	
+Layer › New Adjustment Layer › Invert	
+Layer › New Adjustment Layer › Posterize	
+Layer › New Adjustment Layer › Threshold	
+Layer › New Adjustment Layer › Gradient Map	
+Layer › New Fill Layer	
+Layer › New Fill Layer › Solid Color…	
+Layer › New Fill Layer › Gradient…	
+Layer › New Fill Layer › Pattern…	
+Layer › Duplicate Layer	
+Layer › New Layer via Copy	⌘J
+Layer › Delete Layer	
+Layer › Group Layer	⌘G
+Layer › Ungroup	⇧⌘G
+Layer › Arrange	
+Layer › Arrange › Bring to Front	⇧⌘Ä
+Layer › Arrange › Bring Forward	⌘Ä
+Layer › Arrange › Send Backward	⌘Ö
+Layer › Arrange › Send to Back	⇧⌘Ö
+Layer › Create/Release Clipping Mask	⌥⌘G
+Layer › Layer Mask	
+Layer › Layer Mask › Add Layer Mask (Reveal All)	
+Layer › Layer Mask › Add Layer Mask (Hide All)	
+Layer › Layer Mask › Enable/Disable Layer Mask	
+Layer › Layer Mask › Edit Layer Mask	⌘'
+Layer › Layer Mask › Delete Layer Mask	
+Layer › Smart Objects	
+Layer › Smart Objects › Convert to Smart Object	
+Layer › Image Text to Layers	
+Layer › Rasterize Layer	
+Layer › Develop…	
+Layer › Layer Style…	
+Help › Welcome to Glimmer	
+Help › Agent Access…	
+Help › Glimmer Manual	
+Help › Frequently Asked Questions	

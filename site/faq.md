@@ -8,7 +8,7 @@ A Mac with Apple silicon and macOS 27 or later. Some on-device features download
 
 ## What does Glimmer cost?
 
-Nothing. Glimmer is free, with no accounts, no subscriptions and no ads. The only costs are the optional AI features that use OpenRouter, which you pay to OpenRouter with your own key (see below).
+Nothing. Glimmer is free, with no accounts, no subscriptions and no ads. The only costs are the optional AI features that use a cloud service (OpenRouter, unless you choose another), which you pay to that service with your own key (see below).
 
 ## Is Glimmer open source?
 
@@ -23,6 +23,14 @@ If Glimmer is useful to you, you can support the work on [Patreon](https://www.p
 Only the ones that use OpenRouter. Generating images, editing with a prompt, Generative Fill, Remove Object, Expand, Relight, Harmonize, Remove Reflections, Clean Up and the assistant's planning call OpenRouter with your own API key, and OpenRouter bills you for what you use. What a call costs depends on the model you choose in Settings. Glimmer shows the cost of each job in the AI panel's job list when OpenRouter reports it.
 
 Everything that runs on the Mac is free: Auto Enhance, Auto Color, Match Color, Auto Straighten, Suggest Crop, Select Subject, Select People, Select Sky, Magic Select, Remove Background, Heal Selection, Lens Blur, Straighten Document, Image Text to Layers, Real-ESRGAN upscaling, Batch Process and photo rating, and simple requests that Apple Intelligence answers.
+
+## Can I use another AI service than OpenRouter?
+
+Yes. In **Glimmer › Settings › AI** you can choose another service for the Assistant's text (among them Berget and Grunden, which run in Sweden, and Ollama on your own Mac, which sends nothing anywhere) and another for making pictures. Each has its own key. Several are built from the services' documentation and have not been tried with a real call yet; the manual's table says which. See [Other services](manual/11-ai-with-openrouter.md#other-services).
+
+## Do I see what an AI picture will cost before I make it?
+
+No, and Glimmer says so instead of guessing. No picture service states the price of one job in a form Glimmer can read, so every panel that makes a picture says **Price not known in advance** and asks you once per service before the first one. OpenRouter reports the charge afterwards, and the job list shows it. For the Assistant's text model Glimmer shows the service's listed price per million tokens where the service states one. See [What costs money](manual/11-ai-with-openrouter.md#what-costs-money).
 
 ## How do I get an OpenRouter key?
 
@@ -44,7 +52,7 @@ Three things need a connection:
 
 ## What stays private?
 
-Your images stay on your Mac unless you start an OpenRouter feature. Then Glimmer sends the image (or the part it needs) to OpenRouter, which passes it to the model provider. On-device features never send anything anywhere. Glimmer has no accounts, no analytics and no telemetry, and no service of ours sits in between. Update checks read the update feed at glimmer.brattoo.com. You can point the AI features at another OpenRouter-compatible service, and the model downloads at a mirror, in Settings.
+Your images stay on your Mac unless you start a paid AI feature. Then Glimmer sends the image (or the part it needs) to OpenRouter, which passes it to the model provider, or to the service you chose instead in Settings; Glimmer tells you what is sent before the first request to a service. On-device features never send anything anywhere. Glimmer has no accounts, no analytics and no telemetry, and no service of ours sits in between. Update checks read the update feed at glimmer.brattoo.com. You can point the AI features at another OpenRouter-compatible service, and the model downloads at a mirror, in Settings.
 
 ## Which file formats can Glimmer open and save?
 
@@ -70,7 +78,7 @@ Choose **Image › Image Size…** (⌥⌘I), type a new width or height in pixe
 
 ## Can AI agents control Glimmer?
 
-Yes. Glimmer runs a small web server on your Mac, reachable only from your Mac, at `http://127.0.0.1:9001` (or the first free port from 9101 to 9119). An agent such as Claude can fetch the guide at `/glimmer` and then open, edit and export images in your open windows. Copy the line under **Help › Agent Access** and paste it to your agent. See the [Agent guide](agents.html) for the details. State-changing requests need a special header, requests from web pages are refused, and paid steps are refused unless the agent asks for them explicitly.
+Yes. Glimmer runs a small web server on your Mac, reachable only from your Mac, at `http://127.0.0.1:9001` (or the first free port from 9101 to 9119). An agent such as Claude can fetch the guide at `/glimmer` and then open, edit and export images in your open windows. Copy the line under **Help › Agent Access…** and paste it to your agent. See the [Agent guide](agents.html) for the details. State-changing requests need a special header, requests from web pages are refused, and paid steps are refused unless the agent asks for them explicitly.
 
 ## How large can a document be?
 
@@ -108,7 +116,7 @@ No. The example pictures in the screenshots are AI-generated, so the documentati
 
 Quit Glimmer and move it from Applications to the Trash. To remove everything it stored as well:
 
-- Its data: `~/Library/Containers/com.brattoo.glimmer` (settings, downloaded on-device models and the cache of AI results).
-- Your OpenRouter key: open Keychain Access and delete the item `com.brattoo.glimmer` (account `openrouter-api-key`), or remove the key in **Settings › AI** before you uninstall.
+- Its data: `~/Library/Containers/com.brattoo.glimmer` (settings, downloaded on-device models, the cache of AI results, and any edits of images from Flimmer or Jämmer that are kept and not saved back yet: look under **File › Linked Files Waiting…** first).
+- Your OpenRouter key: open Keychain Access and delete the item `com.brattoo.glimmer` (account `openrouter-api-key`), or remove the key in **Settings › AI** before you uninstall. Keys for other services are kept in the keychain too; remove each one in **Settings › AI** the same way.
 
 Your own `.glimmer` documents and exported images stay where you saved them.

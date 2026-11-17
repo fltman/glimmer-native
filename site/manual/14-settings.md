@@ -17,16 +17,16 @@ Choose **Glimmer › Settings…** (⌘,) to open the Settings window. It has fi
 
 | Setting | What it does |
 | --- | --- |
-| Run AI steps without asking | When the assistant plans an edit that includes paid AI jobs, it normally shows you the plan first and waits for you to run it. Turn this on to run such plans straight away. Plans that only use the editor's own tools always run straight away. Off by default. The **AUTO-EDIT** button in the assistant does the same thing. Such a plan still waits until you have ticked, under **AI › Pictures**, that the picture service states no price in advance. |
+| Run AI steps without asking | When the assistant plans an edit that includes paid AI jobs, it normally shows you the plan first and waits for you to run it. Turn this on to run such plans straight away. Plans that only use the editor's own tools always run straight away. Off by default. The **AUTO-EDIT** button in the assistant does the same thing. Such a plan still waits until you have ticked, under **Pictures** in the AI tab, that the picture service states no price in advance. |
 | Let the assistant see the image | Sends a small copy of the image (at most 1024 pixels) with each request, so the assistant can pick settings that suit the photo. On by default. |
 | Check the result and adjust once | After a plan has run, the assistant compares the image before and after, and may adjust the result once. On by default. |
-| Understand simple requests on this Mac | Lets Apple Intelligence handle requests that need only one command, so they run at once without a call to OpenRouter. Other requests still go to OpenRouter. On by default. This needs Apple Intelligence. Without it, the setting is dimmed. |
+| Understand simple requests on this Mac | Lets Apple Intelligence handle requests that need only one command, so they run at once without a call to the text service. Other requests still go to the text service you chose (OpenRouter unless you changed it). On by default. This needs Apple Intelligence. Without it, the setting is dimmed. |
 
 ## AI
 
 ### OpenRouter
 
-Glimmer's cloud AI tools and the assistant use OpenRouter. Glimmer calls OpenRouter directly with your own key. The key is stored in your keychain and is only sent to the service set under **Service** (openrouter.ai unless you change it). The footer has a link to the OpenRouter page where you create a key.
+Glimmer's cloud AI tools and the assistant use OpenRouter unless you choose another service below. Glimmer calls the service directly with your own key. The key is stored in your keychain and is only sent to the service set under **Service** (openrouter.ai unless you change it). The footer has a link to the OpenRouter page where you create a key.
 
 | Control | What it does |
 | --- | --- |
@@ -40,6 +40,32 @@ Glimmer's cloud AI tools and the assistant use OpenRouter. Glimmer calls OpenRou
 | Setting | What it does |
 | --- | --- |
 | Endpoint | The address of the AI service. Leave it empty to use OpenRouter (`https://openrouter.ai/api/v1`). Any service with OpenRouter's API works, for example a server you run yourself. If the text isn't a valid http or https address, Glimmer shows a warning and uses OpenRouter. |
+
+### Text (the Assistant)
+
+Which service answers when the Assistant plans, suggests edits or looks for distractions. See [Other services](11-ai-with-openrouter.md#other-services) for the list.
+
+| Control | What it does |
+| --- | --- |
+| Service | OpenRouter, another cloud service, or **Ollama (on this Mac)** while Ollama is running. |
+| API key, Save | The key for that service, stored in your keychain and sent only to that service. Each service has its own key. |
+| Model, Refresh | The models the service lists now. **Refresh** reads the list again. Under the model Glimmer shows what the list says about it: its price per million tokens and when that was read, and warnings when the model can't call tools or can't take pictures. |
+| <service> does not state a price in advance; I know | Shown when Glimmer has read no price for the chosen model. Until it is ticked, the first request to the Assistant asks. Untick it to be asked again. |
+| What is sent to … | The same text Glimmer shows before the first request to the service. |
+
+For OpenRouter the text model is typed under **Models** below, and Glimmer reads OpenRouter's list for that id to show its price.
+
+### Pictures
+
+Which service makes and edits pictures: Generate, Edit with Prompt, Generative Fill, Expand and the others.
+
+| Control | What it does |
+| --- | --- |
+| Service | OpenRouter or another picture service. The first time you choose one, Glimmer shows what is sent to it and asks. |
+| API key, Save | The key for that service. |
+| Model | The model's id, typed as the service writes it. For fal.ai there is also **Model for editing**. |
+| <service> does not state a price in advance; I know | Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay gray. You tick it once per service; untick it to be asked again. See [The price is not known in advance](11-ai-with-openrouter.md#the-price-is-not-known-in-advance). |
+| What is sent to … | What the picture features send to the service. |
 
 ### Models
 

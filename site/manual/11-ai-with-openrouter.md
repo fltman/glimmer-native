@@ -1,6 +1,6 @@
 # AI with OpenRouter
 
-Glimmer's generative tools, such as Generate, Generative Fill and Expand, use AI models in the cloud. Glimmer reaches them through OpenRouter, a service that gives access to many AI models with one account. You use your own OpenRouter key and pay OpenRouter directly for what you use. Glimmer has no account, subscription or server of its own in between.
+Glimmer's generative tools, such as Generate, Generative Fill and Expand, use AI models in the cloud. Glimmer reaches them through OpenRouter, a service that gives access to many AI models with one account, unless you choose another service (see [Other services](#other-services)). You use your own key and pay the service directly for what you use. Glimmer has no account, subscription or server of its own in between.
 
 Everything in [On-device intelligence](10-on-device-intelligence.md) works without a key and costs nothing.
 
@@ -51,7 +51,7 @@ For a service other than OpenRouter:
 2. Paste your key from that service and click **Save**. Each service has its own key, stored in your keychain and sent only to that service.
 3. Choose a **Model**. The list comes from the service itself each time, so it only offers models the service has now. If a model you chose earlier is gone, Glimmer says so.
 
-Under the model, Glimmer shows what the service's own list says: its price per million tokens when the list has prices (otherwise "Billed by … at their rates"), and two warnings when they apply. A model without tool calls can't be used by the Assistant, which works by calling Glimmer's tools. A model that can't take pictures makes the Assistant plan without looking at the document, and suggestions and Find Distractions won't work with it.
+Under the model, Glimmer shows what the service's own list says: its price per million tokens when the list has prices, with when Glimmer read it (otherwise "Billed by … at their rates"), and two warnings when they apply. A model without tool calls can't be used by the Assistant, which works by calling Glimmer's tools. A model that can't take pictures makes the Assistant plan without looking at the document, and suggestions and Find Distractions won't work with it.
 
 The first time a request is about to go to a service, Glimmer tells you which service it is, what is sent (what you typed, the list of Glimmer's operations, a description of your document and, when the model takes pictures, a small picture of it), where the service says it processes it, and that it is billed to your key. Choose **Send** or **Not Now**. You can read the same text again under **What is sent to …** in the settings. Glimmer asks once per service, not for every request.
 
@@ -67,17 +67,17 @@ What to expect, plainly:
 
 - It is slower than a service. An answer usually takes a few seconds, and can take up to a minute on a busy Mac.
 - The model takes memory, about 6 GB for `qwen3:8b`, and Ollama keeps it loaded for some minutes after the last answer (that timing is Ollama's own setting). On a Mac with 16 GB, other work and Glimmer's on-device features can get slower meanwhile.
-- It gets most everyday requests right. A Swedish request for an adjustment ("Gör bilden svartvit") can come back incomplete; the same request in English works. If a plan calls a tool that doesn't exist, Glimmer drops that step and tells you.
+- It gets Glimmer's eighteen test requests right, in English and in Swedish. Outside them a small model misses more often than a service does. If a plan calls a tool that doesn't exist, Glimmer drops that step and tells you.
 - `qwen3:8b` can't take pictures, so the Assistant plans without looking at the document, and Suggest Edits and Find Distractions are not offered with it.
 - Local models get a shorter list of Glimmer's operations (the everyday ones), because a long list makes small models lose their way. For anything outside it, use a service or do it by hand.
 
-Berget and Grunden are Swedish services that run open models in Sweden. Glimmer's support for them is built from their documentation and has not been tried with a real call yet. If a service answers with an error, Glimmer shows the error as it came, with its status code.
+Berget and Grunden are Swedish services that run open models in Sweden. Berget has been tried with Glimmer's own test of eighteen everyday requests in English and Swedish (November 2026, all eighteen right with the model tried). Grunden's support is built from its documentation and has not been tried with a real call yet. If a service answers with an error, Glimmer shows the error as it came, with its status code.
 
 ## What costs money
 
-A feature costs money when it sends a request to OpenRouter. The price depends on the model you have chosen and on OpenRouter's pricing. OpenRouter bills it to your account.
+A feature costs money when it sends a request to a service: OpenRouter, or the service you chose under **Pictures** or **Text (the Assistant)**. The price depends on the model you have chosen and on the service's pricing. The service bills it to your account.
 
-| Costs money (OpenRouter) | Free (on this Mac) |
+| Costs money (a service) | Free (on this Mac) |
 |---|---|
 | Generate | Match Color |
 | Edit Image with Prompt | Presets |
@@ -90,7 +90,7 @@ A feature costs money when it sends a request to OpenRouter. The price depends o
 | Find Distractions | |
 | The assistant's planning, quality check and Suggest Edits | |
 
-Requests that the assistant handles on your Mac with Apple Intelligence cost nothing. See [The assistant and the command palette](12-assistant-and-command-palette.md).
+Requests that the assistant handles on your Mac, with Apple Intelligence or with a model in Ollama, cost nothing. See [The assistant and the command palette](12-assistant-and-command-palette.md).
 
 ### The price is not known in advance
 
@@ -206,7 +206,7 @@ The result is a new layer named after the original with "(harmonized)" added. Gl
 
 **AI › Upscale…** opens the Upscale section. Upscaling with Real-ESRGAN or Lanczos runs on your Mac and is free. See [Upscaling with Real-ESRGAN](10-on-device-intelligence.md#upscaling-with-real-esrgan).
 
-Turn on **Add AI detail** for an extra pass with the image model after the upscale. Set **Creativity**: low values only sharpen edges and textures, high values add more fine detail. Glimmer splits the image into tiles of 1,024 pixels and sends each tile as a separate request, so the cost grows with the size of the result. The panel shows how many tiles it will send, in orange when there are more than 16. **Add AI detail** works for results up to 8,192 pixels on the long side.
+Turn on **Add AI detail** for an extra pass with the image model after the upscale. Set **Creativity**: low values only sharpen edges and textures, high values add more fine detail. Glimmer splits the image into tiles of 1,024 pixels and sends each tile as a separate request, so the cost grows with the size of the result. The panel shows how many tiles it will send, with the warning sign when there are more than 16. **Add AI detail** works for results up to 8,192 pixels on the long side.
 
 The result opens as a new document.
 
@@ -229,11 +229,11 @@ The bottom of the AI panel shows **Activity**, a list of the jobs in this window
 
 The list keeps the 30 most recent jobs.
 
-The assistant's planning, its quality check and Suggest Edits also call the text model and are billed by OpenRouter, but they are not listed in Activity.
+The assistant's planning, its quality check and Suggest Edits also call the text model and are billed by the text service, but they are not listed in Activity.
 
 ## Result cache
 
-Glimmer keeps every image the image model returns in a cache folder on your Mac. If an edit sends exactly the same request again (the same model, the same instructions and the same input images), Glimmer uses the saved result instead of calling OpenRouter. That costs nothing, and Activity shows no cost for it.
+Glimmer keeps every image the image model returns in a cache folder on your Mac. If an edit sends exactly the same request again (the same model, the same instructions and the same input images), Glimmer uses the saved result instead of calling the service. That costs nothing, and Activity shows no cost for it.
 
 Generate is the exception: every run starts from a new random seed, so running it again with the same description gives you a new picture.
 

@@ -10,9 +10,10 @@ import Foundation
 //   axread <pid> --show <role> <text>    → scrolls the first element with that name, or a text that contains it, into view (before a picture is taken)
 //   axread <pid> --enabled <role> <name> → prints "enabled" or "disabled" for that element (a button that must be grey)
 //   axread <pid> --titles                → prints "menu<TAB>title" for every item of every menu and "button<TAB>title" for every button in the windows (scripts/check-title-case.py)
+//   axread <pid> --menus                 → prints "Menu › Submenu › Item<TAB>shortcut" for every item of every menu (scripts/check-manual.py)
 //   axread <pid> --frame <role> <name>   → prints that element's place on screen as "x y width height" (points), for the-apps/tools/safepointer
 let arguments = CommandLine.arguments
-guard arguments.count == 2 || (arguments.count == 3 && arguments[2] == "--titles") || (arguments.count == 5 && ["--press", "--frame", "--show", "--enabled"].contains(arguments[2])), let pid = pid_t(arguments[1]) else {
+guard arguments.count == 2 || (arguments.count == 3 && ["--titles", "--menus"].contains(arguments[2])) || (arguments.count == 5 && ["--press", "--frame", "--show", "--enabled"].contains(arguments[2])), let pid = pid_t(arguments[1]) else {
     print("usage: axread <pid> [--press <role> <name> | --frame <role> <name> | --show <role> <text> | --enabled <role> <name>]"); exit(2)
 }
 func attribute(_ element: AXUIElement, _ name: String) -> AnyObject? {
@@ -42,6 +43,29 @@ func read(_ element: AXUIElement, depth: Int) {
 let app = AXUIElementCreateApplication(pid)
 AXUIElementSetMessagingTimeout(app, 5)
 let windows = attribute(app, kAXWindowsAttribute as String) as? [AXUIElement] ?? []
+if arguments.count == 3, arguments[2] == "--menus" {
+    /// "⇧⌘S" from the item's key and modifier bits (0 is ⌘ alone; 1 ⇧, 2 ⌥, 4 ⌃, 8 means no ⌘).
+    func shortcut(_ item: AXUIElement) -> String {
+        guard var key = attribute(item, kAXMenuItemCmdCharAttribute as String) as? String, !key.isEmpty else { return "" }
+        let bits = (attribute(item, kAXMenuItemCmdModifiersAttribute as String) as? Int) ?? 0
+        switch key { case "\u{7F}", "\u{08}": key = "⌫"; case "\r": key = "↩"; case "\t": key = "⇥"; case " ": key = "Space"; case "\u{1B}": key = "⎋"; default: key = key.uppercased() }
+        return (bits & 4 != 0 ? "⌃" : "") + (bits & 2 != 0 ? "⌥" : "") + (bits & 1 != 0 ? "⇧" : "") + (bits & 8 == 0 ? "⌘" : "") + key
+    }
+    func walk(_ element: AXUIElement, path: [String], depth: Int) {
+        let role = attribute(element, kAXRoleAttribute as String) as? String ?? ""
+        var path = path
+        if role == kAXMenuItemRole as String || role == kAXMenuBarItemRole as String,
+           let title = attribute(element, kAXTitleAttribute as String) as? String, !title.isEmpty {
+            if ["Apple", "Open Recent", "Services"].contains(title) { return }
+            path.append(title)
+            if role == kAXMenuItemRole as String { print(path.joined(separator: " › ") + "\t" + shortcut(element)) }
+        }
+        guard depth < 60, let children = attribute(element, kAXChildrenAttribute as String) as? [AXUIElement] else { return }
+        for child in children { walk(child, path: path, depth: depth + 1) }
+    }
+    if let bar = attribute(app, kAXMenuBarAttribute as String) { walk(bar as! AXUIElement, path: [], depth: 0) }
+    exit(0)
+}
 if arguments.count == 3 {
     func titles(_ element: AXUIElement, depth: Int, menu: Bool) {
         let role = attribute(element, kAXRoleAttribute as String) as? String ?? ""

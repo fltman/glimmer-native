@@ -57,6 +57,7 @@ run entitlements scripts/check-entitlements.sh
 run text-logic scripts/check-text-logic.py
 run fetching scripts/check-fetching.sh
 run status scripts/check-status.py
+run manual scripts/check-manual.py
 run tests tests
 timed_tests
 run debug-build debug_build

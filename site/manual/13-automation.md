@@ -123,7 +123,7 @@ The API is built so that only programs on your own Mac can use it, and only on p
 - It only answers requests addressed to 127.0.0.1 or localhost.
 - It refuses requests from web pages. A web page you visit can't use it.
 - Every request that changes something must carry the header `X-Glimmer-Agent: 1`.
-- Steps that call OpenRouter and cost money are refused unless the request explicitly allows paid steps, and you have saved an OpenRouter key in Glimmer.
+- Steps that cost money go to the picture service chosen in Settings (OpenRouter unless you chose another). They are refused unless the request explicitly allows paid steps and also says that it accepts a price that is not known in advance, and a key for that service is saved in Glimmer.
 - The API never reads or writes files by path. Images travel in the requests and responses.
 
 Each request with editing steps is one undo step, named **Agent Edit**.

@@ -149,6 +149,14 @@ if [[ $LANG_ == en ]]; then
   if case_report=$(scripts/check-title-case.py "$TITLES"); then ok "$case_report"; else echo "$case_report" | sed 's/^/    /'; bad "buttons or menu items that are not in Title Case (above)"; fi
 fi
 
+# The manual against the menus as they are now, and the kept copy of the menus against them (Config/menus-en.txt is
+# what scripts/check-manual.py reads in the commit gate; the system's Window menu and the Undo item's changing name are left out).
+if [[ $LANG_ == en ]]; then
+  perl -e 'alarm 60; exec @ARGV' build/axread $GLIMMER_PID --menus 2>/dev/null | grep -v "^Window › \|^Edit › Undo" > build/menus-live.txt
+  if manual_report=$(scripts/check-manual.py build/menus-live.txt); then ok "$manual_report"; else echo "$manual_report" | sed 's/^/    /'; bad "the manual names menu items or shortcuts the app does not have (above)"; fi
+  if cmp -s build/menus-live.txt Config/menus-en.txt; then ok "the kept copy of the menus is what the app has"; else diff build/menus-live.txt Config/menus-en.txt | head -12 | sed 's/^/    /'; bad "the menus differ from Config/menus-en.txt (above): copy build/menus-live.txt over it when the change is meant"; fi
+fi
+
 MODE=$([[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]] && echo "NETWORK TEST (Berget's public model list was fetched)" || echo "no network (a copy that can make no connection)")
 # What was read is the debug build, which has every switched feature. A release has only those
 # set to YES in Config/Features.xcconfig; what is read here beyond them does not ship yet.

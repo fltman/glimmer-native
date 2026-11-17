@@ -65,21 +65,21 @@ Auto Enhance and Auto Color found nothing worth changing. Add the adjustment lay
 
 Glimmer answers single-command requests on the Mac with Apple Intelligence. That needs Apple Intelligence to be turned on in System Settings, and the option in **Settings › AI** to be on.
 
-## OpenRouter features
+## Paid AI features
 
 ### "Add your OpenRouter key"
 
-Paid features need your key. Paste it into **Settings › AI**.
+Paid features need a key for the service they use: OpenRouter, unless you chose another service in **Settings › AI**. Paste it there.
 
 ### A job fails
 
 The AI panel's job list shows the error. Common causes:
 
-- The OpenRouter account has no credit left. Add credit at openrouter.ai.
+- The account at the service has no credit left. For OpenRouter, add credit at openrouter.ai.
 - The model you chose in **Settings › AI** is unavailable or doesn't accept images. Pick another model.
 - The Mac is offline. Glimmer says it couldn't reach the AI service. The tools that run on your Mac keep working.
 
-A job you cancel stops waiting for the result; OpenRouter may still bill a request that it already started.
+A job you cancel stops waiting for the result; the service may still bill a request that it already started. A job that failed after its request was sent says **May have been charged** in the job list for the same reason.
 
 ## Files and export
 
@@ -97,7 +97,7 @@ The file starts like an image but is cut short or broken inside, often after an 
 
 ### "This document needs about … of memory"
 
-The document has grown past what your Mac holds comfortably. Nothing is wrong with it and you can keep working, but Glimmer may get slow. Merge layers you no longer need apart (**Layer › Merge Group**, or rasterize smart objects you are done with), or make the image smaller with **Image › Image Size…**. See [How large a document can be](02-documents-and-files.md#how-large-a-document-can-be).
+The document has grown past what your Mac holds comfortably. Nothing is wrong with it and you can keep working, but Glimmer may get slow. Merge layers you no longer need apart (put them in a group and choose **Layer › Rasterize Layer**, which the Layers panel's menu calls **Merge Group** for a group, or rasterize smart objects you are done with), or make the image smaller with **Image › Image Size…**. See [How large a document can be](02-documents-and-files.md#how-large-a-document-can-be).
 
 ### "A canvas of … pixels needs … for a single layer"
 
@@ -138,7 +138,7 @@ Close other documents, hide layers you are not working on, and use **Fit on Scre
 ### An agent can't connect
 
 - Glimmer must be running.
-- Use the address shown under **Help › Agent Access**. If port 9001 is taken by another program, Glimmer uses the first free port from 9101 to 9119, and the window shows the real address.
+- Use the address shown under **Help › Agent Access…**. If port 9001 is taken by another program, Glimmer uses the first free port from 9101 to 9119, and the window shows the real address.
 - If the window says all ports are in use, quit the programs that use port 9001 and ports 9101–9119, then restart Glimmer.
 - Another program may hold a port in that range. Docker containers often do: a MinIO server, for example, uses 9100 and 9101. Glimmer then uses the next free port, so this is harmless; just use the address the window shows. An agent that checks that `app.name` in `GET /api/v1/status` is `"Glimmer"` never mistakes the other program for Glimmer.
 - Glimmer finds Jämmer and Flimmer the same way, and skips ports where another program answers.
