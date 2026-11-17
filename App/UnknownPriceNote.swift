@@ -11,7 +11,7 @@ struct UnknownPriceNote: View {
         let provider = AIController.imageProvider
         if !PaidPrice.knownInAdvance(service: provider.slug) {
             VStack(alignment: .leading, spacing: 4) {
-                Label("Price not known in advance", systemImage: "questionmark.circle")
+                StatusLine(.notice, "Price not known in advance")
                     .font(.caption).foregroundStyle(.secondary)
                 UnknownPriceTick(provider: provider, onlyUntilMade: true)
             }

@@ -414,11 +414,10 @@ private struct TitleChip: View {
                 .accessibilityLabel("Editing \(link.fileName) for \(link.requester). Command-S saves it back.")
             }
             if let trouble = session.journalRoomTrouble {
-                Label("Latest steps not kept: disk full", systemImage: "externaldrive.badge.exclamationmark")
+                StatusLine(.error, "Latest steps not kept: disk full")
                     .lineLimit(1).truncationMode(.tail)
-                    .foregroundStyle(.orange)
                     .help(trouble)
-                    .accessibilityLabel(Text(verbatim: trouble))
+                    .accessibilityLabel(StatusKind.error.spoken(Text(verbatim: trouble)))
             }
             // One at a time: what could not be kept is the more pressing of the two (both together were cut to "Lates…" and "Broug…").
             if session.recovered && session.journalRoomTrouble == nil {
@@ -426,28 +425,26 @@ private struct TitleChip: View {
                 // (The whole sentence is said once over the canvas when the window comes back; here it may be cut short in a narrow window.)
                 Group {
                     if session.keptFromLastTime {
-                        Label("Kept from last time: not saved back yet", systemImage: "arrow.uturn.backward.circle")
+                        StatusLine(.warning, "Kept from last time: not saved back yet")
                             .help("You left this file with edits that were not saved back. They were kept and are here again. They are not in the file until you save them back. Undo starts from here.")
-                            .accessibilityLabel("Kept from last time. The edits are not saved back yet. Undo starts from here.")
+                            .accessibilityLabel(StatusKind.warning.spoken(Text("Kept from last time. The edits are not saved back yet. Undo starts from here.")))
                     } else {
-                        Label("Brought back: not saved back yet", systemImage: "arrow.uturn.backward.circle")
+                        StatusLine(.warning, "Brought back: not saved back yet")
                             .help("Glimmer stopped while this file had edits that were not saved back. They were kept and are here again. They are not in the file until you save them back. Undo starts from here.")
-                            .accessibilityLabel("Brought back after Glimmer stopped. The edits are not saved back yet. Undo starts from here.")
+                            .accessibilityLabel(StatusKind.warning.spoken(Text("Brought back after Glimmer stopped. The edits are not saved back yet. Undo starts from here.")))
                     }
                 }
                 .lineLimit(1).truncationMode(.tail)
-                .foregroundStyle(.orange)
             }
             if let broken = session.brokenLink {
                 // What is wrong is never cut short; for whom gives way first.
                 HStack(spacing: 4) {
-                    Label("Can't save back", systemImage: "link.badge.plus").symbolVariant(.slash).lineLimit(1).fixedSize()
+                    StatusLine(.error, "Can't save back").lineLimit(1).fixedSize()
                     Text("to \(broken.link.requester)").lineLimit(1).truncationMode(.tail).layoutPriority(-1)
                 }
-                .foregroundStyle(.orange)
                 .help(broken.reason)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel("Was being edited for \(broken.link.requester). \(broken.reason)")
+                .accessibilityLabel(StatusKind.error.spoken(Text("Was being edited for \(broken.link.requester). \(broken.reason)")))
             }
             if session.isExporting {
                 ProgressView().controlSize(.small)

@@ -227,8 +227,8 @@ struct BatchSheet: View {
                                                   : "Finished \(runner.outcomes.filter { $0.error == nil }.count) of \(runner.total)")
                         }
                         ForEach(runner.outcomes.filter { $0.error != nil }) { o in
-                            Label("\(o.source.lastPathComponent): \(o.error ?? "")", systemImage: "exclamationmark.triangle")
-                                .foregroundStyle(.orange).font(.callout)
+                            StatusLine(.error, verbatim: "\(o.source.lastPathComponent): \(o.error ?? "")")
+                                .font(.callout)
                         }
                     }
                 }
@@ -276,15 +276,15 @@ struct BatchSheet: View {
                             Text(url.lastPathComponent).lineLimit(1).truncationMode(.middle)
                             Spacer()
                             if let r = runner.ratings[url] {
-                                if r.isBlurry { badge("Blurry", .orange) }
+                                if r.isBlurry { badge("Blurry", .secondary) }   // a property of the photo, not a state
                                 if r.isUtility { badge("Document", .secondary) }
                                 Text(String(repeating: "★", count: r.stars) + String(repeating: "☆", count: 5 - r.stars))
                                     .font(.caption).foregroundStyle(Theme.accent)
                                     .help("Aesthetics \(String(format: "%.2f", r.aesthetics)), sharpness \(Int(r.sharpness * 100)) %")
                             }
                             if let o = runner.outcomes.first(where: { $0.source == url }) {
-                                Image(systemName: o.error == nil ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                                    .foregroundStyle(o.error == nil ? .green : .orange)
+                                StatusSymbol(o.error == nil ? .success : .error)
+                                    .accessibilityLabel(o.error == nil ? StatusKind.success.spokenName : StatusKind.error.spokenName)
                             }
                         }
                     }
@@ -334,7 +334,7 @@ struct BatchSheet: View {
             Spacer()
             if ratedAll, !runner.isRating {
                 let blurry = files.filter { runner.ratings[$0]?.isBlurry == true }.count
-                if blurry > 0 { Text("\(blurry) blurry").foregroundStyle(.orange).font(.callout) }
+                if blurry > 0 { Text("\(blurry) blurry").foregroundStyle(.secondary).font(.callout) }   // a count, not a state
             }
         }
     }

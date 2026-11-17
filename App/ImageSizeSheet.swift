@@ -62,9 +62,9 @@ struct ImageSizeSheet: View {
                 if isValid, keepProportions { Text("\(percent) %").foregroundStyle(.secondary).monospacedDigit() }
             }
             if !sidesValid {
-                Text("Each side must be 1 to \(CanvasSteps.maxSide) pixels.").foregroundStyle(.red).font(.callout)
+                StatusLine(.error, "Each side must be 1 to \(CanvasSteps.maxSide) pixels.").font(.callout)
             } else if let tooLarge {
-                Text(verbatim: tooLarge).foregroundStyle(.red).font(.callout).fixedSize(horizontal: false, vertical: true)
+                StatusLine(.error, verbatim: tooLarge).font(.callout).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
                 Spacer()

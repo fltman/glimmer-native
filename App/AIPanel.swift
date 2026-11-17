@@ -117,13 +117,13 @@ private struct KeyBanner: View {
                 .accessibilityAddTraits(.isHeader)
             Text("Generative tools call OpenRouter with your own key. On-device tools work without one.")
                 .font(.callout)
-                .foregroundStyle(.primary)  // .secondary is 4.4 : 1 on the yellow
+                .foregroundStyle(.secondary)
             SettingsLink { Text("Open Settings…") }
                 .simultaneousGesture(TapGesture().onEnded { UserDefaults.standard.set("ai", forKey: SettingsView.tabKey) })
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.yellow.opacity(0.15), in: .rect(cornerRadius: 8))
+        .background(Theme.raised, in: .rect(cornerRadius: 8))   // a neutral surface: yellow is a state's colour
     }
 }
 
@@ -303,7 +303,7 @@ struct PlanView: View {
                     VStack(alignment: .leading, spacing: 1) {
                         Text(Self.describe(step)).font(.callout)
                         if case .failed(let message)? = ai.stepStatus[step.id] {
-                            Text(message).font(.caption).foregroundStyle(.red)
+                            StatusLine(.error, verbatim: message).font(.caption)
                         } else if let r = step.rationale {
                             Text(verbatim: Self.note(r)).font(.caption).foregroundStyle(.secondary)
                         }
@@ -347,8 +347,8 @@ struct PlanView: View {
         switch status {
         case .pending: Image(systemName: "circle").foregroundStyle(.tertiary)
         case .running: ProgressView().controlSize(.mini)
-        case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-        case .failed: Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.red)
+        case .done: StatusSymbol(.success)
+        case .failed: StatusSymbol(.error)
         case .skipped: Image(systemName: "minus.circle").foregroundStyle(.tertiary)
         }
     }
@@ -655,8 +655,8 @@ private struct JobsView: View {
                         Group {
                             switch job.status {
                             case .running: ProgressView().controlSize(.small).accessibilityLabel("Running")
-                            case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green).accessibilityLabel("Done")
-                            case .failed: Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange).accessibilityLabel("Failed")
+                            case .done: StatusSymbol(.success).accessibilityLabel("Done")
+                            case .failed: StatusSymbol(.error).accessibilityLabel("Failed")
                             case .cancelled: Image(systemName: "xmark.circle").foregroundStyle(.secondary).accessibilityLabel("Canceled")
                             }
                         }
@@ -748,11 +748,10 @@ private struct CleanupView: View {
             }
             ForEach(ai.distractions) { d in
                 HStack {
-                    Circle()
-                        .fill(d.severity == "high" ? Color.red : (d.severity == "low" ? Color.yellow : Color.orange))
-                        .frame(width: 8, height: 8)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(d.label.capitalized).font(.callout)
+                        // How much it disturbs is said as a word; it was a red, orange or yellow dot, which said nothing without colour.
+                        Text(verbatim: d.label.capitalized + " · ").font(.callout)
+                            + Text(d.severity == "high" ? "disturbs a lot" : d.severity == "low" ? "disturbs a little" : "disturbs").font(.callout).foregroundStyle(.secondary)
                         if let r = d.rationale { Text(r).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
                     }
                     Spacer()
@@ -798,16 +797,19 @@ private struct UpscaleView: View {
             Text("Result: \(out.x) × \(out.y) px, opened as a new document.")
                 .font(.caption).foregroundStyle(.secondary)
             if neural && max(out.x, out.y) > Self.neuralMaxSide {
-                Text("Too large for Real-ESRGAN; use 2× or Lanczos.")
-                    .font(.caption).foregroundStyle(.orange)
+                StatusLine(.error, "Too large for Real-ESRGAN; use 2× or Lanczos.")
+                    .font(.caption)
             }
             Toggle("Add AI detail", isOn: $enhance)
             if enhance {
                 ParameterSlider(label: "Creativity", value: creativity * 100, range: 0...100, step: 1,
                                 format: { "\(Int($0)) %" }, set: { creativity = $0 / 100 }, commit: {})
-                Text("Runs the image model on \(tiles) tile\(tiles == 1 ? "" : "s").")
-                    .font(.caption)
-                    .foregroundStyle(tiles > 16 ? .orange : .secondary)
+                // Many tiles are many paid calls: said as a warning, by its sign, not by a colour on the words.
+                if tiles > 16 {
+                    StatusLine(.warning, "Runs the image model on \(tiles) tile\(tiles == 1 ? "" : "s").").font(.caption)
+                } else {
+                    Text("Runs the image model on \(tiles) tile\(tiles == 1 ? "" : "s").").font(.caption).foregroundStyle(.secondary)
+                }
             }
             if enhance { UnknownPriceNote() }
             Button("Upscale") { ai.upscale(scale: scale, neural: neural, enhance: enhance, creativity: creativity) }

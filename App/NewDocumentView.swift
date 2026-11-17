@@ -61,10 +61,9 @@ struct NewDocumentView: View {
                     ColorPicker("Color", selection: $customColor, supportsOpacity: false)
                 }
                 if !sidesValid {
-                    Text("Width and height must be between 1 and \(DocumentManifest.maxDimension) pixels.")
-                        .foregroundStyle(.red)
+                    StatusLine(.error, "Width and height must be between 1 and \(DocumentManifest.maxDimension) pixels.")
                 } else if let tooLarge {
-                    Text(verbatim: tooLarge).foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+                    StatusLine(.error, verbatim: tooLarge).fixedSize(horizontal: false, vertical: true)
                 }
             }
             .formStyle(.grouped)

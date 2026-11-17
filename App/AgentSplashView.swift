@@ -71,7 +71,7 @@ struct AgentSplashView: View {
                         .keyboardShortcut("c", modifiers: [.command, .shift])
                     }
                 } else if let failure = server.failure {
-                    Label(failure, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
+                    StatusLine(.error, verbatim: failure)
                 } else {
                     ProgressView().controlSize(.small)
                         .accessibilityLabel("Starting the server for agents")

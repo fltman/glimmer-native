@@ -110,7 +110,7 @@ private struct AISettingsView: View {
             Section {
                 TextField("Endpoint", text: $endpoint, prompt: Text(verbatim: AIDefaults.defaultEndpoint))
                 if !endpoint.isEmpty, AIDefaults.endpoint.absoluteString != endpoint.trimmingCharacters(in: .whitespaces) {
-                    Text("Not a valid http(s) address; Glimmer uses OpenRouter.").font(.callout).foregroundStyle(.orange)
+                    StatusLine(.warning, "Not a valid http(s) address; Glimmer uses OpenRouter.").font(.callout)
                 }
             } header: {
                 Text("Service")
@@ -238,11 +238,9 @@ private struct AISettingsView: View {
         case .checking:
             ProgressView().controlSize(.small).accessibilityLabel("Checking the key")
         case .valid(let detail):
-            Label(detail, systemImage: "checkmark.circle.fill")
-                .foregroundStyle(.green)
+            StatusLine(.success, verbatim: detail)
         case .failed(let message):
-            Label(message, systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
+            StatusLine(.error, verbatim: message)
                 .lineLimit(2)
         }
     }
@@ -564,9 +562,9 @@ private struct ProviderTextSettings: View {
                 if !savedKey.isEmpty { Button("Remove", role: .destructive) { key = ""; save() } }
                 Spacer()
                 if let keyError {
-                    Label(keyError, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).lineLimit(2)
+                    StatusLine(.error, verbatim: keyError).lineLimit(2)
                 } else if !savedKey.isEmpty {
-                    Label("Saved in your keychain", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                    StatusLine(.success, "Saved in your keychain")
                 }
             }
         }
@@ -601,13 +599,12 @@ private struct ProviderTextSettings: View {
         .task { load(); await loadModels() }
 
         if let listError {
-            Label(listError, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.callout)
+            StatusLine(.error, verbatim: listError).font(.callout)
         }
         if let m = model {
             VStack(alignment: .leading, spacing: 4) {
                 if m.tools == false {
-                    Label("\(provider.name) lists this model without tool calls. The Assistant can't use it.", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                    StatusLine(.warning, "\(provider.name) lists this model without tool calls. The Assistant can't use it.")
                 }
                 if m.vision == false {
                     Label("This model can't take pictures, so the Assistant plans without looking at the document, and suggestions and Find Distractions won't work with it.", systemImage: "eye.slash")
@@ -622,8 +619,7 @@ private struct ProviderTextSettings: View {
             .font(.callout)
             .foregroundStyle(.secondary)
         } else if !chosen.isEmpty, !models.isEmpty {
-            Label("\(provider.name) no longer lists \(chosen). Choose another model.", systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange).font(.callout)
+            StatusLine(.warning, "\(provider.name) no longer lists \(chosen). Choose another model.").font(.callout)
         }
     }
 
@@ -685,7 +681,7 @@ private struct OpenRouterTextPrice: View {
                 Text("Read \(read.formatted(date: .abbreviated, time: .shortened)).")
             case .noPrice: Text("OpenRouter's list states no price for this model.")
             case .notListed: Text("OpenRouter's list has no model with this id, so its price is not known.")
-            case .failed(let why): Label(why, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+            case .failed(let why): StatusLine(.error, verbatim: why)
             }
         }
         .font(.callout).foregroundStyle(.secondary)
@@ -732,9 +728,9 @@ private struct ProviderImageSettings: View {
             if !savedKey.isEmpty { Button("Remove", role: .destructive) { key = ""; save() } }
             Spacer()
             if let keyError {
-                Label(keyError, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).lineLimit(2)
+                StatusLine(.error, verbatim: keyError).lineLimit(2)
             } else if !savedKey.isEmpty {
-                Label("Saved in your keychain", systemImage: "checkmark.circle.fill").foregroundStyle(.green)
+                StatusLine(.success, "Saved in your keychain")
             }
         }
         VStack(alignment: .leading, spacing: 4) {
@@ -805,11 +801,9 @@ private struct LocalTextSettings: View {
 
     var body: some View {
         if models == nil {
-            Label("\(provider.name) isn't running on this Mac. Start it, then click Refresh.", systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange).font(.callout)
+            StatusLine(.warning, "\(provider.name) isn't running on this Mac. Start it, then click Refresh.").font(.callout)
         } else if usable.isEmpty {
-            Label("None of the models installed in \(provider.name) lists tool calls, which the Assistant needs.", systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange).font(.callout)
+            StatusLine(.warning, "None of the models installed in \(provider.name) lists tool calls, which the Assistant needs.").font(.callout)
         }
         HStack {
             Picker("Model", selection: $chosen) {

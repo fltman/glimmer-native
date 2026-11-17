@@ -49,7 +49,7 @@ struct PSDExportSheet: View {
                 }
             }
             if working { ProgressView().controlSize(.small).accessibilityLabel("Preparing the file") }
-            if let problem { Label(problem, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red) }
+            if let problem { StatusLine(.error, verbatim: problem) }
             if let report = prepared?.report {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {

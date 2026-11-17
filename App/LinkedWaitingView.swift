@@ -41,10 +41,10 @@ struct LinkedWaitingView: View {
                 }
             }
             if !broken.isEmpty {
-                Label("\(broken.count) kept edit(s) can't be read. They are left in Glimmer's folder and are not removed.", systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange).font(.callout).fixedSize(horizontal: false, vertical: true)
+                StatusLine(.error, "\(broken.count) kept edit(s) can't be read. They are left in Glimmer's folder and are not removed.")
+                    .font(.callout).fixedSize(horizontal: false, vertical: true)
             }
-            if let problem { Label(problem, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.orange).font(.callout) }
+            if let problem { StatusLine(.error, verbatim: problem).font(.callout) }
             HStack { Spacer(); Button("Done", action: close).keyboardShortcut(.defaultAction) }
         }
         .padding(20)

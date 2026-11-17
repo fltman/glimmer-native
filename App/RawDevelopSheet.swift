@@ -210,7 +210,7 @@ struct RawDevelopSheet: View {
                 Text(verbatim: "\(model.source.fileName) · \(model.info.width) × \(model.info.height) · \(ByteCountFormatter.string(fromByteCount: Int64(model.source.data.count), countStyle: .file))")
                     .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 if model.pixelsChanged {
-                    Label("This layer has been painted on or changed since it was developed. Developing again replaces those changes.", systemImage: "exclamationmark.triangle.fill")
+                    StatusLine(.warning, "This layer has been painted on or changed since it was developed. Developing again replaces those changes.")
                         .font(.callout).fixedSize(horizontal: false, vertical: true)
                 }
                 slider("Exposure", value: $model.settings.exposure, in: -3...3, shown: stops(model.settings.exposure))
@@ -240,7 +240,7 @@ struct RawDevelopSheet: View {
                         .font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
                 }
                 if let problem = model.problem {
-                    Label(problem, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).fixedSize(horizontal: false, vertical: true)
+                    StatusLine(.error, verbatim: problem).fixedSize(horizontal: false, vertical: true)
                 }
                 if model.isDeveloping {
                     HStack(spacing: 8) {

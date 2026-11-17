@@ -1,0 +1,9 @@
+# Colours and symbols in the views that are NOT states (scripts/check-status.py). This list may only shrink:
+# the check fails when a line here matches nothing any more, and when the list is longer than in the last commit.
+# One per line: <file>: <text that the line contains>
+NavigatorView.swift: .strokeBorder(Color.red, lineWidth: 1.5)
+LayersPanel.swift: Image(systemName: "xmark").foregroundStyle(.red)
+ChannelsPanel.swift: Row(id: 1, name: "Red", color: .red, bits: 1)
+ChannelsPanel.swift: Row(id: 2, name: "Green", color: .green, bits: 2)
+PropertiesPanel.swift: case .red: .red
+PropertiesPanel.swift: case .green: .green
