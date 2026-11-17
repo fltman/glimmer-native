@@ -562,6 +562,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        // `-debugAppearance dark` or `light` (debug builds only): the app's own windows in that appearance whatever the
+        // Mac is set to, so Settings and the sheets can be looked at in both without touching a system setting.
+        if let wanted = UserDefaults.standard.string(forKey: "debugAppearance") {
+            NSApp.appearance = NSAppearance(named: wanted == "dark" ? .darkAqua : .aqua)
+        }
+        #endif
         // A move of OpenRouter's key to its new keychain account that was interrupted is finished here.
         ProviderKeys.keychain.removeLeftoverOpenRouterItem()
         didFinishLaunching = true

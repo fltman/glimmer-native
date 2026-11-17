@@ -12,7 +12,8 @@ import Testing
     /// The system's surfaces where Settings and sheets stand. Approximate until sampled from pictures
     /// (window and form row, dark and light); the limits below leave room for that.
     static let systemDark: [UInt32] = [0x323232, 0x3a3a3c]
-    static let systemLight: [UInt32] = [0xececec, 0xffffff]
+    /// Light: sampled from a picture of Settings (window #ffffff, form row #f7f7f7, 2026-11-17); #ececec kept as the darker bound.
+    static let systemLight: [UInt32] = [0xececec, 0xf7f7f7, 0xffffff]
 
     @Test func eachKindHasItsOwnSymbolAndTheTriangleIsOnlyAWarning() {
         let symbols = StatusKind.allCases.compactMap(\.symbol)

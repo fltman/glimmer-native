@@ -438,9 +438,13 @@ private struct TitleChip: View {
             }
             if let broken = session.brokenLink {
                 // What is wrong is never cut short; for whom gives way first.
-                HStack(spacing: 4) {
+                // What is wrong is never cut short; for whom is left out when there is no room (it was cut to "t" in a narrow window).
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 4) {
+                        StatusLine(.error, "Can't save back").lineLimit(1).fixedSize()
+                        Text("to \(broken.link.requester)").lineLimit(1).fixedSize()
+                    }
                     StatusLine(.error, "Can't save back").lineLimit(1).fixedSize()
-                    Text("to \(broken.link.requester)").lineLimit(1).truncationMode(.tail).layoutPriority(-1)
                 }
                 .help(broken.reason)
                 .accessibilityElement(children: .ignore)
