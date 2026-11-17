@@ -11,7 +11,8 @@ import Testing
     static let glimmerDark: [UInt32] = [0x0c0d11, 0x16171c, 0x1f2027]
     /// The system's surfaces where Settings and sheets stand. Approximate until sampled from pictures
     /// (window and form row, dark and light); the limits below leave room for that.
-    static let systemDark: [UInt32] = [0x323232, 0x3a3a3c]
+    /// Dark: sampled from a picture of Settings (window #232222, form row #2a2929, 2026-11-17); the two lighter greys are kept as the harder bound.
+    static let systemDark: [UInt32] = [0x232222, 0x2a2929, 0x323232, 0x3a3a3c]
     /// Light: sampled from a picture of Settings (window #ffffff, form row #f7f7f7, 2026-11-17); #ececec kept as the darker bound.
     static let systemLight: [UInt32] = [0xececec, 0xf7f7f7, 0xffffff]
 
