@@ -1023,3 +1023,14 @@ Not done: no view uses the type; nothing was seen as a picture; the system's sur
 - Looked at, Swedish dark: the job list (the octagon on the failed job, the spinner on the running one), the broken-link bar ("Kan inte spara tillbaka" with the octagon, not cut), the price notice with the info circle, Canvas Size, Settings › AI.
 - **Still not seen, because the pass has no state that shows them:** a warning's triangle anywhere (the model warnings in Settings, "Kept from last time" in the bar, the RAW sheet's line), the validation errors of the three sheets (the sheets were shown with valid values), batch outcomes, the success line "Saved in your keychain", the PSD and RAW problem lines. They go through the same two views as what was seen.
 - Not done: increased contrast (a system setting).
+
+## The rehearsal with today's code (2026-11-17, Anders said "kör repetitionen och notariseringen")
+
+**Notarization: accepted.** `scripts/release.sh 0.3.0 --notarize-only` (tests skipped: the whole gate with the release build had just passed on the same tree): built, signed with Developer ID, notarized through Xcode, the DMG notarized with notarytool (submission 21709fbd-0446-4379-80fe-ee1e0af41297: Accepted), stapled and validated. Gatekeeper: the app and the DMG both "accepted, source=Notarized Developer ID". Nothing committed, tagged, pushed or published; the appcast is local. The built app: 0.3.0 (build 3), its feed http://localhost:8765/appcast.xml (a rehearsal build carries the local feed from the start now), the entitlements in place in the signed app, `heal_selection` in the binary. project.yml and site/agents.md were put back with git afterwards (the tree was clean before).
+- This is the code as of commit 0d69071. The Swedish terms changed after it (below), so the notarized copy is a rehearsal of the process, not the release.
+
+**The old version to update from:** `release.sh --dry-run` at 0.2.0 (build 2), signed, not notarized, feed localhost. Kept in build/rehearsal/run-1117/old.
+
+**The update itself: prepared, not yet driven.** rehearse-update.sh installed 0.2.0 in ~/Applications/Glimmer Update Rehearsal and serves the local feed with the DMG and the release notes page (the appcast has the release notes link; the page answers 200). Driving the update window takes the front; put off, Anders at the Mac.
+
+**Swedish terms as Anders decided (through the coordinator):** Liquify stays "Liquify"; Healing Brush is "Lagningspensel" (one stem with Laga); "Preset: %@"; "Prompt för generativ fyllning", "Fyll markeringen utifrån prompten". String check passed. Not seen in the window.

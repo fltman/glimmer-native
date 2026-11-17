@@ -34,3 +34,7 @@ Adobe's Swedish is written from memory of Photoshop's Swedish interface, not che
 | RAW | RAW | RAW (Camera Raw) | not known | Keep English |
 
 Also seen while reading the English: the interface mixes "color" (menus: Fill with Foreground Color) and "colour" (tooltips and notes: "the foreground colour"). One spelling should be chosen; the menus follow Apple's American spelling.
+
+## Decided by Anders, 2026-11-17 (through the coordinator)
+
+Liquify stays English ("Liquify", not "Fluida"). Feather is "Fjädra". Preset and Prompt are English everywhere ("Preset: %@", "Prompt för generativ fyllning"). Heal and Healing Brush are on one stem: Laga, Lagningspensel. The rest of the table stays as it was. Done in the string catalogue the same day.

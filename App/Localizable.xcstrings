@@ -1457,7 +1457,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Penslar med tryckkänslighet, kloning och läkning, skugga och efterbelys, fluida och 14 filter som respekterar din markering."
+            "value": "Penslar med tryckkänslighet, kloning och lagning, skugga och efterbelys, liquify och 14 filter som respekterar din markering."
           }
         }
       }
@@ -4365,7 +4365,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Läkningspensel"
+            "value": "Lagningspensel"
           }
         }
       }
@@ -5215,7 +5215,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fluida"
+            "value": "Liquify"
           }
         }
       }
@@ -5226,7 +5226,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fluida…"
+            "value": "Liquify…"
           }
         }
       }
@@ -9463,7 +9463,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ta bort alla förvrängningar på det här lagret"
+            "value": "Ta bort alla Liquify-ändringar på det här lagret"
           }
         }
       }
@@ -10447,7 +10447,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Beskrivning för generativ fyllning"
+            "value": "Prompt för generativ fyllning"
           }
         }
       }
@@ -12482,7 +12482,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Förinställning: %@"
+            "value": "Preset: %@"
           }
         }
       }
@@ -13192,7 +13192,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fyll markeringen utifrån beskrivningen"
+            "value": "Fyll markeringen utifrån prompten"
           }
         }
       }
