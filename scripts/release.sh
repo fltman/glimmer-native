@@ -103,7 +103,11 @@ fi
 [[ "${SKIP_SPARKLE:-0}" == 1 || "$PUBKEY" =~ ^[A-Za-z0-9+/=]{40,}$ ]] || { echo "Bad Sparkle public key: $PUBKEY"; exit 1; }
 
 echo "▸ Archiving"
-xcodebuild archive ${=PACKAGE_FLAGS} -project Glimmer.xcodeproj -scheme Glimmer -configuration Release \
+# Only a real release (--publish, or no flag) asks the real feed. A rehearsal build asks the local one that
+# scripts/rehearse-update.sh serves, so starting a rehearsal copy by hand can never reach glimmer.brattoo.com.
+FEED_SETTING=()
+if [[ $DRY_RUN == 1 || $NOTARIZE_ONLY == 1 ]]; then FEED_SETTING=("GLIMMER_FEED_URL=http://localhost:8765/appcast.xml"); echo "▸ A rehearsal: the app's update feed is http://localhost:8765/appcast.xml"; fi
+xcodebuild archive ${=PACKAGE_FLAGS} $FEED_SETTING -project Glimmer.xcodeproj -scheme Glimmer -configuration Release \
   -derivedDataPath build/DerivedData -archivePath "$OUT/Glimmer.xcarchive" \
   SPARKLE_PUBLIC_KEY="$PUBKEY" -quiet
 
@@ -193,6 +197,13 @@ else
 fi
 "$SPARKLE_BIN/generate_appcast" --download-url-prefix "${DOWNLOAD_PREFIX:-https://github.com/fltman/glimmer-native/releases/download/v$VERSION/}" "$OUT/updates"
 # The app reads its feed from glimmer.brattoo.com (SUFeedURL); this file must be hosted there.
+# The feed the built app asks: the real one only in a real release, the local one in a rehearsal. Checked, not assumed.
+FEED_BUILT=$(/usr/libexec/PlistBuddy -c 'Print SUFeedURL' "$APP/Contents/Info.plist")
+if [[ $DRY_RUN == 1 || $NOTARIZE_ONLY == 1 ]]; then
+  [[ "$FEED_BUILT" == http://localhost:* ]] || { echo "✘ This rehearsal build asks $FEED_BUILT, not the local feed."; exit 1; }
+else
+  [[ "$FEED_BUILT" == https://glimmer.brattoo.com/appcast.xml ]] || { echo "✘ This release build asks $FEED_BUILT, not Glimmer's feed."; exit 1; }
+fi
 echo "▸ Appcast: $OUT/updates/appcast.xml (host it at $(/usr/libexec/PlistBuddy -c 'Print SUFeedURL' "$APP/Contents/Info.plist"))"
 
 if [[ $PUBLISH == 1 ]]; then

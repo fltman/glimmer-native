@@ -15,6 +15,7 @@ settings:
     MARKETING_VERSION: "0.2.0"
     CURRENT_PROJECT_VERSION: "2"
     LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    GLIMMER_FEED_URL: "https://glimmer.brattoo.com/appcast.xml"
     SWIFT_EMIT_LOC_STRINGS: YES
 
 # Features a build can leave out (Config/Features.xcconfig); debug builds have them all.
@@ -96,7 +97,9 @@ targets:
         LSApplicationCategoryType: public.app-category.graphics-design
         NSHumanReadableCopyright: "© 2026 Brattoo AB"
         # Updates (Sparkle). The updater stays off until SUPublicEDKey is set by scripts/release.sh.
-        SUFeedURL: https://glimmer.brattoo.com/appcast.xml
+        # The feed is a build setting, so that a rehearsal build carries the local feed from the moment it is built
+        # (scripts/release.sh --dry-run and --notarize-only): no copy that would ask the real feed lies on disk before a release.
+        SUFeedURL: $(GLIMMER_FEED_URL)
         SUPublicEDKey: $(SPARKLE_PUBLIC_KEY)
         SUEnableInstallerLauncherService: true
         SUEnableAutomaticChecks: true

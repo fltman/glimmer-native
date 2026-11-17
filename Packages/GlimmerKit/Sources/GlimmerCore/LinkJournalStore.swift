@@ -116,7 +116,9 @@ public actor LinkJournalWriter {
         record.writtenAt = Date()
         func writeRecord() throws -> Int {
             let data = try LinkJournalRecord.encoder.encode(record)
-            try data.write(to: folder.appending(path: Self.recordName), options: .atomic)
+            let url = folder.appending(path: Self.recordName)
+            try data.write(to: url, options: .atomic)
+            Self.sync(url); Self.sync(folder)
             return data.count
         }
         var bytesWritten = 0, filesWritten = 0
@@ -157,16 +159,19 @@ public actor LinkJournalWriter {
                         let to = staging.appending(path: path)
                         try fm.createDirectory(at: to.deletingLastPathComponent(), withIntermediateDirectories: true)
                         try data.write(to: to)
+                        Self.sync(to)   // on the disk before the new copy can take the old one's place
                         needed -= data.count
                         bytesWritten += data.count; filesWritten += 1
                         try reached(.afterFiles(filesWritten))
                     }
                     try reached(.beforeSwap)
+                    Self.sync(staging)
                     if fm.fileExists(atPath: package.path) {
                         _ = try fm.replaceItemAt(package, withItemAt: staging)
                     } else {
                         try fm.moveItem(at: staging, to: package)
                     }
+                    Self.sync(folder)   // the move itself
                 } catch {
                     // The old copy is as it was. (After a real stop the unfinished build stays until the next write removes it.)
                     if !(error is Stopped) { try? fm.removeItem(at: staging) }
@@ -179,6 +184,21 @@ public actor LinkJournalWriter {
         let recordBytes = try writeRecord()
         return Outcome(bytes: written.values.reduce(recordBytes) { $0 + $1.count }, bytesWritten: bytesWritten + recordBytes,
                        filesWritten: filesWritten + 1, milliseconds: Date().timeIntervalSince(start) * 1000, at: Date())
+    }
+
+    /// Asks the system to put a file's bytes, or a folder's entries (a rename, a new file), on the disk now (`fsync`).
+    ///
+    /// **What this promises and what it does not.** After a sudden stop of the app (a crash, a kill) the entry is
+    /// whole whatever was synced: the system still has what was written. `fsync` is for a stop of the whole Mac: it
+    /// hands the bytes to the drive, so after a power cut the entry is usually whole and up to the last step. It is
+    /// not `F_FULLFSYNC`: the drive may still hold the last writes in its own cache when the power goes, and then
+    /// the last step, or on an unlucky drive the last move, can be missing. Asking the drive to empty its cache
+    /// after every step would cost far more than a step is worth; this is the usual bargain, not a guarantee.
+    static func sync(_ url: URL) {
+        let fd = open(url.path, O_RDONLY)
+        guard fd >= 0 else { return }
+        _ = fsync(fd)
+        close(fd)
     }
 
     private static func collect(_ wrapper: FileWrapper, under prefix: String, into files: inout [String: Data]) {

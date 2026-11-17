@@ -70,7 +70,7 @@
 	<key>SUEnableInstallerLauncherService</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://glimmer.brattoo.com/appcast.xml</string>
+	<string>$(GLIMMER_FEED_URL)</string>
 	<key>SUPublicEDKey</key>
 	<string>$(SPARKLE_PUBLIC_KEY)</string>
 	<key>UTExportedTypeDeclarations</key>

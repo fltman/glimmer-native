@@ -963,3 +963,22 @@ build/guest held fifteen old copies (523 MB); removed, and guest-copy.sh keeps a
 **Found by the Swedish pass:** `linkedFile.reason` was the window's Swedish sentence. It is English now, and test-agent-language.sh has the case (21 of 21).
 
 **Runs after all of it:** test-linked-restart.sh guest 67 of 67, person 68 of 68, on 67 of 67; test-disk-full.sh passed; test-agent-language.sh 21 of 21. Not run again: the accessibility pass and the local model evaluation (the views changed, the tool descriptions did not).
+
+## Reduce Motion seen by Anders; planted faults; fsync; the rehearsal's feed (2026-11-17)
+
+**Reduce Motion:** Anders tried it himself and said it is right ("minska rörelse ok", 2026-11-17): the glow behind the icon stands still with the setting on. I did not see it and did not change the setting.
+
+**check-fetching.sh against planted faults**, one at a time, each file put back: a URL dependency in GlimmerKit; an xcodebuild in a script outside packages-offline.sh; `npx` and a `curl` download in a script; Sparkle back to `from: 2.7.0`; the updater's guard taken out. All five were caught (the two-line plants gave two faults each), and the check is clean again afterwards.
+
+**fsync.** The record file, each changed file of the new work copy, the new copy's folder before the move, and the entry's folder after the move and after the record are synced (`fsync`). What is promised: after a stop of the app the entry is whole (that never depended on syncing). After a power cut the entry is usually whole and up to the last step; it is not `F_FULLFSYNC`, so the drive's own cache can still lose the last writes. The writer's tests pass with it. What it costs per step was not measured again (it needs the app in front, and Anders was at the Mac).
+
+**The rehearsal's feed.** The feed is now the build setting `GLIMMER_FEED_URL`; release.sh sets it to http://localhost:8765/appcast.xml for `--dry-run` and `--notarize-only` and checks the built app's Info.plist either way. Tried with a Debug build: the default gives glimmer.brattoo.com, the setting gives localhost. A rehearsal with release.sh itself was not run again (it signs with Developer ID; that waits for Anders).
+- **Lying on disk from earlier rehearsals, not removed:** signed copies with the update key that ask a real address if started by hand: build/release (0.3.0: export, dmg, archive), build/rehearsal/new-0.3.0, old-0.2.0, run-1116/old (all glimmer.brattoo.com) and build/rehearsal/notarized-0.2.0 (github.com/fltman/glimmer-native releases). Removing them is Anders's to say.
+
+**scripts/guest-clean.sh for real: not run.** The permission check refused it (it removes files). Left for Anders to decide in this window.
+
+**The accessibility pass in English failed 4 checks when run now, and the cause is most likely not the app:** every check that presses a menu failed (Edit › Heal Selection, opening Settings, and the two Settings states after it), in a run started while Anders was typing at the Mac, so the test copy was not in front. Not confirmed; to be run again when the Mac is free. The Title Case check in the same run passed (231 menu items, 98 buttons).
+
+**Local evaluation after the view changes:** qwen3:8b 18 of 18, median 2.5 s.
+
+**Parked, with its measured cost:** a pixel step on a linked document writes the whole layer file it touched (43 MB, about 250 ms for a 24-megapixel layer, before fsync was added). It belongs with incremental save (per-tile files). select_rect at 0.25–0.6 s on a 24 MP document: not looked into.
