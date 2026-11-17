@@ -100,6 +100,8 @@ final class GlimmerDocument: Document {
     @ObservationIgnored var linkRecord: DocumentLink?
     /// Called on the main actor when a document that was read carries a link.
     @ObservationIgnored var onLinkRead: (@MainActor () -> Void)?
+    /// Called on the main actor after every step (an edit, an undo, a redo): a linked document writes its journal entry then.
+    @ObservationIgnored var onStep: (@MainActor () -> Void)?
 
     @MainActor
     func apply(snapshot: sending DocumentState, previous: sending DocumentState?) async throws {
@@ -149,9 +151,9 @@ final class GlimmerDocument: Document {
 
     @MainActor
     func snapshot(contentType: UTType) async throws -> sending DocumentState {
-        var copy = state
-        copy.link = linkRecord
-        return copy
+        // The link is not written into the document: it lives in the link journal (`LinkJournal`), which is the one
+        // way a linked window comes back. (Documents autosaved by earlier versions may carry one; `apply` still reads it.)
+        return state
     }
 
     /// PNG thumbnail (512 px) and preview (1600 px) for Finder and QuickLook.
@@ -266,6 +268,7 @@ final class GlimmerDocument: Document {
             if let restored = try? box.state() { document.state = restored } else { AppSound.beep() }
             document.registerUndo(actionName, undoManager: undoManager, restoring: current)
         }
+        onStep?()
         // Action names are catalog keys: the Edit menu shows "Undo <localized name>".
         let shown = String(localized: String.LocalizationValue(actionName))
         undoManager.setActionName(shown)

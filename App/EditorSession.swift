@@ -254,6 +254,18 @@ final class EditorSession {
     @ObservationIgnored var stateGeneration = 0
     @ObservationIgnored var savedBackGeneration: Int?
     @ObservationIgnored var linkedCloser: LinkedWindowCloser?
+    /// This document's entry in the link journal (`LinkJournal`) while it is linked, and when it was linked.
+    @ObservationIgnored var journalID: String?
+    @ObservationIgnored var linkedAt: Date?
+    /// Steps were made that are not saved back into the linked file.
+    var hasUnreturnedEdits = false
+    /// How many steps wait to be saved back.
+    @ObservationIgnored var unreturnedSteps = 0
+    /// With `recovered`: left knowingly (Quit, or Keep for Later) rather than by a stop. "Kept from last time", not "Brought back".
+    var keptFromLastTime = false
+    /// Brought back from the link journal with edits that were not saved back when Glimmer stopped: said in the
+    /// window and in `linkedFile.recovered` until they are saved back or declined.
+    var recovered = false
     /// Looks at the linked file while the window is open (`watchLinkedFile`).
     @ObservationIgnored var linkWatch: Timer?
 

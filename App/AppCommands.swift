@@ -25,8 +25,13 @@ struct GlimmerCommands: Commands {
         CommandGroup(replacing: .saveItem) {
             // Close lives in this group too.
             Button("Close") {
-                session?.prepareToCloseLinkedWindow()
-                NSApp.keyWindow?.performClose(nil)
+                // A linked window with edits that are not saved back asks its own question first (`closeLinkedWindow`).
+                let window = NSApp.keyWindow
+                if let session, session.journalID != nil, window === session.canvasWindow {
+                    session.closeLinkedWindow { window?.performClose(nil) }
+                } else {
+                    window?.performClose(nil)
+                }
             }
                 .keyboardShortcut("w")
             if let link = session?.linkedImage {
@@ -52,6 +57,9 @@ struct GlimmerCommands: Commands {
                     Button("Browse All Versions…") { Self.send("browseDocumentVersions:") }
                 }
             }
+            Divider()
+            // Edits of files from Flimmer or Jämmer that are kept and not open now (closed with Keep for Later).
+            Button("Linked Files Waiting…") { DocumentOpener.shared.showLinkedWaiting() }
         }
         // The system items read just "Undo"/"Redo"; these name the step (from the
         // document's history) and still go through the responder chain, so text

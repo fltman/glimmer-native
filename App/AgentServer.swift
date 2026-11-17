@@ -244,8 +244,12 @@ enum AgentRouter {
                           "documents": AgentRegistry.shared.sessions.map(summary),
                           "jobs": AgentJobs.shared.running.map(\.json),
                           // Which services have a key (never the key): paid steps need the one they use.
-                          "providerKeys": Self.providerKeys()])
+                          "providerKeys": Self.providerKeys(), "linkJournal": LinkJournal.shared.summary])
         #if DEBUG
+        case ["api", "v1", "debug", "journal-idle"]:
+            // Whether the link journal has written everything asked of it (debug builds only: the restart test
+            // stops the app hard "after a step", and must know that the step's write is done, not guess with a sleep).
+            return .json(["idle": LinkJournal.shared.isIdle])
         case ["api", "v1", "debug", "fixture"]:
             // States for the accessibility checks (debug builds only; see DebugFixtures.swift).
             try only("POST")
@@ -853,14 +857,24 @@ enum AgentRouter {
         return status
     }
 
+    /// What waits to be saved back, and how the document came to be open: `recovered` after a stop (a crash, a kill),
+    /// `kept` when the person left it knowingly (Quit, or Keep for Later). Both go when the edits are saved back.
+    private static func addWaiting(_ session: EditorSession, to d: inout [String: Any]) {
+        if session.hasUnreturnedEdits { d["unreturnedSteps"] = session.unreturnedSteps }
+        if session.recovered { d[session.keptFromLastTime ? "kept" : "recovered"] = true }
+    }
+
     /// `linkedFile` of a document: the file it saves back to. `available` is false when the
     /// document was linked before a restart and the file can no longer be reached or written.
     static func linkedFile(_ session: EditorSession) -> [String: Any]? {
         if let link = session.linkedImage {
-            return ["name": link.fileName, "format": link.format.rawValue, "requester": link.requester, "available": true]
+            var d: [String: Any] = ["name": link.fileName, "format": link.format.rawValue, "requester": link.requester, "available": true]
+            Self.addWaiting(session, to: &d)
+            return d
         }
         if let broken = session.brokenLink {
             var d: [String: Any] = ["name": broken.link.fileName, "requester": broken.link.requester, "available": false, "reason": broken.reason]
+            Self.addWaiting(session, to: &d)
             if let format = LinkedImage.format(for: URL(fileURLWithPath: broken.link.path)) { d["format"] = format.rawValue }
             return d
         }

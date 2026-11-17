@@ -13,3 +13,4 @@ Collected here as things are merged; moved into `docs/release-notes/<version>.ht
 - In the window, every panel and plan that makes a picture says that the price is not known in advance, and asks once per service before the first one. The Assistant shows the text model's listed price where the service's list states one.
 - What an agent is told (errors, the names of undo steps) is English whatever language Glimmer shows.
 - English texts are in American spelling throughout (Color, Center, Gray).
+- An image from Flimmer or Jämmer that you are editing survives Quit, a crash and a restart whatever macOS does with windows: Glimmer keeps the edits itself after every step. Quit no longer asks about such a window, closing it asks Save Back, Keep for Later or Discard, and File › Linked Files Waiting… lists what is kept.

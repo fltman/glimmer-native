@@ -410,6 +410,23 @@ private struct TitleChip: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Editing \(link.fileName) for \(link.requester). Command-S saves it back.")
             }
+            if session.recovered {
+                // Said in words (SIBLINGS.md §6.6): this window was brought back, and its edits are not in the file yet.
+                // (The whole sentence is said once over the canvas when the window comes back; here it may be cut short in a narrow window.)
+                Group {
+                    if session.keptFromLastTime {
+                        Label("Kept from last time: not saved back yet", systemImage: "arrow.uturn.backward.circle")
+                            .help("You left this file with edits that were not saved back. They were kept and are here again. They are not in the file until you save them back. Undo starts from here.")
+                            .accessibilityLabel("Kept from last time. The edits are not saved back yet. Undo starts from here.")
+                    } else {
+                        Label("Brought back: not saved back yet", systemImage: "arrow.uturn.backward.circle")
+                            .help("Glimmer stopped while this file had edits that were not saved back. They were kept and are here again. They are not in the file until you save them back. Undo starts from here.")
+                            .accessibilityLabel("Brought back after Glimmer stopped. The edits are not saved back yet. Undo starts from here.")
+                    }
+                }
+                .lineLimit(1).truncationMode(.tail)
+                .foregroundStyle(.orange)
+            }
             if let broken = session.brokenLink {
                 // What is wrong is never cut short; for whom gives way first.
                 HStack(spacing: 4) {

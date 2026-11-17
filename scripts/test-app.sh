@@ -61,6 +61,8 @@ fi
 # The tests look for the app's English words (menus, sheets), so the copy speaks English whatever this Mac's language is,
 # unless the test chose a language itself (GLIMMER_ARGS with -AppleLanguages).
 [[ "${GLIMMER_ARGS:-}" == *"-AppleLanguages"* ]] || GLIMMER_ARGS="-AppleLanguages (en) ${GLIMMER_ARGS:-}"
+# No link journal: a test copy must not open what another run left waiting (the journal has its own test, test-linked-restart.sh).
+[[ "${GLIMMER_ARGS:-}" == *"-linkJournal"* ]] || GLIMMER_ARGS="-linkJournal NONE ${GLIMMER_ARGS:-}"
 env $KEYENV open -n "$APP" --args -skipWelcome -skipAgentSplash -quiet YES -ai.noKeychain YES -ApplePersistenceIgnoreState YES ${=GLIMMER_ARGS:-}
 PORT=""
 for _ in {1..80}; do

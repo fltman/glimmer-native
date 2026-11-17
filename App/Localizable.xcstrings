@@ -14064,6 +14064,336 @@
           }
         }
       }
+    },
+    "Save Back": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara tillbaka"
+          }
+        }
+      }
+    },
+    "Keep for Later": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behåll till senare"
+          }
+        }
+      }
+    },
+    "Discard": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kasta"
+          }
+        }
+      }
+    },
+    "Discard…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kasta…"
+          }
+        }
+      }
+    },
+    "Linked Files Waiting": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Länkade filer som väntar"
+          }
+        }
+      }
+    },
+    "Linked Files Waiting…": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Länkade filer som väntar…"
+          }
+        }
+      }
+    },
+    "Edits of files from another app that are not saved back yet. Open one to go on with it and save it back.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändringar i filer från en annan app som inte är sparade tillbaka än. Öppna en för att fortsätta med den och spara tillbaka."
+          }
+        }
+      }
+    },
+    "Nothing is waiting.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget väntar."
+          }
+        }
+      }
+    },
+    "Glimmer couldn't read these edits. They are left where they are.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer kunde inte läsa de här ändringarna. De ligger kvar där de är."
+          }
+        }
+      }
+    },
+    "%lld kept edit(s) can't be read. They are left in Glimmer's folder and are not removed.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld sparade ändringar går inte att läsa. De ligger kvar i Glimmers mapp och tas inte bort."
+          }
+        }
+      }
+    },
+    "Move the edits of %@ to the Trash?": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta ändringarna i %@ till papperskorgen?"
+          }
+        }
+      }
+    },
+    "Move to Trash": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta till papperskorgen"
+          }
+        }
+      }
+    },
+    "Glimmer couldn't move the edits to the Trash, so they are kept.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer kunde inte flytta ändringarna till papperskorgen, så de är kvar."
+          }
+        }
+      }
+    },
+    "saved back": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sparad tillbaka"
+          }
+        }
+      }
+    },
+    "For %@ · %@ · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "För %1$@ · %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "Keep for Later closes the window and keeps your edits. They come back the next time Glimmer starts, and you find them in the File menu under Linked Files Waiting. Discard moves them to the Trash.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behåll till senare stänger fönstret och behåller dina ändringar. De kommer tillbaka nästa gång Glimmer startar, och du hittar dem i menyn Arkiv under Länkade filer som väntar. Kasta flyttar dem till papperskorgen."
+          }
+        }
+      }
+    },
+    "Glimmer couldn't move the edits to the Trash, so they are kept. You find them in the File menu under Linked Files Waiting.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer kunde inte flytta ändringarna till papperskorgen, så de är kvar. Du hittar dem i menyn Arkiv under Länkade filer som väntar."
+          }
+        }
+      }
+    },
+    "%@ has 1 step not saved back to %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ har 1 steg som inte är sparat tillbaka till %2$@."
+          }
+        }
+      }
+    },
+    "%@ has %lld steps not saved back to %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ har %2$lld steg som inte är sparade tillbaka till %3$@."
+          }
+        }
+      }
+    },
+    "Kept from last time: the edits of %@ are not saved back to %@ yet. Undo starts from here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behållen från förra gången: ändringarna i %1$@ är inte sparade tillbaka till %2$@ än. Ångra börjar härifrån."
+          }
+        }
+      }
+    },
+    "Brought back after Glimmer stopped: the edits of %@ are not saved back to %@ yet. Undo starts from here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återhämtad efter att Glimmer stoppades: ändringarna i %1$@ är inte sparade tillbaka till %2$@ än. Ångra börjar härifrån."
+          }
+        }
+      }
+    },
+    "Kept from last time: not saved back yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behållen från förra gången: inte sparad tillbaka än"
+          }
+        }
+      }
+    },
+    "You left this file with edits that were not saved back. They were kept and are here again. They are not in the file until you save them back. Undo starts from here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du lämnade den här filen med ändringar som inte var sparade tillbaka. De behölls och finns här igen. De finns inte i filen förrän du sparar tillbaka dem. Ångra börjar härifrån."
+          }
+        }
+      }
+    },
+    "Kept from last time. The edits are not saved back yet. Undo starts from here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behållen från förra gången. Ändringarna är inte sparade tillbaka än. Ångra börjar härifrån."
+          }
+        }
+      }
+    },
+    "Brought back: not saved back yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återhämtad: inte sparad tillbaka än"
+          }
+        }
+      }
+    },
+    "Glimmer stopped while this file had edits that were not saved back. They were kept and are here again. They are not in the file until you save them back. Undo starts from here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer stoppades medan den här filen hade ändringar som inte var sparade tillbaka. De behölls och finns här igen. De finns inte i filen förrän du sparar tillbaka dem. Ångra börjar härifrån."
+          }
+        }
+      }
+    },
+    "Brought back after Glimmer stopped. The edits are not saved back yet. Undo starts from here.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återhämtad efter att Glimmer stoppades. Ändringarna är inte sparade tillbaka än. Ångra börjar härifrån."
+          }
+        }
+      }
+    },
+    "The %lld step(s) you made in Glimmer are not saved back to %@ and will no longer be here. %@ itself stays as it is. The layered copy goes to the Trash, where you can still get it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De %1$lld steg du gjorde i Glimmer är inte sparade tillbaka till %2$@ och kommer inte längre att finnas här. Själva %3$@ ligger kvar som den är. Kopian med lager hamnar i papperskorgen, där du fortfarande kan hämta den."
+          }
+        }
+      }
+    },
+    "1 step not saved back": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 steg inte sparat tillbaka"
+          }
+        }
+      }
+    },
+    "%lld steps not saved back": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld steg inte sparade tillbaka"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -47,6 +47,7 @@ final class DocumentOpener {
 
     private var welcomeWindow: NSWindow?
     private var agentWindow: NSWindow?
+    private var waitingWindow: NSWindow?
 
     func showWelcomeWindow() {
         if let welcomeWindow {
@@ -67,6 +68,22 @@ final class DocumentOpener {
         window.makeKeyAndOrderFront(nil)
         welcomeWindow = window
         UserDefaults.standard.set(true, forKey: WelcomeView.shownKey)
+    }
+
+    /// File › Linked Files Waiting…
+    func showLinkedWaiting() {
+        waitingWindow?.close()
+        let window = EscapeClosingWindow(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
+        window.title = String(localized: "Linked Files Waiting")
+        window.isReleasedWhenClosed = false
+        window.isRestorable = false
+        window.contentViewController = NSHostingController(rootView: LinkedWaitingView(close: { [weak self] in
+            self?.waitingWindow?.close()
+            self?.waitingWindow = nil
+        }))
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+        waitingWindow = window
     }
 
     func showAgentSplash() {
@@ -135,20 +152,20 @@ final class DocumentOpener {
                 // work, rather than a second one of the same file.
                 existing.refreshLinkedFile()
                 bringForward(existing)
-            } else if requester != nil, let kept = Self.keptLinkedDocument(for: url) {
-                // Glimmer quit or crashed while this file was being edited, and the window was not
-                // restored in this launch (a launch for a sibling restores none): open the kept
-                // document, with its layers and unsaved work, instead of the file as it is on disk.
-                openLog.notice("reopening the kept linked document for \(url.lastPathComponent, privacy: .public)")
-                NSDocumentController.shared.reopenDocument(for: nil, withContentsOf: kept, display: true) { [weak self] _, _, error in
-                    MainActor.assumeIsolated {
-                        if let error {
-                            openLog.error("couldn't reopen the kept document: \(error.localizedDescription, privacy: .public)")
-                            self?.openImage(url, link: requester.flatMap { LinkedImage(url: url, requester: $0) })
-                            return
-                        }
-                        self?.bringForwardLinked(url, attempt: 0)
-                    }
+            } else if requester != nil, let entry = LinkJournal.shared.entry(for: url) {
+                if pendingEntries.values.contains(where: { $0.id == entry.id }) {
+                    // Being opened from the journal this very moment (a launch for this file): only bring it forward.
+                    bringForwardLinked(url, attempt: 0)
+                } else if entry.record.unreturned {
+                    // Glimmer stopped, or the window was closed with Keep for Later, while this file had edits that
+                    // were not saved back: open that work, with its layers, instead of the file as it is on disk.
+                    openLog.notice("reopening the journal entry for \(url.lastPathComponent, privacy: .public)")
+                    if open(entry) { bringForwardLinked(url, attempt: 0) }
+                    else { openImage(url, link: requester.flatMap { LinkedImage(url: url, requester: $0) }) }
+                } else {
+                    // Nothing was waiting: the file as its owner has it now is what is edited.
+                    LinkJournal.shared.remove(entry.id)
+                    openImage(url, link: requester.flatMap { LinkedImage(url: url, requester: $0) })
                 }
             } else {
                 openImage(url, link: requester.flatMap { LinkedImage(url: url, requester: $0) })
@@ -156,29 +173,45 @@ final class DocumentOpener {
         }
     }
 
-    /// The untitled document the system kept (for restoring windows) that is a linked edit of
-    /// `file` and isn't open now, if there is one.
-    static func keptLinkedDocument(for file: URL) -> URL? {
-        guard let folder = try? FileManager.default.url(for: .autosavedInformationDirectory, in: .userDomainMask, appropriateFor: nil, create: false),
-              let items = try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.contentModificationDateKey]) else { return nil }
-        let wanted = file.resolvingSymlinksInPath().path
-        let open = Set(NSDocumentController.shared.documents.compactMap { $0.autosavedContentsFileURL?.resolvingSymlinksInPath().path })
-        var best: (url: URL, date: Date)?
-        for item in items where item.pathExtension == "glimmer" && !open.contains(item.resolvingSymlinksInPath().path) {
-            guard let data = try? Data(contentsOf: item.appendingPathComponent(GlimmerPackage.manifestFilename)),
-                  let link = (try? JSONDecoder().decode(DocumentManifest.self, from: data))?.link else { continue }
-            var path = URL(fileURLWithPath: link.path).resolvingSymlinksInPath().path
-            if path != wanted, let bookmark = link.bookmark {
-                var stale = false
-                if let resolved = try? URL(resolvingBookmarkData: bookmark, options: .withSecurityScope, relativeTo: nil, bookmarkDataIsStale: &stale) {
-                    path = resolved.resolvingSymlinksInPath().path
-                }
-            }
-            guard path == wanted else { continue }
-            let date = (try? item.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
-            if best == nil || date > best!.date { best = (item, date) }
+    // MARK: The link journal at launch and on request
+
+    /// Journal entries on their way to a window, by the id of the document's first layer.
+    private var pendingEntries: [UUID: LinkJournal.Entry] = [:]
+
+    private func isOpen(_ entry: LinkJournal.Entry) -> Bool {
+        AgentRegistry.shared.sessions.contains { $0.journalID == entry.id } || pendingEntries.values.contains { $0.id == entry.id }
+    }
+
+    /// Entries that are not open in a window now (File › Linked Files Waiting…).
+    func waitingEntries() -> [LinkJournal.Entry] { LinkJournal.shared.entries().filter { !isOpen($0) } }
+
+    /// Opens an entry as a linked document, from its work copy. False when the work copy can't be read: the entry
+    /// is then left where it is and reported, never removed.
+    @discardableResult
+    func open(_ entry: LinkJournal.Entry) -> Bool {
+        guard !isOpen(entry) else { return true }
+        do {
+            let state = try LinkJournal.state(of: entry)
+            guard let first = state.layers.first?.id else { throw CocoaError(.fileReadCorruptFile) }
+            pendingEntries[first] = entry
+            createDocument(state)
+            return true
+        } catch {
+            openLog.error("a journal entry's work copy can't be read; it is left where it is: \(entry.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            LinkJournal.shared.noteUnreadable(entry.id)
+            return false
         }
-        return best?.url
+    }
+
+    /// At launch (SIBLINGS.md §6.6): every entry with edits that were not saved back is opened, linked and with its
+    /// edits, whatever the system's setting for windows says and however the app was started. An entry with nothing
+    /// waiting follows the system's setting like any window: opened when windows are kept at Quit, removed when not.
+    func openJournalAtLaunch() {
+        let d = UserDefaults.standard
+        let keepsWindows = d.bool(forKey: "NSQuitAlwaysKeepsWindows") && !d.bool(forKey: "ApplePersistenceIgnoreState")
+        for entry in LinkJournal.shared.entries() where !isOpen(entry) {
+            if entry.record.unreturned || keepsWindows { open(entry) } else { LinkJournal.shared.remove(entry.id) }
+        }
     }
 
     /// Brings the window that edits `file` to the front once it is there and linked.
@@ -282,8 +315,16 @@ final class DocumentOpener {
 
     /// Called when a document window appears: a handed-over image becomes linked.
     func claimLink(for session: EditorSession) {
+        if let id = session.state.layers.first?.id, let entry = pendingEntries.removeValue(forKey: id) {
+            // From the link journal: the record holds the link, the document is the work copy.
+            // The entry is this window's from now on (said at once, so nothing opens it a second time while the window settles).
+            session.journalID = entry.id
+            session.document.linkRecord = entry.record.link
+            session.restoreLink(journal: entry)
+            return
+        }
         guard let id = session.state.layers.first?.id, let link = pendingLinks.removeValue(forKey: id) else {
-            // Not a hand-over just now: perhaps a restored window whose document carries its link.
+            // Not a hand-over just now: perhaps a window restored by an earlier version, whose document carries its link.
             session.restoreLink()
             return
         }
@@ -496,6 +537,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// Quit never asks about a linked document (SIBLINGS.md §6.6): its edits are in the link journal and come back
+    /// at the next launch. The system looks for documents to ask about BEFORE it asks the app (tried 2026-11-17), so
+    /// a linked document is kept from counting as changed all along (`EditorSession.leaveSystemSaving`, after every
+    /// step); here the journal only gets the time to finish what it is writing.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        let idle = MainActor.assumeIsolated {
+            // Left knowingly: the next launch says "Kept from last time", not "Brought back after Glimmer stopped".
+            for session in AgentRegistry.shared.sessions where session.journalID != nil && session.hasUnreturnedEdits {
+                session.writeJournal(withState: false, keptKnowingly: true)
+            }
+            return LinkJournal.shared.isIdle
+        }
+        guard !idle else { return .terminateNow }
+        let started = Date()
+        func wait() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                let done = MainActor.assumeIsolated { LinkJournal.shared.isIdle }
+                if done || Date().timeIntervalSince(started) > 10 { NSApp.reply(toApplicationShouldTerminate: true) } else { wait() }
+            }
+        }
+        wait()
+        return .terminateLater
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // A move of OpenRouter's key to its new keychain account that was interrupted is finished here.
         ProviderKeys.keychain.removeLeftoverOpenRouterItem()
@@ -522,6 +587,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // The local API for agents (guide at /glimmer), and the splash that points agents to it.
         MainActor.assumeIsolated { AgentServer.shared.start() }
+        // Linked documents with edits that were not saved back come back now, whatever the system does with windows.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            MainActor.assumeIsolated { DocumentOpener.shared.openJournalAtLaunch() }
+        }
         #if DEBUG
         MainActor.assumeIsolated { IntentSelfTest.runIfAsked() }
         #endif

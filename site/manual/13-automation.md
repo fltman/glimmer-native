@@ -166,9 +166,14 @@ Flimmer can hand you a picture to edit in Glimmer, such as a frame or a title ca
 - Edit as usual, with layers, adjustments and the assistant.
 - Press ⌘S, or choose **File › Save Back to** *name* (it takes the place of Save in this window), to write the image back into the same file, in the same format (PNG stays PNG, JPEG stays JPEG). The layers are flattened in the file; Glimmer keeps them in the window. Flimmer sees the change and updates its copy.
 - Choose **File › Save a Glimmer Copy…** (⇧⌘S) if you also want a layered `.glimmer` document, for example next to the image.
-- Glimmer never saves the image on its own: autosave keeps your work in the window but never touches the file.
-- If Glimmer quits or is restarted while you are editing, the window comes back as it was, still linked, with your layers and anything you had not saved back yet (when macOS reopens windows at launch, which is its normal setting). If the image has been renamed or moved in the meantime, Glimmer follows it.
-- The same goes if you send the picture from Flimmer again after such a restart: Glimmer shows the window you were working in, with its layers and unsaved work, rather than opening the file afresh.
+- Glimmer never saves the image on its own. Your work is kept by Glimmer after every step, in a place of its own, and never touches the file until you save back.
+- **Quitting with edits that are not saved back asks nothing.** The edits are kept, and the next time Glimmer starts the window is back, still linked, with your layers. It says **Kept from last time: not saved back yet**, and Undo starts from there. This does not depend on the macOS setting for reopening windows.
+- **If Glimmer stops on its own** (a crash, a power cut), the window comes back the same way and says **Brought back: not saved back yet**. At most the step that was under way is lost.
+- **Closing the window** with edits that are not saved back asks, and says how many steps wait: **Save Back**, **Keep for Later**, **Discard** or **Cancel**. Keep for Later closes the window and keeps the edits; Discard moves the layered copy to the Trash and leaves the image itself as it is.
+- **File › Linked Files Waiting…** lists what is kept and not open, with the app it is for, the file and its age. **Open** brings one back; **Discard…** asks once and moves it to the Trash.
+- A linked window with nothing waiting follows the macOS setting like any other window: it comes back after Quit only if macOS reopens windows.
+- If the image has been renamed or moved in the meantime, Glimmer follows it.
+- If you send the picture from Flimmer again while edits of it are waiting, Glimmer shows those, with their layers, rather than opening the file afresh.
 - If the image is gone when the window comes back, the bar says **Can't save back to Flimmer**, and ⌘S explains why instead of saving somewhere else. Your edit is still in the window: **File › Save a Glimmer Copy…** keeps it, and you can send the picture from Flimmer again.
 - The same holds while Glimmer is running: if Flimmer removes the image, the bar changes to **Can't save back** within a couple of seconds, and ⌘S explains instead of failing. If the image comes back, or Flimmer puts a new file in its place, the window is linked again and ⌘S saves into it. If Flimmer hands the same image over again, you get the window you already have, with your edit in it.
 - Closing the window after you have saved back asks nothing. Closing it with changes you haven't saved back asks whether to keep them as a Glimmer document.
