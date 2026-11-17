@@ -40,3 +40,5 @@ dd if=/dev/zero of="$MOUNT/filler" bs=1k count=$(( FREE_KB - 3000 )) 2>/dev/null
 echo "test disk: $(df -k "$MOUNT" | awk 'NR==2 {printf "%.1f MB free of %.0f MB", $4/1024, $2/1024}')"
 cd Packages/GlimmerKit
 GLIMMER_FULL_DISK="$MOUNT" swift test --filter UndoSnapshotTests 2>&1 | grep -E "error|✘|✔ Test|Test run|recorded"
+# The link journal on the same disk: a step that does not fit is refused whole and the entry kept before stays whole.
+GLIMMER_FULL_DISK="$MOUNT" swift test --filter LinkJournalStoreTests/aStepThatDoesNotFitTouchesNothingAndSaysSo 2>&1 | grep -E "error|✘|✔ Test|Test run|recorded"

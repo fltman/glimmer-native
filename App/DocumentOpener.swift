@@ -588,6 +588,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // The local API for agents (guide at /glimmer), and the splash that points agents to it.
         MainActor.assumeIsolated { AgentServer.shared.start() }
         // Linked documents with edits that were not saved back come back now, whatever the system does with windows.
+        MainActor.assumeIsolated {
+            // A step that does not fit on the disk is said in the window it belongs to.
+            LinkJournal.shared.onRoom = { id, trouble in
+                AgentRegistry.shared.sessions.first { $0.journalID == id }?.journalRoom(trouble)
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             MainActor.assumeIsolated { DocumentOpener.shared.openJournalAtLaunch() }
         }

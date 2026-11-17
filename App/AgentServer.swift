@@ -250,6 +250,17 @@ enum AgentRouter {
             // Whether the link journal has written everything asked of it (debug builds only: the restart test
             // stops the app hard "after a step", and must know that the step's write is done, not guess with a sleep).
             return .json(["idle": LinkJournal.shared.isIdle])
+        case ["api", "v1", "debug", "journal-stop"]:
+            // Arms a stop of this very process in the middle of the next journal write (debug builds only): after the
+            // first changed file ("file"), with the new copy complete but not in place ("swap"), or in place with the
+            // record not yet written again ("record"). The restart test then reads what a launch finds.
+            try only("POST")
+            let at = (try? JSONSerialization.jsonObject(with: r.body) as? [String: Any])?["at"] as? String ?? ""
+            guard let point: LinkJournalWriter.StopPoint = ["file": .afterFiles(1), "swap": .beforeSwap, "record": .beforeRecord][at] else {
+                throw APIError.badRequest("at: file, swap or record")
+            }
+            LinkJournal.shared.stopNextWriteAt = point
+            return .json(["armed": at])
         case ["api", "v1", "debug", "fixture"]:
             // States for the accessibility checks (debug builds only; see DebugFixtures.swift).
             try only("POST")

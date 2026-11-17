@@ -68,9 +68,10 @@ struct LinkedWaitingView: View {
     /// "For Flimmer · edits not saved back · 2 hours ago"
     static func detail(_ entry: LinkJournal.Entry) -> String {
         let age = RelativeDateTimeFormatter().localizedString(for: entry.record.writtenAt, relativeTo: Date())
+        let size = ByteCountFormatter.string(fromByteCount: Int64(LinkJournalWriter.bytes(of: entry.folder)), countStyle: .file)
         let steps = entry.record.unreturnedSteps ?? 1
         let state = !entry.record.unreturned ? String(localized: "saved back")
             : steps == 1 ? String(localized: "1 step not saved back") : String(localized: "\(steps) steps not saved back")
-        return String(localized: "For \(entry.record.link.requester) · \(state) · \(age)")
+        return String(localized: "For \(entry.record.link.requester) · \(state) · \(age) · \(size)")
     }
 }

@@ -184,6 +184,27 @@ check "after the hard stop the window is back and linked: $(docs | tr '\n' ' ')"
 check "with the step made just before it ($(layers $ID) layers, $N before) and marked as brought back: $(recovered)" '[[ $(layers $ID) == $((N + 1)) && "$(recovered)" == *"photo.png:recovered:"* ]]'
 check "Save Back writes the file" 'saveback'
 
+echo "== stopped in the middle of a step's write, relaunch"
+# The app stops itself (SIGKILL) inside the journal's write of the next step: after the first changed file of the new
+# work copy, with the new copy complete but not yet in place, and with it in place but the record not yet written again.
+for AT in file swap record; do
+  N=$(layers $ID)
+  curl -s -o /dev/null --max-time 10 -H 'X-Glimmer-Agent: 1' -H 'Content-Type: application/json' -X POST $B/debug/journal-stop -d "{\"at\":\"$AT\"}"
+  edit $ID "Mid $AT" center
+  for _ in {1..40}; do kill -0 $PID 2>/dev/null || break; sleep 0.25; done
+  check "the app was stopped inside the write (at: $AT)" '! kill -0 $PID 2>/dev/null'
+  start
+  L=$(linked); ID=${L##*|}
+  [[ -n "$ID" ]] || { bad "no linked document after the stop at $AT: $(docs | tr '\n' ' ') $(journal)"; stop; exit 1; }
+  if [[ $AT == record ]]; then
+    check "stopped with the new copy in place: the document is back whole, with the step ($(layers $ID) layers, $N before): $(recovered)" '[[ $(layers $ID) == $((N + 1)) && "$(recovered)" == *"photo.png:recovered:"* ]]'
+  else
+    check "stopped before the new copy was in place: the document is back whole, as before the step ($(layers $ID) layers, $N before): $(recovered)" '[[ $(layers $ID) == $N && "$(recovered)" == *"photo.png:recovered:"* ]]'
+  fi
+  check "nothing unreadable was left: $(journal)" '[[ "$(journal)" == *", 0 broken" ]]'
+done
+check "Save Back writes the file" 'saveback'
+
 echo "== killed with an unsaved edit, then the same file is handed over again, cold"
 N=$(layers $ID)
 edit $ID "Cold" bottom

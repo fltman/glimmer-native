@@ -410,6 +410,13 @@ private struct TitleChip: View {
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Editing \(link.fileName) for \(link.requester). Command-S saves it back.")
             }
+            if let trouble = session.journalRoomTrouble {
+                Label("Latest steps not kept: disk full", systemImage: "externaldrive.badge.exclamationmark")
+                    .lineLimit(1).truncationMode(.tail)
+                    .foregroundStyle(.orange)
+                    .help(trouble)
+                    .accessibilityLabel(Text(verbatim: trouble))
+            }
             if session.recovered {
                 // Said in words (SIBLINGS.md §6.6): this window was brought back, and its edits are not in the file yet.
                 // (The whole sentence is said once over the canvas when the window comes back; here it may be cut short in a narrow window.)

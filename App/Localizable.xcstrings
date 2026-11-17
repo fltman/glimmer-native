@@ -14219,17 +14219,6 @@
         }
       }
     },
-    "For %@ · %@ · %@": {
-      "extractionState": "manual",
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "För %1$@ · %2$@ · %3$@"
-          }
-        }
-      }
-    },
     "Keep for Later closes the window and keeps your edits. They come back the next time Glimmer starts, and you find them in the File menu under Linked Files Waiting. Discard moves them to the Trash.": {
       "extractionState": "manual",
       "localizations": {
@@ -14391,6 +14380,39 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld steg inte sparade tillbaka"
+          }
+        }
+      }
+    },
+    "For %@ · %@ · %@ · %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "För %1$@ · %2$@ · %3$@ · %4$@"
+          }
+        }
+      }
+    },
+    "Latest steps not kept: disk full": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senaste stegen inte sparade: disken är full"
+          }
+        }
+      }
+    },
+    "There is no room on this Mac to keep your latest steps in %@ safe: %@ is needed and %@ is free. What was kept before is still kept. The steps since then are only in this window until you save them back or free up space.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det finns inte plats på den här Macen för att spara dina senaste steg i %1$@ säkert: %2$@ behövs och %3$@ är ledigt. Det som sparades tidigare finns kvar. Stegen efter det finns bara i det här fönstret tills du sparar tillbaka dem eller frigör utrymme."
           }
         }
       }

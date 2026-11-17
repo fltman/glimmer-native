@@ -39,10 +39,53 @@ extension EditorSession {
                     : String(localized: "Brought back after Glimmer stopped: the edits of \(name) are not saved back to \(requester) yet. Undo starts from here."))
             }
         }
-        document.onStep = { [weak self] in self?.stepWasMade() }
         // An entry that was just read is on disk as it is; a new link writes its first state now.
         writeJournal(withState: entry == nil)
         leaveSystem()
+    }
+
+    /// After every step of any document (`GlimmerDocument.onStep`).
+    func afterStep() {
+        if journalID != nil { stepWasMade() } else { autosaveSoon() }
+    }
+
+    /// An untitled document of the person's own is only as safe as its last autosave, and the system's goes by the
+    /// clock: a hard stop 6 s after an edit lost it, one 20 s after did not (measured 2026-11-17). So a second after
+    /// each step the system is asked to autosave now. Only while the document is small: an autosave writes the whole
+    /// package, and for a large one that is too much to do after every step (then the system's clock decides, as before).
+    static let quickAutosaveLimit = 100 * 1_048_576
+    private func autosaveSoon() {
+        quickAutosave?.cancel()
+        quickAutosave = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            guard !Task.isCancelled, let self, self.journalID == nil, let window = self.canvasWindow,
+                  let saved = NSDocumentController.shared.document(for: window), saved.fileURL == nil, saved.isDocumentEdited,
+                  self.estimatedEncodedBytes <= Self.quickAutosaveLimit else { return }
+            saved.autosave(withImplicitCancellability: true) { error in
+                if let error { saveLog.error("autosave after a step failed: \(error.localizedDescription, privacy: .public)") }
+            }
+        }
+    }
+
+    /// About how large the document is when saved: its last autosaved copy when there is one, otherwise a guess from its pixels
+    /// (an eighth of them at 8 bytes a pixel; pictures compress to about that, noise does not).
+    var estimatedEncodedBytes: Int {
+        if let window = canvasWindow, let url = NSDocumentController.shared.document(for: window)?.autosavedContentsFileURL {
+            let size = LinkJournalWriter.bytes(of: url)
+            if size > 0 { return size }
+        }
+        let rasters = state.allLayers.filter(\.isRaster).count
+        return rasters * state.width * state.height
+    }
+
+    /// The journal's word on room for this document's entry (`LinkJournal.onRoom`).
+    func journalRoom(_ trouble: (needed: Int, free: Int)?) {
+        guard let trouble else { journalRoomTrouble = nil; return }
+        let f = ByteCountFormatter(); f.countStyle = .file
+        let name = linkedImage?.fileName ?? brokenLink?.link.fileName ?? documentName
+        let message = String(localized: "There is no room on this Mac to keep your latest steps in \(name) safe: \(f.string(fromByteCount: Int64(trouble.needed))) is needed and \(f.string(fromByteCount: Int64(max(trouble.free, 0)))) is free. What was kept before is still kept. The steps since then are only in this window until you save them back or free up space.")
+        if journalRoomTrouble == nil { errorMessage = message }   // said once, then it stands in the bar
+        journalRoomTrouble = message
     }
 
     /// After every step: the entry is written, so a crash costs at most the step in progress.
@@ -74,7 +117,7 @@ extension EditorSession {
         guard let id = journalID else { return }
         if removingEntry { LinkJournal.shared.remove(id) }
         journalID = nil
-        document.onStep = nil
+        journalRoomTrouble = nil
     }
 
     /// Out of the system's saving and restoring, as soon as the window is there.

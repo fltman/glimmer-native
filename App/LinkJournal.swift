@@ -4,23 +4,6 @@ import OSLog
 
 private let journalLog = Logger(subsystem: "com.brattoo.glimmer", category: "link-journal")
 
-/// What the journal keeps about one linked document, beside its work copy.
-struct LinkJournalRecord: Codable, Equatable, Sendable {
-    var id: String
-    /// The file of the sibling app: security-scoped bookmark, path, requester.
-    var link: DocumentLink
-    var fileName: String
-    /// Edits were made that have not been saved back into the file.
-    var unreturned: Bool
-    /// How many steps wait to be saved back (said in the close question and in the waiting list).
-    var unreturnedSteps: Int?
-    /// Written at Quit, or when the window was closed with Keep for Later: the person left it knowingly. Without it,
-    /// an entry with edits waiting was left by a stop (a crash, a kill, the power).
-    var keptKnowingly: Bool?
-    var linkedAt: Date
-    var writtenAt: Date
-}
-
 /// Glimmer's own record of linked documents (the-apps/SIBLINGS.md §6.6).
 ///
 /// A linked edit must survive Quit, a crash and a restart whatever the system does with windows:
@@ -46,19 +29,28 @@ final class LinkJournal {
         var workCopy: URL { folder.appending(path: LinkJournal.workCopyName) }
     }
 
-    nonisolated static let workCopyName = "work.glimmer"
-    nonisolated static let recordName = "record.json"
+    nonisolated static let workCopyName = LinkJournalWriter.workCopyName
+    nonisolated static let recordName = LinkJournalWriter.recordName
 
     /// Nil when the journal is switched off (`-linkJournal NONE`: test copies that must not open another run's leftovers).
     let folder: URL?
     /// Entry folders that could not be read at the last look. They are left where they are, never deleted by the app.
     private(set) var broken: [String] = []
 
-    private var writers: [String: JournalWriter] = [:]
+    private var writers: [String: LinkJournalWriter] = [:]
     private var waiting: [String: (record: LinkJournalRecord, state: DocumentState?)] = [:]
     private var busy: Set<String> = []
     /// The last write of each entry: bytes on disk, bytes written by that step, milliseconds (for `GET /status` and measuring).
-    private(set) var lastWrite: [String: JournalWriter.Outcome] = [:]
+    private(set) var lastWrite: [String: LinkJournalWriter.Outcome] = [:]
+    /// Entries whose last write did not fit on the disk, with how much was needed and how much was free.
+    /// What was kept before is still whole; the steps since are only in the window.
+    private(set) var noRoom: [String: (needed: Int, free: Int)] = [:]
+    /// Called when an entry's write did not fit, and again (with nil) when a later one did.
+    var onRoom: ((_ id: String, _ trouble: (needed: Int, free: Int)?) -> Void)?
+    #if DEBUG
+    /// One shot, for the restart test: the next state write stops the process at this point (`POST /debug/journal-stop`).
+    var stopNextWriteAt: LinkJournalWriter.StopPoint?
+    #endif
 
     init() {
         let named = UserDefaults.standard.string(forKey: "linkJournal")
@@ -76,7 +68,7 @@ final class LinkJournal {
         for name in names.sorted() where !name.hasPrefix(".") {
             let entry = folder.appending(path: name, directoryHint: .isDirectory)
             guard let data = try? Data(contentsOf: entry.appending(path: Self.recordName)),
-                  let record = try? Self.decoder.decode(LinkJournalRecord.self, from: data), record.id == name,
+                  let record = try? LinkJournalRecord.decoder.decode(LinkJournalRecord.self, from: data), record.id == name,
                   FileManager.default.fileExists(atPath: entry.appending(path: Self.workCopyName).path) else {
                 unreadable.append(name)
                 continue
@@ -121,14 +113,25 @@ final class LinkJournal {
         waiting[record.id] = (record, state ?? waiting[record.id]?.state)
         guard !busy.contains(record.id) else { return }
         busy.insert(record.id)
-        let writer = writers[record.id] ?? JournalWriter(folder: folder.appending(path: record.id, directoryHint: .isDirectory))
+        let writer = writers[record.id] ?? LinkJournalWriter(folder: folder.appending(path: record.id, directoryHint: .isDirectory),
+                                                             cache: EncodedLayerCache(byteLimit: Int(ProcessInfo.processInfo.physicalMemory / 16)))
         writers[record.id] = writer
         let id = record.id
+        #if DEBUG
+        let stopAt = state == nil ? nil : stopNextWriteAt
+        if stopAt != nil { stopNextWriteAt = nil }
+        #endif
         Task { [weak self] in
+            #if DEBUG
+            if let stopAt { await writer.stopNextWrite(at: stopAt) { kill(getpid(), SIGKILL); throw LinkJournalWriter.Stopped() } }
+            #endif
             while let next = await self?.takeWaiting(id) {
                 do {
                     let outcome = try await writer.write(record: next.record, state: next.state)
                     await self?.noteWritten(id, outcome)
+                } catch LinkJournalWriter.Failure.noRoom(let needed, let free) {
+                    journalLog.error("no room for journal entry \(id, privacy: .public): \(needed) needed, \(free) free")
+                    await self?.noteNoRoom(id, needed: needed, free: free)
                 } catch {
                     journalLog.error("couldn't write journal entry \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
                 }
@@ -138,7 +141,14 @@ final class LinkJournal {
     }
 
     private func takeWaiting(_ id: String) -> (record: LinkJournalRecord, state: DocumentState?)? { waiting.removeValue(forKey: id) }
-    private func noteWritten(_ id: String, _ outcome: JournalWriter.Outcome) { lastWrite[id] = outcome }
+    private func noteWritten(_ id: String, _ outcome: LinkJournalWriter.Outcome) {
+        lastWrite[id] = outcome
+        if noRoom.removeValue(forKey: id) != nil { onRoom?(id, nil) }
+    }
+    private func noteNoRoom(_ id: String, needed: Int, free: Int) {
+        noRoom[id] = (needed, free)
+        onRoom?(id, (needed, free))
+    }
     private func finished(_ id: String) {
         busy.remove(id)
         if let again = waiting[id] { write(again.record, state: again.state) }
@@ -179,84 +189,14 @@ final class LinkJournal {
         return true
     }
 
-    nonisolated static let decoder: JSONDecoder = { let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601; return d }()
-    nonisolated static let encoder: JSONEncoder = { let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601; e.outputFormatting = [.sortedKeys]; return e }()
-
     /// For `GET /api/v1/status`: how many entries are kept, how many wait with edits not saved back, and which can't be read.
     var summary: [String: Any] {
         let all = entries()
         var d: [String: Any] = ["entries": all.count, "unreturned": all.filter(\.record.unreturned).count, "broken": broken]
+        if !noRoom.isEmpty { d["noRoom"] = noRoom.keys.sorted() }
         if let last = lastWrite.values.max(by: { $0.at < $1.at }) {
             d["lastWrite"] = ["bytes": last.bytes, "bytesWritten": last.bytesWritten, "filesWritten": last.filesWritten, "milliseconds": (last.milliseconds * 10).rounded() / 10]
         }
         return d
-    }
-}
-
-/// Writes one entry, off the main thread. Remembers what it wrote, so the next step writes only what changed.
-actor JournalWriter {
-    struct Outcome: Sendable {
-        /// The whole entry on disk.
-        var bytes: Int
-        /// What this write put there.
-        var bytesWritten: Int
-        var filesWritten: Int
-        var milliseconds: Double
-        var at: Date
-    }
-
-    private let folder: URL
-    private let cache = EncodedLayerCache(byteLimit: Int(ProcessInfo.processInfo.physicalMemory / 16))
-    /// The bytes last written for each file of the work copy, by its path inside the package.
-    private var written: [String: Data] = [:]
-
-    init(folder: URL) { self.folder = folder }
-
-    func write(record: LinkJournalRecord, state: DocumentState?) throws -> Outcome {
-        let start = Date()
-        let fm = FileManager.default
-        let package = folder.appending(path: LinkJournal.workCopyName, directoryHint: .isDirectory)
-        try fm.createDirectory(at: package, withIntermediateDirectories: true)
-        var bytesWritten = 0, filesWritten = 0
-        if var state {
-            state.link = nil
-            // No thumbnail or preview: the work copy is read by Glimmer only, and making them would cost more than the step.
-            let wrapper = try GlimmerPackage.fileWrapper(for: state, cache: cache, quickLook: nil)
-            var files: [String: Data] = [:]
-            Self.collect(wrapper, under: "", into: &files)
-            // Everything but the manifest first: until the manifest changes, the entry is the state before the step.
-            let manifest = GlimmerPackage.manifestFilename
-            for (path, data) in files.sorted(by: { $0.key < $1.key }) where path != manifest && written[path] != data {
-                let url = package.appending(path: path)
-                try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-                try data.write(to: url, options: .atomic)
-                written[path] = data
-                bytesWritten += data.count; filesWritten += 1
-            }
-            if let data = files[manifest], written[manifest] != data {
-                try data.write(to: package.appending(path: manifest), options: .atomic)
-                written[manifest] = data
-                bytesWritten += data.count; filesWritten += 1
-            }
-            // Files of layers that are gone, only now that no manifest names them.
-            for path in written.keys where files[path] == nil {
-                try? fm.removeItem(at: package.appending(path: path))
-                written[path] = nil
-            }
-        }
-        var record = record
-        record.writtenAt = Date()
-        let data = try LinkJournal.encoder.encode(record)
-        try data.write(to: folder.appending(path: LinkJournal.recordName), options: .atomic)
-        return Outcome(bytes: written.values.reduce(data.count) { $0 + $1.count }, bytesWritten: bytesWritten + data.count,
-                       filesWritten: filesWritten + 1, milliseconds: Date().timeIntervalSince(start) * 1000, at: Date())
-    }
-
-    private static func collect(_ wrapper: FileWrapper, under prefix: String, into files: inout [String: Data]) {
-        for (name, child) in wrapper.fileWrappers ?? [:] {
-            let path = prefix.isEmpty ? name : prefix + "/" + name
-            if child.isDirectory { collect(child, under: path, into: &files) }
-            else if let data = child.regularFileContents { files[path] = data }
-        }
     }
 }

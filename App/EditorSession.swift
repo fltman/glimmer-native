@@ -263,6 +263,9 @@ final class EditorSession {
     @ObservationIgnored var unreturnedSteps = 0
     /// With `recovered`: left knowingly (Quit, or Keep for Later) rather than by a stop. "Kept from last time", not "Brought back".
     var keptFromLastTime = false
+    /// The journal could not keep the last steps (no room on the disk): what the window says about it, until a write fits again.
+    var journalRoomTrouble: String?
+    @ObservationIgnored var quickAutosave: Task<Void, Never>?
     /// Brought back from the link journal with edits that were not saved back when Glimmer stopped: said in the
     /// window and in `linkedFile.recovered` until they are saved back or declined.
     var recovered = false
@@ -308,6 +311,13 @@ final class EditorSession {
         refreshThumbnails()
         // A document read from disk (a restored window) may carry its link.
         document.onLinkRead = { [weak self] in self?.restoreLink() }
+        // After every step: a linked document writes its journal entry, an untitled one of the person's own is autosaved soon.
+        // (Through the registry, not through this instance: SwiftUI may make more than one session for a document
+        // before one of them gets the window, and the step must reach the one that has it.)
+        document.onStep = { [weak document] in
+            guard let document else { return }
+            AgentRegistry.shared.sessions.first { $0.document === document }?.afterStep()
+        }
     }
 
     var state: DocumentState { document.state }
