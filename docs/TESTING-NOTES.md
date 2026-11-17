@@ -982,3 +982,15 @@ build/guest held fifteen old copies (523 MB); removed, and guest-copy.sh keeps a
 **Local evaluation after the view changes:** qwen3:8b 18 of 18, median 2.5 s.
 
 **Parked, with its measured cost:** a pixel step on a linked document writes the whole layer file it touched (43 MB, about 250 ms for a 24-megapixel layer, before fsync was added). It belongs with incremental save (per-tile files). select_rect at 0.25–0.6 s on a 24 MP document: not looked into.
+
+## States in the window: the type and its colours (2026-11-17; groundwork only, no view uses it yet)
+
+`StatusKind` (GlimmerCore): error (octagon with a cross), warning (triangle), notice (info circle), success (check in a circle), working (a progress indicator and the word), each with its accessibility prefix and a symbol colour for dark and for light surfaces. Approved by the coordinator; "Kept from last time" and "Brought back" are to be warnings.
+
+Measured (`StatusKindTests`): on Glimmer's own dark surfaces every symbol colour is at least 5.8 : 1; on the system's dark window and row (approximate values, to be sampled from pictures) at least 4.0 : 1; on light surfaces at least 4.8 : 1. Two light colours I first proposed (notice #676b78, success #1d7a42) came out at 4.5 on the light window, on the limit, and were darkened (#5f636f 5.1, #1a733d 5.0).
+
+**The figure behind the rule:** the error and warning colours differ in luminance by 1.56 : 1 on dark and 1.01 : 1 on light. Seen without hue they are one colour; only the shape and the spoken prefix tell them apart. Kept as a test.
+
+Where the views stood before the move (counted in the source): the triangle was the only trouble sign (16 uses, 4 of them red), no octagon or info circle anywhere, 14 red, 17 orange and 5 green foreground styles written in views, 8 red text lines without a symbol, no prefix. System orange and green on white are 2.2 : 1.
+
+Not done: no view uses the type; nothing was seen as a picture; the system's surface colours and increased contrast were not sampled.
