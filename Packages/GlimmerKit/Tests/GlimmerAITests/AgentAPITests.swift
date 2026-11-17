@@ -89,6 +89,13 @@ import Testing
             let name = try #require(op["name"] as? String)
             #expect(op["description"] is String, "\(name)")
             #expect(op["paid"] is Bool && op["undoable"] is Bool && op["startsJob"] is Bool, "\(name)")
+            // "Okänt pris": a paid operation says whether its price is known, and null when it isn't; a free one carries no price.
+            if op["paid"] as? Bool == true {
+                #expect(op["priceKnown"] as? Bool == (PaidPrice.known(op: name, service: "openrouter") != nil), "\(name)")
+                #expect(op["priceKnown"] as? Bool == true || op["price"] is NSNull, "\(name)")
+            } else {
+                #expect(op["priceKnown"] == nil && op["price"] == nil, "\(name)")
+            }
             let params = try #require(op["params"] as? [String: Any], "\(name)")
             #expect(params["type"] as? String == "object")
             #expect(params["properties"] is [String: Any] && params["required"] is [String])

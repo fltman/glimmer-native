@@ -777,6 +777,8 @@ enum AgentRouter {
             throw APIError.badRequest("Send {\"steps\": [{\"op\": \"…\", \"params\": {…}}]}. GET /api/v1/operations lists the ops.")
         }
         let allowPaid = obj["allowPaid"] as? Bool ?? false
+        // Said on every call, never remembered: `allowPaid` alone does not mean "whatever it costs".
+        let allowUnknownPrice = obj[PaidPrice.consentParameter] as? Bool ?? false
         var steps: [AgentStep] = []
         for (i, item) in raw.enumerated() {
             guard var step = item as? [String: Any], let op = step["op"] as? String else {
@@ -805,6 +807,10 @@ enum AgentRouter {
                 guard session.ai.hasAPIKey else {
                     throw APIError(402, "paid_not_allowed", "Step \(i) (\(op)) needs an OpenRouter key, and none is saved in Glimmer › Settings. No step of this request was run.")
                 }
+                let service = AIController.imageProvider
+                guard PaidPrice.known(op: op, service: service.slug) != nil || allowUnknownPrice else {
+                    throw APIError.unprocessable(PaidPrice.reason, "Step \(i) (\(op)) is paid, and Glimmer does not know its price in advance: \(service.name) states none. Pass \"allowUnknownPrice\": true as well to run it without knowing the price. No step of this request was run.")
+                }
             }
             steps.append(decoded)
         }
@@ -816,7 +822,7 @@ enum AgentRouter {
             let total = Double(steps.count)
             job.task = Task { @MainActor in
                 job.status = "running"
-                let results = await session.ai.runAPISteps(steps) { done in job.progress = Double(done) / total }
+                let results = await session.ai.runAPISteps(steps, allowUnknownPrice: allowUnknownPrice) { done in job.progress = Double(done) / total }
                 job.result = ["results": stepList(results), "document": detail(session)]
                 if let failed = results.firstIndex(where: { $0.status == "failed" }) {
                     job.status = "failed"

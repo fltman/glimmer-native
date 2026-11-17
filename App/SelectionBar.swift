@@ -54,12 +54,15 @@ struct SelectionBar: View {
                 .disabled(!session.ai.hasAPIKey)
             if !prompt.trimmingCharacters(in: .whitespaces).isEmpty {
                 Button("Generate", action: generate).buttonStyle(.borderedProminent).controlSize(.small)
+                    .needsUnknownPriceTick()
+                    .help(AIController.unknownPriceAgreed ? "Fill the selection from the prompt" : "The price is not known in advance. Tick that you know in Settings › AI.")
             } else {
                 Button("Remove", systemImage: "eraser") {
                     session.ai.fill(mode: .remove, prompt: "", reference: nil)
                 }
-                .help(session.ai.hasAPIKey ? "Remove what's inside the selection" : "Add your OpenRouter key in Settings › AI")
+                .help(!session.ai.hasAPIKey ? "Add your OpenRouter key in Settings › AI" : AIController.unknownPriceAgreed ? "Remove what's inside the selection" : "The price is not known in advance. Tick that you know in Settings › AI.")
                 .disabled(!session.ai.hasAPIKey)
+                .needsUnknownPriceTick()
                 #if GLIMMER_HEAL
                 Button("Heal", systemImage: "bandage") { session.perform(.healSelection) }
                     .help("Fill the selection from what surrounds it (on this Mac, free)")

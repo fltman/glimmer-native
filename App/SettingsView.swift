@@ -173,6 +173,14 @@ private struct AISettingsView: View {
                                 .font(.callout).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
+                    // Asked once per service, kept here, taken back here (the-apps/SIBLINGS.md, "Okänt pris").
+                    if !PaidPrice.knownInAdvance(service: AIController.imageProvider.slug) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            UnknownPriceTick(provider: AIController.imageProvider).id(imageProvider)
+                            Text("Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay grey. Untick it to be asked again.")
+                                .font(.callout).foregroundStyle(.secondary)
+                        }
+                    }
                 } header: {
                     Text("Pictures")
                 } footer: {

@@ -150,7 +150,7 @@ public enum StepParameters {
 
     /// What a JSON body may hold, by what it is for.
     public static let bodyParameters: [String: [String]] = [
-        "steps": ["steps", "allowPaid", "async"],
+        "steps": ["steps", "allowPaid", "allowUnknownPrice", "async"],
         "step": ["op", "params", "rationale", "id"],
         "documents": ["name", "image", "width", "height", "background"],
         "export": ["preset", "format", "depth", "flatten", "quality", "maxSide", "maxBytes", "size"],

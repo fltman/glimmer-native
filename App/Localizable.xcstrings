@@ -13603,6 +13603,94 @@
           }
         }
       }
+    },
+    "%@ does not state a price in advance. Tick that you know in Settings › AI, and run it again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ anger inget pris i förväg. Kryssa i att du vet det i Inställningar › AI och kör igen."
+          }
+        }
+      }
+    },
+    "Price not known in advance": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priset är inte känt i förväg"
+          }
+        }
+      }
+    },
+    "%@ does not state a price in advance; I know": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ anger inget pris i förväg; jag vet"
+          }
+        }
+      }
+    },
+    "%lld without a price": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld utan pris"
+          }
+        }
+      }
+    },
+    "Paid jobs whose service's answer carried no cost. They are not in the sum; the service's usage page has what they cost.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Betalda jobb där tjänstens svar inte innehöll någon kostnad. De ingår inte i summan; vad de kostade står på tjänstens sida för förbrukning."
+          }
+        }
+      }
+    },
+    "Fill the selection from the prompt": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fyll markeringen utifrån beskrivningen"
+          }
+        }
+      }
+    },
+    "The price is not known in advance. Tick that you know in Settings › AI.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priset är inte känt i förväg. Kryssa i att du vet det i Inställningar › AI."
+          }
+        }
+      }
+    },
+    "Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay grey. Untick it to be asked again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glimmer kan inte säga vad en bild kostar innan den är gjord. Tills det här är ikryssat är knapparna som gör bilder grå. Ta bort krysset för att bli tillfrågad igen."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -275,7 +275,8 @@ extension AIController {
         }
         for step in plan.steps { stepStatus[step.id] = .pending }
         planStatus[message.id] = .proposed
-        if named, !plan.usesAI || autoRunAIPlans { runPlan(message.id) }
+        // "Run at once" still waits for the once-per-service tick that the price is not known.
+        if named, !plan.usesAI || (autoRunAIPlans && Self.unknownPriceAgreed) { runPlan(message.id) }
         // Each held extra is a plan of its own that waits: it is run only if the person says so,
         // and then on the picture as it is by then.
         for step in offered {
@@ -354,7 +355,9 @@ extension AIController {
 
     /// Runs steps from the local agent API as one undo step. Stops at the first
     /// failure and reports the rest as skipped.
-    func runAPISteps(_ steps: [AgentStep], progress: ((Int) -> Void)? = nil) async -> [APIStepResult] {
+    func runAPISteps(_ steps: [AgentStep], allowUnknownPrice: Bool = false, progress: ((Int) -> Void)? = nil) async -> [APIStepResult] {
+        agentAllowsUnknownPrice = allowUnknownPrice
+        defer { agentAllowsUnknownPrice = false }
         session.commitLiveEdit()
         session.document.beginTransaction(String(localized: "Agent Edit"))
         defer { session.document.endTransaction(undoManager: session.undoManager) }

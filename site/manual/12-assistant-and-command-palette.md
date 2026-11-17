@@ -75,6 +75,7 @@ What happens next depends on the plan:
 - If a step came without saying which adjustment or filter it means, and your own words can mean only one (as in "make it black and white"), Glimmer fills it in and the step says **type taken from your request**. If your words fit more than one, such as "brighter", nothing is guessed and the step fails.
 - A single command picked on your Mac for a short request works the same way: if your words don't name it, the assistant says which command it thinks you mean and waits for **Run**.
 - A plan with steps that call OpenRouter shows **Uses AI credits** and waits. Those steps are AI edits of the whole image, generated layers, and Generative Fill or Remove on a selection. Steps that run on your Mac, such as Select Subject, Remove Background and upscaling, never make a plan wait. Click **Run** to carry it out, or **Dismiss** to drop it. While it runs, click **Stop** to cancel it.
+- Such a plan also shows **Price not known in advance**. Until you have ticked, once for the picture service, that it states no price in advance, **Run** is grey and the tick box stands under the plan. See [What costs money](11-ai-with-openrouter.md#what-costs-money).
 
 The whole plan is one undo step, named after your request, such as "Assistant: make it warmer". Press ⌘Z once to undo all of it.
 
@@ -84,7 +85,7 @@ If your request is unclear, the assistant may ask a question instead of making a
 
 ### Auto-edit
 
-The **AUTO-EDIT** button in the Assistant section's header switches between **AUTO-EDIT OFF** and **AUTO-EDIT ON**. When it is on, plans with AI jobs also run straight away without waiting for **Run**. The same setting is **Run AI steps without asking** in **Glimmer › Settings › General**. It is off by default.
+The **AUTO-EDIT** button in the Assistant section's header switches between **AUTO-EDIT OFF** and **AUTO-EDIT ON**. When it is on, plans with AI jobs also run straight away without waiting for **Run**. The same setting is **Run AI steps without asking** in **Glimmer › Settings › General**. It is off by default. With it on, a plan with AI jobs still waits until you have made the once-per-service tick that the price is not known in advance.
 
 ### The quality check
 

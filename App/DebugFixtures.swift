@@ -61,6 +61,15 @@ extension AIController {
             messages = [Message(fromUser: true, text: "Write a poem about the sea"), planned, Message(fromUser: true, text: "tidy up"), command, offer]
             stepStatus = [step.id: .pending, extra.id: .pending]
             planStatus = [planned.id: .proposed, offer.id: .proposed]
+        case "paidPlan":
+            // A plan with a paid step: "Uses AI credits", the line that the price is not known, and (until made) the once-per-service tick; Run is grey.
+            s.showLayersPanel = true; s.inspectorTab = .ai; s.aiSection = .assistant
+            let paid = AgentStep(op: "generate_layer", params: ["prompt": .string("a red bird on the fence")], rationale: "The bird.")
+            var planned = Message(fromUser: false, text: "Adding a red bird as a new layer.")
+            planned.plan = AgentPlan(steps: [paid], message: nil)
+            messages = [Message(fromUser: true, text: "Add a red bird on the fence"), planned]
+            stepStatus = [paid.id: .pending]
+            planStatus = [planned.id: .proposed]
         case "refusedPlan":
             // A plan with a step its operation would refuse (a setting the adjustment doesn't have): shown, said to be unrunnable, no Run.
             s.showLayersPanel = true; s.inspectorTab = .ai; s.aiSection = .assistant

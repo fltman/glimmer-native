@@ -76,11 +76,27 @@ opened = fingerprint()
 call("POST", f"/documents/{doc}/steps", {"steps": [{"op": "add_adjustment", "params": {"type": "black_white"}}]})
 before = fingerprint()
 check("the free step before the failures changed the document", before != opened)
+# Unknown price (SIBLINGS.md, "Okänt pris"): allowPaid alone is not enough, and the stand-in is never reached.
+listed = [o for o in json.loads(call("GET", "/operations")[1])["operations"] if o.get("paid")]
+check(f"each of the {len(listed)} paid operations says its price is not known (price null, priceKnown false)", listed and all(o.get("priceKnown") is False and "price" in o and o["price"] is None for o in listed), str([o["name"] for o in listed if o.get("priceKnown") is not False]))
+free = [o for o in json.loads(call("GET", "/operations")[1])["operations"] if not o.get("paid") and "priceKnown" in o]
+check("no free operation carries a price", not free, str([o["name"] for o in free]))
+for op, params in steps.items():
+    n = calls()
+    code, raw = call("POST", f"/documents/{doc}/steps", {"steps": [{"op": op, "params": params}], "allowPaid": True})
+    text = raw.decode("utf8", "replace")
+    try: err = json.loads(raw)["error"]
+    except Exception: err = {}
+    check(f"{op} with allowPaid alone: 422 unknown_price, the stand-in not called, nothing changed", code == 422 and err.get("reason") == "unknown_price" and "allowUnknownPrice" in err.get("message", "") and "No step of this request was run" in err.get("message", "") and calls() == n and fingerprint() == before, text[:300])
+    code, raw = call("POST", f"/documents/{doc}/steps", {"steps": [{"op": op, "params": params}], "allowUnknownPrice": True})
+    try: err = json.loads(raw)["error"]
+    except Exception: err = {}
+    check(f"{op} with allowUnknownPrice alone: 402 paid_not_allowed comes first", code == 402 and err.get("code") == "paid_not_allowed" and calls() == n, raw.decode("utf8", "replace")[:200])
 for mode, what in (("refusal", "a refusal (HTTP 422 with the service's own sentence)"), ("nopicture", "an answer with no picture in it"), ("garbage", "a web page instead of an answer")):
     open(mode_file, "w").write(mode)
     for op, params in steps.items():
         n = calls()
-        code, raw = call("POST", f"/documents/{doc}/steps", {"steps": [{"op": op, "params": params}], "allowPaid": True})
+        code, raw = call("POST", f"/documents/{doc}/steps", {"steps": [{"op": op, "params": params}], "allowPaid": True, "allowUnknownPrice": True})
         code, text = finished(code, raw)
         reached = calls() > n
         check(f"{op}, {what}: the stand-in was called", reached, text[:160])

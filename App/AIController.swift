@@ -21,6 +21,8 @@ final class AIController {
         let title: String
         var status: Status = .running
         var cost: Double?
+        /// A service bills for this job (a picture service, or a text service that isn't on this Mac).
+        var paid = false
         @ObservationIgnored var task: Task<Void, Never>?
     }
 
@@ -61,6 +63,8 @@ final class AIController {
     @ObservationIgnored var agentHistory: [(user: String, reply: String)] = []
     @ObservationIgnored var planTask: Task<Void, Never>?
     var totalCost: Double { jobs.compactMap(\.cost).reduce(0, +) }
+    /// Finished paid jobs whose service's answer carried no cost: never summed as if they had one, and counted beside the sum.
+    var jobsWithoutPrice: Int { jobs.filter { $0.paid && $0.status == .done && ($0.cost ?? 0) <= 0 }.count }
     var isBusy: Bool { jobs.contains { $0.status == .running } }
 
     @ObservationIgnored unowned let session: EditorSession
@@ -163,7 +167,32 @@ final class AIController {
         return parts.joined(separator: " ")
     }
 
+    // MARK: Unknown price (the-apps/SIBLINGS.md, "Okänt pris")
+
+    /// The service the picture features go to.
+    static var imageProvider: AIProvider {
+        if let slug = UserDefaults.standard.string(forKey: imageProviderKey), let p = AIProvider.named(slug), p.offers(.image) { return p }
+        return .openRouter
+    }
+
+    /// Set when the person has ticked, once for this service, that it states no price in advance. Taken back in Settings › AI.
+    static func unknownPriceKey(_ slug: String) -> String { "ai.unknownPriceAgreed.\(slug)" }
+
+    /// Whether a paid picture job may start from the window: the price is known, or the person has made the tick for this service.
+    static var unknownPriceAgreed: Bool {
+        let p = imageProvider
+        return PaidPrice.knownInAdvance(service: p.slug) || UserDefaults.standard.bool(forKey: unknownPriceKey(p.slug))
+    }
+
+    /// True while steps from the agent API run with `"allowUnknownPrice": true`: that call's own word, never remembered.
+    @ObservationIgnored var agentAllowsUnknownPrice = false
+
     private func imageModel() throws -> ImageModel {
+        // The last stop before a paid picture job; the buttons that lead here are grey until the tick is made.
+        guard Self.unknownPriceAgreed || agentAllowsUnknownPrice else {
+            let name = Self.imageProvider.name
+            throw TextSetupError(errorDescription: String(localized: "\(name) does not state a price in advance. Tick that you know in Settings › AI, and run it again."))
+        }
         // Another image service, when one is chosen. For a test:
         // `-ai.imageProvider openai -ai.imageModel.openai <id>` (fal: also `-ai.imageEditModel.fal <id>`).
         let d = UserDefaults.standard
@@ -201,10 +230,11 @@ final class AIController {
     // MARK: Jobs
 
     /// Runs `work` off the main actor; `apply` lands the result on the main actor.
-    func run<T: Sendable>(_ title: String,
+    func run<T: Sendable>(paid: Bool = false, _ title: String,
                                   _ work: @escaping @Sendable () async throws -> (T, Double?),
                                   apply: @escaping @MainActor (T) throws -> Void) {
         var job = Job(title: title)
+        job.paid = paid
         let id = job.id
         job.task = Task { [weak self] in
             do {
@@ -228,11 +258,13 @@ final class AIController {
     /// For `showFixture("jobs")`: a job list with every state in it.
     func showFixtureJobs() {
         var running = Job(title: "Heal Selection"), failed = Job(title: "Generate"), done = Job(title: "Remove Background"), cancelled = Job(title: "Upscale")
+        // A paid job whose service's answer carried no cost: not in the sum, counted beside it.
+        var unpriced = Job(title: "Relight"); unpriced.status = .done; unpriced.paid = true
         running.status = .running
         failed.status = .failed("OpenRouter rejected the API key.")
         done.status = .done; done.cost = 0.134
         cancelled.status = .cancelled
-        jobs = [running, failed, done, cancelled]
+        jobs = [running, failed, done, unpriced, cancelled]
     }
 
     /// Takes the fixture's jobs away again (they are not real: nothing is running).
@@ -276,7 +308,7 @@ final class AIController {
         do {
             let model = try imageModel()
             let docSize = SIMD2(session.state.width, session.state.height)
-            run(String(localized: "Generate “\(String(prompt.prefix(40)))”"), {
+            run(paid: true, String(localized: "Generate “\(String(prompt.prefix(40)))”"), {
                 // A fresh seed each time: the result cache keys on it, so the same prompt gives a new picture.
                 let r = try await AIPipelines.generate(prompt: prompt, negative: negative, width: width, height: height,
                                                        seed: Int.random(in: 1..<Int(Int32.max)), model: model)
@@ -299,7 +331,7 @@ final class AIController {
         do {
             let model = try imageModel()
             let source = try composite(session.state)
-            run(String(localized: "Edit “\(String(instruction.prefix(40)))”"), {
+            run(paid: true, String(localized: "Edit “\(String(instruction.prefix(40)))”"), {
                 let r = try await AIPipelines.edit(source, instruction: instruction, model: model)
                 return (r.image, r.cost)
             }, apply: { [weak self] image in
@@ -328,7 +360,7 @@ final class AIController {
                 return RGBAImage(try ImageImporter.image(contentsOf: url))
             }
             let title = mode == .remove ? "Remove object" : (prompt.isEmpty ? "Generative fill" : String(localized: "Fill “\(String(prompt.prefix(40)))”"))
-            run(title, {
+            run(paid: true, title, {
                 let r = try await AIPipelines.inpaint(image: source, mask: mask, selectionBounds: bounds, mode: mode,
                                                       prompt: prompt, reference: ref, model: model)
                 return ((r.image, r.origin), r.cost)
@@ -346,7 +378,7 @@ final class AIController {
         do {
             let model = try imageModel()
             let source = try composite(session.state)
-            run("Expand", {
+            run(paid: true, "Expand", {
                 let r = try await AIPipelines.expand(source, margins: margins, prompt: prompt, model: model)
                 return (r.image, r.cost)
             }, apply: { [weak self] image in
@@ -445,7 +477,7 @@ final class AIController {
         do {
             let model = try imageModel()
             let source = try composite(session.state)
-            run(String(localized: "Relight (\(direction.title.lowercased()))"), {
+            run(paid: true, String(localized: "Relight (\(direction.title.lowercased()))"), {
                 let r = try await AIPipelines.relight(source, direction: direction, color: color, intensity: intensity,
                                                       environment: environment, model: model)
                 return (r.image, r.cost)
@@ -463,7 +495,7 @@ final class AIController {
             let state = session.state
             let source = try composite(state)
             let roi = state.selection?.bounds(in: state.bounds)
-            run("Remove reflections", {
+            run(paid: true, "Remove reflections", {
                 let r = try await AIPipelines.removeReflections(source, roi: roi, strength: strength, model: model)
                 return ((r.image, r.origin), r.cost)
             }, apply: { [weak self] result in
@@ -492,7 +524,7 @@ final class AIController {
             let roi = Imaging.clampROI(bounds, width: state.width, height: state.height, padding: 0.1)
             let fg = fgFull.cropped(to: roi), bg = bgFull.cropped(to: roi)
             let id = layer.id, name = layer.name
-            run(String(localized: "Harmonize “\(name)”"), {
+            run(paid: true, String(localized: "Harmonize “\(name)”"), {
                 let r = try await AIPipelines.harmonize(foreground: fg, background: bg, strength: strength, model: model)
                 return (r.image, r.cost)
             }, apply: { [weak self] image in
@@ -527,7 +559,7 @@ final class AIController {
             }
             let model = enhance ? try imageModel() : nil
             let source = try composite(state)
-            run(enhance ? title + " with AI detail" : title, {
+            run(paid: enhance, enhance ? title + " with AI detail" : title, {
                 let base = neural
                     ? try await RealESRGAN.upscale(source, scale: scale)
                     : source.resized(width: source.width * scale, height: source.height * scale)
@@ -557,7 +589,7 @@ final class AIController {
             let source = try composite(session.state)
             distractions = []
             distractionMessage = nil
-            run("Find distractions", {
+            run(paid: Self.textProvider.slug != "ollama", "Find distractions", {
                 let r = try await AIPipelines.findDistractions(source, model: model)
                 return ((r.items, r.message), r.cost)
             }, apply: { [weak self] result in

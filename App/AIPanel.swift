@@ -319,8 +319,10 @@ struct PlanView: View {
                     Spacer()
                     Button("Dismiss") { ai.cancelPlan(messageID) }
                     Button("Run") { ai.runPlan(messageID) }.buttonStyle(.borderedProminent)
+                        .needsUnknownPriceTick(plan.usesAI)
                 }
                 .controlSize(.small)
+                if plan.usesAI { UnknownPriceNote() }
             case .running?:
                 HStack {
                     Spacer()
@@ -442,11 +444,13 @@ private struct GenerateView: View {
                 Text("Portrait").tag("portrait")
                 Text("Landscape").tag("landscape")
             }
+            UnknownPriceNote()
             Button("Generate Layer") {
                 let (w, h) = dimensions
                 ai.generate(prompt: prompt, negative: negative, width: w, height: h)
             }
             .disabled(prompt.trimmingCharacters(in: .whitespaces).isEmpty)
+            .needsUnknownPriceTick()
         }
     }
 }
@@ -490,10 +494,12 @@ private struct FillView: View {
                     .lineLimit(1...3)
                     .textFieldStyle(.roundedBorder)
             }
+            UnknownPriceNote()
             Button(mode == .remove ? "Remove Object" : "Fill Selection") {
                 ai.fill(mode: mode, prompt: prompt, reference: mode == .fill ? reference : nil)
             }
             .disabled(!hasSelection)
+            .needsUnknownPriceTick()
         }
     }
 
@@ -539,8 +545,10 @@ private struct ExpandView: View {
             }
             TextField("What's beyond the edges? (optional)", text: $prompt)
                 .textFieldStyle(.roundedBorder)
+            UnknownPriceNote()
             Button("Expand Canvas") { ai.expand(margins: margins, prompt: prompt) }
                 .disabled(margins.isEmpty)
+                .needsUnknownPriceTick()
             Text("New size: \(size.x + margins.left + margins.right) × \(size.y + margins.top + margins.bottom) px")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -613,6 +621,13 @@ private struct JobsView: View {
                             .foregroundStyle(.secondary)
                             .help("OpenRouter cost of this window's jobs")
                     }
+                    // Never summed as if they had a price: counted beside the sum.
+                    if ai.jobsWithoutPrice > 0 {
+                        Text("\(ai.jobsWithoutPrice) without a price")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .help("Paid jobs whose service's answer carried no cost. They are not in the sum; the service's usage page has what they cost.")
+                    }
                     Button("Clear") { ai.clearFinished() }
                         .controlSize(.small)
                         .disabled(ai.jobs.allSatisfy { $0.status == .running })
@@ -667,7 +682,9 @@ private struct StrengthAction: View {
             Text(note).font(.callout).foregroundStyle(.secondary)
             ParameterSlider(label: "Strength", value: value * 100, range: 0...100, step: 1,
                             format: { "\(Int($0)) %" }, set: { strength = $0 / 100 }, commit: {})
+            UnknownPriceNote()
             Button(button) { action(value) }
+                .needsUnknownPriceTick()
         }
     }
 }
@@ -689,7 +706,9 @@ private struct RelightView: View {
                             format: { "\(Int($0)) %" }, set: { intensity = $0 / 100 }, commit: {})
             TextField("Environment (optional), e.g. a neon-lit street", text: $environment)
                 .textFieldStyle(.roundedBorder)
+            UnknownPriceNote()
             Button("Relight") { ai.relight(direction: direction, color: color, intensity: intensity, environment: environment) }
+                .needsUnknownPriceTick()
         }
     }
 }
@@ -768,8 +787,10 @@ private struct UpscaleView: View {
                     .font(.caption)
                     .foregroundStyle(tiles > 16 ? .orange : .secondary)
             }
+            if enhance { UnknownPriceNote() }
             Button("Upscale") { ai.upscale(scale: scale, neural: neural, enhance: enhance, creativity: creativity) }
                 .disabled((enhance && max(out.x, out.y) > 8192) || (neural && max(out.x, out.y) > Self.neuralMaxSide))
+                .needsUnknownPriceTick(enhance)
         }
     }
 }

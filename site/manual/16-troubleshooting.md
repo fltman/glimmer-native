@@ -159,6 +159,14 @@ Every POST needs the header `X-Glimmer-Agent: 1`. Requests with an `Origin` head
 
 The step uses OpenRouter. The agent must send `"allowPaid": true`, and an OpenRouter key must be saved in Glimmer.
 
+### The agent gets 422 with the reason unknown_price
+
+The step is paid and Glimmer does not know its price in advance, which today is true of every paid step. `allowPaid` alone does not mean "whatever it costs": the agent must also send `"allowUnknownPrice": true`, on every call. Nothing was run.
+
+### A button that makes a picture is grey
+
+Tick **<service> does not state a price in advance; I know**, under the line **Price not known in advance** beside the button, or in **Glimmer › Settings › AI** under **Pictures**. See [What costs money](11-ai-with-openrouter.md#what-costs-money).
+
 ## Updates
 
 Choose **Glimmer › Check for Updates…**. Glimmer downloads and installs new versions for you, after you confirm.

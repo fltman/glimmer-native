@@ -8,10 +8,11 @@ import Foundation
 
 //   axread <pid> --press <role> <name>   → presses the first element of that role with that name (to open a menu to read)
 //   axread <pid> --show <role> <text>    → scrolls the first element with that name, or a text that contains it, into view (before a picture is taken)
+//   axread <pid> --enabled <role> <name> → prints "enabled" or "disabled" for that element (a button that must be grey)
 //   axread <pid> --frame <role> <name>   → prints that element's place on screen as "x y width height" (points), for the-apps/tools/safepointer
 let arguments = CommandLine.arguments
-guard arguments.count == 2 || (arguments.count == 5 && ["--press", "--frame", "--show"].contains(arguments[2])), let pid = pid_t(arguments[1]) else {
-    print("usage: axread <pid> [--press <role> <name> | --frame <role> <name> | --show <role> <text>]"); exit(2)
+guard arguments.count == 2 || (arguments.count == 5 && ["--press", "--frame", "--show", "--enabled"].contains(arguments[2])), let pid = pid_t(arguments[1]) else {
+    print("usage: axread <pid> [--press <role> <name> | --frame <role> <name> | --show <role> <text> | --enabled <role> <name>]"); exit(2)
 }
 func attribute(_ element: AXUIElement, _ name: String) -> AnyObject? {
     var value: AnyObject?
@@ -83,6 +84,9 @@ if arguments.count == 5 {
                     if inView() { print("shown"); exit(0) }
                 }
                 print("found, but it could not be scrolled into view"); exit(1)
+            }
+            if arguments[2] == "--enabled" {
+                print((attribute(hit, kAXEnabledAttribute as String) as? Bool) == false ? "disabled" : "enabled"); exit(0)
             }
             if arguments[2] == "--frame" {
                 var point = CGPoint.zero, size = CGSize.zero

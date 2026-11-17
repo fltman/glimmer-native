@@ -92,6 +92,14 @@ A feature costs money when it sends a request to OpenRouter. The price depends o
 
 Requests that the assistant handles on your Mac with Apple Intelligence cost nothing. See [The assistant and the command palette](12-assistant-and-command-palette.md).
 
+### The price is not known in advance
+
+Glimmer cannot tell you what a picture will cost before it is made. No picture service states the price of one job in a form Glimmer can read: OpenRouter reports the charge in its answer afterwards, and the other services' answers carry no cost at all. Glimmer never shows an estimate in place of a price.
+
+So every panel that makes a picture, and every assistant plan with a paid step, shows the line **Price not known in advance**. The first time you use a service, a tick box stands under that line: **<service> does not state a price in advance; I know**. Until you tick it, the button that starts the job is grey. You tick it once per service. It is kept in **Glimmer › Settings › AI**, under **Pictures**, where you can untick it to be asked again.
+
+The Generate and Remove buttons in the bar under a selection have no room for the line: they stay grey until the tick is made, and their tooltips say why.
+
 ## The AI panel
 
 The AI panel is a tab in the inspector. Each section opens when you choose its command in the **AI** menu, and you can also open and close sections by clicking their titles.
@@ -208,7 +216,7 @@ The bottom of the AI panel shows **Activity**, a list of the jobs in this window
 - A running job shows a spinner and a stop button. Click the stop button to cancel the job. Nothing is added to your document.
 - A finished job shows a green check. A failed job shows a warning sign and the reason. A cancelled job shows a cross.
 - A job that cost money shows its cost in US dollars, as OpenRouter reported it.
-- The heading shows the total cost of this window's jobs.
+- The heading shows the total cost of this window's jobs. A finished paid job whose service reported no cost is not in that sum; the heading counts such jobs beside it, as in **2 without a price**. What they cost stands on the service's own usage page.
 - **Clear** removes finished, failed and cancelled jobs from the list.
 
 The list keeps the 30 most recent jobs.

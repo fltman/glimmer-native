@@ -17,7 +17,7 @@ Choose **Glimmer › Settings…** (⌘,) to open the Settings window. It has fi
 
 | Setting | What it does |
 | --- | --- |
-| Run AI steps without asking | When the assistant plans an edit that includes paid AI jobs, it normally shows you the plan first and waits for you to run it. Turn this on to run such plans straight away. Plans that only use the editor's own tools always run straight away. Off by default. The **AUTO-EDIT** button in the assistant does the same thing. |
+| Run AI steps without asking | When the assistant plans an edit that includes paid AI jobs, it normally shows you the plan first and waits for you to run it. Turn this on to run such plans straight away. Plans that only use the editor's own tools always run straight away. Off by default. The **AUTO-EDIT** button in the assistant does the same thing. Such a plan still waits until you have ticked, under **AI › Pictures**, that the picture service states no price in advance. |
 | Let the assistant see the image | Sends a small copy of the image (at most 1024 pixels) with each request, so the assistant can pick settings that suit the photo. On by default. |
 | Check the result and adjust once | After a plan has run, the assistant compares the image before and after, and may adjust the result once. On by default. |
 | Understand simple requests on this Mac | Lets Apple Intelligence handle requests that need only one command, so they run at once without a call to OpenRouter. Other requests still go to OpenRouter. On by default. This needs Apple Intelligence. Without it, the setting is dimmed. |

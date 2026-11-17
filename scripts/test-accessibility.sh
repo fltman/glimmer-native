@@ -87,6 +87,8 @@ fixture assistant && read_state "the Assistant: requests, a plan with a failed a
 read_state "the plan's failed step says why" "No font named “Nope” is installed."
 fixture waiting && read_state "a plan and a command that wait for Run, because the request didn't name them" "I think you mean Rasterize Layer. You didn't name it, so it waits for you." || bad "fixture waiting"
 read_state "an extra step the model added, offered and waiting" "The assistant also suggests Auto Enhance, which you didn't ask for. Run it now on the picture as it is?"
+fixture paidPlan && read_state "a plan with a paid step: the price is not known, and the tick for the service" "Price not known in advance" || bad "fixture paidPlan"
+if [[ "$(build/axread $GLIMMER_PID --enabled AXButton "$(M "Run")")" == disabled ]]; then ok "Run on that plan is off until the tick is made"; else bad "Run on a paid plan is not off before the tick"; fi
 fixture refusedPlan && read_state "a plan that can't run because a step would be refused: said, and no Run" "The plan asks Exposure for a setting it doesn't have (brightness), so it can't run. Nothing was changed. Ask again, perhaps in other words." || bad "fixture refusedPlan"
 fixture jobs && read_state "the job list: running, failed, done with a cost, cancelled" "OpenRouter rejected the API key." || bad "fixture jobs"
 fixture clear   # the job list's running job must not put its spinner in the pictures that follow
@@ -133,6 +135,7 @@ fi
 echo
 # The picture service chosen in Settings › AI (hidden in release builds until a service is offered).
 read_state "Settings › AI, Pictures with fal chosen" "Model for editing"
+read_state "Settings › AI, Pictures: the tick that the service states no price in advance" "Glimmer cannot say what a picture costs before it is made. Until this is ticked, the buttons that make pictures stay grey. Untick it to be asked again."
 
 MODE=$([[ "${GLIMMER_NETWORK_TESTS:-0}" == 1 ]] && echo "NETWORK TEST (Berget's public model list was fetched)" || echo "no network (a copy that can make no connection)")
 # What was read is the debug build, which has every switched feature. A release has only those
