@@ -420,7 +420,8 @@ private struct TitleChip: View {
                     .help(trouble)
                     .accessibilityLabel(Text(verbatim: trouble))
             }
-            if session.recovered {
+            // One at a time: what could not be kept is the more pressing of the two (both together were cut to "Lates…" and "Broug…").
+            if session.recovered && session.journalRoomTrouble == nil {
                 // Said in words (SIBLINGS.md §6.6): this window was brought back, and its edits are not in the file yet.
                 // (The whole sentence is said once over the canvas when the window comes back; here it may be cut short in a narrow window.)
                 Group {

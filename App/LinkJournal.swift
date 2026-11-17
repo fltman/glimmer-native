@@ -67,6 +67,9 @@ final class LinkJournal {
         var found: [Entry] = [], unreadable: [String] = []
         for name in names.sorted() where !name.hasPrefix(".") {
             let entry = folder.appending(path: name, directoryHint: .isDirectory)
+            // Only folders are entries; a stray file beside them is not Glimmer's to report or touch.
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: entry.path, isDirectory: &isDirectory), isDirectory.boolValue else { continue }
             guard let data = try? Data(contentsOf: entry.appending(path: Self.recordName)),
                   let record = try? LinkJournalRecord.decoder.decode(LinkJournalRecord.self, from: data), record.id == name,
                   FileManager.default.fileExists(atPath: entry.appending(path: Self.workCopyName).path) else {
