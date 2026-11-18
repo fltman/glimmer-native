@@ -65,6 +65,8 @@ if [[ -n "$NEW_VERSION" ]]; then
   echo "▸ Agent guide for $NEW_VERSION"; scripts/export-agents-guide.sh
   sed -i '' -E "s/(\"version\": )\"[^\"]*\"/\\1\"$NEW_VERSION\"/" site/app.json
   grep -q "\"version\": \"$NEW_VERSION\"" site/app.json || { echo "✘ Couldn't set the version in site/app.json."; exit 1; }
+  # The site's download button names the DMG of this version.
+  sed -i '' -E "s/Glimmer-[0-9]+\.[0-9]+\.[0-9]+\.dmg/Glimmer-$NEW_VERSION.dmg/" site/app.json
 fi
 
 OUT=build/release

@@ -5,6 +5,7 @@
   "summary": "Glimmer is a native macOS photo editor with layers, masks, adjustment layers, filters, retouching, text and paths. Auto Enhance, sky and people selection, perspective correction and more run on your Mac for free; generative edits use your own key with OpenRouter or another service you choose. AI agents can drive it too, through a local API.",
   "kind": "image",
   "version": "0.3.0",
+  "download": "https://glimmer.brattoo.com/releases/Glimmer-0.3.0.dmg",
   "requires": "macOS 27 or later, Apple silicon",
   "hero": "screens/hero.webp",
   "features": [

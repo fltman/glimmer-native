@@ -91,7 +91,7 @@ This runs the tests, bumps the version, archives, exports and notarizes through 
    curl -sIL "$(curl -s https://glimmer.brattoo.com/appcast.xml | grep -o 'url="[^"]*"' | cut -d'"' -f2)" | grep -E "^HTTP|content-length"
    ```
 4. On a Mac that never had Glimmer: download the DMG from the GitHub release, open it, drag Glimmer to Applications, launch. Gatekeeper must open it without a warning.
-5. The site: add the download link and the source link (`app.json`), build and deploy it (the-apps-9c).
+5. The site: `app.json` has the download link (`https://glimmer.brattoo.com/releases/Glimmer-<version>.dmg`, set 2026-11-19 on Anders's word; `release.sh` moves it to the new version). The source link waits until the repository is public. Build the site and upload it with the release files (see the publish folder's LÄS-MIG.md).
 6. Afterwards, the next release's update test is real: an installed 0.3.0 should find 0.3.1 through glimmer.brattoo.com.
 
 ## If something goes wrong
