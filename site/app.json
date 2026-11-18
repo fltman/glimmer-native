@@ -2,7 +2,7 @@
   "name": "Glimmer",
   "slug": "glimmer",
   "tagline": "A real photo editor for the Mac, with AI where it helps.",
-  "summary": "Glimmer is a native macOS photo editor with layers, masks, adjustment layers, filters, retouching, text and paths. Auto Enhance, sky and people selection, perspective correction and more run on your Mac for free; generative edits use your own OpenRouter key. AI agents can drive it too, through a local API.",
+  "summary": "Glimmer is a native macOS photo editor with layers, masks, adjustment layers, filters, retouching, text and paths. Auto Enhance, sky and people selection, perspective correction and more run on your Mac for free; generative edits use your own key with OpenRouter or another service you choose. AI agents can drive it too, through a local API.",
   "kind": "image",
   "version": "0.2.0",
   "requires": "macOS 27 or later, Apple silicon",
@@ -30,7 +30,7 @@
     },
     {
       "title": "Generative editing with your own key",
-      "text": "Generate, Generative Fill, Remove Object, Expand, Relight, Harmonize and more through OpenRouter. You pay OpenRouter for what you use; there is no Glimmer account.",
+      "text": "Generate, Generative Fill, Remove Object, Expand, Relight, Harmonize and more through OpenRouter or another service you choose. You pay the service for what you use; there is no Glimmer account.",
       "screen": "screens/ai-panel.webp"
     },
     {

@@ -25,7 +25,7 @@ Full rehearsal with notarization (uploads to Apple, publishes nothing; restore t
 
 ```sh
 scripts/release.sh 0.3.0 --notarize-only
-git checkout project.yml site/agents.md
+git checkout project.yml site/agents.md site/app.json
 ```
 
 Without notarization:

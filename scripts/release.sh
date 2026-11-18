@@ -61,8 +61,10 @@ fi
 if [[ -n "$NEW_VERSION" ]]; then
   BUILD=$(awk '/CURRENT_PROJECT_VERSION/ {gsub(/"/,"",$2); print $2; exit}' project.yml)
   sed -i '' -E "s/(MARKETING_VERSION: )\"[^\"]*\"/\\1\"$NEW_VERSION\"/; s/(CURRENT_PROJECT_VERSION: )\"[^\"]*\"/\\1\"$((BUILD + 1))\"/" project.yml
-  # The agent guide on the site names the version (SiteExportTests checks it).
+  # The agent guide on the site names the version (SiteExportTests checks it), and so does the site's app.json.
   echo "▸ Agent guide for $NEW_VERSION"; scripts/export-agents-guide.sh
+  sed -i '' -E "s/(\"version\": )\"[^\"]*\"/\\1\"$NEW_VERSION\"/" site/app.json
+  grep -q "\"version\": \"$NEW_VERSION\"" site/app.json || { echo "✘ Couldn't set the version in site/app.json."; exit 1; }
 fi
 
 OUT=build/release
@@ -212,8 +214,8 @@ fi
 echo "▸ Appcast: $OUT/updates/appcast.xml (host it at $(/usr/libexec/PlistBuddy -c 'Print SUFeedURL' "$APP/Contents/Info.plist"))"
 
 if [[ $PUBLISH == 1 ]]; then
-  if [[ -n "$(git status --porcelain project.yml site/agents.md)" ]]; then
-    git commit -qm "Release $VERSION" project.yml site/agents.md
+  if [[ -n "$(git status --porcelain project.yml site/agents.md site/app.json)" ]]; then
+    git commit -qm "Release $VERSION" project.yml site/agents.md site/app.json
   fi
   git tag "v$VERSION"
   git push -q origin HEAD "v$VERSION"
