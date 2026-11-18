@@ -12,7 +12,7 @@ Nothing. Glimmer is free, with no accounts, no subscriptions and no ads. The onl
 
 ## Is Glimmer open source?
 
-Yes. Glimmer is open source under the MIT license, so you may use it for any purpose, including commercial work, and read, change and share the code. The source code will be published on GitHub when Glimmer is released, with a link here.
+Yes. Glimmer is open source under the MIT license, so you may use it for any purpose, including commercial work, and read, change and share the code. The source code is on GitHub: [github.com/fltman/glimmer-native](https://github.com/fltman/glimmer-native).
 
 ## How can I support Glimmer?
 

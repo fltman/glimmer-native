@@ -53,4 +53,4 @@ Each sign means one thing in the whole app. The color sits on the sign; the text
 
 ## If something can't be reached
 
-If a control can't be reached with the keyboard or isn't read by VoiceOver, please report it on the project's issue page on GitHub, with the window and panel where it happens.
+If a control can't be reached with the keyboard or isn't read by VoiceOver, please report it on the project's [issue page on GitHub](https://github.com/fltman/glimmer-native/issues), with the window and panel where it happens.

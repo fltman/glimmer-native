@@ -6,6 +6,7 @@
   "kind": "image",
   "version": "0.3.0",
   "download": "https://glimmer.brattoo.com/releases/Glimmer-0.3.0.dmg",
+  "source": "https://github.com/fltman/glimmer-native",
   "requires": "macOS 27 or later, Apple silicon",
   "hero": "screens/hero.webp",
   "features": [
