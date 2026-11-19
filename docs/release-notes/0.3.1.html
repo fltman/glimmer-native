@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Glimmer 0.3.1</title>
+<style>body{font:13px -apple-system,sans-serif;margin:12px;color:#222}h2{font-size:14px;margin:12px 0 4px}ul{margin:0 0 8px;padding-left:18px}li{margin:2px 0}@media(prefers-color-scheme:dark){body{color:#ddd}}</style>
+</head><body>
+<h2>Models are downloaded only when you say so, and checked</h2>
+<ul>
+<li>Glimmer 0.3.0 downloaded the models for Select Sky, Magic Select and Lens Blur without a fixed version and without checking any checksum. 0.3.1 corrects that.</li>
+<li>Glimmer now fetches each model at a fixed version and checks every file against the checksum its source publishes. A model whose checksum doesn't match is not installed.</li>
+<li>Nothing is downloaded until you click Download. The first time a feature needs a model, Glimmer shows its size, publisher, source and license. Settings › Models has a Download… button for each model.</li>
+<li>A model that 0.3.0 downloaded is checked if its downloaded files are still on your Mac. Otherwise Settings › Models shows it as “Unverified (installed by an earlier version)”. It keeps working, and Download Again replaces it with a checked copy.</li>
+</ul>
+<h2>New default AI models</h2>
+<ul>
+<li>Google has retired both earlier defaults: gemini-3-pro-image-preview was shut down on June 25, 2026, and from December 1, 2026 gemini-2.5-flash is sent on to gemini-3.5-flash-lite (Google's deprecations page, read November 19, 2026).</li>
+<li>The defaults are now google/gemini-3-pro-image for pictures and google/gemini-3.5-flash for the Assistant, which passed the Assistant's evaluation as well as before.</li>
+<li>If you chose one of the old models yourself, Glimmer keeps your choice and says under the field what Google does with it. Restore Defaults switches.</li>
+</ul>
+<h2>For agents</h2>
+<ul>
+<li>The agent guide has a new section, “What Glimmer may need installed”, and <code>GET /api/v1/requirements</code> lists it as JSON: source, version, checksums, license, size, and how each item is installed and checked.</li>
+<li><code>POST /api/v1/settings/open</code> opens a Settings pane for the person and changes nothing.</li>
+<li>A step that needs a model that isn't downloaded is refused before anything runs, with <code>model_missing</code> and the item it needs. The API never starts a download.</li>
+</ul>
+</body></html>

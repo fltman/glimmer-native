@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="sv"><head><meta charset="utf-8"><title>Glimmer 0.3.1</title>
+<style>body{font:13px -apple-system,sans-serif;margin:12px;color:#222}h2{font-size:14px;margin:12px 0 4px}ul{margin:0 0 8px;padding-left:18px}li{margin:2px 0}@media(prefers-color-scheme:dark){body{color:#ddd}}</style>
+</head><body>
+<h2>Modellerna laddas ner först när du säger till, och de kontrolleras</h2>
+<ul>
+<li>Glimmer 0.3.0 hämtade modellerna för Markera himmel, Magisk markering och Linsoskärpa utan fast version och utan att kontrollera någon kontrollsumma. 0.3.1 rättar det.</li>
+<li>Glimmer hämtar nu varje modell i en fast version och kontrollerar varje fil mot den kontrollsumma som källan publicerar. En modell vars kontrollsumma inte stämmer installeras inte.</li>
+<li>Inget laddas ner förrän du klickar på Ladda ner. Första gången en funktion behöver en modell visar Glimmer dess storlek, utgivare, källa och licens. Inställningar › Modeller har en knapp Ladda ner… för varje modell.</li>
+<li>En modell som 0.3.0 hämtade kontrolleras om de nedladdade filerna finns kvar på din Mac. Annars visar Inställningar › Modeller den som ”Ej kontrollerad (installerad av en tidigare version)”. Den fungerar som förut, och Ladda ner igen ersätter den med en kontrollerad kopia.</li>
+</ul>
+<h2>Nya standardmodeller för AI</h2>
+<ul>
+<li>Google har avvecklat båda de tidigare standardmodellerna: gemini-3-pro-image-preview stängdes den 25 juni 2026, och från den 1 december 2026 skickas gemini-2.5-flash vidare till gemini-3.5-flash-lite (Googles sida om avvecklade modeller, läst den 19 november 2026).</li>
+<li>Standard är nu google/gemini-3-pro-image för bilder och google/gemini-3.5-flash för assistenten, som klarade assistentens utvärdering lika bra som tidigare.</li>
+<li>Har du själv valt en av de gamla modellerna behåller Glimmer ditt val och säger under fältet vad Google gör med den. Återställ standard byter.</li>
+</ul>
+<h2>För agenter</h2>
+<ul>
+<li>Agentguiden har ett nytt avsnitt, ”What Glimmer may need installed”, och <code>GET /api/v1/requirements</code> ger samma lista som JSON: källa, version, kontrollsummor, licens, storlek och hur varje del installeras och kontrolleras.</li>
+<li><code>POST /api/v1/settings/open</code> öppnar en inställningsruta åt användaren och ändrar inget.</li>
+<li>Ett steg som behöver en modell som inte är nedladdad vägras innan något körs, med <code>model_missing</code> och vad som behövs. API:t startar aldrig en nedladdning.</li>
+</ul>
+</body></html>
