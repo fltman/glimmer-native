@@ -222,9 +222,15 @@ private struct AISettingsView: View {
 
             Section("Models") {
                 TextField("Image model", text: $imageModel)
+                if let note = AIDefaults.retirement(of: imageModel) {
+                    StatusLine(.warning, LocalizedStringKey(note)).font(.callout).fixedSize(horizontal: false, vertical: true)
+                }
                 TextField("Text model", text: $textModel)
                     .disabled(textProvider != "openrouter")
                     .help(textProvider == "openrouter" ? "" : "Used when the text service is OpenRouter")
+                if textProvider == "openrouter", let note = AIDefaults.retirement(of: textModel) {
+                    StatusLine(.warning, LocalizedStringKey(note)).font(.callout).fixedSize(horizontal: false, vertical: true)
+                }
                 if textProvider == "openrouter" { OpenRouterTextPrice(model: textModel) }
                 Button("Restore Defaults") {
                     imageModel = AIDefaults.imageModel

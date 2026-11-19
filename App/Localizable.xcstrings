@@ -14770,6 +14770,28 @@
           }
         }
       }
+    },
+    "Google sends requests for gemini-2.5-flash to gemini-3.5-flash-lite from December 1, 2026, at that model's prices (Google's deprecations page, read November 19, 2026). Restore Defaults switches to Glimmer's current default.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google skickar anrop till gemini-2.5-flash vidare till gemini-3.5-flash-lite från den 1 december 2026, till den modellens priser (Googles sida om avvecklade modeller, läst den 19 november 2026). Återställ standard byter till Glimmers nuvarande standard."
+          }
+        }
+      }
+    },
+    "Google shut gemini-3-pro-image-preview down on June 25, 2026; its replacement is gemini-3-pro-image (Google's deprecations page, read November 19, 2026). Restore Defaults switches to it.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Google stängde gemini-3-pro-image-preview den 25 juni 2026; ersättaren är gemini-3-pro-image (Googles sida om avvecklade modeller, läst den 19 november 2026). Återställ standard byter till den."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

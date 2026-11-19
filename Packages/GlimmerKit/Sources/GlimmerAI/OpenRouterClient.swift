@@ -1,8 +1,25 @@
 import Foundation
 
 public enum AIDefaults {
-    public static let imageModel = "google/gemini-3-pro-image-preview"
-    public static let textModel = "google/gemini-2.5-flash"
+    /// The defaults since 0.3.1. Until then they were google/gemini-3-pro-image-preview and
+    /// google/gemini-2.5-flash, which Google has retired (see `retirement(of:)`). The text model
+    /// is the one that passed the Assistant's evaluation as 2.5-flash did (18 of 18, 2026-11-19);
+    /// gemini-3.5-flash-lite, where Google sends 2.5-flash, got 16 of 18.
+    public static let imageModel = "google/gemini-3-pro-image"
+    public static let textModel = "google/gemini-3.5-flash"
+
+    /// What Google says about a model id it has retired, for Settings: someone who chose it keeps it,
+    /// and is told. Source: https://ai.google.dev/gemini-api/docs/deprecations, read 2026-11-19.
+    public static func retirement(of id: String) -> String? {
+        switch id.trimmingCharacters(in: .whitespaces) {
+        case "google/gemini-2.5-flash":
+            "Google sends requests for gemini-2.5-flash to gemini-3.5-flash-lite from December 1, 2026, at that model's prices (Google's deprecations page, read November 19, 2026). Restore Defaults switches to Glimmer's current default."
+        case "google/gemini-3-pro-image-preview":
+            "Google shut gemini-3-pro-image-preview down on June 25, 2026; its replacement is gemini-3-pro-image (Google's deprecations page, read November 19, 2026). Restore Defaults switches to it."
+        default:
+            nil
+        }
+    }
 
     public static let imageModelKey = "ai.imageModel"
     public static let textModelKey = "ai.textModel"

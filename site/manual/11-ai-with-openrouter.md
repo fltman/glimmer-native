@@ -19,8 +19,8 @@ Until you add a key, the AI panel shows a banner, **Add your OpenRouter key**, w
 
 Under **Models** in the same tab you choose which OpenRouter models Glimmer calls:
 
-- **Image model** makes and edits pictures. The default is `google/gemini-3-pro-image-preview`.
-- **Text model** plans the assistant's edits, checks results, suggests edits and finds distractions. The default is `google/gemini-2.5-flash`.
+- **Image model** makes and edits pictures. The default is `google/gemini-3-pro-image`.
+- **Text model** plans the assistant's edits, checks results, suggests edits and finds distractions. The default is `google/gemini-3.5-flash`.
 
 Type any OpenRouter model id to use another model. **Restore Defaults** puts both back.
 

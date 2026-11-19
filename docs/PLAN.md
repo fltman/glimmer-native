@@ -190,7 +190,7 @@ glimmer-native/
   - **401 (fel nyckel) och 402 (slut på kredit) är fatala** och visas direkt för användaren. Webben försöker igen på dem.
   - `usage: {include: true}` skickas, så att kostnaden per operation kan visas i UI:t.
 - **Diskcache** för råsvar, nycklad på sha256 av (förmåga, modell, bilder, instruktion, seed). En retry eller ett ångra-och-gör-om betalar inte två gånger.
-- **Modell-ID:n** är inställningar. Defaults: `google/gemini-3-pro-image-preview` för bild och `google/gemini-2.5-flash` för text.
+- **Modell-ID:n** är inställningar. Defaults: `google/gemini-3-pro-image` för bild och `google/gemini-3.5-flash` för text (från 0.3.1; tidigare `google/gemini-3-pro-image-preview` och `google/gemini-2.5-flash`, som Google har avvecklat).
 - **API-nyckeln** ligger i Keychain och kan valideras med ett testanrop.
 
 **Bildprimitiver** (från `workers/aips/pipelines/imaging.py`, som bara använder Pillow och numpy, alltså ingen OpenCV att ersätta):

@@ -71,8 +71,8 @@ Which service makes and edits pictures: Generate, Edit with Prompt, Generative F
 
 | Setting | What it does |
 | --- | --- |
-| Image model | The OpenRouter model used to generate and edit images. The default is `google/gemini-3-pro-image-preview`. |
-| Text model | The OpenRouter model the assistant uses to plan edits. The default is `google/gemini-2.5-flash`. |
+| Image model | The OpenRouter model used to generate and edit images. The default is `google/gemini-3-pro-image`. |
+| Text model | The OpenRouter model the assistant uses to plan edits. The default is `google/gemini-3.5-flash`. If you chose a model that Google has retired (`google/gemini-2.5-flash` or `google/gemini-3-pro-image-preview`), Glimmer keeps your choice and says under the field what Google does with it; **Restore Defaults** switches to the current defaults. |
 | Restore Defaults | Sets both models back to the defaults. |
 
 Type the model name exactly as OpenRouter lists it.

@@ -15,7 +15,7 @@ struct LiveOpenRouterTests {
     }
 
     @Test func generatesAnImage() async throws {
-        let model = OpenRouterImageModel(client: OpenRouterClient(apiKey: key), model: "google/gemini-2.5-flash-image",
+        let model = OpenRouterImageModel(client: OpenRouterClient(apiKey: key), model: AIDefaults.imageModel,
                                          cacheDirectory: nil)
         let result = try await AIPipelines.generate(prompt: "A single red apple on a white table, studio photo",
                                                     width: 512, height: 512, model: model)
@@ -27,6 +27,28 @@ struct LiveOpenRouterTests {
         let client = OpenRouterClient(apiKey: "sk-or-v1-invalid")
         await #expect(throws: OpenRouterError.invalidAPIKey) {
             _ = try await client.keyInfo()
+        }
+    }
+
+    /// The Assistant's evaluation (LocalModelEvaluation, the set every Assistant model is judged by) against
+    /// OpenRouter models: GLIMMER_OPENROUTER_EVAL=<id>[,<id>…], with GLIMMER_LIVE_AI=1. Paid: only with Anders's
+    /// yes. Prints each case, the score as the model planned and as the person gets it, and what the run cost
+    /// (OpenRouter's own usage figure for the key, read before and after each model).
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["GLIMMER_OPENROUTER_EVAL"] != nil), .timeLimit(.minutes(30)))
+    func evaluateOpenRouterModels() async throws {
+        let client = OpenRouterClient(apiKey: ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] ?? "")
+        for id in (ProcessInfo.processInfo.environment["GLIMMER_OPENROUTER_EVAL"] ?? "").split(separator: ",").map(String.init) {
+            let before = try await client.keyInfo().usage ?? 0
+            let report = await LocalModelEvaluation.run(OpenRouterTextModel(client: client, model: id)) { o in
+                print("EVAL \(id) | \(o.knownGap ? (o.passed ? "gap+" : "gap-") : o.passed ? "ok  " : "FAIL") | \(String(format: "%5.1f", o.seconds)) s | \(o.language) | \(o.goal) -> \(o.got)")
+            }
+            try await Task.sleep(for: .seconds(5))  // OpenRouter's usage figure catches up
+            let after = try await client.keyInfo().usage ?? 0
+            let en = report.passed(language: "en"), sv = report.passed(language: "sv")
+            print("EVAL \(id): \(report.passed) of \(report.scored.count) (English \(en.0)/\(en.1), Swedish \(sv.0)/\(sv.1)), median \(String(format: "%.1f", report.median)) s, slowest \(String(format: "%.1f", report.slowest)) s: \(report.passes ? "PASSES" : "does not pass")")
+            print("EVAL \(id): as the model planned: \(report.passedAsWritten) of \(report.scored.count); as the person gets it: \(report.passed) of \(report.scored.count)")
+            if !report.gapLine.isEmpty { print("EVAL \(id):\(report.gapLine)") }
+            print("EVAL \(id): cost USD \(String(format: "%.4f", after - before)) (OpenRouter's usage for the key, before \(before), after \(after))")
         }
     }
 
