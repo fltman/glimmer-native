@@ -152,13 +152,14 @@ The same goes for a setting inside `params` of `add_adjustment`, `apply_filter` 
 | 413 | `too_large` | Body over 256 MB. |
 | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `too_large`, `bad_anchor`, `bad_color`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
 | 422 | `model_missing` | A step needs an on-device model that isn't downloaded (today `select_sky`). `error.requirement` is the first missing entry's id, `error.requirements` all of them, `error.step` the step. Checked before anything runs: no step of the request was run. The person downloads the model in Glimmer (`POST /api/v1/settings/open` with `{"pane": "models"}` shows them where); the API never starts a download. |
+| 503 | `model_unavailable` | A step needed an on-device model that is installed but couldn't be loaded. `error.requirement` names it and `error.step` the step; the steps before it ran. The person removes the model and downloads it again in Glimmer › Settings › Models. |
 | 422 | `unprocessable`, reason `unknown_price` | A step is paid, Glimmer doesn't know its price in advance, and `allowUnknownPrice` wasn't `true`. Checked after `allowPaid` (402 comes first) and before anything runs: no step of the request was run. |
 | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`, `bad_image`, `too_large`, `unknown_document`, `same_document`). |
 | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
 ## What Glimmer may need installed
 
-Everything else Glimmer needs is in the app. These are the only things that may have to be added, and none of them is needed for most work. `GET /api/v1/requirements` gives the same list as JSON, with `installed` for each.
+Everything else Glimmer needs is in the app. These are the only things that may have to be added, and none of them is needed for most work. `GET /api/v1/requirements` gives the same list as JSON, with `installed` for each, and for a model `verified`: true when Glimmer checked its files against the checksums below, false when Glimmer 0.3.0 installed it without checking (it keeps working until the person chooses **Download Again** in Settings › Models), null when it isn't installed.
 
 What you may do about them:
 
@@ -168,7 +169,7 @@ What you may do about them:
 - A tool marked "installed by the person" is installed outside Glimmer. Show the person the steps, and run them only after they say yes. Use the versions given; never pipe a download into a shell, never turn Gatekeeper off and never remove the quarantine flag.
 - Paid services are not installed: the person adds a key in Glimmer › Settings › AI (`providerKeys` in `GET /api/v1/status` says which keys are there).
 
-A step that needs a model that isn't downloaded is refused before any step of the request runs: `422` with `{"error": {"code": "model_missing", "requirement": "<id>", "requirements": ["<id>", …], "step": <index>}}`. Today that is `select_sky` (and `run_command` with `select.sky`), which needs `depth-anything-v2-small` and `sam2.1-tiny`.
+A step that needs a model that isn't downloaded is refused before any step of the request runs: `422` with `{"error": {"code": "model_missing", "requirement": "<id>", "requirements": ["<id>", …], "step": <index>}}`. Today that is `select_sky` (and `run_command` with `select.sky`), which needs `depth-anything-v2-small` and `sam2.1-tiny`. A model that is installed but can't be loaded (its files damaged) answers `503` with `{"error": {"code": "model_unavailable", "requirement": "<id>", …}}`: the person removes it and downloads it again in Settings › Models.
 
 ### Depth Anything V2 Small (Core ML) (`depth-anything-v2-small`)
 
@@ -181,7 +182,8 @@ A step that needs a model that isn't downloaded is refused before any step of th
   - `DepthAnythingV2SmallF16.mlpackage/Data/com.apple.CoreML/model.mlmodel`, 399433 bytes, SHA-256 `44ac97a3efcfd52113183fb2862ff59cd0368e9ec2e30a90a54980dd11407042`
   - `DepthAnythingV2SmallF16.mlpackage/Data/com.apple.CoreML/weights/weight.bin`, 49419072 bytes, SHA-256 `fa60d9b6a155734f59029ebb882fd54e549bfaee3539c1a9cbd2cbbab64a0fed`
 - Checksums read from the Hugging Face file list of the repository at that commit (https://huggingface.co/api/models/<repository>/tree/<commit>), read 2026-11-19.
-- Where it goes: `~/Library/Containers/com.brattoo.glimmer/Data/Library/Application Support/Glimmer/Models/DepthAnythingV2SmallF16.mlmodelc`. Remove: Glimmer › Settings › Models › Remove.
+- Where it goes: ~/Library/Containers/com.brattoo.glimmer/Data/Library/Application Support/Glimmer/Models/DepthAnythingV2SmallF16.mlmodelc. Remove: Glimmer › Settings › Models › Remove.
+- Check that it went right: `curl -s http://127.0.0.1:9001/api/v1/requirements` → the item with "id": "depth-anything-v2-small" has "installed": true and "verified": true.
 - Installed in Glimmer: Settings › Models › Download, or the question Glimmer asks the first time a feature needs it.
 
 ### SAM 2.1 Tiny (Core ML) (`sam2.1-tiny`)
@@ -201,18 +203,21 @@ A step that needs a model that isn't downloaded is refused before any step of th
   - `SAM2_1TinyMaskDecoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel`, 75167 bytes, SHA-256 `4601f302d4c6936e15de3a22089c2afe1fa009ef703f82147ff829b4be677577`
   - `SAM2_1TinyMaskDecoderFLOAT16.mlpackage/Data/com.apple.CoreML/weights/weight.bin`, 10222400 bytes, SHA-256 `f5a8635981199fa1199007ed6798c61a326288548b74553b3c2ddb932fcdc8de`
 - Checksums read from the Hugging Face file list of the repository at that commit (https://huggingface.co/api/models/<repository>/tree/<commit>), read 2026-11-19.
-- Where it goes: `~/Library/Containers/com.brattoo.glimmer/Data/Library/Application Support/Glimmer/Models/SAM2_1Tiny*.mlmodelc`. Remove: Glimmer › Settings › Models › Remove.
+- Where it goes: ~/Library/Containers/com.brattoo.glimmer/Data/Library/Application Support/Glimmer/Models/SAM2_1Tiny*.mlmodelc. Remove: Glimmer › Settings › Models › Remove.
+- Check that it went right: `curl -s http://127.0.0.1:9001/api/v1/requirements` → the item with "id": "sam2.1-tiny" has "installed": true and "verified": true.
 - Installed in Glimmer: Settings › Models › Download, or the question Glimmer asks the first time a feature needs it.
 
 ### Ollama (`ollama`)
 
 - Kind: tool, optional. Needed by: The Assistant and text features, when Ollama is chosen in Settings › AI.
-- Publisher: Ollama. Source: https://github.com/ollama/ollama, version 0.40.16.
+- Publisher: Ollama. Source: https://github.com/ollama/ollama, minimum version 0.6.4 (the steps below install 0.40.16).
 - License: MIT (https://github.com/ollama/ollama/blob/v0.40.16/LICENSE).
 - Size: 229,996,388 bytes.
 - SHA-256: `b48d74a2d8c6a0592c816a4f85643d8d8608ad592abafbe95c04128a73c398c6`.
+- The SHA-256 is of Ollama.dmg 0.40.16, the release the steps name; any version from minVersion on works.
 - Checksums read from the release's asset list, Ollama.dmg digest (https://api.github.com/repos/ollama/ollama/releases/tags/v0.40.16), read 2026-11-19.
-- Where it goes: `/Applications/Ollama.app, and the models it pulls in ~/.ollama/models`. Remove: Quit Ollama, move /Applications/Ollama.app to the Trash, and delete ~/.ollama if its models should go too.
+- Where it goes: /Applications/Ollama.app, and the models it pulls in ~/.ollama/models. Remove: Quit Ollama, move /Applications/Ollama.app to the Trash, and delete ~/.ollama if its models should go too.
+- Check that it went right: `ollama --version` → a version of 0.6.4 or later ("ollama version is 0.40.16" for the release the steps name).
 - Installed by the person, outside Glimmer:
   1. Download Ollama.dmg of version 0.40.16 from https://github.com/ollama/ollama/releases/tag/v0.40.16.
   2. Check it: `shasum -a 256 ~/Downloads/Ollama.dmg` must print b48d74a2d8c6a0592c816a4f85643d8d8608ad592abafbe95c04128a73c398c6.

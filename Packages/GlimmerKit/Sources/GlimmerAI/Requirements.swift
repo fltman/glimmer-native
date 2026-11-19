@@ -83,6 +83,24 @@ public struct Requirement: Sendable, Equatable {
     public let use: String
 
     public var isInstallable: Bool { install != .bundled }
+
+    /// Glimmer has one mode: everything runs in the app on this Mac (no server mode as Flimmer has).
+    public var modes: [String] { ["local"] }
+    /// No entry is for Debug builds only.
+    public var debugOnly: Bool { false }
+
+    /// The command that shows the install went right, and what it should answer.
+    public var check: (command: String, expect: String)? {
+        switch install {
+        case .inApp:
+            ("curl -s http://127.0.0.1:9001/api/v1/requirements",
+             "the item with \"id\": \"\(id)\" has \"installed\": true and \"verified\": true")
+        case .byUser(_, let v):
+            ("ollama --version", "a version of \(v.minVersion) or later (\"ollama version is 0.40.16\" for the release the steps name)")
+        case .bundled:
+            nil
+        }
+    }
 }
 
 public extension Requirement {
@@ -143,7 +161,8 @@ public extension Requirement {
         neededBy: ["The Assistant and text features, when Ollama is chosen in Settings › AI"], required: false,
         license: License(spdx: "MIT", url: "https://github.com/ollama/ollama/blob/v0.40.16/LICENSE"),
         source: Source(publisher: "Ollama", url: "https://github.com/ollama/ollama", version: "0.40.16", commit: nil,
-                       sha256: "b48d74a2d8c6a0592c816a4f85643d8d8608ad592abafbe95c04128a73c398c6", sha256Note: nil,
+                       sha256: "b48d74a2d8c6a0592c816a4f85643d8d8608ad592abafbe95c04128a73c398c6",
+                       sha256Note: "The SHA-256 is of Ollama.dmg 0.40.16, the release the steps name; any version from minVersion on works.",
                        checksumsFrom: "the release's asset list, Ollama.dmg digest (https://api.github.com/repos/ollama/ollama/releases/tags/v0.40.16), read 2026-11-19"),
         files: [],
         sizeBytes: 229_996_388, location: "/Applications/Ollama.app, and the models it pulls in ~/.ollama/models",
@@ -209,16 +228,20 @@ private func orNull(_ value: Any?) -> Any { value ?? NSNull() }
 
 public extension Requirement {
     /// One item of `GET /api/v1/requirements`. `installed` comes from the app (ModelStore).
-    func json(installed: Bool?, installedVersion: String?) -> [String: Any] {
-        var source: [String: Any] = ["publisher": self.source.publisher, "url": self.source.url, "version": self.source.version,
+    /// `verified`: for a model Glimmer downloads, whether a receipt vouches for its files (null when not installed).
+    func json(installed: Bool?, installedVersion: String?, verified: Any = NSNull()) -> [String: Any] {
+        var source: [String: Any] = ["publisher": self.source.publisher, "url": self.source.url,
                                      "sha256": orNull(self.source.sha256), "checksumsFrom": self.source.checksumsFrom]
+        // An entry checked with `verify` has minVersion and never version (SIBLINGS.md).
+        if case .byUser(_, let v) = install { source["minVersion"] = v.minVersion } else { source["version"] = self.source.version }
         if let commit = self.source.commit { source["commit"] = commit }
         if let note = self.source.sha256Note { source["sha256Note"] = note }
         var item: [String: Any] = [
             "id": id, "name": name, "kind": kind.rawValue, "neededBy": neededBy, "required": required,
-            "installed": orNull(installed), "installedVersion": orNull(installedVersion),
+            "installed": orNull(installed), "installedVersion": orNull(installedVersion), "verified": verified,
             "sizeBytes": orNull(sizeBytes), "license": ["spdx": license.spdx, "url": license.url],
-            "source": source, "location": location, "removal": removal, "use": use,
+            "source": source, "where": location, "remove": removal, "use": use,
+            "modes": modes, "debugOnly": debugOnly,
         ]
         if !files.isEmpty {
             item["files"] = files.map { f -> [String: Any] in
@@ -227,11 +250,12 @@ public extension Requirement {
                 return d
             }
         }
+        let check: Any = self.check.map { ["command": $0.command, "expect": $0.expect] } ?? NSNull()
         switch install {
         case .inApp(let place):
-            item["install"] = ["how": "in_app", "where": place]
+            item["install"] = ["how": "in_app", "where": place, "check": check]
         case .byUser(let steps, let v):
-            item["install"] = ["how": "by_user", "steps": steps]
+            item["install"] = ["how": "by_user", "steps": steps, "check": check]
             item["verify"] = ["command": v.command, "teamID": orNull(v.teamID), "note": orNull(v.note),
                               "minVersion": v.minVersion, "minVersionFrom": v.minVersionFrom]
         case .bundled:
@@ -245,7 +269,7 @@ public extension Requirement {
         var s = """
         ## What Glimmer may need installed
 
-        Everything else Glimmer needs is in the app. These are the only things that may have to be added, and none of them is needed for most work. `GET /api/v1/requirements` gives the same list as JSON, with `installed` for each.
+        Everything else Glimmer needs is in the app. These are the only things that may have to be added, and none of them is needed for most work. `GET /api/v1/requirements` gives the same list as JSON, with `installed` for each, and for a model `verified`: true when Glimmer checked its files against the checksums below, false when Glimmer 0.3.0 installed it without checking (it keeps working until the person chooses **Download Again** in Settings › Models), null when it isn't installed.
 
         What you may do about them:
 
@@ -255,13 +279,17 @@ public extension Requirement {
         - A tool marked "installed by the person" is installed outside Glimmer. Show the person the steps, and run them only after they say yes. Use the versions given; never pipe a download into a shell, never turn Gatekeeper off and never remove the quarantine flag.
         - Paid services are not installed: the person adds a key in Glimmer › Settings › AI (`providerKeys` in `GET /api/v1/status` says which keys are there).
 
-        A step that needs a model that isn't downloaded is refused before any step of the request runs: `422` with `{"error": {"code": "model_missing", "requirement": "<id>", "requirements": ["<id>", …], "step": <index>}}`. Today that is `select_sky` (and `run_command` with `select.sky`), which needs `depth-anything-v2-small` and `sam2.1-tiny`.
+        A step that needs a model that isn't downloaded is refused before any step of the request runs: `422` with `{"error": {"code": "model_missing", "requirement": "<id>", "requirements": ["<id>", …], "step": <index>}}`. Today that is `select_sky` (and `run_command` with `select.sky`), which needs `depth-anything-v2-small` and `sam2.1-tiny`. A model that is installed but can't be loaded (its files damaged) answers `503` with `{"error": {"code": "model_unavailable", "requirement": "<id>", …}}`: the person removes it and downloads it again in Settings › Models.
 
         """
         for r in installable {
             s += "\n### \(r.name) (`\(r.id)`)\n\n"
             s += "- Kind: \(r.kind.rawValue), \(r.required ? "required" : "optional"). Needed by: \(r.neededBy.joined(separator: ", ")).\n"
-            s += "- Publisher: \(r.source.publisher). Source: \(r.source.url), version \(r.source.version)"
+            if case .byUser(_, let v) = r.install {
+                s += "- Publisher: \(r.source.publisher). Source: \(r.source.url), minimum version \(v.minVersion) (the steps below install \(r.source.version))"
+            } else {
+                s += "- Publisher: \(r.source.publisher). Source: \(r.source.url), version \(r.source.version)"
+            }
             if let commit = r.source.commit { s += ", commit `\(commit)`" }
             s += ".\n"
             s += "- License: \(r.license.spdx) (\(r.license.url)).\n"
@@ -275,7 +303,8 @@ public extension Requirement {
             }
             if let note = r.source.sha256Note, r.files.isEmpty { s += "- \(note)\n" }
             s += "- Checksums read from \(r.source.checksumsFrom).\n"
-            s += "- Where it goes: `\(r.location)`. Remove: \(r.removal)\n"
+            s += "- Where it goes: \(r.location). Remove: \(r.removal)\n"
+            if let check = r.check { s += "- Check that it went right: `\(check.command)` → \(check.expect).\n" }
             switch r.install {
             case .inApp(let place):
                 s += "- Installed in Glimmer: \(place) › Download, or the question Glimmer asks the first time a feature needs it.\n"

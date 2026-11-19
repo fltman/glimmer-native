@@ -114,12 +114,21 @@ import Testing
 
     @Test func theJSONHasTheSeriesShape() throws {
         let item = Requirement.depthAnything.json(installed: false, installedVersion: nil)
-        for key in ["id", "name", "kind", "neededBy", "required", "installed", "installedVersion", "sizeBytes", "license", "source", "install"] {
+        for key in ["id", "name", "kind", "neededBy", "required", "installed", "installedVersion", "verified", "sizeBytes", "license", "source", "install",
+                    "where", "remove", "modes", "debugOnly"] {
             #expect(item[key] != nil, "\(key)")
         }
         #expect((item["install"] as? [String: Any])?["how"] as? String == "in_app")
         #expect((item["source"] as? [String: Any])?["commit"] as? String == Requirement.depthAnything.source.commit)
         let ollama = Requirement.ollama.json(installed: nil, installedVersion: nil)
+        // An entry checked with verify has source.minVersion, never source.version (SIBLINGS.md 16878d0).
+        #expect((ollama["source"] as? [String: Any])?["minVersion"] as? String == "0.6.4")
+        #expect((ollama["source"] as? [String: Any])?["version"] == nil)
+        #expect((item["source"] as? [String: Any])?["minVersion"] == nil)
+        for r in Requirement.installable {
+            let check = (r.json(installed: nil, installedVersion: nil)["install"] as? [String: Any])?["check"] as? [String: Any]
+            #expect(check?["command"] as? String != nil && check?["expect"] as? String != nil, "\(r.id): install.check")
+        }
         #expect((ollama["install"] as? [String: Any])?["how"] as? String == "by_user")
         #expect((ollama["verify"] as? [String: Any])?["minVersion"] as? String == "0.6.4")
         #expect(JSONSerialization.isValidJSONObject(["items": Requirement.installable.map { $0.json(installed: nil, installedVersion: nil) }]))

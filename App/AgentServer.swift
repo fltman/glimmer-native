@@ -876,7 +876,13 @@ enum AgentRouter {
         let results = await session.ai.runAPISteps(steps)
         let list = stepList(results)
         if let failed = results.firstIndex(where: { $0.status == "failed" }) {
-            return .json(["error": stepFailure(results, failed), "results": list, "document": detail(session)], status: 422)
+            var error = stepFailure(results, failed)
+            // Installed but not loadable: 503 model_unavailable (SIBLINGS.md), with the step and the entry.
+            if results[failed].reason == "model_unavailable" {
+                error["code"] = "model_unavailable"
+                return .json(["error": error, "results": list, "document": detail(session)], status: 503)
+            }
+            return .json(["error": error, "results": list, "document": detail(session)], status: 422)
         }
         return .json(["results": list, "document": detail(session)])
     }
@@ -885,7 +891,9 @@ enum AgentRouter {
     static func requirementJSON(_ r: Requirement) -> [String: Any] {
         if let model = OnDeviceModel.with(requirement: r.id) {
             let installed = ModelStore.shared.isInstalled(model)
-            return r.json(installed: installed, installedVersion: installed ? r.source.commit : nil)
+            let verification = ModelStore.shared.verification(model)
+            // The version is known only from a receipt; an unverified install's is not.
+            return r.json(installed: installed, installedVersion: verification == .verified ? r.source.commit : nil, verified: verification.json)
         }
         // A tool the person installs: Glimmer doesn't look for it, so it doesn't say.
         return r.json(installed: nil, installedVersion: nil)

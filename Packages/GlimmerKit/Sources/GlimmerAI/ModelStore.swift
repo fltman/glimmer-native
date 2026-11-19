@@ -80,6 +80,16 @@ public struct ModelMissingError: LocalizedError, Equatable, Sendable {
     }
 }
 
+/// A model is installed but Core ML can't load it (its compiled files are damaged).
+public struct ModelUnavailableError: LocalizedError, Equatable, Sendable {
+    public let model: OnDeviceModel
+    public let underlying: String
+
+    public var errorDescription: String? {
+        "The model “\(model.title)” is installed but couldn't be loaded (\(underlying)). Remove it in Glimmer › Settings › Models and download it again."
+    }
+}
+
 /// A downloaded file isn't the one the register lists: the model is not installed.
 public struct ModelChecksumError: LocalizedError, Equatable, Sendable {
     public let model: String
@@ -102,6 +112,50 @@ public final class LoadedModel: @unchecked Sendable {
     }
 }
 
+/// Written beside a model when Glimmer has checked its files against the register: which entry,
+/// at which commit, which files with which checksums, and how. A model without one was installed
+/// by Glimmer 0.3.0, which checked nothing.
+public struct ModelReceipt: Codable, Equatable, Sendable {
+    public struct File: Codable, Equatable, Sendable {
+        public let path: String
+        public let size: Int
+        public let sha256: String?
+        public let gitBlob: String?
+    }
+
+    public let requirement: String
+    public let commit: String
+    public let files: [File]
+    public let checkedAt: String
+    /// "download", or "earlier download" (0.3.0's files found and checked).
+    public let how: String
+
+    init(_ r: Requirement, how: String) {
+        requirement = r.id
+        commit = r.source.commit ?? ""
+        files = r.files.map { File(path: $0.path, size: $0.size, sha256: $0.sha256, gitBlob: $0.gitBlob) }
+        checkedAt = ISO8601DateFormatter().string(from: Date())
+        self.how = how
+    }
+
+    /// True when it vouches for exactly what the register lists now.
+    func covers(_ r: Requirement) -> Bool {
+        requirement == r.id && commit == r.source.commit
+            && files == r.files.map { File(path: $0.path, size: $0.size, sha256: $0.sha256, gitBlob: $0.gitBlob) }
+    }
+}
+
+/// Whether an installed model's files were checked (its receipt covers the register).
+public enum ModelVerification: Sendable, Equatable {
+    case notInstalled
+    case verified
+    /// Installed by an earlier version, which checked nothing. It keeps working until the person chooses Download Again.
+    case unverified
+
+    /// For `GET /api/v1/requirements`: true, false, or null when it isn't installed.
+    public var json: Any { self == .notInstalled ? NSNull() : (self == .verified) }
+}
+
 public actor ModelStore {
     public static let shared = ModelStore()
 
@@ -113,12 +167,17 @@ public actor ModelStore {
 
     /// Where this store downloads from; nil means `ModelStore.source` (Settings › Models). Tests name a sample server.
     private let downloadSource: URL?
+    /// Where Glimmer 0.3.0 left the files it downloaded (it never removed its staging folders).
+    private let earlierDownloads: URL
+    /// Models whose earlier install has been looked into in this run (once each).
+    private var lookedAtEarlier: Set<OnDeviceModel> = []
 
-    public init(root: URL? = nil, source: URL? = nil) {
+    public init(root: URL? = nil, source: URL? = nil, earlierDownloads: URL? = nil) {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         self.root = root ?? support.appending(path: "Glimmer/Models")
         self.sourceOverride = ProcessInfo.processInfo.environment["GLIMMER_MODELS_DIR"].map { URL(fileURLWithPath: $0) }
         self.downloadSource = source
+        self.earlierDownloads = earlierDownloads ?? FileManager.default.temporaryDirectory.appending(path: "glimmer-models")
     }
 
     /// Where models are downloaded from: Hugging Face (Apple's Core ML conversions)
@@ -140,6 +199,57 @@ public actor ModelStore {
     /// Those of `models` that aren't on this Mac.
     public nonisolated func missing(_ models: [OnDeviceModel]) -> [OnDeviceModel] { models.filter { !isInstalled($0) } }
 
+    nonisolated func receiptURL(_ model: OnDeviceModel) -> URL { root.appending(path: "\(model.requirement.id).receipt.json") }
+
+    nonisolated func receipt(_ model: OnDeviceModel) -> ModelReceipt? {
+        (try? Data(contentsOf: receiptURL(model))).flatMap { try? JSONDecoder().decode(ModelReceipt.self, from: $0) }
+    }
+
+    /// Whether `model` is installed, and if so whether a receipt vouches for its files. Reads no model file.
+    public nonisolated func verification(_ model: OnDeviceModel) -> ModelVerification {
+        let compiled = model.packages.allSatisfy { FileManager.default.fileExists(atPath: compiledURL($0).path) }
+        guard compiled else { return .notInstalled }
+        return receipt(model)?.covers(model.requirement) == true ? .verified : .unverified
+    }
+
+    /// Not installed, or installed without a receipt: what the Download (Again) button is for.
+    public nonisolated func needsDownload(_ model: OnDeviceModel) -> Bool {
+        !isInstalled(model) || verification(model) == .unverified
+    }
+
+    /// An install without a receipt (Glimmer 0.3.0's): if the files it downloaded are still in its
+    /// staging folders, they are checked against the register, once per run, and the receipt is
+    /// written. Otherwise the model stays as it is, unverified and working. Downloads nothing.
+    @discardableResult
+    public func checkEarlierInstall(_ model: OnDeviceModel) -> ModelVerification {
+        let now = verification(model)
+        guard now == .unverified, !lookedAtEarlier.contains(model) else { return now }
+        lookedAtEarlier.insert(model)
+        let r = model.requirement
+        for package in model.packages {
+            let files = r.files.filter { $0.path.hasPrefix(package + "/") }
+            guard Self.earlierCopy(of: package, files: files, in: earlierDownloads) != nil else { return now }
+        }
+        try? writeReceipt(ModelReceipt(r, how: "earlier download"), for: model)
+        return verification(model)
+    }
+
+    /// The folder in `downloads` holding `package` with every one of `files` as the register lists it.
+    static func earlierCopy(of package: String, files: [Requirement.File], in downloads: URL) -> URL? {
+        let folders = (try? FileManager.default.contentsOfDirectory(at: downloads, includingPropertiesForKeys: nil)) ?? []
+        return folders.first { folder in
+            FileManager.default.fileExists(atPath: folder.appending(path: package).path)
+                && files.allSatisfy { (try? FileChecksum.mismatch(at: folder.appending(path: $0.path), expected: $0)) == .some(nil) }
+        }
+    }
+
+    private func writeReceipt(_ receipt: ModelReceipt, for model: OnDeviceModel) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        try encoder.encode(receipt).write(to: receiptURL(model), options: .atomic)
+    }
+
     nonisolated func compiledURL(_ package: String) -> URL {
         root.appending(path: package.replacingOccurrences(of: ".mlpackage", with: ".mlmodelc"))
     }
@@ -154,10 +264,17 @@ public actor ModelStore {
                 throw ModelMissingError([model])
             }
             try await install(compiling: dir.appending(path: package), to: compiled)
+        } else {
+            checkEarlierInstall(model)
         }
         let config = MLModelConfiguration()
         config.computeUnits = .all
-        let m = LoadedModel(try MLModel(contentsOf: compiled, configuration: config))
+        let m: LoadedModel
+        do {
+            m = LoadedModel(try MLModel(contentsOf: compiled, configuration: config))
+        } catch {
+            throw ModelUnavailableError(model: model, underlying: (error as NSError).localizedDescription)
+        }
         loaded[package] = m
         return m
     }
@@ -188,9 +305,13 @@ public actor ModelStore {
         } catch {
             throw ModelDownloadError(model: model.title, underlying: (error as NSError).localizedDescription)
         }
-        for package in model.packages where !FileManager.default.fileExists(atPath: compiledURL(package).path) {
+        // Every package from these checked files, replacing an unverified copy (Download Again).
+        try? FileManager.default.removeItem(at: receiptURL(model))
+        for package in model.packages {
+            loaded[package] = nil
             try await install(compiling: staging.appending(path: package), to: compiledURL(package))
         }
+        try writeReceipt(ModelReceipt(r, how: "download"), for: model)
     }
 
     private func install(compiling package: URL, to compiled: URL) async throws {
@@ -206,6 +327,7 @@ public actor ModelStore {
             loaded[package] = nil
             try? FileManager.default.removeItem(at: compiledURL(package))
         }
+        try? FileManager.default.removeItem(at: receiptURL(model))
     }
 
     /// Fetches `files` from `base/<path>` into `staging/<path>`, each checked as it arrives:

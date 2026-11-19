@@ -379,6 +379,10 @@ extension AIController {
             } catch is CancellationError {
                 stopped = true
                 results.append(APIStepResult(op: step.op, status: "canceled", error: nil))
+            } catch let unavailable as ModelUnavailableError {
+                stopped = true
+                results.append(APIStepResult(op: step.op, status: "failed", error: AgentAPI.words(for: unavailable),
+                                             reason: "model_unavailable", requirements: [unavailable.model.requirement.id]))
             } catch let missing as ModelMissingError {
                 // Only reached if a model went away after the request was checked: never downloaded here.
                 stopped = true

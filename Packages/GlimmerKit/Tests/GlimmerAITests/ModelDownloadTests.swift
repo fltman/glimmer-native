@@ -173,4 +173,82 @@ import Testing
         #expect(server.requests.isEmpty)
         #expect(store.missing(OnDeviceModel.allCases) == OnDeviceModel.allCases)
     }
+
+    // MARK: Receipts and installs from 0.3.0
+
+    /// A model "installed" as compiled folders, the way 0.3.0 left it: no receipt.
+    func earlierInstall(_ model: OnDeviceModel, in root: URL) throws {
+        for package in model.packages {
+            try FileManager.default.createDirectory(at: root.appending(path: package.replacingOccurrences(of: ".mlpackage", with: ".mlmodelc")), withIntermediateDirectories: true)
+        }
+    }
+
+    @Test func anInstallWithoutAReceiptIsUnverifiedAndKeepsWorking() async throws {
+        let root = folder(), downloads = folder()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let server = try await SampleServer(files: [:])
+        defer { server.stop() }
+        let store = ModelStore(root: root, source: server.base, earlierDownloads: downloads)
+        #expect(store.verification(.depth) == .notInstalled)
+        try earlierInstall(.depth, in: root)
+        #expect(store.isInstalled(.depth), "it still counts as installed: nothing stops working")
+        #expect(store.verification(.depth) == .unverified)
+        #expect(store.needsDownload(.depth))
+        // 0.3.0's downloaded files are gone: it stays unverified, and nothing is fetched.
+        #expect(await store.checkEarlierInstall(.depth) == .unverified)
+        #expect(server.requests.isEmpty)
+        #expect(ModelVerification.unverified.json as? Bool == false)
+        #expect(ModelVerification.notInstalled.json is NSNull)
+    }
+
+    @Test func aReceiptVouchesOnlyForWhatTheRegisterListsNow() throws {
+        let root = folder()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ModelStore(root: root)
+        try earlierInstall(.segmentAnything, in: root)
+        let good = ModelReceipt(Requirement.segmentAnything, how: "download")
+        try JSONEncoder().encode(good).write(to: store.receiptURL(.segmentAnything))
+        #expect(store.verification(.segmentAnything) == .verified)
+        #expect(!store.needsDownload(.segmentAnything))
+        // A receipt for another commit (or other files) vouches for nothing.
+        var text = try String(contentsOf: store.receiptURL(.segmentAnything), encoding: .utf8)
+        text = text.replacingOccurrences(of: Requirement.segmentAnything.source.commit!, with: String(repeating: "0", count: 40))
+        try text.write(to: store.receiptURL(.segmentAnything), atomically: true, encoding: .utf8)
+        #expect(store.verification(.segmentAnything) == .unverified)
+    }
+
+    @Test func removingAModelRemovesItsReceipt() async throws {
+        let root = folder()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = ModelStore(root: root)
+        try earlierInstall(.depth, in: root)
+        try JSONEncoder().encode(ModelReceipt(Requirement.depthAnything, how: "download")).write(to: store.receiptURL(.depth))
+        try await store.remove(.depth)
+        #expect(store.verification(.depth) == .notInstalled)
+        #expect(!FileManager.default.fileExists(atPath: store.receiptURL(.depth).path))
+    }
+
+    /// 0.3.0's staging folders: a package whose files all match is found; a tampered one isn't.
+    @Test func earlierDownloadedFilesAreCheckedBeforeTheyCount() throws {
+        let downloads = folder()
+        defer { try? FileManager.default.removeItem(at: downloads) }
+        let manifest = Data("{}".utf8), weights = Data(repeating: 3, count: 2048)
+        let files = [Requirement.File(path: "P.mlpackage/Manifest.json", size: manifest.count, sha256: nil, gitBlob: Self.gitBlob(manifest)),
+                     Requirement.File(path: "P.mlpackage/w.bin", size: weights.count, sha256: Self.sha256(weights), gitBlob: nil)]
+        func stage(_ name: String, weights w: Data) throws {
+            let dir = downloads.appending(path: name).appending(path: "P.mlpackage")
+            try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            try manifest.write(to: dir.appending(path: "Manifest.json"))
+            try w.write(to: dir.appending(path: "w.bin"))
+        }
+        try stage("A", weights: Data(repeating: 4, count: 2048))
+        #expect(ModelStore.earlierCopy(of: "P.mlpackage", files: files, in: downloads) == nil)
+        try stage("B", weights: weights)
+        #expect(ModelStore.earlierCopy(of: "P.mlpackage", files: files, in: downloads)?.lastPathComponent == "B")
+    }
+
+    @Test func requirementsSayWhetherAModelIsVerified() {
+        #expect(Requirement.depthAnything.json(installed: true, installedVersion: nil, verified: false)["verified"] as? Bool == false)
+        #expect(Requirement.depthAnything.json(installed: false, installedVersion: nil)["verified"] is NSNull)
+    }
 }

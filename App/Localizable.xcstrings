@@ -14719,6 +14719,57 @@
           }
         }
       }
+    },
+    "Downloaded and checked": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedladdad och kontrollerad"
+          }
+        }
+      }
+    },
+    "Unverified (installed by an earlier version)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ej kontrollerad (installerad av en tidigare version)"
+          }
+        }
+      }
+    },
+    "Download Again…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladda ner igen…"
+          }
+        }
+      }
+    },
+    "Download %@ again": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladda ner %@ igen"
+          }
+        }
+      }
+    },
+    "The model “%@” is installed but couldn't be loaded (%@). Remove it in Glimmer › Settings › Models and download it again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modellen ”%1$@” är installerad men kunde inte läsas in (%2$@). Ta bort den under Glimmer › Inställningar › Modeller och ladda ner den igen."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

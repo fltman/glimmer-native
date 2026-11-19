@@ -76,7 +76,7 @@ struct ModelDownloadSheet: View {
         task = Task {
             do {
                 var before = 0.0
-                for model in models where !ModelStore.shared.isInstalled(model) {
+                for model in models where ModelStore.shared.needsDownload(model) {
                     let share = Double(model.requirement.sizeBytes ?? 0) / total
                     let start = before
                     try await ModelStore.shared.download(model) { part in

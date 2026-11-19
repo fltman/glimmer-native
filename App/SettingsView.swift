@@ -310,7 +310,7 @@ private struct AISettingsView: View {
 
 /// On-device models, downloaded when the person asks.
 private struct ModelSettingsView: View {
-    @State private var installed: Set<OnDeviceModel> = []
+    @State private var state: [OnDeviceModel: ModelVerification] = [:]
     @State private var asking: ModelDownloadRequest?
     @AppStorage(ModelStore.sourceKey) private var source = ""
 
@@ -321,12 +321,29 @@ private struct ModelSettingsView: View {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 2) {
                             ModelFacts(model: model)
-                            Text(installed.contains(model) ? "Downloaded" : "Not downloaded")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            switch state[model] ?? .notInstalled {
+                            case .verified:
+                                Text("Downloaded and checked").font(.caption).foregroundStyle(.secondary)
+                            case .unverified:
+                                StatusLine(.warning, "Unverified (installed by an earlier version)").font(.caption)
+                            case .notInstalled:
+                                Text("Not downloaded").font(.caption).foregroundStyle(.secondary)
+                            }
                         }
                         Spacer()
-                        if installed.contains(model) {
+                        if state[model] == .unverified {
+                            VStack(alignment: .trailing) {
+                                Button("Download Again…") { asking = ModelDownloadRequest(models: [model], retry: nil) }
+                                    .accessibilityLabel("Download \(model.title) again")
+                                Button("Remove", role: .destructive) {
+                                    Task {
+                                        try? await ModelStore.shared.remove(model)
+                                        refresh()
+                                    }
+                                }
+                                .accessibilityLabel("Remove \(model.title)")
+                            }
+                        } else if state[model] == .verified {
                             Button("Remove", role: .destructive) {
                                 Task {
                                     try? await ModelStore.shared.remove(model)
@@ -353,6 +370,13 @@ private struct ModelSettingsView: View {
         }
         .formStyle(.grouped)
         .onAppear { refresh() }
+        .task {
+            // An install from 0.3.0: its downloaded files are checked if they are still there (nothing is fetched).
+            for model in OnDeviceModel.allCases where ModelStore.shared.verification(model) == .unverified {
+                await ModelStore.shared.checkEarlierInstall(model)
+            }
+            refresh()
+        }
         .sheet(item: $asking) { request in
             ModelDownloadSheet(models: request.models) { _ in
                 asking = nil
@@ -362,7 +386,7 @@ private struct ModelSettingsView: View {
     }
 
     private func refresh() {
-        installed = Set(OnDeviceModel.allCases.filter { ModelStore.shared.isInstalled($0) })
+        state = Dictionary(uniqueKeysWithValues: OnDeviceModel.allCases.map { ($0, ModelStore.shared.verification($0)) })
     }
 }
 

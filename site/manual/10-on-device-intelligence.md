@@ -179,7 +179,7 @@ Glimmer never downloads a model by itself. The first time you use a feature that
 
 Glimmer fetches each model at a fixed version, and checks every file against the checksum the source publishes for it before it installs the model. If a file doesn't match, Glimmer installs nothing, keeps nothing of the download, and says so. The download needs an internet connection. Glimmer then compiles each model for your Mac and keeps it in its Application Support folder, under `Glimmer/Models`. Because Glimmer is sandboxed, that folder is inside the app's container in your Library.
 
-To see which models are installed, open **Glimmer › Settings › Models**. Each model shows **Downloaded** or **Not downloaded**, its size, publisher, source and license. Click **Remove** to delete a downloaded model, and **Download…** to get it again.
+To see which models are installed, open **Glimmer › Settings › Models**. Each model shows **Downloaded and checked**, **Not downloaded** or, for a model Glimmer 0.3.0 downloaded without checking, **Unverified (installed by an earlier version)** with **Download Again…**, and its size, publisher, source and license. Click **Remove** to delete a downloaded model, and **Download…** to get it again.
 
 An agent that uses Glimmer's local API can't download a model. A step that needs a missing model is refused with `model_missing`, and the agent can open **Settings › Models** for you to decide.
 

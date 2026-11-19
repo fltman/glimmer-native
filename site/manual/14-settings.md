@@ -86,7 +86,9 @@ Some tools use models that run on your Mac. Glimmer downloads one only when you 
 | Depth (Depth Anything V2 Small) | Lens Blur and Select Sky, which need to know how far away each part of the photo is | about 50 MB |
 | Magic Select (SAM 2.1 Tiny) | The Magic Select tool and Select Sky | about 80 MB |
 
-Each row shows the model's size, who publishes it, and links to its source and its license, and says whether it is downloaded. Click **Download…** to get a model: Glimmer shows what it will fetch and starts only when you click **Download**. Click **Remove** to delete a downloaded model and free the space. The models come from Apple's Core ML conversions on Hugging Face, at a fixed version, and Glimmer checks every file's checksum before it installs one.
+Each row shows the model's size, who publishes it, and links to its source and its license, and says whether it is downloaded. Click **Download…** to get a model: Glimmer shows what it will fetch and starts only when you click **Download**. Click **Remove** to delete a downloaded model and free the space.
+
+A model that Glimmer 0.3.0 downloaded was not checked. If the files it downloaded are still on the Mac, Glimmer checks them now and the model counts as checked. Otherwise its row says **Unverified (installed by an earlier version)**. It keeps working as before; click **Download Again…** to replace it with a checked copy, or **Remove** to delete it. The models come from Apple's Core ML conversions on Hugging Face, at a fixed version, and Glimmer checks every file's checksum before it installs one.
 
 | Setting | What it does |
 | --- | --- |
