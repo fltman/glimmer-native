@@ -851,7 +851,7 @@ private struct LensBlurView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Estimates depth on this Mac and blurs what's out of focus. The first run downloads a 48 MB model.")
+            Text("Estimates depth on this Mac and blurs what's out of focus. The first time, Glimmer asks before it downloads a 50 MB model.")
                 .font(.callout).foregroundStyle(.secondary)
             ParameterSlider(label: "Focus distance", value: p.focus * 100, range: 0...100, step: 1,
                             format: { $0 > 66 ? "Near" : ($0 < 33 ? "Far" : "Middle") }, set: { p.focus = $0 / 100 }, commit: {})

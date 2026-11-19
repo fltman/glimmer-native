@@ -79,18 +79,18 @@ Type the model name exactly as OpenRouter lists it.
 
 ## Models
 
-Some tools use models that run on your Mac. Glimmer downloads each one the first time you use the tool that needs it.
+Some tools use models that run on your Mac. Glimmer downloads one only when you click **Download**, here or in the question it asks the first time you use the tool that needs it.
 
 | Model | Used for | Size |
 | --- | --- | --- |
-| Depth (Depth Anything V2 Small) | Lens Blur, which needs to know how far away each part of the photo is | about 48 MB |
-| Magic Select (SAM 2.1 Tiny) | The Magic Select tool | about 78 MB |
+| Depth (Depth Anything V2 Small) | Lens Blur and Select Sky, which need to know how far away each part of the photo is | about 50 MB |
+| Magic Select (SAM 2.1 Tiny) | The Magic Select tool and Select Sky | about 80 MB |
 
-Each row says whether the model is downloaded. Click **Remove** to delete a downloaded model and free the space. It downloads again the next time you need it. The models come from Apple's Core ML conversions on Hugging Face.
+Each row shows the model's size, who publishes it, and links to its source and its license, and says whether it is downloaded. Click **Download…** to get a model: Glimmer shows what it will fetch and starts only when you click **Download**. Click **Remove** to delete a downloaded model and free the space. The models come from Apple's Core ML conversions on Hugging Face, at a fixed version, and Glimmer checks every file's checksum before it installs one.
 
 | Setting | What it does |
 | --- | --- |
-| Download from | Where Glimmer downloads the models. Leave it empty for Hugging Face. A mirror must serve the same paths as Hugging Face (`<repository>/resolve/main/<file>`). |
+| Download from | Where Glimmer downloads the models. Leave it empty for Hugging Face. A mirror must serve the same paths as Hugging Face (`<repository>/resolve/<commit>/<file>`). Every file is checked against the same checksums, wherever it comes from. |
 
 ## Performance
 

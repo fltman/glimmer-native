@@ -56,6 +56,8 @@ Opening a document answers `201 Created`. To start from a blank canvas instead, 
 | GET | `/glimmer` | This guide (Markdown). |
 | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents, the running `jobs`, and `providerKeys`: for each AI service Glimmer can use with a key (`openrouter`, `berget`, `grunden`), whether the user has entered one (true or false, never the key). Paid steps make pictures through the picture service chosen in Glimmer's Settings and need that service's key (for OpenRouter, `openrouter` true). `linkJournal` says what Glimmer keeps of linked files: `entries`, `unreturned` (how many have steps not saved back) and `broken` (kept edits that can't be read; they are never removed by Glimmer). |
 | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. A paid operation also has `"price"` (null when Glimmer doesn't know it) and `"priceKnown"`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `add_image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
+| GET | `/api/v1/requirements` | What Glimmer may need installed (see the section of that name): `{"items": [{"id", "name", "kind", "neededBy", "required", "installed", "installedVersion", "sizeBytes", "license": {"spdx", "url"}, "source": {"publisher", "url", "version", "commit", "sha256"}, "install": {"how": "in_app", "where"} or {"how": "by_user", "steps"}}]}`. Reading it changes nothing and downloads nothing. |
+| POST | `/api/v1/settings/open` | Opens Glimmer's Settings at a pane for the person: `{"pane": "models"}` (or `"general"`, `"ai"`, `"performance"`, `"tablet"`). It only opens the pane; it changes no setting and starts no download. Answers `{"opened": "models"}`. |
 | GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; Glimmer's own empty start document, which the first image you open replaces (keeping its id), has `"startDocument": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`, `available`), and ⌘S writes it back. The link survives a restart of Glimmer; `available` is false, with a `reason`, when the file can no longer be reached or written after one. `unreturnedSteps` (when above 0) is how many steps are not saved back yet; `kept: true` means the person left it so at Quit or with Keep for Later and it was opened again, `recovered: true` that Glimmer stopped on its own and the document was brought back. Both go when it is saved back. |
 | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\|"black"\|"transparent", "name"}`). `name` names the document's window and, for an image, its layer. Glimmer's untouched start document is replaced instead of leaving an empty window. |
 | GET | `/api/v1/documents/{id}` | Size, layers (top first, each with `bounds` in document pixels when it has content), the active layer and whether there is a selection. |
@@ -149,9 +151,76 @@ The same goes for a setting inside `params` of `add_adjustment`, `apply_filter` 
 | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
 | 413 | `too_large` | Body over 256 MB. |
 | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `too_large`, `bad_anchor`, `bad_color`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
+| 422 | `model_missing` | A step needs an on-device model that isn't downloaded (today `select_sky`). `error.requirement` is the first missing entry's id, `error.requirements` all of them, `error.step` the step. Checked before anything runs: no step of the request was run. The person downloads the model in Glimmer (`POST /api/v1/settings/open` with `{"pane": "models"}` shows them where); the API never starts a download. |
 | 422 | `unprocessable`, reason `unknown_price` | A step is paid, Glimmer doesn't know its price in advance, and `allowUnknownPrice` wasn't `true`. Checked after `allowPaid` (402 comes first) and before anything runs: no step of the request was run. |
 | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`, `bad_image`, `too_large`, `unknown_document`, `same_document`). |
 | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
+
+## What Glimmer may need installed
+
+Everything else Glimmer needs is in the app. These are the only things that may have to be added, and none of them is needed for most work. `GET /api/v1/requirements` gives the same list as JSON, with `installed` for each.
+
+What you may do about them:
+
+- Explain what is missing, and show its source and license from this list.
+- Open the right Settings pane for the person with `POST /api/v1/settings/open` and `{"pane": "models"}` (or `"ai"`). It only opens the pane; it changes nothing.
+- The API never starts a download. A model is downloaded only when the person clicks **Download** in Glimmer's own window; Glimmer then checks the SHA-256 of every file (and the git blob id of `Manifest.json`) against the list below, and refuses a model whose checksum doesn't match.
+- A tool marked "installed by the person" is installed outside Glimmer. Show the person the steps, and run them only after they say yes. Use the versions given; never pipe a download into a shell, never turn Gatekeeper off and never remove the quarantine flag.
+- Paid services are not installed: the person adds a key in Glimmer › Settings › AI (`providerKeys` in `GET /api/v1/status` says which keys are there).
+
+A step that needs a model that isn't downloaded is refused before any step of the request runs: `422` with `{"error": {"code": "model_missing", "requirement": "<id>", "requirements": ["<id>", …], "step": <index>}}`. Today that is `select_sky` (and `run_command` with `select.sky`), which needs `depth-anything-v2-small` and `sam2.1-tiny`.
+
+### Depth Anything V2 Small (Core ML) (`depth-anything-v2-small`)
+
+- Kind: model, optional. Needed by: select_sky, run_command select.sky, Select Sky, Lens Blur (AI panel).
+- Publisher: Apple. Source: https://huggingface.co/apple/coreml-depth-anything-v2-small, version DepthAnythingV2SmallF16, commit `cfef6f6f2a70783dedc0bfae40cecbc2052285d3`.
+- License: Apache-2.0 (https://huggingface.co/apple/coreml-depth-anything-v2-small/blob/cfef6f6f2a70783dedc0bfae40cecbc2052285d3/README.md).
+- Size: 49,819,122 bytes.
+- Files, checked by Glimmer after the download:
+  - `DepthAnythingV2SmallF16.mlpackage/Manifest.json`, 617 bytes, git blob `b1ff9c6ab81057143ea82aab2796a7e54e3a8823`
+  - `DepthAnythingV2SmallF16.mlpackage/Data/com.apple.CoreML/model.mlmodel`, 399433 bytes, SHA-256 `44ac97a3efcfd52113183fb2862ff59cd0368e9ec2e30a90a54980dd11407042`
+  - `DepthAnythingV2SmallF16.mlpackage/Data/com.apple.CoreML/weights/weight.bin`, 49419072 bytes, SHA-256 `fa60d9b6a155734f59029ebb882fd54e549bfaee3539c1a9cbd2cbbab64a0fed`
+- Checksums read from the Hugging Face file list of the repository at that commit (https://huggingface.co/api/models/<repository>/tree/<commit>), read 2026-11-19.
+- Where it goes: `~/Library/Containers/com.brattoo.glimmer/Data/Library/Application Support/Glimmer/Models/DepthAnythingV2SmallF16.mlmodelc`. Remove: Glimmer › Settings › Models › Remove.
+- Installed in Glimmer: Settings › Models › Download, or the question Glimmer asks the first time a feature needs it.
+
+### SAM 2.1 Tiny (Core ML) (`sam2.1-tiny`)
+
+- Kind: model, optional. Needed by: select_sky, run_command select.sky, Magic Select, Select Sky.
+- Publisher: Apple. Source: https://huggingface.co/apple/coreml-sam2.1-tiny, version SAM2_1Tiny FLOAT16, commit `39ae0a8a83e5e6cd196e804bf7cccc5f8171f306`.
+- License: Apache-2.0 (https://huggingface.co/apple/coreml-sam2.1-tiny/blob/39ae0a8a83e5e6cd196e804bf7cccc5f8171f306/README.md).
+- Size: 79,644,968 bytes.
+- Files, checked by Glimmer after the download:
+  - `SAM2_1TinyImageEncoderFLOAT16.mlpackage/Manifest.json`, 617 bytes, git blob `8f229fc88cb92867e3cbdbbc4341eed62d00f85d`
+  - `SAM2_1TinyImageEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel`, 154372 bytes, SHA-256 `6cbc50301ee3ff4a9366083f9647e1f06762759542d8dd0fac394ebc3682cce7`
+  - `SAM2_1TinyImageEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/weights/weight.bin`, 67069504 bytes, SHA-256 `eab96eb8ff35720c79eedc0cac2a4ef32d685f9c994c39736027078528c48a97`
+  - `SAM2_1TinyPromptEncoderFLOAT16.mlpackage/Manifest.json`, 617 bytes, git blob `9d23f523f25e7808a78839e24224478e90a1e886`
+  - `SAM2_1TinyPromptEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel`, 20618 bytes, SHA-256 `3a83c167d8bd63e80f86349a78c2ab0527ce97eca1f848a4ce57fe5351241fa3`
+  - `SAM2_1TinyPromptEncoderFLOAT16.mlpackage/Data/com.apple.CoreML/weights/weight.bin`, 2101056 bytes, SHA-256 `af466cf28ef8838f409c2bfd8cc0049b9efbf9db335d60a57dbfc5160af883f2`
+  - `SAM2_1TinyMaskDecoderFLOAT16.mlpackage/Manifest.json`, 617 bytes, git blob `329fc398baacb99b8975bf899f74852a684c3cd6`
+  - `SAM2_1TinyMaskDecoderFLOAT16.mlpackage/Data/com.apple.CoreML/model.mlmodel`, 75167 bytes, SHA-256 `4601f302d4c6936e15de3a22089c2afe1fa009ef703f82147ff829b4be677577`
+  - `SAM2_1TinyMaskDecoderFLOAT16.mlpackage/Data/com.apple.CoreML/weights/weight.bin`, 10222400 bytes, SHA-256 `f5a8635981199fa1199007ed6798c61a326288548b74553b3c2ddb932fcdc8de`
+- Checksums read from the Hugging Face file list of the repository at that commit (https://huggingface.co/api/models/<repository>/tree/<commit>), read 2026-11-19.
+- Where it goes: `~/Library/Containers/com.brattoo.glimmer/Data/Library/Application Support/Glimmer/Models/SAM2_1Tiny*.mlmodelc`. Remove: Glimmer › Settings › Models › Remove.
+- Installed in Glimmer: Settings › Models › Download, or the question Glimmer asks the first time a feature needs it.
+
+### Ollama (`ollama`)
+
+- Kind: tool, optional. Needed by: The Assistant and text features, when Ollama is chosen in Settings › AI.
+- Publisher: Ollama. Source: https://github.com/ollama/ollama, version 0.40.16.
+- License: MIT (https://github.com/ollama/ollama/blob/v0.40.16/LICENSE).
+- Size: 229,996,388 bytes.
+- SHA-256: `b48d74a2d8c6a0592c816a4f85643d8d8608ad592abafbe95c04128a73c398c6`.
+- Checksums read from the release's asset list, Ollama.dmg digest (https://api.github.com/repos/ollama/ollama/releases/tags/v0.40.16), read 2026-11-19.
+- Where it goes: `/Applications/Ollama.app, and the models it pulls in ~/.ollama/models`. Remove: Quit Ollama, move /Applications/Ollama.app to the Trash, and delete ~/.ollama if its models should go too.
+- Installed by the person, outside Glimmer:
+  1. Download Ollama.dmg of version 0.40.16 from https://github.com/ollama/ollama/releases/tag/v0.40.16.
+  2. Check it: `shasum -a 256 ~/Downloads/Ollama.dmg` must print b48d74a2d8c6a0592c816a4f85643d8d8608ad592abafbe95c04128a73c398c6.
+  3. Open the disk image, drag Ollama to Applications and open it from there. Gatekeeper checks its signature: if macOS refuses to open it, stop; don't override the warning.
+  4. Check the signature and the version: `codesign -dv /Applications/Ollama.app` names the TeamIdentifier, and `ollama --version` must be 0.6.4 or later.
+  5. Pull a model that can call tools, one the person chooses (`ollama pull <model>`; Ollama's library marks such models "tools").
+  6. In Glimmer › Settings › AI, choose Ollama as the text service and pick the model.
+- Check: `codesign -dv /Applications/Ollama.app; ollama --version`. Team ID: null (not read: not installed on the test Mac; the Team ID is read from the signature after the user installs it). Minimum version 0.6.4: Glimmer reads a model's tools and vision from `capabilities` in /api/show, which Ollama added in commit e172f095ba4af2c98d7744ce4ffcf4cd3a8e123c ("api: return model capabilities from the show endpoint (#10066)", docs/api.md, 2025-04-01); the first release with it is v0.6.4 (https://github.com/ollama/ollama/releases/tag/v0.6.4, 2025-04-02). Read 2026-11-19.
 
 ## Operations
 

@@ -154,6 +154,9 @@ extension AIController {
     }
 
     func selectSky() {
+        guard ModelStore.shared.missing(Self.skyModels).isEmpty else {
+            return withModels(Self.skyModels) { [weak self] in self?.selectSky() }
+        }
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -169,6 +172,9 @@ extension AIController {
     /// Select Sky: the depth map and colour continuity find the sky reaching
     /// the top edge; Segment Anything then draws its exact outline (ridges,
     /// cables, branches). The image encoding is shared with Magic Select.
+    /// What Select Sky needs downloaded (the register's `select_sky` entries).
+    static let skyModels: [OnDeviceModel] = (Requirement.modelsForOps["select_sky"] ?? []).compactMap(OnDeviceModel.with(requirement:))
+
     @discardableResult
     func performSelectSky() async throws -> Bool {
         let snapshot = session.state

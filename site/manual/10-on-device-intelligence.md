@@ -1,6 +1,6 @@
 # On-device intelligence
 
-Many of Glimmer's smart tools run entirely on your Mac. They use Apple's Vision and Core Image frameworks and a few Core ML models. They are free, they work without an OpenRouter key, and your image never leaves the computer. Most of them work offline. The exception is the first time you use a tool that needs a downloaded model (see [Models downloaded on first use](#models-downloaded-on-first-use)).
+Many of Glimmer's smart tools run entirely on your Mac. They use Apple's Vision and Core Image frameworks and a few Core ML models. They are free, they work without an OpenRouter key, and your image never leaves the computer. Most of them work offline. The exception is the first time you use a tool that needs a downloaded model (see [Models you download](#models-you-download)).
 
 You find these tools in the regular menus and in the **On This Mac** section of the AI panel. Each button there has a tooltip that ends with "Runs on this Mac, free."
 
@@ -166,17 +166,21 @@ A request that names more than one thing never runs as a single command. Glimmer
 
 To turn this off, open **Glimmer › Settings › General** and, under **Assistant**, turn off **Understand simple requests on this Mac**. The setting is on by default. It is dimmed when your Mac doesn't have Apple Intelligence.
 
-## Models downloaded on first use
+## Models you download
 
-Two features need models that are not built into the app. Glimmer downloads each one the first time you use a feature that needs it. These are Apple's Core ML conversions, downloaded from Hugging Face. After the download they run on your Mac like the rest.
+Two features need models that are not built into the app. These are Apple's Core ML conversions on Hugging Face, under the Apache 2.0 license. After the download they run on your Mac like the rest.
 
 | Model | Size | Used by |
 |---|---|---|
-| Depth (Depth Anything V2 Small) | about 48 MB | Lens Blur, Select Sky |
-| Magic Select (SAM 2.1 Tiny) | about 78 MB | Magic Select, Select Sky |
+| Depth (Depth Anything V2 Small) | about 50 MB | Lens Blur, Select Sky |
+| Magic Select (SAM 2.1 Tiny) | about 80 MB | Magic Select, Select Sky |
 
-The first use needs an internet connection and takes a little longer. Glimmer compiles each model for your Mac and keeps it in its Application Support folder, under `Glimmer/Models`. Because Glimmer is sandboxed, that folder is inside the app's container in your Library.
+Glimmer never downloads a model by itself. The first time you use a feature that needs one, Glimmer asks first: a sheet shows the size, who publishes the model, a link to its source and its license. Nothing is fetched until you click **Download**. Click **Cancel**, and nothing happens. You can also download the models ahead of time in **Glimmer › Settings › Models**.
 
-To see which models are installed, open **Glimmer › Settings › Models**. Each model shows **Downloaded** or the size it will download. Click **Remove** to delete a downloaded model. Glimmer downloads it again the next time you need it.
+Glimmer fetches each model at a fixed version, and checks every file against the checksum the source publishes for it before it installs the model. If a file doesn't match, Glimmer installs nothing, keeps nothing of the download, and says so. The download needs an internet connection. Glimmer then compiles each model for your Mac and keeps it in its Application Support folder, under `Glimmer/Models`. Because Glimmer is sandboxed, that folder is inside the app's container in your Library.
+
+To see which models are installed, open **Glimmer › Settings › Models**. Each model shows **Downloaded** or **Not downloaded**, its size, publisher, source and license. Click **Remove** to delete a downloaded model, and **Download…** to get it again.
+
+An agent that uses Glimmer's local API can't download a model. A step that needs a missing model is refused with `model_missing`, and the agent can open **Settings › Models** for you to decide.
 
 Real-ESRGAN is built into the app and is not listed there.

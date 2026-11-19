@@ -35,7 +35,11 @@ Filters change pixels, so they need a pixel layer or a smart object. Select one 
 
 ### A feature asks to download a model
 
-Select Sky, Magic Select and Lens Blur use models that Glimmer downloads the first time (about 50–80 MB each). Make sure the Mac is online, then try again. **Settings › Models** shows which models are installed, and lets you remove and download them again if a download was interrupted.
+Select Sky, Magic Select and Lens Blur use models that you download once (about 50 and 80 MB). Glimmer asks before it downloads one; click **Download** to get it. If the download fails, make sure the Mac is online, then try again. **Settings › Models** shows which models are installed, and lets you download or remove them.
+
+### The download didn't match its checksum
+
+Glimmer checks every downloaded file against the checksum its source publishes. When one doesn't match, the model is not installed and nothing of the download is kept. Try again later. If you have set **Settings › Models › Download from** to a mirror, the mirror may have other files: leave the field empty to use Hugging Face.
 
 ### Magic Select or Select Sky is slow the first time
 

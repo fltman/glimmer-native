@@ -198,6 +198,10 @@ final class AIController {
 
     /// True while steps from the agent API run with `"allowUnknownPrice": true`: that call's own word, never remembered.
     @ObservationIgnored var agentAllowsUnknownPrice = false
+    /// True while steps from the agent API run: a missing model is then only reported, never asked about in the window.
+    @ObservationIgnored var runningAPISteps = false
+    /// Models a feature needs, waiting for the person's answer in the window (ModelDownloadSheet).
+    var modelRequest: ModelDownloadRequest?
 
     private func imageModel() throws -> ImageModel {
         // The last stop before a paid picture job; the buttons that lead here are grey until the tick is made.
@@ -670,6 +674,9 @@ final class AIController {
 
     func lensBlur(_ parameters: DocumentEffects.LensBlurParameters) {
         let state = session.state
+        if depthCache?.key != documentKey(state), !ModelStore.shared.missing([.depth]).isEmpty {
+            return withModels([.depth]) { [weak self] in self?.lensBlur(parameters) }
+        }
         do {
             let metal = try metal
             let image = try ImageExporter.flattenedSRGB(state, context: metal)
@@ -707,6 +714,9 @@ final class AIController {
     /// Estimates depth (once per image), then shows the blur on the canvas.
     func beginLensBlur(_ parameters: DocumentEffects.LensBlurParameters) {
         guard lensBlurLive == nil, !isPreparingLensBlur else { return }
+        if depthCache?.key != documentKey(session.state), !ModelStore.shared.missing([.depth]).isEmpty {
+            return withModels([.depth]) { [weak self] in self?.beginLensBlur(parameters) }
+        }
         session.commitLiveEdit()
         let state = session.state
         do {
@@ -795,6 +805,9 @@ final class AIController {
     func magicSelect(at point: SIMD2<Double>, positive: Bool) {
         let state = session.state
         guard state.bounds.intersection(PixelRect(x: Int(point.x), y: Int(point.y), width: 1, height: 1)).width > 0 else { return }
+        guard ModelStore.shared.missing([.segmentAnything]).isEmpty else {
+            return withModels([.segmentAnything]) { [weak self] in self?.magicSelect(at: point, positive: positive) }
+        }
         if magicPoints.isEmpty { selectionBeforeMagic = state.selection }
         magicPoints.append(MagicSelector.Point(point, positive: positive))
         let points = magicPoints

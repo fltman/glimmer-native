@@ -4,7 +4,7 @@ Glimmer is a photo editor for the Mac. It has the tools you expect from a seriou
 
 ## What do I need to run it?
 
-A Mac with Apple silicon and macOS 27 or later. Some on-device features download a model the first time you use them, so you need an internet connection once for those.
+A Mac with Apple silicon and macOS 27 or later. Some on-device features need a model that you download once (Glimmer asks first), so you need an internet connection once for those.
 
 ## What does Glimmer cost?
 
@@ -46,7 +46,7 @@ Yes. Glimmer is a complete app on your Mac: there is no server to run and no acc
 
 Three things need a connection:
 
-- **Two models that download once.** Select Sky, Lens Blur and Magic Select use models that Glimmer downloads the first time (see [Models downloaded on first use](manual/10-on-device-intelligence.md#models-downloaded-on-first-use)). After that they work offline. If you try one offline before its model is there, Glimmer says that the download didn't work and what to do; nothing else is affected.
+- **Two models that download once.** Select Sky, Lens Blur and Magic Select use models that you download once (see [Models you download](manual/10-on-device-intelligence.md#models-you-download)). Glimmer asks before it downloads anything, and checks every file's checksum. After that they work offline. If you try one offline before its model is there, Glimmer says that the download didn't work and what to do; nothing else is affected.
 - **The OpenRouter features.** Generating, generative fill and the other paid AI features send the image to OpenRouter, so they need the internet and your key.
 - **Update checks.**
 

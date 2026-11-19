@@ -316,6 +316,19 @@ enum AgentRouter {
         case ["api", "v1", "operations"]:
             try only("GET")
             return .json(["operations": AgentAPI.operations])
+        case ["api", "v1", "requirements"]:
+            // What may need installing, from the register. Reading it downloads nothing.
+            try only("GET")
+            return .json(["items": Requirement.installable.map(requirementJSON)])
+        case ["api", "v1", "settings", "open"]:
+            // Only opens a pane of Settings for the person; it changes no setting and starts nothing.
+            try only("POST")
+            let pane = try json(r, "settings.open")["pane"] as? String ?? "general"
+            guard SettingsView.panes.contains(pane) else {
+                throw APIError.badRequest("pane must be one of: \(SettingsView.panes.joined(separator: ", ")).")
+            }
+            SettingsView.open(pane: pane)
+            return .json(["opened": pane])
         case ["api", "v1", "documents"]:
             try only("GET", "POST")
             if r.method == "GET" { return .json(["documents": AgentRegistry.shared.sessions.map(summary)]) }
@@ -817,6 +830,11 @@ enum AgentRouter {
             // The unknown name first: "crop needs width…" would hide that "widht" was the trouble.
             if let stray = StepParameters.stray(in: decoded) { throw APIError.badRequest("Step \(i): \(stray.message) No step of this request was run.") }
             if let problem = CanvasSteps.malformed(decoded) { throw APIError.badRequest("Step \(i): \(problem)") }
+            // A step that needs a model not on this Mac: refused before anything runs, never downloaded.
+            if let ids = Requirement.models(forOp: op, command: decoded.string("id")) {
+                let missing = ids.filter { id in OnDeviceModel.with(requirement: id).map { !ModelStore.shared.isInstalled($0) } ?? false }
+                if !missing.isEmpty { throw APIError.modelMissing(step: i, op: op, ids: missing) }
+            }
             if AgentAPI.paidOps.contains(op) {
                 // The picture service chosen in Glimmer's Settings: said by name, since that is where the picture goes.
                 let service = AIController.imageProvider
@@ -863,6 +881,16 @@ enum AgentRouter {
         return .json(["results": list, "document": detail(session)])
     }
 
+    /// One item of `GET /api/v1/requirements`: the register's entry, and whether it is on this Mac.
+    static func requirementJSON(_ r: Requirement) -> [String: Any] {
+        if let model = OnDeviceModel.with(requirement: r.id) {
+            let installed = ModelStore.shared.isInstalled(model)
+            return r.json(installed: installed, installedVersion: installed ? r.source.commit : nil)
+        }
+        // A tool the person installs: Glimmer doesn't look for it, so it doesn't say.
+        return r.json(installed: nil, installedVersion: nil)
+    }
+
     /// Present or missing per offered service that needs a key.
     static func providerKeys() -> [String: Bool] {
         var status = ProviderKeys.keychain.status()
@@ -902,6 +930,7 @@ enum AgentRouter {
         var body = AgentAPI.APIError.stepFailedBody(step: failed, op: results[failed].op, message: results[failed].error ?? "",
                                                     reason: results[failed].reason)
         if results[failed].hard { body["hard"] = true }
+        if let ids = results[failed].requirements, let first = ids.first { body["requirement"] = first; body["requirements"] = ids }
         return body
     }
 

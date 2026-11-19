@@ -147,6 +147,12 @@ struct DocumentView: View {
             .sheet(isPresented: $session.isBatchSheetPresented) {
                 BatchSheet(session: session)
             }
+            .sheet(item: Binding(get: { session.ai.modelRequest }, set: { session.ai.modelRequest = $0 })) { request in
+                ModelDownloadSheet(models: request.models) { downloaded in
+                    session.ai.modelRequest = nil
+                    if downloaded { request.retry?() }
+                }
+            }
             .onChange(of: session.document.diskNotice) { _, notice in
                 guard let notice else { return }
                 session.document.diskNotice = nil

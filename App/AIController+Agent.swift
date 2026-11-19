@@ -349,6 +349,8 @@ extension AIController {
         let error: String?
         var reason: String? = nil
         var hard = false
+        /// For `model_missing`: the register ids of the models the step needed.
+        var requirements: [String]? = nil
         /// Facts a step reports about what it did (style_text: matches and ranges).
         var info: [String: Any]? = nil
     }
@@ -357,7 +359,8 @@ extension AIController {
     /// failure and reports the rest as skipped.
     func runAPISteps(_ steps: [AgentStep], allowUnknownPrice: Bool = false, progress: ((Int) -> Void)? = nil) async -> [APIStepResult] {
         agentAllowsUnknownPrice = allowUnknownPrice
-        defer { agentAllowsUnknownPrice = false }
+        runningAPISteps = true
+        defer { agentAllowsUnknownPrice = false; runningAPISteps = false }
         session.commitLiveEdit()
         session.document.beginTransaction("Agent Edit")   // a catalogue key, like every action name: translated where the window shows it
         defer { session.document.endTransaction(undoManager: session.undoManager) }
@@ -376,6 +379,11 @@ extension AIController {
             } catch is CancellationError {
                 stopped = true
                 results.append(APIStepResult(op: step.op, status: "canceled", error: nil))
+            } catch let missing as ModelMissingError {
+                // Only reached if a model went away after the request was checked: never downloaded here.
+                stopped = true
+                results.append(APIStepResult(op: step.op, status: "failed", error: AgentAPI.words(for: missing),
+                                             reason: "model_missing", requirements: missing.missing.map(\.requirement.id)))
             } catch {
                 stopped = true
                 results.append(APIStepResult(op: step.op, status: "failed",
@@ -553,6 +561,12 @@ extension AIController {
         case "select_people":
             try await performSelectPeople()
         case "select_sky":
+            let missing = ModelStore.shared.missing(Self.skyModels)
+            if !missing.isEmpty {
+                // Never downloaded here. In the window the Assistant's step asks the person; from the API it is only reported.
+                if !runningAPISteps { modelRequest = ModelDownloadRequest(models: missing, retry: nil) }
+                throw ModelMissingError(missing)
+            }
             guard try await performSelectSky() else { throw StepError("No sky found along the top of the image.") }
         case "remove_background":
             // A smart object (an image an agent just added) is cut out as it is; only a layer

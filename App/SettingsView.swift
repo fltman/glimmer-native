@@ -5,6 +5,20 @@ import SwiftUI
 struct SettingsView: View {
     /// The selected tab, kept so "Add OpenRouter Key…" can open Settings on AI.
     static let tabKey = "settings.tab"
+    /// The panes, by the names `POST /api/v1/settings/open` takes.
+    static let panes = ["general", "ai", "models", "performance", "tablet"]
+
+    /// Opens the Settings window at `pane`, as Glimmer › Settings… would. It changes no setting.
+    static func open(pane: String) {
+        UserDefaults.standard.set(pane, forKey: tabKey)
+        NSApp.activate()
+        if let menu = NSApp.mainMenu?.items.first?.submenu,
+           let index = menu.items.firstIndex(where: { $0.keyEquivalent == "," && $0.keyEquivalentModifierMask == .command }) {
+            menu.performActionForItem(at: index)
+        } else {
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        }
+    }
     @AppStorage(Self.tabKey) private var tab = "general"
 
     var body: some View {
@@ -294,19 +308,20 @@ private struct AISettingsView: View {
 }
 
 
-/// On-device models downloaded on first use.
+/// On-device models, downloaded when the person asks.
 private struct ModelSettingsView: View {
     @State private var installed: Set<OnDeviceModel> = []
+    @State private var asking: ModelDownloadRequest?
     @AppStorage(ModelStore.sourceKey) private var source = ""
 
     var body: some View {
         Form {
             Section {
                 ForEach(OnDeviceModel.allCases, id: \.self) { model in
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text(LocalizedStringKey(model.title))
-                            Text(installed.contains(model) ? "Downloaded" : "Downloads on first use (\(model.approximateSize))")
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ModelFacts(model: model)
+                            Text(installed.contains(model) ? "Downloaded" : "Not downloaded")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -315,32 +330,39 @@ private struct ModelSettingsView: View {
                             Button("Remove", role: .destructive) {
                                 Task {
                                     try? await ModelStore.shared.remove(model)
-                                    await refresh()
+                                    refresh()
                                 }
                             }
                             .accessibilityLabel("Remove \(model.title)")
+                        } else {
+                            Button("Download…") { asking = ModelDownloadRequest(models: [model], retry: nil) }
+                                .accessibilityLabel("Download \(model.title)")
                         }
                     }
                 }
             } footer: {
-                Text("These models run on this Mac. They come from Apple's Core ML conversions on Hugging Face.")
+                Text("These models run on this Mac. They are Apple's Core ML conversions on Hugging Face, fetched at a fixed version, and Glimmer checks every file's checksum before it uses them. Nothing is downloaded until you click Download.")
                     .foregroundStyle(.secondary)
             }
             Section {
                 TextField("Download from", text: $source, prompt: Text(verbatim: ModelStore.defaultSource))
             } footer: {
-                Text("Leave empty for Hugging Face. A mirror must serve the same paths (<repository>/resolve/main/<file>).")
+                Text("Leave empty for Hugging Face. A mirror must serve the same paths (<repository>/resolve/<commit>/<file>). Every file is checked against the same checksums, wherever it comes from.")
                     .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
-        .task { await refresh() }
+        .onAppear { refresh() }
+        .sheet(item: $asking) { request in
+            ModelDownloadSheet(models: request.models) { _ in
+                asking = nil
+                refresh()
+            }
+        }
     }
 
-    private func refresh() async {
-        var set: Set<OnDeviceModel> = []
-        for model in OnDeviceModel.allCases where await ModelStore.shared.isInstalled(model) { set.insert(model) }
-        installed = set
+    private func refresh() {
+        installed = Set(OnDeviceModel.allCases.filter { ModelStore.shared.isInstalled($0) })
     }
 }
 

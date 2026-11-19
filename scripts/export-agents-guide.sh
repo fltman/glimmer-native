@@ -5,4 +5,4 @@
 set -euo pipefail
 "$(dirname "$0")/apply-features.py"
 cd "$(dirname "$0")/../Packages/GlimmerKit"
-GLIMMER_WRITE_SITE=1 swift test --filter SiteExportTests 2>&1 | grep -E "✔|✘|error" | tail -3
+GLIMMER_WRITE_SITE=1 swift test --filter "SiteExportTests|RequirementsTests" 2>&1 | grep -E "✔|✘|error" | tail -3

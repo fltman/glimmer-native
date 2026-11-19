@@ -66,7 +66,7 @@ Click a color in the image to select the area around it that has a similar color
 
 ### Magic Select
 
-Magic Select finds the object you click on and selects it with a detailed outline. It runs on your Mac. The first time you use it, Glimmer downloads its model (about 78 MB). You can manage the model in **Glimmer › Settings › Models**.
+Magic Select finds the object you click on and selects it with a detailed outline. It runs on your Mac. The first time you use it, Glimmer asks to download its model (about 80 MB), and downloads it when you click **Download**. You can manage the model in **Glimmer › Settings › Models**.
 
 ![Magic Select with green points on a subject and a red point on the background, and the selection outline around the subject](../screens/magic-select.webp)
 
@@ -106,7 +106,7 @@ These commands look at the image as you see it, with all visible layers, and rep
 
 - **Subject** selects the most prominent objects or people.
 - **People** selects every person Glimmer finds. If there are none, Glimmer tells you.
-- **Sky** finds the sky along the top of the image and traces its edge closely, around ridges, cables and branches. The first time, Glimmer downloads the depth model (about 48 MB) and the Magic Select model (about 78 MB). If there is no sky reaching the top edge, Glimmer tells you.
+- **Sky** finds the sky along the top of the image and traces its edge closely, around ridges, cables and branches. The first time, Glimmer asks to download the depth model (about 50 MB) and the Magic Select model (about 80 MB). If there is no sky reaching the top edge, Glimmer tells you.
 
 ![Select Sky with marching ants around the sky above a mountain ridge](../screens/select-sky.webp)
 

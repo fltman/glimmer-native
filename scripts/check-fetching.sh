@@ -6,6 +6,7 @@
 # - Every xcodebuild in scripts/ takes its package flags from scripts/packages-offline.sh.
 # - No script runs npm, npx, pip, brew, or downloads with curl or wget, except behind GLIMMER_ALLOW_FETCH.
 # - A Debug build or a copy under another bundle id never starts Sparkle (App/Updater.swift).
+# - The agent API never starts a model download: only the download sheet and Settings › Models call ModelStore.download.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 fails=0
@@ -25,4 +26,5 @@ while IFS= read -r line; do
 done < <(grep -nE '^[^#]*\b(npm|npx|pip3?|brew) +[a-z]|^[^#]*\b(curl|wget)\b[^#]*https?://[a-z0-9.-]*\.[a-z]{2,}' scripts/*.sh scripts/*.py 2>/dev/null | grep -v "127\.0\.0\.1\|localhost\|check-fetching.sh")
 grep -q "#if DEBUG" App/Updater.swift && grep -A12 "static var mayUpdate" App/Updater.swift | grep -q 'bundleIdentifier == "com.brattoo.glimmer"' || bad "App/Updater.swift lets a Debug build or a copy under another id start Sparkle"
 grep -q "guard Self.mayUpdate" App/Updater.swift || bad "App/Updater.swift starts Sparkle without asking mayUpdate"
-(( fails == 0 )) && echo "Nothing fetches by itself: Sparkle $VERSION pinned, builds offline, no installer in the scripts, no update check outside a release." || { echo "$fails fault(s)."; exit 1; }
+grep -nE "ModelStore[A-Za-z.]*\.download\(|\.download\(model" App/*.swift | grep -v "^App/ModelDownloadSheet.swift:" | grep -q . && bad "a model download is started outside the download sheet: $(grep -lE 'ModelStore[A-Za-z.]*\.download\(' App/*.swift | grep -v ModelDownloadSheet | tr '\n' ' ')"
+(( fails == 0 )) && echo "Nothing fetches by itself: Sparkle $VERSION pinned, models only from the download sheet, builds offline, no installer in the scripts, no update check outside a release." || { echo "$fails fault(s)."; exit 1; }

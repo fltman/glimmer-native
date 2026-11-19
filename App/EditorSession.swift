@@ -453,6 +453,11 @@ final class EditorSession {
     }
 
     func report(_ error: Error) {
+        // A model that isn't downloaded: ask the person (never downloaded without their click).
+        if let missing = error as? ModelMissingError, !ai.runningAPISteps {
+            ai.modelRequest = ModelDownloadRequest(models: missing.missing, retry: nil)
+            return
+        }
         errorMessage = PersonMessage.text(for: error)
     }
 

@@ -131,6 +131,8 @@ public enum AgentAPI {
             var body: [String: Any] = ["code": error.code, "message": error.message]
             if let details = error.details { body["details"] = details }
             if let reason = error.reason { body["reason"] = reason }
+            if let ids = error.requirements, let first = ids.first { body["requirement"] = first; body["requirements"] = ids }
+            if let step = error.step { body["step"] = step }
             return .json(["error": body], status: error.status)
         }
 
@@ -157,6 +159,9 @@ public enum AgentAPI {
         public var details: [String: String]?
         /// For `unprocessable`: which precondition wasn't met, as a short machine-readable word.
         public var reason: String?
+        /// For `model_missing`: the register ids of what is missing (the first is `requirement`), and the step.
+        public var requirements: [String]?
+        public var step: Int?
 
         public init(_ status: Int, _ code: String, _ message: String, details: [String: String]? = nil, reason: String? = nil) {
             self.status = status
@@ -183,6 +188,18 @@ public enum AgentAPI {
         public static func forbidden(_ m: String) -> APIError { APIError(403, "forbidden", m) }
         public static func notAvailable(_ m: String) -> APIError { APIError(409, "not_available", m) }
         public static func internalError(_ m: String) -> APIError { APIError(500, "internal", m) }
+
+        /// 422 `model_missing`: step `step` needs these register entries, which aren't on the Mac.
+        public static func modelMissing(step: Int, op: String, ids: [String]) -> APIError {
+            let names = ids.compactMap { Requirement.named($0)?.name }.joined(separator: " and ")
+            let them = ids.count == 1 ? "it" : "them"
+            var e = APIError(422, "model_missing", "Step \(step) (\(op)) needs \(names), not downloaded on this Mac. "
+                + "The person downloads \(them) in Glimmer › Settings › Models (POST /api/v1/settings/open with {\"pane\": \"models\"} opens it); "
+                + "this API never starts a download. GET /api/v1/requirements has the source, license and size. No step of this request was run.")
+            e.requirements = ids
+            e.step = step
+            return e
+        }
     }
 
     /// The security rules, checked before routing:
@@ -418,6 +435,8 @@ public enum AgentAPI {
         | GET | `/glimmer` | This guide (Markdown). |
         | GET | `/api/v1/status` | `app.name` (always `"Glimmer"`), `app.version`, the API version, the port, the open documents, the running `jobs`, and `providerKeys`: for each AI service Glimmer can use with a key (`openrouter`, `berget`, `grunden`), whether the user has entered one (true or false, never the key). Paid steps make pictures through the picture service chosen in Glimmer's Settings and need that service's key (for OpenRouter, `openrouter` true). `linkJournal` says what Glimmer keeps of linked files: `entries`, `unreturned` (how many have steps not saved back) and `broken` (kept edits that can't be read; they are never removed by Glimmer). |
         | GET | `/api/v1/operations` | Every step operation: `{"operations": [{"name", "description", "params", "paid", "undoable", "startsJob"}]}`. A paid operation also has `"price"` (null when Glimmer doesn't know it) and `"priceKnown"`. `params` is a JSON Schema, so an assistant can use the operations as tools as they are. Steps run through `steps`; the other requests (`export`, `image`, `add_image`, `undo`, `redo`) carry `call: {method, path}`, and their params marked `"x-in": "path"` or `"query"` go there (the rest in the JSON body). `tier` is `"core"` for the everyday operations and `"advanced"` for the rest, for assistants that can offer only a few tools. |
+        | GET | `/api/v1/requirements` | What Glimmer may need installed (see the section of that name): `{"items": [{"id", "name", "kind", "neededBy", "required", "installed", "installedVersion", "sizeBytes", "license": {"spdx", "url"}, "source": {"publisher", "url", "version", "commit", "sha256"}, "install": {"how": "in_app", "where"} or {"how": "by_user", "steps"}}]}`. Reading it changes nothing and downloads nothing. |
+        | POST | `/api/v1/settings/open` | Opens Glimmer's Settings at a pane for the person: `{"pane": "models"}` (or `"general"`, `"ai"`, `"performance"`, `"tablet"`). It only opens the pane; it changes no setting and starts no download. Answers `{"opened": "models"}`. |
         | GET | `/api/v1/documents` | The open documents. The one whose window is in front has `"frontmost": true`; Glimmer's own empty start document, which the first image you open replaces (keeping its id), has `"startDocument": true`; an image Flimmer or Jämmer handed over to edit has `linkedFile` (`name`, `format`, `requester`, `available`), and ⌘S writes it back. The link survives a restart of Glimmer; `available` is false, with a `reason`, when the file can no longer be reached or written after one. `unreturnedSteps` (when above 0) is how many steps are not saved back yet; `kept: true` means the person left it so at Quit or with Keep for Later and it was opened again, `recovered: true` that Glimmer stopped on its own and the document was brought back. Both go when it is saved back. |
         | POST | `/api/v1/documents` | Open an image (raw bytes with `?name=…`, or JSON `{"image": "<base64>", "name": "…"}`) or create a blank document (JSON `{"width", "height", "background": "white"\\|"black"\\|"transparent", "name"}`). `name` names the document's window and, for an image, its layer. Glimmer's untouched start document is replaced instead of leaving an empty window. |
         | GET | `/api/v1/documents/{id}` | Size, layers (top first, each with `bounds` in document pixels when it has content), the active layer and whether there is a selection. |
@@ -512,10 +531,12 @@ public enum AgentAPI {
         | 405 | `method_not_allowed` | Wrong HTTP method for the path. |
         | 413 | `too_large` | Body over 256 MB. |
         | 422 | `step_failed` | A step ran and failed. `error.step` is its index; `results` has the status of every step. When the step refused for a known reason, `error.reason` says which (`would_rasterize_text`, `bad_corners`, `cannot_transform`, `not_text`, `no_match`, `bad_range`, `unknown_font`, `bad_rect`, `no_selection`, `bad_aspect`, `bad_size`, `too_large`, `bad_anchor`, `bad_color`, `unknown_layer`, `ambiguous_target`, `unknown_blend_mode`, `bad_opacity`, `nothing_to_set`). `group_has_mask` is no longer returned: layer masks now follow a transform. |
+        | 422 | `model_missing` | A step needs an on-device model that isn't downloaded (today `select_sky`). `error.requirement` is the first missing entry's id, `error.requirements` all of them, `error.step` the step. Checked before anything runs: no step of the request was run. The person downloads the model in Glimmer (`POST /api/v1/settings/open` with `{"pane": "models"}` shows them where); the API never starts a download. |
         | 422 | `unprocessable`, reason `unknown_price` | A step is paid, Glimmer doesn't know its price in advance, and `allowUnknownPrice` wasn't `true`. Checked after `allowPaid` (402 comes first) and before anything runs: no step of the request was run. |
         | 422 | `unprocessable` | A request other than steps can't be done right now; `error.reason` says why (`nothing_to_undo`, `nothing_to_redo`, `no_history`, `over_byte_limit`, `bad_image`, `too_large`, `unknown_document`, `same_document`). |
         | 500 | `internal` | Glimmer failed unexpectedly. The message has the detail. |
 
+        \(Requirement.guideSection())
         ## Operations
 
         These are the `op` values for `steps`, with their `params`. The same list is available as JSON from `GET /api/v1/operations`.

@@ -24,9 +24,8 @@ func pixelBuffer(_ image: CGImage, width: Int, height: Int) throws -> CVPixelBuf
 
 /// Relative depth from Depth Anything V2 Small (Core ML). Near = 255.
 public enum DepthEstimator {
-    public static func depth(of image: CGImage, store: ModelStore = .shared,
-                             progress: (@Sendable (Double) -> Void)? = nil) async throws -> GrayImage {
-        let model = try await store.load(OnDeviceModel.depth.packages[0], of: .depth, progress: progress)
+    public static func depth(of image: CGImage, store: ModelStore = .shared) async throws -> GrayImage {
+        let model = try await store.load(OnDeviceModel.depth.packages[0], of: .depth)
         let input = try pixelBuffer(image, width: 518, height: 392)
         let output = try await model.prediction(from: MLDictionaryFeatureProvider(dictionary: ["image": input]))
         guard let depth = output.featureValue(for: "depth")?.imageBufferValue else {
@@ -67,9 +66,9 @@ public actor MagicSelector {
     static let inputSize = 1024
 
     /// Runs the image encoder (cached per `key`).
-    public func prepare(_ image: CGImage, key: Int, progress: (@Sendable (Double) -> Void)? = nil) async throws {
+    public func prepare(_ image: CGImage, key: Int) async throws {
         if encoded?.key == key { return }
-        let encoder = try await store.load(OnDeviceModel.segmentAnything.packages[0], of: .segmentAnything, progress: progress)
+        let encoder = try await store.load(OnDeviceModel.segmentAnything.packages[0], of: .segmentAnything)
         let input = try pixelBuffer(image, width: Self.inputSize, height: Self.inputSize)
         let out = try await encoder.prediction(from: MLDictionaryFeatureProvider(dictionary: ["image": input]))
         encoded = (key, out, SIMD2(image.width, image.height))

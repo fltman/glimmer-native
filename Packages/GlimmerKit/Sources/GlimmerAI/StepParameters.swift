@@ -156,6 +156,7 @@ public enum StepParameters {
         "export": ["preset", "format", "depth", "flatten", "quality", "maxSide", "maxBytes", "size"],
         "layers": ["fromDocument"],
         "undo": [],
+        "settings.open": ["pane"],
     ]
 
     /// "export has no parameter named qualty. It has: …", or nil when every name is known.

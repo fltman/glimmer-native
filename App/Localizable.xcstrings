@@ -79,6 +79,16 @@
         }
       }
     },
+    "%@ · by %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · från %2$@"
+          }
+        }
+      }
+    },
     "%@: %@": {
       "localizations": {
         "en": {
@@ -2631,6 +2641,46 @@
         }
       }
     },
+    "Download": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladda ner"
+          }
+        }
+      }
+    },
+    "Download %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladda ner %@"
+          }
+        }
+      }
+    },
+    "Download %@ from %@ via Hugging Face?": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hämta %1$@ från %2$@ via Hugging Face?"
+          }
+        }
+      }
+    },
+    "Download from": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hämta från"
+          }
+        }
+      }
+    },
     "Downloaded": {
       "localizations": {
         "sv": {
@@ -2641,12 +2691,32 @@
         }
       }
     },
+    "Downloading and checking…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laddar ner och kontrollerar…"
+          }
+        }
+      }
+    },
     "Downloads on first use (%@)": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Laddas ner första gången (%@)"
+          }
+        }
+      }
+    },
+    "Download…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ladda ner…"
           }
         }
       }
@@ -3023,12 +3093,12 @@
         }
       }
     },
-    "Estimates depth on this Mac and blurs what's out of focus. The first run downloads a 48 MB model.": {
+    "Estimates depth on this Mac and blurs what's out of focus. The first time, Glimmer asks before it downloads a 50 MB model.": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uppskattar djup på den här Macen och gör det som ligger utanför fokus oskarpt. Första gången laddas en modell på 48 MB ner."
+            "value": "Uppskattar djup på den här Macen och gör det som ligger utanför fokus oskarpt. Första gången frågar Glimmer innan en modell på 50 MB laddas ner."
           }
         }
       }
@@ -4998,6 +5068,16 @@
         }
       }
     },
+    "Leave empty for Hugging Face. A mirror must serve the same paths (<repository>/resolve/<commit>/<file>). Every file is checked against the same checksums, wherever it comes from.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lämna tomt för Hugging Face. En spegel måste ha samma sökvägar (<repository>/resolve/<commit>/<file>). Varje fil kontrolleras mot samma kontrollsummor, var den än kommer ifrån."
+          }
+        }
+      }
+    },
     "Left": {
       "extractionState": "manual",
       "localizations": {
@@ -5099,6 +5179,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nivåhistogram"
+          }
+        }
+      }
+    },
+    "License: %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Licens: %@"
           }
         }
       }
@@ -5972,6 +6062,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Normal"
+          }
+        }
+      }
+    },
+    "Not downloaded": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inte nedladdad"
           }
         }
       }
@@ -8628,6 +8728,26 @@
         }
       }
     },
+    "Source": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Källa"
+          }
+        }
+      }
+    },
+    "Source of %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Källa för %@"
+          }
+        }
+      }
+    },
     "Spacing": {
       "extractionState": "stale",
       "localizations": {
@@ -9007,6 +9127,17 @@
         }
       }
     },
+    "The download of “%@” didn't match its published checksum (%@), so Glimmer didn't install it. Nothing of it was kept. Try again later; if it keeps happening, check Settings › Models › Download from.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nedladdningen av ”%1$@” stämde inte med den publicerade kontrollsumman (%2$@), så Glimmer installerade den inte. Inget av den sparades. Försök igen senare. Händer det igen, kontrollera Inställningar › Modeller › Hämta från."
+          }
+        }
+      }
+    },
     "The image stays where the anchor is. New room is transparent; what a smaller canvas cuts off is kept outside it.": {
       "extractionState": "manual",
       "localizations": {
@@ -9176,12 +9307,32 @@
         }
       }
     },
+    "These models run on this Mac. They are Apple's Core ML conversions on Hugging Face, fetched at a fixed version, and Glimmer checks every file's checksum before it uses them. Nothing is downloaded until you click Download.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modellerna körs på den här Macen. De är Apples Core ML-konverteringar på Hugging Face, hämtade i en fast version, och Glimmer kontrollerar varje fils kontrollsumma innan de används. Inget laddas ner förrän du klickar på Ladda ner."
+          }
+        }
+      }
+    },
     "These models run on this Mac. They come from Apple's Core ML conversions on Hugging Face.": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Modellerna körs på den här Macen. De kommer från Apples Core ML-konverteringar på Hugging Face."
+          }
+        }
+      }
+    },
+    "This feature runs on your Mac with a model that isn't built into Glimmer. Glimmer downloads it once and checks every file against its published checksum before it uses it.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Funktionen körs på din Mac med en modell som inte är inbyggd i Glimmer. Glimmer laddar ner den en gång och kontrollerar varje fil mot dess publicerade kontrollsumma innan den används."
           }
         }
       }
@@ -9193,6 +9344,28 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gruppen har inget som Fri transformering kan flytta."
+          }
+        }
+      }
+    },
+    "This needs the model %@, which isn't downloaded yet. Download it in Glimmer › Settings › Models, then try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här behöver modellen %@, som inte är nedladdad än. Ladda ner den under Glimmer › Inställningar › Modeller och försök igen."
+          }
+        }
+      }
+    },
+    "This needs the models %@, which aren't downloaded yet. Download them in Glimmer › Settings › Models, then try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här behöver modellerna %@, som inte är nedladdade än. Ladda ner dem under Glimmer › Inställningar › Modeller och försök igen."
           }
         }
       }
@@ -9339,6 +9512,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Prova"
+          }
+        }
+      }
+    },
+    "Try Again": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Försök igen"
           }
         }
       }
@@ -14523,6 +14706,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "stör"
+          }
+        }
+      }
+    },
+    "This feature runs on your Mac with models that aren't built into Glimmer. Glimmer downloads them once and checks every file against its published checksum before it uses them.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Funktionen körs på din Mac med modeller som inte är inbyggda i Glimmer. Glimmer laddar ner dem en gång och kontrollerar varje fil mot dess publicerade kontrollsumma innan de används."
           }
         }
       }
